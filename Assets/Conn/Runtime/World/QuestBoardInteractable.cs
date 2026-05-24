@@ -29,12 +29,7 @@ namespace Conn.Runtime.World
                 return;
             }
 
-            quest.ActiveQuestId = questId;
-            quest.TargetMonsterId = targetMonsterId;
-            quest.GoldReward = goldReward;
-            quest.TargetDefeated = false;
-            quest.ReturnAvailable = false;
-            quest.ReturnPromptSeen = false;
+            QuestRuntimeService.AcceptQuest(GameSession.Instance.State, questId, targetMonsterId, goldReward);
             Debug.Log($"Accepted quest: {questId}");
         }
     }

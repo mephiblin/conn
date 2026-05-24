@@ -74,6 +74,7 @@ namespace Conn.Editor.Tools
             }
             else if (content == SceneContent.Dungeon)
             {
+                bootstrapObject.AddComponent<DungeonPlayerSpawnRestorer>();
                 CreateMonsterMarker();
             }
 

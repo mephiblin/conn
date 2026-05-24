@@ -70,12 +70,7 @@ namespace Conn.UI.Runtime
 
             if (GUILayout.Button("Accept Test Hunt"))
             {
-                session.Quest.ActiveQuestId = "quest_test_hunt";
-                session.Quest.TargetMonsterId = "monster_test_guard";
-                session.Quest.GoldReward = 10;
-                session.Quest.TargetDefeated = false;
-                session.Quest.ReturnAvailable = false;
-                session.Quest.ReturnPromptSeen = false;
+                QuestRuntimeService.AcceptTestHunt(session);
             }
 
             GUI.enabled = session.Quest.HasActiveQuest;
@@ -129,9 +124,7 @@ namespace Conn.UI.Runtime
         {
             if (GUILayout.Button("Win Combat"))
             {
-                session.Quest.TargetDefeated = true;
-                session.Quest.ReturnAvailable = true;
-                session.Quest.ReturnPromptSeen = false;
+                QuestRuntimeService.CompleteTarget(session);
                 SceneFlowService.Load(GameSceneId.Dungeon);
             }
 
@@ -143,9 +136,7 @@ namespace Conn.UI.Runtime
 
         private static void ReturnToTown(GameSessionState session)
         {
-            session.Gold += session.Quest.GoldReward;
-            session.Quest.Clear();
-            SceneFlowService.Load(GameSceneId.Town);
+            QuestRuntimeService.ReturnToTown(session);
         }
     }
 }

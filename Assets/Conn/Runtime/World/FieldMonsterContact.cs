@@ -36,12 +36,7 @@ namespace Conn.Runtime.World
                 return;
             }
 
-            var player = other.transform;
-            session.PreEncounterSnapshot.Capture(
-                player.position.x,
-                player.position.y,
-                player.position.z,
-                player.eulerAngles.y);
+            QuestRuntimeService.CapturePreEncounter(session, other.transform);
 
             consumed = true;
             Debug.Log($"Field monster contact: {monsterId}");
