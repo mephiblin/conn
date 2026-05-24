@@ -40,7 +40,13 @@ namespace Conn.UI.Runtime
 
                 if (GUILayout.Button("Continue"))
                 {
-                    SceneFlowService.Load(GameSceneId.Town);
+                    var gameSession = GameSession.Instance;
+                    if (!gameSession.TryContinue())
+                    {
+                        gameSession.StartNewGame();
+                    }
+
+                    SceneFlowService.Load(SaveRuntimeService.SceneForLoadedState(gameSession.State));
                 }
             }
             else if (sceneId == GameSceneId.Town)

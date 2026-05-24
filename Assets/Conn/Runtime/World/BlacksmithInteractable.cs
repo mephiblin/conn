@@ -79,6 +79,7 @@ namespace Conn.Runtime.World
             session.Gold -= item.BuyPrice;
             session.Inventory.AddItem(itemId);
             session.Equipment.Equip(itemId);
+            GameSession.Instance.SaveGame();
             Debug.Log($"Bought and equipped {item.DisplayName}.");
         }
 
@@ -131,6 +132,7 @@ namespace Conn.Runtime.World
             }
 
             session.Gold += item.SellPrice;
+            GameSession.Instance.SaveGame();
             Debug.Log($"Sold {item.DisplayName}.");
         }
     }

@@ -80,6 +80,7 @@ namespace Conn.Runtime.World
             session.Gold -= skill.BuyPrice;
             session.Skills.AddSkill(skillId);
             session.Skills.EquipFirstOpenFace(skillId, session.Equipment.DiceCount);
+            GameSession.Instance.SaveGame();
             Debug.Log($"Bought and equipped {skill.DisplayName}.");
         }
 
@@ -124,6 +125,7 @@ namespace Conn.Runtime.World
             }
 
             session.Gold += skill.SellPrice;
+            GameSession.Instance.SaveGame();
             Debug.Log($"Sold {skill.DisplayName}.");
         }
     }

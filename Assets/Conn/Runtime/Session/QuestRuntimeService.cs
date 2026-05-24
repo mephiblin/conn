@@ -21,6 +21,7 @@ namespace Conn.Runtime.Session
             session.Quest.ReturnAvailable = false;
             session.Quest.ReturnPromptSeen = false;
             session.PreEncounterSnapshot.Clear();
+            GameSession.Instance.SaveGame();
         }
 
         public static void CompleteTarget(GameSessionState session)
@@ -35,6 +36,7 @@ namespace Conn.Runtime.Session
             session.Gold += session.Quest.GoldReward;
             session.Quest.Clear();
             session.PreEncounterSnapshot.Clear();
+            GameSession.Instance.SaveGame();
             SceneFlowService.Load(GameSceneId.Town);
         }
 

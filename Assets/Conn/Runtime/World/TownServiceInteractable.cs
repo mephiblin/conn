@@ -69,6 +69,7 @@ namespace Conn.Runtime.World
             }
 
             session.Gold -= cost;
+            GameSession.Instance.SaveGame();
             Debug.Log($"{serviceName}: {successMessage}");
         }
     }

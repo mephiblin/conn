@@ -49,6 +49,17 @@ namespace Conn.Runtime.Session
         public void StartNewGame()
         {
             state.StartNewGame();
+            SaveGame();
+        }
+
+        public bool TryContinue()
+        {
+            return SaveRuntimeService.TryLoad(state);
+        }
+
+        public void SaveGame()
+        {
+            SaveRuntimeService.Save(state);
         }
     }
 }
