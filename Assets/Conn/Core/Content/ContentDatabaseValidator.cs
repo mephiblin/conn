@@ -120,6 +120,11 @@ namespace Conn.Core.Content
                 {
                     report.Error($"Encounter {encounter.Id} XP reward must not be negative.");
                 }
+
+                if (string.IsNullOrWhiteSpace(encounter.Pattern))
+                {
+                    report.Error($"Encounter {encounter.Id} pattern must not be empty.");
+                }
             }
         }
 

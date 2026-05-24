@@ -38,7 +38,16 @@ namespace Conn.Rendering.Interaction
             }
 
             var label = focused.CanInteract ? $"E - {focused.Prompt}" : focused.Prompt;
-            GUI.Label(new Rect(Screen.width * 0.5f - 180f, Screen.height - 96f, 360f, 32f), label);
+            GUI.Label(PromptRect(Screen.width, Screen.height), label);
+        }
+
+        public static Rect PromptRect(int screenWidth, int screenHeight)
+        {
+            const float margin = 16f;
+            var width = Mathf.Min(360f, Mathf.Max(1f, screenWidth - margin * 2f));
+            var x = Mathf.Clamp(screenWidth * 0.5f - width * 0.5f, margin, Mathf.Max(margin, screenWidth - margin - width));
+            var y = Mathf.Clamp(screenHeight - 96f, margin, Mathf.Max(margin, screenHeight - margin - 32f));
+            return new Rect(x, y, width, 32f);
         }
 
         private IWorldInteractable FindFocusedInteractable()

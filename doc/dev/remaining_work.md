@@ -10,15 +10,15 @@
 
 | 범위 | 진행률 | 상태 |
 | --- | ---: | --- |
-| P1 Runtime Vertical Slice | 95% | 자동 검증 기준 루프는 닫혔고, Play Mode 조작감 확인만 남음 |
-| P2 전투/스킬/주사위 | 75-85% | 상태 이상/특수 효과/로그/HUD 가독성 1차 완료 |
+| P1 Runtime Vertical Slice | 96% | 자동 검증 기준 루프와 작은 화면 HUD 배치 계약은 통과했고, Play Mode 체감 확인만 남음 |
+| P2 전투/스킬/주사위 | 78-86% | 상태 이상/특수 효과/로그/HUD 가독성 1차 완료, encounter pattern/reward id Runtime 계약 연결 |
 | P3 장비/인벤토리/상점 | 75-85% | 장비/소모품/스킬 구분과 구매/판매 상태 표시 1차 완료 |
 | P4 마을 NPC 확장 | 70-80% | 8종 NPC와 최소 서비스/notice는 동작, 깊이 확장은 후속 |
 | P5 Editor Tool 1차 | 70-80% | Content DB import/검증, encounter/quest/vendor/NPC Runtime 소비 1차 확대 |
 | P6 맵 생성 | 55-65% | compiledMap asset 저장/Runtime 우선 로드와 quest target/exit anchor 연결 1차 완료 |
 
 Chapter 1 전체는 약 70-80% 진행으로 본다. 자동 검증 가능한 Runtime Core는
-통과했고, 남은 위험은 Play Mode 체감, UI 배치, 콘텐츠 다양성 쪽이다.
+통과했고, 남은 위험은 Play Mode 체감, 실제 Game view 가독성, 콘텐츠 다양성 쪽이다.
 
 ## 이미 구현된 핵심
 
@@ -57,6 +57,7 @@ Chapter 1 전체는 약 70-80% 진행으로 본다. 자동 검증 가능한 Runt
 - 캐릭터 패널의 장비 장착과 스킬 face 순환
 - 던전 HUD의 원정/몬스터/귀환 상태 표시
 - `Conn > Build & Validate Chapter 1` batchmode 검증
+- P1 IMGUI overlay와 상호작용 prompt의 작은 화면 clamp 자동 검증
 - `Conn > Content Database > Import Legacy JSON`
 - `Conn > Content Database > Window`
 - `Conn > Map > Generator Workbench`
@@ -64,6 +65,7 @@ Chapter 1 전체는 약 70-80% 진행으로 본다. 자동 검증 가능한 Runt
 - ContentDatabase 기반 장비 장착/주사위/방어 계산
 - ContentDatabase 기반 퀘스트 게시판 수주와 quest -> encounter -> monster -> map profile Runtime 연결
 - ContentDatabase 기반 encounter lookup과 CombatRuntimeService 우선 소비
+- CombatRuntimeService의 encounter `pattern`/`rewardId` 소비 계약
 - vendor rotation 기반 기술 상인/대장장이 stock Runtime 적용
 - NPC vendor/service definition 기반 여관/약재상 최소 Runtime 서비스 연결
 - ContentDatabase 기반 소모품 구매 lookup
@@ -95,7 +97,8 @@ P1은 자동 검증 기준으로 닫혔다. 실제 플레이 기준으로 아래
 
 3. HUD 배치 정리
    - 현재 IMGUI 임시 HUD는 scroll view로 보호한다.
-   - 버튼이 작은 화면에서 밀리거나 겹치는지 확인해야 한다.
+   - overlay와 상호작용 prompt는 320x240/220x160 기준 화면 안쪽 clamp 자동 검증을 통과했다.
+   - 실제 Play Mode Game view에서 긴 notice/상점/전투 로그 가독성은 확인해야 한다.
    - 이후 uGUI/UIToolkit으로 옮길지 결정해야 한다.
 
 4. Ending 흐름 보강
@@ -114,7 +117,8 @@ P1은 자동 검증 기준으로 닫혔다. 실제 플레이 기준으로 아래
    - 퀘스트 target monster와 encounter 연결: 1차 검증 완료
    - ContentDatabase encounter import/lookup: 1차 완료
    - CombatRuntimeService DB encounter 우선 소비: 1차 완료
-   - 남은 작업: 다중 적 encounter pattern과 reward table Runtime 처리
+   - encounter `pattern`/`rewardId`를 combat session 상태에 보존: 1차 완료
+   - 남은 작업: 다중 적 encounter pattern 실행과 reward table Runtime 처리
 
 2. 전투 룰 확장
    - 적 행동명/행동 power: 1차 완료
@@ -128,6 +132,7 @@ P1은 자동 검증 기준으로 닫혔다. 실제 플레이 기준으로 아래
 
 3. 보상 처리
    - XP 보상 데이터화
+   - encounter reward id와 quest return reward 분리 계약: 1차 Runtime 상태 연결 완료
    - 골드/아이템 보상 확장 지점
    - 퀘스트 보상과 전투 보상 분리
 

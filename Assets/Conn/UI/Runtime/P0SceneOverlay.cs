@@ -21,6 +21,9 @@ namespace Conn.UI.Runtime
         private static bool characterPanelOpen;
         private static Vector2 overlayScroll;
         private static GameSceneId? lastSceneId;
+        private const float MaxOverlayWidth = 360f;
+        private const float MinOverlayWidth = 240f;
+        private const float OverlayMargin = 16f;
 
         public GameSceneId SceneId
         {
@@ -32,14 +35,14 @@ namespace Conn.UI.Runtime
         {
             ResetTransientUiOnSceneChange();
 
-            const int width = 360;
-            GUILayout.BeginArea(new Rect(16, 16, width, Screen.height - 32), GUI.skin.box);
+            var overlayRect = OverlayAreaRect(Screen.width, Screen.height);
+            GUILayout.BeginArea(overlayRect, GUI.skin.box);
             overlayScroll = GUILayout.BeginScrollView(
                 overlayScroll,
                 false,
                 true,
-                GUILayout.Width(width - 8),
-                GUILayout.Height(Screen.height - 44));
+                GUILayout.Width(Mathf.Max(1f, overlayRect.width - 8f)),
+                GUILayout.Height(Mathf.Max(1f, overlayRect.height - 12f)));
             GUILayout.Label($"Scene: {sceneId}");
             var session = GameSession.Instance.State;
             GUILayout.Label($"Mode: {session.Mode}");
@@ -107,6 +110,14 @@ namespace Conn.UI.Runtime
 
             GUILayout.EndScrollView();
             GUILayout.EndArea();
+        }
+
+        public static Rect OverlayAreaRect(int screenWidth, int screenHeight)
+        {
+            var availableWidth = Mathf.Max(1f, screenWidth - OverlayMargin * 2f);
+            var availableHeight = Mathf.Max(1f, screenHeight - OverlayMargin * 2f);
+            var width = Mathf.Clamp(availableWidth, Mathf.Min(MinOverlayWidth, availableWidth), MaxOverlayWidth);
+            return new Rect(OverlayMargin, OverlayMargin, width, availableHeight);
         }
 
         private void ResetTransientUiOnSceneChange()

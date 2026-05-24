@@ -27,6 +27,8 @@ namespace Conn.Runtime.Combat
             session.Skills.ResizeEquippedFaces(session.Combat.PlayerDiceCount);
             session.Combat.Player.Setup("player", "Player", session.Player.MaxHp, session.Player.Hp);
             session.Combat.EncounterId = encounter != null ? encounter.EncounterId : string.Empty;
+            session.Combat.EncounterPattern = ResolveEncounterPattern(encounter);
+            session.Combat.EncounterRewardId = encounter != null ? encounter.RewardId : string.Empty;
             session.Combat.MonsterId = monster != null ? monster.MonsterId : monsterId;
             session.Combat.EnemyActionName = ResolveEnemyActionName(monster);
             session.Combat.EnemyAttackPower = monster != null && monster.EnemyActionPower > 0 ? monster.EnemyActionPower : 4;
@@ -374,6 +376,16 @@ namespace Conn.Runtime.Combat
             }
 
             return monster != null ? monster.XpReward : 0;
+        }
+
+        private static string ResolveEncounterPattern(EncounterDefinition encounter)
+        {
+            if (encounter != null && !string.IsNullOrWhiteSpace(encounter.Pattern))
+            {
+                return encounter.Pattern;
+            }
+
+            return "single_primary";
         }
 
         private static string ResolveEnemyActionName(MonsterDefinition monster)

@@ -103,19 +103,24 @@ Town에서 아래 NPC를 바라보고 `E`로 상호작용한다.
 
 ## 조작감 확인
 
-- 마우스 감도: 기본값 `0.14`, 이전 테스트에서 높았던 값을 낮춘 상태
-- 이동 속도: 기본값 `4.5`
+- 마우스 감도: 기본값 `0.14`, 이전 테스트에서 높았던 값을 낮춘 상태. 2026-05-25 코드 기본값 재확인.
+- 이동 속도: 기본값 `4.5`. 2026-05-25 코드 기본값 재확인.
 - 카메라 높이
-- NPC 상호작용 거리: 기본값 `4.0`
+- NPC 상호작용 거리: 기본값 `4.0`. 2026-05-25 코드 기본값 재확인.
 - 몬스터 접촉 collider 크기
 - HUD 버튼이 화면 밖으로 밀리는지
+  - 2026-05-25 자동 검증: IMGUI overlay와 `E` 상호작용 prompt rect가 320x240/220x160 화면 안에 클램프되는지 확인.
+  - 남은 수동 확인: 실제 Play Mode Game view에서 긴 notice/상점 목록 스크롤 가독성 확인.
 - Combat 버튼이 클릭하기 쉬운지
 
 ## 이번 자동 검증에 포함된 항목
 
+- 2026-05-25 `/home/inri/Unity/Hub/Editor/6000.4.8f1/Editor/Unity` batchmode 기준 `Conn > Build & Validate Chapter 1` 통과
+- 2026-05-25 같은 Unity 경로 기준 `Conn > Build & Validate Chapter 2` 통과
 - 전투 승리 시 quest target 완료, field monster cleanup, XP 지급
 - 사망 시 Ending 저장, Continue 시 Ending 복귀, Ending New Game 초기화
 - 전투 HUD용 dice face/선택/cooldown/status 문자열
+- 작은 화면에서 P1 IMGUI overlay와 상호작용 prompt가 화면 밖으로 나가지 않는 layout contract
 - Focus Strike의 Bleed 적용과 상태 이상 tick 로그
 - 장비/소모품/스킬 구분 표시 문자열
 - 대장장이/기술 상인/약재상/여관/훈련소/게이트 notice

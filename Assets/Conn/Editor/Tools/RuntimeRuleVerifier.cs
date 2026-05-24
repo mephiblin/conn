@@ -16,6 +16,8 @@ using Conn.Runtime.Combat;
 using Conn.Runtime.Content;
 using Conn.Runtime.Skills;
 using Conn.Runtime.World;
+using Conn.Rendering.Interaction;
+using Conn.UI.Runtime;
 using UnityEngine;
 
 namespace Conn.Editor.Tools
@@ -53,6 +55,7 @@ namespace Conn.Editor.Tools
             VerifySkillMerchantStockRefresh();
             VerifyRuntimeNotice();
             VerifyChapterOneUxDisplayStrings();
+            VerifyP1HudLayoutContracts();
             VerifySaveContractRoundTrip();
             VerifyEquipmentAndSkillDisplayData();
             VerifyEquipmentComparisonDisplayData();
@@ -90,6 +93,20 @@ namespace Conn.Editor.Tools
             Expect(loaded.Placements.Count == compiled.Placements.Count, "Runtime compiled map loader must preserve placements.");
             Expect(questReport.Passed, "Quest map contract must accept the generated compiled map.");
             Expect(!string.IsNullOrEmpty(questPlacement.RoomId), "Runtime compiled map loader must expose the quest target placement room.");
+        }
+
+        private static void VerifyP1HudLayoutContracts()
+        {
+            var smallOverlay = P0SceneOverlay.OverlayAreaRect(320, 240);
+            var tinyOverlay = P0SceneOverlay.OverlayAreaRect(220, 160);
+            var prompt = PlayerWorldInteractor.PromptRect(220, 160);
+
+            Expect(smallOverlay.x >= 0f && smallOverlay.xMax <= 320f, "P1 HUD overlay must stay inside a 320px wide screen.");
+            Expect(smallOverlay.y >= 0f && smallOverlay.yMax <= 240f, "P1 HUD overlay must stay inside a 240px tall screen.");
+            Expect(tinyOverlay.x >= 0f && tinyOverlay.xMax <= 220f, "P1 HUD overlay must clamp inside very small screen widths.");
+            Expect(tinyOverlay.y >= 0f && tinyOverlay.yMax <= 160f, "P1 HUD overlay must clamp inside very small screen heights.");
+            Expect(prompt.x >= 0f && prompt.xMax <= 220f, "Interaction prompt must stay inside small screen widths.");
+            Expect(prompt.y >= 0f && prompt.yMax <= 160f, "Interaction prompt must stay inside small screen heights.");
         }
 
         private static void VerifyRuntimeContentDatabaseMonsterLookup()
@@ -239,6 +256,8 @@ namespace Conn.Editor.Tools
                 session.Mode = GameMode.Combat;
                 CombatRuntimeService.StartTestCombat(session);
                 Expect(session.Combat.EncounterId == "db_only_guard_encounter", "Combat must resolve the database quest encounter before monster fallback.");
+                Expect(session.Combat.EncounterPattern == "single_primary", "Combat must preserve the database encounter pattern contract.");
+                Expect(session.Combat.EncounterRewardId == "db_reward_probe", "Combat must preserve the database encounter reward id contract.");
                 Expect(session.Combat.MonsterId == "db_only_guard", "Combat must resolve the database encounter monster.");
                 Expect(session.Combat.XpReward == 9, "Combat must use database encounter XP reward before monster fallback.");
             }
@@ -489,6 +508,7 @@ namespace Conn.Editor.Tools
             Expect(session.Combat.Active, "P1 flow combat scene must start combat session.");
             Expect(session.Combat.FieldMonsterStateKey == "field_monster_test_guard", "P1 flow combat must remember source monster state.");
             Expect(session.Combat.EncounterId == EncounterCatalog.TestGuardId, "P1 flow combat must resolve the test guard encounter.");
+            Expect(session.Combat.EncounterPattern == "single_primary", "P1 flow combat must expose the single-primary encounter fallback pattern.");
             Expect(session.Combat.Enemy.Id == MonsterCatalog.TestGuardId, "P1 flow combat must resolve the test guard monster.");
             Expect(session.Combat.Enemy.MaxHp == MonsterCatalog.Find(MonsterCatalog.TestGuardId).MaxHp, "P1 flow combat must use monster HP data.");
             Expect(session.Combat.EnemyAttackPower == MonsterCatalog.Find(MonsterCatalog.TestGuardId).EnemyActionPower, "P1 flow combat must use monster enemy action power data.");

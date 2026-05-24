@@ -11,6 +11,8 @@ namespace Conn.Core.Combat
         public int PlayerDefenseBonus;
         public string FieldMonsterStateKey = string.Empty;
         public string EncounterId = string.Empty;
+        public string EncounterPattern = string.Empty;
+        public string EncounterRewardId = string.Empty;
         public string MonsterId = string.Empty;
         public string EnemyActionName = string.Empty;
         public int EnemyAttackPower;
@@ -45,6 +47,8 @@ namespace Conn.Core.Combat
             PlayerDefenseBonus = 0;
             FieldMonsterStateKey = string.Empty;
             EncounterId = string.Empty;
+            EncounterPattern = string.Empty;
+            EncounterRewardId = string.Empty;
             MonsterId = string.Empty;
             EnemyActionName = string.Empty;
             EnemyAttackPower = 0;

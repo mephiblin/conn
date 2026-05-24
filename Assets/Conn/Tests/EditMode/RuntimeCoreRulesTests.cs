@@ -93,6 +93,7 @@ namespace Conn.Tests.EditMode
             Assert.That(session.Combat.FieldMonsterStateKey, Is.EqualTo("field_monster_test_guard"));
             Assert.That(session.Quest.TargetMonsterId, Is.EqualTo(boardOffer.TargetMonsterId));
             Assert.That(session.Combat.EncounterId, Is.EqualTo(EncounterCatalog.TestGuardId));
+            Assert.That(session.Combat.EncounterPattern, Is.EqualTo("single_primary"));
             Assert.That(session.Combat.Enemy.Id, Is.EqualTo(MonsterCatalog.TestGuardId));
             Assert.That(session.Combat.Enemy.MaxHp, Is.EqualTo(MonsterCatalog.Find(MonsterCatalog.TestGuardId).MaxHp));
             Assert.That(session.Combat.EnemyAttackPower, Is.EqualTo(MonsterCatalog.Find(MonsterCatalog.TestGuardId).EnemyActionPower));
