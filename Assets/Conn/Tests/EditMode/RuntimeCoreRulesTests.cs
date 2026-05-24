@@ -57,6 +57,22 @@ namespace Conn.Tests.EditMode
             Assert.That(equipment.EquippedLegsId, Is.EqualTo(EquipmentCatalog.ReinforcedPantsId));
             Assert.That(equipment.EquippedFeetId, Is.EqualTo(EquipmentCatalog.WornBootsId));
             Assert.That(equipment.IsEquipped(EquipmentCatalog.PaddedVestId), Is.True);
+            Assert.That(equipment.ArmorValue, Is.EqualTo(6));
+            Assert.That(equipment.DefenseBonus, Is.EqualTo(6));
+        }
+
+        [Test]
+        public void EquipmentComparisonLineReportsCurrentSlotAndStatDelta()
+        {
+            var equipment = new PlayerEquipmentState();
+
+            Assert.That(equipment.ComparisonLineFor(EquipmentCatalog.LeatherCapId), Is.EqualTo("Head: None -> Leather Cap Defense +1"));
+
+            equipment.Equip(EquipmentCatalog.LeatherCapId);
+            equipment.Equip(EquipmentCatalog.IronShieldId);
+
+            Assert.That(equipment.ComparisonLineFor(EquipmentCatalog.LeatherCapId), Is.EqualTo("Head: Leather Cap -> Leather Cap"));
+            Assert.That(equipment.ComparisonLineFor(EquipmentCatalog.GreatAxeId), Is.EqualTo("Weapon: Rusty Sword -> Great Axe Defense -1"));
         }
 
         [Test]
@@ -262,6 +278,53 @@ namespace Conn.Tests.EditMode
             Assert.That(session.Combat.LastMessage, Does.Contain("Test Gate Guard uses Halberd thrust"));
             Assert.That(session.Combat.LastMessage, Does.Contain("4 power"));
             Assert.That(session.Combat.LastMessage, Does.Contain("2 blocked"));
+        }
+
+        [Test]
+        public void FocusStrikeAppliesBleedThatTicksAndExpires()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+            session.Skills.AddSkill(SkillCatalog.FocusStrikeId);
+            session.Skills.EquippedSkillIds[0] = SkillCatalog.FocusStrikeId;
+
+            CombatRuntimeService.StartTestCombat(session);
+            CombatRuntimeService.ToggleDieSelection(session, 0);
+            CombatRuntimeService.ResolveSelectedDice(session);
+
+            Assert.That(session.Combat.Enemy.Hp, Is.EqualTo(7));
+            Assert.That(session.Combat.Enemy.StatusEffects, Has.Count.EqualTo(1));
+            Assert.That(session.Combat.Enemy.StatusEffects[0].Kind, Is.EqualTo(CombatStatusEffectKind.Bleed));
+            Assert.That(session.Combat.Enemy.StatusEffects[0].RemainingTurns, Is.EqualTo(1));
+            Assert.That(session.Combat.LastMessage, Does.Contain("Focus Strike applied Bleed"));
+            Assert.That(session.Combat.LastMessage, Does.Contain("Test Gate Guard suffers 1 Bleed damage"));
+
+            CombatRuntimeService.ToggleDieSelection(session, 1);
+            CombatRuntimeService.ResolveSelectedDice(session);
+
+            Assert.That(session.Combat.Enemy.Hp, Is.EqualTo(5));
+            Assert.That(session.Combat.Enemy.StatusEffects, Is.Empty);
+            Assert.That(session.Combat.LastMessage, Does.Contain("Bleed ended"));
+        }
+
+        [Test]
+        public void StatusDamageCanDefeatEnemyAndPreservesCombatLog()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+            session.Skills.AddSkill(SkillCatalog.FocusStrikeId);
+            session.Skills.EquippedSkillIds[0] = SkillCatalog.FocusStrikeId;
+
+            CombatRuntimeService.StartTestCombat(session);
+            session.Combat.Enemy.Setup(MonsterCatalog.TestGuardId, "Bleeding Target", 5);
+            CombatRuntimeService.ToggleDieSelection(session, 0);
+            CombatRuntimeService.ResolveSelectedDice(session);
+
+            Assert.That(session.Combat.Active, Is.False);
+            Assert.That(session.Combat.Enemy.IsDead, Is.True);
+            Assert.That(session.Combat.LastMessage, Does.Contain("Bleeding Target suffers 1 Bleed damage"));
+            Assert.That(session.Combat.LastMessage, Does.Contain("Enemy defeated"));
+            Assert.That(session.Player.Xp, Is.EqualTo(EncounterCatalog.Find(EncounterCatalog.TestGuardId).XpReward));
         }
 
         [Test]
@@ -642,6 +705,8 @@ namespace Conn.Tests.EditMode
             Assert.That(loaded.Equipment.EquippedArmsId, Is.EqualTo(EquipmentCatalog.TravelerGlovesId));
             Assert.That(loaded.Equipment.EquippedLegsId, Is.EqualTo(EquipmentCatalog.ReinforcedPantsId));
             Assert.That(loaded.Equipment.EquippedFeetId, Is.EqualTo(EquipmentCatalog.WornBootsId));
+            Assert.That(loaded.Equipment.ArmorValue, Is.EqualTo(6));
+            Assert.That(loaded.Equipment.DefenseBonus, Is.EqualTo(7));
             Assert.That(loaded.Skills.NextEditFaceIndex, Is.EqualTo(source.Skills.NextEditFaceIndex));
             Assert.That(loaded.Shop.SkillMerchantRefreshIndex, Is.EqualTo(1));
             Assert.That(loaded.Shop.SkillMerchantStockSkillIds, Is.EqualTo(source.Shop.SkillMerchantStockSkillIds));

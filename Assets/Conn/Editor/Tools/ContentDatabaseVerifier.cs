@@ -34,6 +34,7 @@ namespace Conn.Editor.Tools
                 Expect(item.BuyPrice >= 0, $"Equipment {item.ItemId} buy price must be non-negative.");
                 Expect(item.SellPrice >= 0, $"Equipment {item.ItemId} sell price must be non-negative.");
                 Expect(item.SellPrice <= item.BuyPrice || item.BuyPrice == 0, $"Equipment {item.ItemId} sell price must not exceed buy price.");
+                Expect(item.ArmorValue >= 0, $"Equipment {item.ItemId} armor value must be non-negative.");
             }
         }
 

@@ -24,10 +24,12 @@ namespace Conn.Editor.Tools
             VerifyP1VerticalSliceFlow();
             VerifyEquipmentDiceRules();
             VerifyArmorSlotEquipRules();
+            VerifyArmorStatEffects();
             VerifyEquipmentLoadoutToggle();
             VerifyDirectEquipmentChangesResizeSkillFaces();
             VerifyNewGameState();
             VerifyDiceSkillEffects();
+            VerifyCombatStatusEffects();
             VerifyCombatWinGrantsXp();
             VerifyCombatContentDefinitions();
             VerifyCombatFleeRestoresDungeonState();
@@ -45,6 +47,7 @@ namespace Conn.Editor.Tools
             VerifyRuntimeNotice();
             VerifySaveContractRoundTrip();
             VerifyEquipmentAndSkillDisplayData();
+            VerifyEquipmentComparisonDisplayData();
             VerifyConsumables();
             VerifySkillSaleProtection();
             Debug.Log("Conn runtime core rule verification passed.");
@@ -138,6 +141,24 @@ namespace Conn.Editor.Tools
             Expect(equipment.EquippedLegsId == EquipmentCatalog.ReinforcedPantsId, "Leg armor must equip into legs slot.");
             Expect(equipment.EquippedFeetId == EquipmentCatalog.WornBootsId, "Feet armor must equip into feet slot.");
             Expect(equipment.IsEquipped(EquipmentCatalog.PaddedVestId), "Equipped armor must be reported as equipped.");
+        }
+
+        private static void VerifyArmorStatEffects()
+        {
+            var equipment = new PlayerEquipmentState();
+
+            equipment.Equip(EquipmentCatalog.LeatherCapId);
+            equipment.Equip(EquipmentCatalog.PaddedVestId);
+            equipment.Equip(EquipmentCatalog.TravelerGlovesId);
+            equipment.Equip(EquipmentCatalog.ReinforcedPantsId);
+            equipment.Equip(EquipmentCatalog.WornBootsId);
+
+            Expect(equipment.ArmorValue == 6, "Equipped armor must contribute aggregate armor value.");
+            Expect(equipment.DefenseBonus == 6, "Armor value must contribute to defense bonus.");
+
+            equipment.Equip(EquipmentCatalog.IronShieldId);
+
+            Expect(equipment.DefenseBonus == 7, "Shield defense must stack with armor defense.");
         }
 
         private static void VerifyNewGameState()
@@ -240,6 +261,48 @@ namespace Conn.Editor.Tools
             Expect(skills.RemoveLooseSkill(SkillCatalog.SlashId), "Loose duplicate skill must be removable.");
             Expect(skills.CountOwned(SkillCatalog.SlashId) == 1, "Selling loose duplicate must leave one owned Slash.");
             Expect(skills.CountEquipped(SkillCatalog.SlashId) == 1, "Selling loose duplicate must preserve equipped Slash.");
+        }
+
+        private static void VerifyCombatStatusEffects()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+            session.Skills.AddSkill(SkillCatalog.FocusStrikeId);
+            session.Skills.EquippedSkillIds[0] = SkillCatalog.FocusStrikeId;
+
+            CombatRuntimeService.StartTestCombat(session);
+            CombatRuntimeService.ToggleDieSelection(session, 0);
+            CombatRuntimeService.ResolveSelectedDice(session);
+
+            Expect(session.Combat.Enemy.Hp == 7, "Focus Strike must deal direct damage plus one Bleed tick.");
+            Expect(session.Combat.Enemy.StatusEffects.Count == 1, "Focus Strike must leave Bleed active after its first tick.");
+            Expect(session.Combat.Enemy.StatusEffects[0].Kind == CombatStatusEffectKind.Bleed, "Focus Strike status must be Bleed.");
+            Expect(session.Combat.Enemy.StatusEffects[0].RemainingTurns == 1, "Bleed duration must decrement after ticking.");
+            Expect(session.Combat.LastMessage.Contains("Focus Strike applied Bleed"), "Combat log must report Bleed application.");
+            Expect(session.Combat.LastMessage.Contains("Test Gate Guard suffers 1 Bleed damage"), "Combat log must report Bleed tick damage.");
+
+            CombatRuntimeService.ToggleDieSelection(session, 1);
+            CombatRuntimeService.ResolveSelectedDice(session);
+
+            Expect(session.Combat.Enemy.Hp == 5, "Bleed must tick again on the next resolved turn.");
+            Expect(session.Combat.Enemy.StatusEffects.Count == 0, "Bleed must expire when duration reaches zero.");
+            Expect(session.Combat.LastMessage.Contains("Bleed ended"), "Combat log must report Bleed expiration.");
+
+            session = new GameSessionState();
+            session.StartNewGame();
+            session.Skills.AddSkill(SkillCatalog.FocusStrikeId);
+            session.Skills.EquippedSkillIds[0] = SkillCatalog.FocusStrikeId;
+
+            CombatRuntimeService.StartTestCombat(session);
+            session.Combat.Enemy.Setup(MonsterCatalog.TestGuardId, "Bleeding Target", 5);
+            CombatRuntimeService.ToggleDieSelection(session, 0);
+            CombatRuntimeService.ResolveSelectedDice(session);
+
+            Expect(!session.Combat.Active, "Status damage must be able to defeat the enemy.");
+            Expect(session.Combat.Enemy.IsDead, "Status defeat must leave the enemy dead.");
+            Expect(session.Combat.LastMessage.Contains("Bleeding Target suffers 1 Bleed damage"), "Status defeat log must include the final Bleed tick.");
+            Expect(session.Combat.LastMessage.Contains("Enemy defeated"), "Status defeat log must include the win result.");
+            Expect(session.Player.Xp == EncounterCatalog.Find(EncounterCatalog.TestGuardId).XpReward, "Status defeat must grant combat XP.");
         }
 
         private static void VerifyCombatWinGrantsXp()
@@ -431,7 +494,27 @@ namespace Conn.Editor.Tools
 
             Expect(EquipmentCatalog.Find(session.Equipment.EquippedWeaponId) != null, "Equipped weapon must resolve to display data.");
             Expect(session.Equipment.DiceCount > 0, "Equipment must expose positive dice count.");
+            Expect(session.Equipment.DefenseBonus >= session.Equipment.ArmorValue, "Equipment display must expose aggregate defense.");
             Expect(SkillCatalog.Find(session.Skills.EquippedSkillIds[0]) != null, "Equipped skill face must resolve to display data.");
+        }
+
+        private static void VerifyEquipmentComparisonDisplayData()
+        {
+            var equipment = new PlayerEquipmentState();
+
+            Expect(
+                equipment.ComparisonLineFor(EquipmentCatalog.LeatherCapId) == "Head: None -> Leather Cap Defense +1",
+                "Equipment comparison must show empty current slot and candidate armor defense.");
+
+            equipment.Equip(EquipmentCatalog.LeatherCapId);
+            equipment.Equip(EquipmentCatalog.IronShieldId);
+
+            Expect(
+                equipment.ComparisonLineFor(EquipmentCatalog.LeatherCapId) == "Head: Leather Cap -> Leather Cap",
+                "Equipment comparison must show current item for matching armor slot.");
+            Expect(
+                equipment.ComparisonLineFor(EquipmentCatalog.GreatAxeId) == "Weapon: Rusty Sword -> Great Axe Defense -1",
+                "Equipment comparison must show defense tradeoff when a two-hand weapon clears shield.");
         }
 
         private static void VerifyQuestReturnRewardSummary()
@@ -590,6 +673,8 @@ namespace Conn.Editor.Tools
             Expect(loaded.Equipment.EquippedArmsId == EquipmentCatalog.TravelerGlovesId, "Save contract must preserve arms armor.");
             Expect(loaded.Equipment.EquippedLegsId == EquipmentCatalog.ReinforcedPantsId, "Save contract must preserve legs armor.");
             Expect(loaded.Equipment.EquippedFeetId == EquipmentCatalog.WornBootsId, "Save contract must preserve feet armor.");
+            Expect(loaded.Equipment.ArmorValue == 6, "Save contract must restore armor-derived stat value.");
+            Expect(loaded.Equipment.DefenseBonus == 7, "Save contract must restore armor and shield defense bonus.");
             Expect(loaded.Skills.NextEditFaceIndex == source.Skills.NextEditFaceIndex, "Save contract must preserve next skill edit face.");
             Expect(loaded.Shop.SkillMerchantRefreshIndex == 1, "Save contract must preserve skill merchant refresh index.");
             Expect(loaded.Shop.SkillMerchantStockSkillIds.Count == source.Shop.SkillMerchantStockSkillIds.Count, "Save contract must preserve skill merchant stock count.");

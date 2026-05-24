@@ -74,6 +74,7 @@ namespace Conn.Runtime.Combat
             var attack = 0;
             var guard = 0;
             var healing = 0;
+            var appliedBleed = false;
             for (var i = 0; i < session.Combat.DiceFaces.Count; i++)
             {
                 var face = session.Combat.DiceFaces[i];
@@ -90,6 +91,11 @@ namespace Conn.Runtime.Combat
                     else
                     {
                         attack += 1 + face.Power;
+                        if (face.SkillId == SkillCatalog.FocusStrikeId)
+                        {
+                            attack += 1;
+                            appliedBleed = true;
+                        }
                     }
 
                     face.Selected = false;
@@ -105,6 +111,11 @@ namespace Conn.Runtime.Combat
 
             session.Combat.Enemy.Damage(attack);
             session.Combat.LastMessage = $"Resolved {selected}: {attack} damage, {guard} guard, {healing} heal.";
+            if (appliedBleed)
+            {
+                session.Combat.Enemy.AddOrRefreshStatus(CombatStatusEffectKind.Bleed, 2, 1);
+                session.Combat.LastMessage += " Focus Strike applied Bleed (1 damage for 2 turns).";
+            }
 
             if (session.Combat.Enemy.IsDead)
             {
@@ -113,6 +124,17 @@ namespace Conn.Runtime.Combat
             }
 
             EnemyAttack(session, guard);
+            if (!session.Combat.Active)
+            {
+                return;
+            }
+
+            TickStatuses(session);
+            if (!session.Combat.Active)
+            {
+                return;
+            }
+
             session.Combat.Round++;
             TickCooldowns(session);
         }
@@ -186,10 +208,66 @@ namespace Conn.Runtime.Combat
             }
         }
 
+        private static void TickStatuses(GameSessionState session)
+        {
+            TickStatusEffects(session, session.Combat.Enemy, null);
+            if (session.Combat.Enemy.IsDead)
+            {
+                Win(session);
+                return;
+            }
+
+            TickStatusEffects(session, session.Combat.Player, session.Player);
+            if (session.Player.IsDead)
+            {
+                Die(session);
+            }
+        }
+
+        private static void TickStatusEffects(GameSessionState session, CombatantState combatant, Conn.Core.Session.PlayerRuntimeState persistentPlayer)
+        {
+            if (combatant.StatusEffects == null)
+            {
+                return;
+            }
+
+            for (var i = combatant.StatusEffects.Count - 1; i >= 0; i--)
+            {
+                var status = combatant.StatusEffects[i];
+                if (status.RemainingTurns <= 0)
+                {
+                    combatant.StatusEffects.RemoveAt(i);
+                    continue;
+                }
+
+                var damage = status.TickDamage > 0 ? status.TickDamage : 0;
+                if (damage > 0)
+                {
+                    combatant.Damage(damage);
+                    if (persistentPlayer != null)
+                    {
+                        persistentPlayer.Damage(damage);
+                    }
+
+                    var targetName = string.IsNullOrWhiteSpace(combatant.DisplayName) ? "Combatant" : combatant.DisplayName;
+                    session.Combat.LastMessage += $" {targetName} suffers {damage} {status.DisplayName} damage.";
+                }
+
+                status.RemainingTurns--;
+                if (status.RemainingTurns <= 0)
+                {
+                    combatant.StatusEffects.RemoveAt(i);
+                    session.Combat.LastMessage += $" {status.DisplayName} ended.";
+                }
+            }
+        }
+
         private static void Win(GameSessionState session)
         {
             var xpReward = session.Combat.XpReward;
-            session.Combat.LastMessage = "Enemy defeated.";
+            session.Combat.LastMessage = string.IsNullOrWhiteSpace(session.Combat.LastMessage)
+                ? "Enemy defeated."
+                : session.Combat.LastMessage + " Enemy defeated.";
             session.Combat.Active = false;
             if (xpReward > 0)
             {

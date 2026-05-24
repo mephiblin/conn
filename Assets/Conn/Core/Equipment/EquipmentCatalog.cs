@@ -16,11 +16,11 @@ namespace Conn.Core.Equipment
             new EquipmentItemDefinition(RustySwordId, "Rusty Sword", EquipmentKind.OneHandWeapon, 0, 2),
             new EquipmentItemDefinition(IronShieldId, "Iron Shield", EquipmentKind.Shield, 6, 3),
             new EquipmentItemDefinition(GreatAxeId, "Great Axe", EquipmentKind.TwoHandWeapon, 12, 6),
-            new EquipmentItemDefinition(LeatherCapId, "Leather Cap", EquipmentKind.HeadArmor, 4, 2),
-            new EquipmentItemDefinition(PaddedVestId, "Padded Vest", EquipmentKind.ChestArmor, 8, 4),
-            new EquipmentItemDefinition(TravelerGlovesId, "Traveler Gloves", EquipmentKind.ArmsArmor, 5, 2),
-            new EquipmentItemDefinition(ReinforcedPantsId, "Reinforced Pants", EquipmentKind.LegsArmor, 7, 3),
-            new EquipmentItemDefinition(WornBootsId, "Worn Boots", EquipmentKind.FeetArmor, 5, 2)
+            new EquipmentItemDefinition(LeatherCapId, "Leather Cap", EquipmentKind.HeadArmor, 4, 2, 1),
+            new EquipmentItemDefinition(PaddedVestId, "Padded Vest", EquipmentKind.ChestArmor, 8, 4, 2),
+            new EquipmentItemDefinition(TravelerGlovesId, "Traveler Gloves", EquipmentKind.ArmsArmor, 5, 2, 1),
+            new EquipmentItemDefinition(ReinforcedPantsId, "Reinforced Pants", EquipmentKind.LegsArmor, 7, 3, 1),
+            new EquipmentItemDefinition(WornBootsId, "Worn Boots", EquipmentKind.FeetArmor, 5, 2, 1)
         };
 
         public static EquipmentItemDefinition[] All => Items;

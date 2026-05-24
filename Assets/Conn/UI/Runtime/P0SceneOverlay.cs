@@ -18,6 +18,7 @@ namespace Conn.UI.Runtime
     {
         [SerializeField] private GameSceneId sceneId;
         private static bool characterPanelOpen;
+        private static Vector2 overlayScroll;
 
         public GameSceneId SceneId
         {
@@ -29,6 +30,12 @@ namespace Conn.UI.Runtime
         {
             const int width = 360;
             GUILayout.BeginArea(new Rect(16, 16, width, Screen.height - 32), GUI.skin.box);
+            overlayScroll = GUILayout.BeginScrollView(
+                overlayScroll,
+                false,
+                true,
+                GUILayout.Width(width - 8),
+                GUILayout.Height(Screen.height - 44));
             GUILayout.Label($"Scene: {sceneId}");
             var session = GameSession.Instance.State;
             GUILayout.Label($"Mode: {session.Mode}");
@@ -41,7 +48,7 @@ namespace Conn.UI.Runtime
             GUILayout.Label($"XP: {session.Player.Xp}");
             GUILayout.Label($"HP: {session.Player.Hp}/{session.Player.MaxHp}");
             GUILayout.Label("Trainer: +2 Max HP / 5 XP");
-            GUILayout.Label($"Loadout: {session.Equipment.WeaponGrip} ({session.Equipment.DiceCount} dice)");
+            GUILayout.Label($"Loadout: {session.Equipment.WeaponGrip} ({session.Equipment.DiceCount} dice / {session.Equipment.DefenseBonus} def)");
             GUILayout.Label($"Weapon: {EquipmentName(session.Equipment.EquippedWeaponId)}");
             GUILayout.Label($"Shield: {EquipmentName(session.Equipment.EquippedShieldId)}");
             GUILayout.Label($"Armor: H {EquipmentName(session.Equipment.EquippedHeadId)} / C {EquipmentName(session.Equipment.EquippedChestId)}");
@@ -94,6 +101,7 @@ namespace Conn.UI.Runtime
                 EndingControls(session);
             }
 
+            GUILayout.EndScrollView();
             GUILayout.EndArea();
         }
 
@@ -128,6 +136,7 @@ namespace Conn.UI.Runtime
 
             GUILayout.Space(8);
             GUILayout.Label("Equipment");
+            GUILayout.Label($"Defense: {session.Equipment.DefenseBonus} (armor {session.Equipment.ArmorValue})");
             for (var i = 0; i < session.Inventory.ItemIds.Count; i++)
             {
                 var itemId = session.Inventory.ItemIds[i];
@@ -138,6 +147,7 @@ namespace Conn.UI.Runtime
                 }
 
                 var equipped = session.Equipment.IsEquipped(itemId);
+                GUILayout.Label(session.Equipment.ComparisonLineFor(itemId));
                 GUI.enabled = !equipped;
                 if (GUILayout.Button(equipped ? $"Equipped: {item.DisplayName}" : $"Equip {item.DisplayName}"))
                 {
@@ -146,6 +156,11 @@ namespace Conn.UI.Runtime
 
                 GUI.enabled = true;
             }
+
+            GUILayout.Label("Consumables");
+            var potionCount = ConsumableRuntimeService.Count(session, ConsumableCatalog.MinorPotionId);
+            GUILayout.Label($"{ConsumableCatalog.Find(ConsumableCatalog.MinorPotionId).DisplayName}: {potionCount}");
+            DrawConsumableControls(session);
 
             GUILayout.Label("Skill Faces");
             var diceCount = session.Equipment.DiceCount;

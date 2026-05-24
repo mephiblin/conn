@@ -51,6 +51,8 @@ namespace Conn.Core.Combat
             XpReward = 0;
             Player.Setup(string.Empty, string.Empty, 0);
             Enemy.Setup(string.Empty, string.Empty, 0);
+            Player.ClearStatusEffects();
+            Enemy.ClearStatusEffects();
             DiceFaces.Clear();
             LastMessage = string.Empty;
         }
