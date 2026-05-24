@@ -34,6 +34,7 @@ namespace Conn.Editor.Tools
             VerifyQuestReturnRewardSummary();
             VerifyKeepExploringReturnPrompt();
             VerifyTownServices();
+            VerifyShopServices();
             VerifyRuntimeNotice();
             VerifySaveContractRoundTrip();
             VerifyEquipmentAndSkillDisplayData();
@@ -357,6 +358,32 @@ namespace Conn.Editor.Tools
             Expect(session.Player.MaxHp == 22, "Trainer service must increase max HP.");
             Expect(session.Player.Hp == session.Player.MaxHp, "Trainer service must heal to trained max HP.");
             Expect(TownServiceRuntimeService.ScholarHint(session).Contains("board offer"), "Scholar must provide current board information without an active quest.");
+        }
+
+        private static void VerifyShopServices()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+
+            Expect(EquipmentShopRuntimeService.CanBuy(session, EquipmentCatalog.IronShieldId), "Blacksmith must expose affordable shield purchase.");
+            Expect(EquipmentShopRuntimeService.BuyAndEquip(session, EquipmentCatalog.IronShieldId), "Blacksmith must buy and equip shield.");
+            Expect(session.Inventory.HasItem(EquipmentCatalog.IronShieldId), "Blacksmith purchase must add equipment to inventory.");
+            Expect(session.Equipment.EquippedShieldId == EquipmentCatalog.IronShieldId, "Blacksmith purchase must equip shield.");
+            Expect(!EquipmentShopRuntimeService.CanSell(session, EquipmentCatalog.IronShieldId), "Equipped shield must not be sellable.");
+
+            session.Inventory.AddItem(EquipmentCatalog.GreatAxeId);
+            Expect(EquipmentShopRuntimeService.Sell(session, EquipmentCatalog.GreatAxeId), "Blacksmith must sell unequipped equipment.");
+            Expect(!session.Inventory.HasItem(EquipmentCatalog.GreatAxeId), "Blacksmith sale must remove equipment from inventory.");
+
+            var goldBeforeSkill = session.Gold;
+            Expect(SkillShopRuntimeService.BuyAndEquip(session, SkillCatalog.GuardId), "Skill merchant must buy and equip skill.");
+            Expect(session.Gold == goldBeforeSkill - SkillCatalog.Find(SkillCatalog.GuardId).BuyPrice, "Skill purchase must spend gold.");
+            Expect(session.Skills.HasSkill(SkillCatalog.GuardId), "Skill purchase must add owned skill.");
+            Expect(!SkillShopRuntimeService.CanSellLoose(session, SkillCatalog.GuardId), "Equipped skill without duplicate must not be sellable.");
+
+            Expect(SkillShopRuntimeService.BuyAndEquip(session, SkillCatalog.GuardId), "Skill merchant must support duplicate skill cards.");
+            Expect(SkillShopRuntimeService.CanSellLoose(session, SkillCatalog.GuardId), "Duplicate loose skill must be sellable.");
+            Expect(SkillShopRuntimeService.SellLoose(session, SkillCatalog.GuardId), "Skill merchant must sell loose duplicate skill.");
         }
 
         private static void VerifyRuntimeNotice()

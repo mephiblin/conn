@@ -7,6 +7,9 @@ using Conn.Runtime.Combat;
 using Conn.Runtime.Inventory;
 using Conn.Runtime.Scenes;
 using Conn.Runtime.Session;
+using Conn.Runtime.Equipment;
+using Conn.Runtime.Skills;
+using Conn.Runtime.World;
 using UnityEngine;
 
 namespace Conn.UI.Runtime
@@ -71,6 +74,7 @@ namespace Conn.UI.Runtime
             else if (sceneId == GameSceneId.Town)
             {
                 TownControls(session);
+                TownShopControls(session);
             }
             else if (sceneId == GameSceneId.Dungeon)
             {
@@ -144,6 +148,125 @@ namespace Conn.UI.Runtime
             if (GUILayout.Button("Back To Title"))
             {
                 SceneFlowService.Load(GameSceneId.Title);
+            }
+        }
+
+        private static void TownShopControls(GameSessionState session)
+        {
+            if (TownShopPanelState.Current == TownShopPanelKind.None)
+            {
+                return;
+            }
+
+            GUILayout.Space(8);
+            if (TownShopPanelState.Current == TownShopPanelKind.Blacksmith)
+            {
+                DrawBlacksmithPanel(session);
+            }
+            else if (TownShopPanelState.Current == TownShopPanelKind.SkillMerchant)
+            {
+                DrawSkillMerchantPanel(session);
+            }
+
+            if (GUILayout.Button("Close Shop"))
+            {
+                TownShopPanelState.Close();
+            }
+        }
+
+        private static void DrawBlacksmithPanel(GameSessionState session)
+        {
+            GUILayout.Label("Blacksmith");
+            for (var i = 0; i < EquipmentCatalog.All.Length; i++)
+            {
+                var item = EquipmentCatalog.All[i];
+                if (item.BuyPrice <= 0)
+                {
+                    continue;
+                }
+
+                var owned = session.Inventory.HasItem(item.ItemId);
+                GUI.enabled = !owned && EquipmentShopRuntimeService.CanBuy(session, item.ItemId);
+                if (GUILayout.Button(owned
+                    ? $"Owned: {item.DisplayName}"
+                    : $"Buy & Equip {item.DisplayName} ({item.BuyPrice}g)"))
+                {
+                    EquipmentShopRuntimeService.BuyAndEquip(session, item.ItemId);
+                }
+
+                GUI.enabled = true;
+            }
+
+            GUILayout.Label("Sell");
+            var anySellable = false;
+            for (var i = 0; i < session.Inventory.ItemIds.Count; i++)
+            {
+                var itemId = session.Inventory.ItemIds[i];
+                var item = EquipmentCatalog.Find(itemId);
+                if (item == null || !EquipmentShopRuntimeService.CanSell(session, itemId))
+                {
+                    continue;
+                }
+
+                anySellable = true;
+                if (GUILayout.Button($"Sell {item.DisplayName} ({item.SellPrice}g)"))
+                {
+                    EquipmentShopRuntimeService.Sell(session, itemId);
+                    break;
+                }
+            }
+
+            if (!anySellable)
+            {
+                GUILayout.Label("No unequipped equipment to sell.");
+            }
+
+            if (GUILayout.Button("Switch Owned Loadout"))
+            {
+                EquipmentRuntimeService.ToggleOwnedLoadout(session);
+            }
+        }
+
+        private static void DrawSkillMerchantPanel(GameSessionState session)
+        {
+            GUILayout.Label("Skill Merchant");
+            for (var i = 0; i < SkillCatalog.All.Length; i++)
+            {
+                var skill = SkillCatalog.All[i];
+                if (skill.BuyPrice <= 0)
+                {
+                    continue;
+                }
+
+                GUI.enabled = SkillShopRuntimeService.CanBuy(session, skill.SkillId);
+                if (GUILayout.Button($"Buy & Equip {skill.DisplayName} ({skill.BuyPrice}g)"))
+                {
+                    SkillShopRuntimeService.BuyAndEquip(session, skill.SkillId);
+                }
+
+                GUI.enabled = true;
+            }
+
+            GUILayout.Label("Sell Loose Skills");
+            var anySellable = false;
+            for (var i = 0; i < SkillCatalog.All.Length; i++)
+            {
+                var skill = SkillCatalog.All[i];
+                if (!SkillShopRuntimeService.CanSellLoose(session, skill.SkillId))
+                {
+                    continue;
+                }
+
+                anySellable = true;
+                if (GUILayout.Button($"Sell {skill.DisplayName} ({skill.SellPrice}g)"))
+                {
+                    SkillShopRuntimeService.SellLoose(session, skill.SkillId);
+                }
+            }
+
+            if (!anySellable)
+            {
+                GUILayout.Label("No loose skill cards to sell.");
             }
         }
 

@@ -329,6 +329,41 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void ShopServicesBuyEquipAndSellInventoryItems()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+
+            Assert.That(EquipmentShopRuntimeService.CanBuy(session, EquipmentCatalog.IronShieldId), Is.True);
+            Assert.That(EquipmentShopRuntimeService.BuyAndEquip(session, EquipmentCatalog.IronShieldId), Is.True);
+            Assert.That(session.Inventory.HasItem(EquipmentCatalog.IronShieldId), Is.True);
+            Assert.That(session.Equipment.EquippedShieldId, Is.EqualTo(EquipmentCatalog.IronShieldId));
+            Assert.That(EquipmentShopRuntimeService.CanSell(session, EquipmentCatalog.IronShieldId), Is.False);
+
+            session.Inventory.AddItem(EquipmentCatalog.GreatAxeId);
+
+            Assert.That(EquipmentShopRuntimeService.Sell(session, EquipmentCatalog.GreatAxeId), Is.True);
+            Assert.That(session.Inventory.HasItem(EquipmentCatalog.GreatAxeId), Is.False);
+        }
+
+        [Test]
+        public void SkillShopSupportsDuplicateBuyAndLooseSale()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+            var goldBefore = session.Gold;
+
+            Assert.That(SkillShopRuntimeService.BuyAndEquip(session, SkillCatalog.GuardId), Is.True);
+            Assert.That(session.Gold, Is.EqualTo(goldBefore - SkillCatalog.Find(SkillCatalog.GuardId).BuyPrice));
+            Assert.That(session.Skills.HasSkill(SkillCatalog.GuardId), Is.True);
+            Assert.That(SkillShopRuntimeService.CanSellLoose(session, SkillCatalog.GuardId), Is.False);
+
+            Assert.That(SkillShopRuntimeService.BuyAndEquip(session, SkillCatalog.GuardId), Is.True);
+            Assert.That(SkillShopRuntimeService.CanSellLoose(session, SkillCatalog.GuardId), Is.True);
+            Assert.That(SkillShopRuntimeService.SellLoose(session, SkillCatalog.GuardId), Is.True);
+        }
+
+        [Test]
         public void RuntimeNoticeStoresLastMessageOnSession()
         {
             var session = new GameSessionState();
