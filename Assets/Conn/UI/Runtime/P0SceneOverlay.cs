@@ -17,6 +17,7 @@ namespace Conn.UI.Runtime
     public sealed class P0SceneOverlay : MonoBehaviour
     {
         [SerializeField] private GameSceneId sceneId;
+        private static bool characterPanelOpen;
 
         public GameSceneId SceneId
         {
@@ -26,8 +27,8 @@ namespace Conn.UI.Runtime
 
         private void OnGUI()
         {
-            const int width = 320;
-            GUILayout.BeginArea(new Rect(16, 16, width, 680), GUI.skin.box);
+            const int width = 360;
+            GUILayout.BeginArea(new Rect(16, 16, width, Screen.height - 32), GUI.skin.box);
             GUILayout.Label($"Scene: {sceneId}");
             var session = GameSession.Instance.State;
             GUILayout.Label($"Mode: {session.Mode}");
@@ -51,6 +52,7 @@ namespace Conn.UI.Runtime
             GUILayout.Space(8);
 
             DrawConsumableControls(session);
+            DrawCharacterPanelToggle(session);
 
             if (sceneId == GameSceneId.Title)
             {
@@ -94,6 +96,68 @@ namespace Conn.UI.Runtime
             }
 
             GUILayout.EndArea();
+        }
+
+        private static void DrawCharacterPanelToggle(GameSessionState session)
+        {
+            if (GUILayout.Button(characterPanelOpen ? "Close Character" : "Character"))
+            {
+                characterPanelOpen = !characterPanelOpen;
+            }
+
+            if (!characterPanelOpen)
+            {
+                return;
+            }
+
+            GUILayout.Space(8);
+            GUILayout.Label("Equipment");
+            for (var i = 0; i < session.Inventory.ItemIds.Count; i++)
+            {
+                var itemId = session.Inventory.ItemIds[i];
+                var item = EquipmentCatalog.Find(itemId);
+                if (item == null)
+                {
+                    continue;
+                }
+
+                var equipped = session.Equipment.IsEquipped(itemId);
+                GUI.enabled = !equipped;
+                if (GUILayout.Button(equipped ? $"Equipped: {item.DisplayName}" : $"Equip {item.DisplayName}"))
+                {
+                    EquipmentRuntimeService.TryEquip(session, itemId);
+                }
+
+                GUI.enabled = true;
+            }
+
+            GUILayout.Label("Skill Faces");
+            var diceCount = session.Equipment.DiceCount;
+            for (var i = 0; i < diceCount; i++)
+            {
+                var skillId = i < session.Skills.EquippedSkillIds.Count
+                    ? session.Skills.EquippedSkillIds[i]
+                    : string.Empty;
+                var skill = SkillCatalog.Find(skillId);
+                var label = skill != null ? skill.DisplayName : "Strike";
+                if (GUILayout.Button($"Cycle Face {i + 1}: {label}"))
+                {
+                    SkillRuntimeService.CycleEquippedFace(session, i);
+                }
+            }
+
+            GUILayout.Label("Owned Skills");
+            for (var i = 0; i < SkillCatalog.All.Length; i++)
+            {
+                var skill = SkillCatalog.All[i];
+                var owned = session.Skills.CountOwned(skill.SkillId);
+                if (owned > 0)
+                {
+                    GUILayout.Label($"{skill.DisplayName}: {owned}");
+                }
+            }
+
+            GUILayout.Space(8);
         }
 
         private static void DrawConsumableControls(GameSessionState session)

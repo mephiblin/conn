@@ -35,7 +35,7 @@ namespace Conn.Runtime.Equipment
 
             session.Gold -= item.BuyPrice;
             session.Inventory.AddItem(itemId);
-            session.Equipment.Equip(itemId);
+            EquipmentRuntimeService.TryEquip(session, itemId);
             SaveIfPlaying();
             RuntimeNoticeService.Set(session, $"Bought and equipped {item.DisplayName}.");
             return true;

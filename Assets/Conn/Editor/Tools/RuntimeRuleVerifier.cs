@@ -23,6 +23,7 @@ namespace Conn.Editor.Tools
             VerifyP1VerticalSliceFlow();
             VerifyEquipmentDiceRules();
             VerifyEquipmentLoadoutToggle();
+            VerifyDirectEquipmentChangesResizeSkillFaces();
             VerifyNewGameState();
             VerifyDiceSkillEffects();
             VerifyCombatWinGrantsXp();
@@ -142,6 +143,29 @@ namespace Conn.Editor.Tools
             Expect(EquipmentRuntimeService.ToggleOwnedLoadout(session), "Owned loadout toggle must return to one-hand shield when available.");
             Expect(session.Equipment.WeaponGrip == WeaponGrip.OneHandAndShield, "Second loadout toggle must switch to one-hand shield.");
             Expect(session.Equipment.DiceCount == 3, "One-hand shield loadout must provide 3 dice.");
+        }
+
+        private static void VerifyDirectEquipmentChangesResizeSkillFaces()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+            session.Inventory.AddItem(EquipmentCatalog.IronShieldId);
+            session.Inventory.AddItem(EquipmentCatalog.GreatAxeId);
+            session.Skills.AddSkill(SkillCatalog.GuardId);
+            session.Skills.AddSkill(SkillCatalog.MendId);
+            session.Skills.ResizeEquippedFaces(4);
+            session.Skills.EquippedSkillIds.Add(SkillCatalog.GuardId);
+            session.Skills.EquippedSkillIds.Add(SkillCatalog.MendId);
+            session.Skills.EquippedSkillIds.Add(SkillCatalog.SlashId);
+
+            Expect(EquipmentRuntimeService.TryEquip(session, EquipmentCatalog.GreatAxeId), "Direct equipment panel must equip owned two-hand weapon.");
+            Expect(session.Equipment.WeaponGrip == WeaponGrip.TwoHand, "Direct equipment panel must enter two-hand loadout.");
+            Expect(session.Skills.EquippedSkillIds.Count <= 5, "Two-hand loadout must allow up to five skill faces.");
+
+            Expect(EquipmentRuntimeService.TryEquip(session, EquipmentCatalog.IronShieldId), "Direct equipment panel must equip shield from two-hand state.");
+            Expect(session.Equipment.EquippedWeaponId == EquipmentCatalog.RustySwordId, "Equipping shield from two-hand must restore one-hand weapon.");
+            Expect(session.Equipment.WeaponGrip == WeaponGrip.OneHandAndShield, "Equipping shield must result in one-hand shield loadout.");
+            Expect(session.Skills.EquippedSkillIds.Count == 3, "Shield loadout must resize skill faces down to three dice.");
         }
 
         private static void VerifyDiceSkillEffects()

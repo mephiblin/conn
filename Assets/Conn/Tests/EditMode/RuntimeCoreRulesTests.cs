@@ -114,6 +114,30 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void DirectEquipmentChangesKeepLoadoutAndSkillFacesConsistent()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+            session.Inventory.AddItem(EquipmentCatalog.IronShieldId);
+            session.Inventory.AddItem(EquipmentCatalog.GreatAxeId);
+            session.Skills.AddSkill(SkillCatalog.GuardId);
+            session.Skills.AddSkill(SkillCatalog.MendId);
+            session.Skills.ResizeEquippedFaces(4);
+            session.Skills.EquippedSkillIds.Add(SkillCatalog.GuardId);
+            session.Skills.EquippedSkillIds.Add(SkillCatalog.MendId);
+            session.Skills.EquippedSkillIds.Add(SkillCatalog.SlashId);
+
+            Assert.That(EquipmentRuntimeService.TryEquip(session, EquipmentCatalog.GreatAxeId), Is.True);
+            Assert.That(session.Equipment.WeaponGrip, Is.EqualTo(WeaponGrip.TwoHand));
+            Assert.That(session.Skills.EquippedSkillIds.Count, Is.LessThanOrEqualTo(5));
+
+            Assert.That(EquipmentRuntimeService.TryEquip(session, EquipmentCatalog.IronShieldId), Is.True);
+            Assert.That(session.Equipment.EquippedWeaponId, Is.EqualTo(EquipmentCatalog.RustySwordId));
+            Assert.That(session.Equipment.WeaponGrip, Is.EqualTo(WeaponGrip.OneHandAndShield));
+            Assert.That(session.Skills.EquippedSkillIds.Count, Is.EqualTo(3));
+        }
+
+        [Test]
         public void DiceResolutionAppliesAttackGuardAndHealEffects()
         {
             var session = new GameSessionState();
