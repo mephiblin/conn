@@ -5,20 +5,25 @@ namespace Conn.Runtime.World
 {
     public sealed class QuestBoardInteractable : MonoBehaviour, IWorldInteractable
     {
-        [SerializeField] private string questId = "quest_test_hunt";
-        [SerializeField] private string targetMonsterId = "monster_test_guard";
-        [SerializeField] private int goldReward = 10;
-
         public string Prompt
         {
             get
             {
                 var quest = GameSession.Instance.State.Quest;
-                return quest.HasActiveQuest ? "Quest already accepted" : "Accept test hunt";
+                if (quest.HasActiveQuest)
+                {
+                    return "Quest already accepted";
+                }
+
+                var offer = QuestRuntimeService.CurrentBoardOffer(GameSession.Instance.State);
+                return offer != null
+                    ? $"Accept {offer.DisplayName} ({offer.GoldReward}g)"
+                    : "No quest available";
             }
         }
 
-        public bool CanInteract => !GameSession.Instance.State.Quest.HasActiveQuest;
+        public bool CanInteract => !GameSession.Instance.State.Quest.HasActiveQuest
+            && QuestRuntimeService.CurrentBoardOffer(GameSession.Instance.State) != null;
 
         public void Interact()
         {
@@ -29,8 +34,9 @@ namespace Conn.Runtime.World
                 return;
             }
 
-            QuestRuntimeService.AcceptQuest(GameSession.Instance.State, questId, targetMonsterId, goldReward);
-            Debug.Log($"Accepted quest: {questId}");
+            var offer = QuestRuntimeService.CurrentBoardOffer(GameSession.Instance.State);
+            QuestRuntimeService.AcceptCurrentBoardOffer(GameSession.Instance.State);
+            Debug.Log($"Accepted quest: {offer?.QuestId}");
         }
     }
 }

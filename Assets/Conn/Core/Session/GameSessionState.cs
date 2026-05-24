@@ -26,6 +26,8 @@ namespace Conn.Core.Session
             Gold = 25;
             Player.Reset();
             Quest.Clear();
+            Quest.BoardOfferIndex = 0;
+            Quest.BoardRerollCount = 0;
             PreEncounterSnapshot.Clear();
             Inventory.Clear();
             Inventory.AddItem(EquipmentCatalog.RustySwordId);

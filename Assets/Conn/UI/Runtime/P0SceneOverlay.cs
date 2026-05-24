@@ -76,13 +76,16 @@ namespace Conn.UI.Runtime
         private static void TownControls(GameSessionState session)
         {
             GUILayout.Label(session.Quest.HasActiveQuest
-                ? $"Quest: {session.Quest.ActiveQuestId}"
+                ? $"Quest: {session.Quest.ActiveQuestTitle}"
                 : "Quest: none");
 
-            if (GUILayout.Button("Accept Test Hunt"))
+            GUI.enabled = !session.Quest.HasActiveQuest;
+            var offer = QuestRuntimeService.CurrentBoardOffer(session);
+            if (GUILayout.Button(offer != null ? $"Accept {offer.DisplayName}" : "No Quest Available"))
             {
-                QuestRuntimeService.AcceptTestHunt(session);
+                QuestRuntimeService.AcceptCurrentBoardOffer(session);
             }
+            GUI.enabled = true;
 
             GUI.enabled = session.Quest.HasActiveQuest;
             if (GUILayout.Button("Enter Dungeon"))

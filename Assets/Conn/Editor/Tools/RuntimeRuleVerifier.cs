@@ -1,7 +1,9 @@
 using System;
 using Conn.Core.Equipment;
+using Conn.Core.Quests;
 using Conn.Core.Session;
 using Conn.Core.Skills;
+using Conn.Runtime.Session;
 using Conn.Runtime.Combat;
 using UnityEngine;
 
@@ -52,6 +54,10 @@ namespace Conn.Editor.Tools
             Expect(session.Skills.HasSkill(SkillCatalog.SlashId), "New game must own Slash.");
             Expect(session.Skills.EquippedSkillIds.Count > 0, "New game must equip at least one skill face.");
             Expect(session.Skills.EquippedSkillIds[0] == SkillCatalog.SlashId, "New game must equip Slash on first face.");
+            Expect(QuestRuntimeService.CurrentBoardOffer(session)?.QuestId == QuestCatalog.TestHuntId, "New game board must start on test hunt.");
+
+            QuestRuntimeService.RerollBoard(session);
+            Expect(QuestRuntimeService.CurrentBoardOffer(session)?.QuestId == QuestCatalog.GuardPatrolId, "Quest board reroll must advance to next offer.");
         }
 
         private static void VerifyDiceSkillEffects()

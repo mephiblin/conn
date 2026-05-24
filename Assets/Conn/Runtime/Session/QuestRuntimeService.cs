@@ -1,4 +1,5 @@
 using Conn.Core.Scenes;
+using Conn.Core.Quests;
 using Conn.Core.Session;
 using Conn.Runtime.Scenes;
 using Conn.Runtime.World;
@@ -10,12 +11,52 @@ namespace Conn.Runtime.Session
     {
         public static void AcceptTestHunt(GameSessionState session)
         {
-            AcceptQuest(session, "quest_test_hunt", "monster_test_guard", 10);
+            AcceptQuest(session, QuestCatalog.TestHuntId);
+        }
+
+        public static QuestDefinition CurrentBoardOffer(GameSessionState session)
+        {
+            return QuestCatalog.BoardOffer(session.Quest.BoardOfferIndex);
+        }
+
+        public static void AcceptCurrentBoardOffer(GameSessionState session)
+        {
+            var offer = CurrentBoardOffer(session);
+            if (offer != null)
+            {
+                AcceptQuest(session, offer);
+            }
+        }
+
+        public static void RerollBoard(GameSessionState session)
+        {
+            session.Quest.BoardOfferIndex++;
+            session.Quest.BoardRerollCount++;
+        }
+
+        public static void AcceptQuest(GameSessionState session, string questId)
+        {
+            var definition = QuestCatalog.Find(questId);
+            if (definition != null)
+            {
+                AcceptQuest(session, definition);
+            }
+        }
+
+        public static void AcceptQuest(GameSessionState session, QuestDefinition definition)
+        {
+            AcceptQuest(session, definition.QuestId, definition.DisplayName, definition.TargetMonsterId, definition.GoldReward);
         }
 
         public static void AcceptQuest(GameSessionState session, string questId, string targetMonsterId, int goldReward)
         {
+            AcceptQuest(session, questId, questId, targetMonsterId, goldReward);
+        }
+
+        public static void AcceptQuest(GameSessionState session, string questId, string title, string targetMonsterId, int goldReward)
+        {
             session.Quest.ActiveQuestId = questId;
+            session.Quest.ActiveQuestTitle = title;
             session.Quest.TargetMonsterId = targetMonsterId;
             session.Quest.GoldReward = goldReward;
             session.Quest.TargetDefeated = false;
@@ -39,6 +80,7 @@ namespace Conn.Runtime.Session
         {
             session.Gold += session.Quest.GoldReward;
             session.Quest.Clear();
+            RerollBoard(session);
             session.PreEncounterSnapshot.Clear();
             GameSession.Instance.SaveGame();
             SceneFlowService.Load(GameSceneId.Town);

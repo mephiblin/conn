@@ -1,7 +1,9 @@
 using Conn.Core.Equipment;
+using Conn.Core.Quests;
 using Conn.Core.Session;
 using Conn.Core.Skills;
 using Conn.Runtime.Combat;
+using Conn.Runtime.Session;
 using NUnit.Framework;
 
 namespace Conn.Tests.EditMode
@@ -44,6 +46,11 @@ namespace Conn.Tests.EditMode
             Assert.That(session.Equipment.EquippedWeaponId, Is.EqualTo(EquipmentCatalog.RustySwordId));
             Assert.That(session.Skills.HasSkill(SkillCatalog.SlashId), Is.True);
             Assert.That(session.Skills.EquippedSkillIds[0], Is.EqualTo(SkillCatalog.SlashId));
+            Assert.That(QuestRuntimeService.CurrentBoardOffer(session)?.QuestId, Is.EqualTo(QuestCatalog.TestHuntId));
+
+            QuestRuntimeService.RerollBoard(session);
+
+            Assert.That(QuestRuntimeService.CurrentBoardOffer(session)?.QuestId, Is.EqualTo(QuestCatalog.GuardPatrolId));
         }
 
         [Test]
