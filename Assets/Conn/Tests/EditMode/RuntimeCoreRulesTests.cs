@@ -98,15 +98,18 @@ namespace Conn.Tests.EditMode
             Assert.That(session.Combat.EnemyAttackPower, Is.EqualTo(MonsterCatalog.Find(MonsterCatalog.TestGuardId).EnemyActionPower));
             Assert.That(session.Combat.EnemyActionName, Is.EqualTo(MonsterCatalog.Find(MonsterCatalog.TestGuardId).EnemyActionName));
             Assert.That(session.Combat.XpReward, Is.EqualTo(EncounterCatalog.Find(EncounterCatalog.TestGuardId).XpReward));
+            Assert.That(CombatRuntimeService.DescribeDiceFace(session.Combat.DiceFaces[0]), Does.Contain("ready"));
 
-            QuestRuntimeService.CompleteTarget(session, session.Combat.FieldMonsterStateKey);
-            session.Combat.Active = false;
+            session.Combat.Enemy.Setup(session.Quest.TargetMonsterId, "Loop Target", 1);
+            CombatRuntimeService.ToggleDieSelection(session, 0);
+            Assert.That(CombatRuntimeService.DescribeDiceFace(session.Combat.DiceFaces[0]), Does.Contain("selected"));
+            CombatRuntimeService.ResolveSelectedDice(session);
             session.Mode = GameMode.Dungeon;
 
             Assert.That(session.Quest.ReturnAvailable, Is.True);
             Assert.That(FieldMonsterRuntimeService.IsDefeated(session, "field_monster_test_guard"), Is.True);
-            session.Player.GainXp(session.Combat.XpReward);
             Assert.That(session.Player.Xp, Is.GreaterThanOrEqualTo(EncounterCatalog.Find(EncounterCatalog.TestGuardId).XpReward));
+            Assert.That(session.Combat.LastMessage, Does.Contain("Victory"));
 
             var goldBeforeReturn = session.Gold;
             var reward = session.Quest.GoldReward;
@@ -116,6 +119,34 @@ namespace Conn.Tests.EditMode
             Assert.That(session.Quest.HasActiveQuest, Is.False);
             Assert.That(session.Gold, Is.EqualTo(goldBeforeReturn + reward));
             Assert.That(session.Quest.LastGoldReward, Is.EqualTo(reward));
+        }
+
+        [Test]
+        public void P1DeathSaveContinuesToEndingUntilNewGame()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+            QuestRuntimeService.AcceptQuest(session, QuestCatalog.TestHuntId);
+            session.Mode = GameMode.Combat;
+            CombatRuntimeService.StartTestCombat(session);
+
+            CombatRuntimeService.Die(session);
+
+            Assert.That(session.Mode, Is.EqualTo(GameMode.Ending));
+            Assert.That(session.LastNotice, Does.Contain("Defeat"));
+
+            var loaded = new GameSessionState();
+            SaveRuntimeService.OverwriteFromJson(SaveRuntimeService.ToJson(session), loaded);
+            loaded.Combat.Clear();
+
+            Assert.That(loaded.Mode, Is.EqualTo(GameMode.Ending));
+            Assert.That(SaveRuntimeService.SceneForLoadedState(loaded), Is.EqualTo(GameSceneId.Ending));
+
+            loaded.StartNewGame();
+
+            Assert.That(loaded.Mode, Is.EqualTo(GameMode.Town));
+            Assert.That(loaded.Player.IsDead, Is.False);
+            Assert.That(SaveRuntimeService.SceneForLoadedState(loaded), Is.EqualTo(GameSceneId.Town));
         }
 
         [Test]
@@ -205,6 +236,7 @@ namespace Conn.Tests.EditMode
             Assert.That(session.Combat.LastMessage, Does.Contain("2 damage"));
             Assert.That(session.Combat.LastMessage, Does.Contain("2 guard"));
             Assert.That(session.Combat.LastMessage, Does.Contain("3 heal"));
+            Assert.That(session.Combat.LastMessage, Does.Contain("Die 1 Slash"));
             Assert.That(session.Combat.LastMessage, Does.Contain("Test Gate Guard uses Halberd thrust for 2 damage"));
             Assert.That(session.Combat.LastMessage, Does.Contain("4 power"));
             Assert.That(session.Combat.LastMessage, Does.Contain("2 blocked"));
@@ -296,8 +328,11 @@ namespace Conn.Tests.EditMode
             Assert.That(session.Combat.Enemy.StatusEffects, Has.Count.EqualTo(1));
             Assert.That(session.Combat.Enemy.StatusEffects[0].Kind, Is.EqualTo(CombatStatusEffectKind.Bleed));
             Assert.That(session.Combat.Enemy.StatusEffects[0].RemainingTurns, Is.EqualTo(1));
-            Assert.That(session.Combat.LastMessage, Does.Contain("Focus Strike applied Bleed"));
+            Assert.That(session.Combat.LastMessage, Does.Contain("Focus Strike effect: applied Bleed"));
             Assert.That(session.Combat.LastMessage, Does.Contain("Test Gate Guard suffers 1 Bleed damage"));
+            Assert.That(CombatRuntimeService.DescribeDiceFace(session.Combat.DiceFaces[0]), Does.Contain("effect Bleed"));
+            Assert.That(CombatRuntimeService.DescribeDiceFace(session.Combat.DiceFaces[0]), Does.Contain("cooldown"));
+            Assert.That(CombatRuntimeService.DescribeCombatantStatuses(session.Combat.Enemy), Does.Contain("Bleed"));
 
             CombatRuntimeService.ToggleDieSelection(session, 1);
             CombatRuntimeService.ResolveSelectedDice(session);
@@ -323,7 +358,7 @@ namespace Conn.Tests.EditMode
             Assert.That(session.Combat.Active, Is.False);
             Assert.That(session.Combat.Enemy.IsDead, Is.True);
             Assert.That(session.Combat.LastMessage, Does.Contain("Bleeding Target suffers 1 Bleed damage"));
-            Assert.That(session.Combat.LastMessage, Does.Contain("Enemy defeated"));
+            Assert.That(session.Combat.LastMessage, Does.Contain("Victory: Enemy defeated"));
             Assert.That(session.Player.Xp, Is.EqualTo(EncounterCatalog.Find(EncounterCatalog.TestGuardId).XpReward));
         }
 
@@ -395,7 +430,7 @@ namespace Conn.Tests.EditMode
 
             Assert.That(session.Mode, Is.EqualTo(GameMode.Ending));
             Assert.That(session.Combat.Active, Is.False);
-            Assert.That(session.LastNotice, Does.Contain("died"));
+            Assert.That(session.LastNotice, Does.Contain("Defeat"));
         }
 
         [Test]
@@ -661,6 +696,35 @@ namespace Conn.Tests.EditMode
             RuntimeNoticeService.Set(session, "notice check");
 
             Assert.That(session.LastNotice, Is.EqualTo("notice check"));
+        }
+
+        [Test]
+        public void ChapterOneUxStringsExposeInventoryShopAndGateState()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+
+            Assert.That(ChapterOneUxText.EquipmentStatus(session, EquipmentCatalog.RustySwordId), Does.Contain("Equipped"));
+            Assert.That(ChapterOneUxText.EquipmentStatus(session, EquipmentCatalog.RustySwordId), Does.Contain("starter weapon"));
+
+            session.Inventory.AddItem(EquipmentCatalog.PaddedVestId);
+            Assert.That(ChapterOneUxText.EquipmentStatus(session, EquipmentCatalog.PaddedVestId), Does.Contain("Sellable"));
+            Assert.That(ChapterOneUxText.EquipmentBuyStatus(session, EquipmentCatalog.IronShieldId), Does.Contain("Buyable"));
+            Assert.That(ChapterOneUxText.ConsumableStatus(session, ConsumableCatalog.MinorPotionId), Does.Contain("Owned x0"));
+
+            session.Skills.AddSkill(SkillCatalog.GuardId);
+            session.Skills.EquipFirstOpenFace(SkillCatalog.GuardId, session.Equipment.DiceCount);
+            Assert.That(ChapterOneUxText.SkillStatus(session, SkillCatalog.GuardId), Does.Contain("Equipped x1"));
+            Assert.That(ChapterOneUxText.SkillStatus(session, SkillCatalog.GuardId), Does.Contain("No loose copy"));
+
+            Assert.That(ChapterOneUxText.BlacksmithOpenNotice(session), Does.Contain("Equipped items cannot be sold"));
+            Assert.That(ChapterOneUxText.SkillMerchantOpenNotice(session), Does.Contain("Stock:"));
+            SkillShopRuntimeService.RefreshSkillMerchantStock(session);
+            Assert.That(session.LastNotice, Does.Contain("refreshed to #1"));
+            Assert.That(ChapterOneUxText.GateBlockedNotice(), Does.Contain("Accept a quest"));
+
+            QuestRuntimeService.AcceptQuest(session, QuestCatalog.TestHuntId);
+            Assert.That(ChapterOneUxText.GateAllowedNotice(session), Does.Contain(session.Quest.ActiveQuestTitle));
         }
 
         [Test]

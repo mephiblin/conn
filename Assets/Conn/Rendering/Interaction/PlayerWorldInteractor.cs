@@ -9,7 +9,7 @@ namespace Conn.Rendering.Interaction
     public sealed class PlayerWorldInteractor : MonoBehaviour
     {
         [SerializeField] private Camera playerCamera;
-        [SerializeField] private float range = 3.0f;
+        [SerializeField] private float range = 4.0f;
 
         private IWorldInteractable focused;
 
@@ -38,7 +38,7 @@ namespace Conn.Rendering.Interaction
             }
 
             var label = focused.CanInteract ? $"E - {focused.Prompt}" : focused.Prompt;
-            GUI.Label(new Rect(Screen.width * 0.5f - 120f, Screen.height - 96f, 240f, 32f), label);
+            GUI.Label(new Rect(Screen.width * 0.5f - 180f, Screen.height - 96f, 360f, 32f), label);
         }
 
         private IWorldInteractable FindFocusedInteractable()

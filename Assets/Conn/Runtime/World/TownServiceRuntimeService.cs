@@ -16,7 +16,7 @@ namespace Conn.Runtime.World
 
             session.Player.HealToFull();
             SaveIfPlaying();
-            RuntimeNoticeService.Set(session, "Inn: Rested at the inn.");
+            RuntimeNoticeService.Set(session, $"Inn: rested. HP restored to {session.Player.Hp}/{session.Player.MaxHp}.");
             return true;
         }
 
@@ -24,14 +24,14 @@ namespace Conn.Runtime.World
         {
             if (!session.Player.SpendXp(xpCost))
             {
-                RuntimeNoticeService.Set(session, $"Trainer: not enough XP.");
+                RuntimeNoticeService.Set(session, $"Trainer: not enough XP. Need {xpCost} XP.");
                 return false;
             }
 
             session.Player.MaxHp += 2;
             session.Player.HealToFull();
             SaveIfPlaying();
-            RuntimeNoticeService.Set(session, "Trainer: Max HP increased.");
+            RuntimeNoticeService.Set(session, $"Trainer: Max HP increased to {session.Player.MaxHp}.");
             return true;
         }
 

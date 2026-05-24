@@ -1,3 +1,4 @@
+using System.Text;
 using Conn.Core.Combat;
 using Conn.Core.Scenes;
 using Conn.Core.Session;
@@ -75,11 +76,18 @@ namespace Conn.Runtime.Combat
             var guard = 0;
             var healing = 0;
             var appliedBleed = false;
+            var selectedFaces = new StringBuilder();
             for (var i = 0; i < session.Combat.DiceFaces.Count; i++)
             {
                 var face = session.Combat.DiceFaces[i];
                 if (face.Selected)
                 {
+                    if (selectedFaces.Length > 0)
+                    {
+                        selectedFaces.Append(", ");
+                    }
+
+                    selectedFaces.Append($"Die {face.Index + 1} {face.DisplayName} ({face.EffectKind} +{face.Power})");
                     if (face.EffectKind == SkillEffectKind.Guard)
                     {
                         guard += face.Power;
@@ -110,11 +118,11 @@ namespace Conn.Runtime.Combat
             }
 
             session.Combat.Enemy.Damage(attack);
-            session.Combat.LastMessage = $"Resolved {selected}: {attack} damage, {guard} guard, {healing} heal.";
+            session.Combat.LastMessage = $"Resolved {selected} face(s): {selectedFaces}. Result: {attack} damage, {guard} guard, {healing} heal.";
             if (appliedBleed)
             {
                 session.Combat.Enemy.AddOrRefreshStatus(CombatStatusEffectKind.Bleed, 2, 1);
-                session.Combat.LastMessage += " Focus Strike applied Bleed (1 damage for 2 turns).";
+                session.Combat.LastMessage += " Focus Strike effect: applied Bleed (1 damage for 2 turns).";
             }
 
             if (session.Combat.Enemy.IsDead)
@@ -148,12 +156,48 @@ namespace Conn.Runtime.Combat
         {
             session.Combat.Clear();
             session.Mode = GameMode.Ending;
-            RuntimeNoticeService.Set(session, "You died.");
+            RuntimeNoticeService.Set(session, "Defeat: You died.");
             if (Application.isPlaying)
             {
                 GameSession.Instance.SaveGame();
                 SceneFlowService.Load(GameSceneId.Ending);
             }
+        }
+
+        public static string DescribeDiceFace(DiceFaceState face)
+        {
+            if (face == null)
+            {
+                return "Die: missing";
+            }
+
+            var state = face.IsCoolingDown
+                ? $"cooldown {face.Cooldown}"
+                : face.Selected ? "selected" : "ready";
+            var special = face.SkillId == SkillCatalog.FocusStrikeId ? " / effect Bleed" : string.Empty;
+            return $"Die {face.Index + 1}: {face.DisplayName} / {face.EffectKind} +{face.Power} / {state}{special}";
+        }
+
+        public static string DescribeCombatantStatuses(CombatantState combatant)
+        {
+            if (combatant == null || combatant.StatusEffects == null || combatant.StatusEffects.Count == 0)
+            {
+                return "Status: none";
+            }
+
+            var builder = new StringBuilder("Status: ");
+            for (var i = 0; i < combatant.StatusEffects.Count; i++)
+            {
+                if (i > 0)
+                {
+                    builder.Append(", ");
+                }
+
+                var status = combatant.StatusEffects[i];
+                builder.Append($"{status.DisplayName} {status.RemainingTurns} turn(s), {status.TickDamage} damage");
+            }
+
+            return builder.ToString();
         }
 
         public static void Flee(GameSessionState session)
@@ -266,15 +310,15 @@ namespace Conn.Runtime.Combat
         {
             var xpReward = session.Combat.XpReward;
             session.Combat.LastMessage = string.IsNullOrWhiteSpace(session.Combat.LastMessage)
-                ? "Enemy defeated."
-                : session.Combat.LastMessage + " Enemy defeated.";
+                ? $"Victory: Enemy defeated. Gained {xpReward} XP."
+                : session.Combat.LastMessage + $" Victory: Enemy defeated. Gained {xpReward} XP.";
             session.Combat.Active = false;
             if (xpReward > 0)
             {
                 session.Player.GainXp(xpReward);
             }
 
-            RuntimeNoticeService.Set(session, $"Enemy defeated. Gained {xpReward} XP.");
+            RuntimeNoticeService.Set(session, $"Victory: Enemy defeated. Gained {xpReward} XP.");
             var stateKey = string.IsNullOrWhiteSpace(session.Combat.FieldMonsterStateKey)
                 ? "field_monster_test_guard"
                 : session.Combat.FieldMonsterStateKey;

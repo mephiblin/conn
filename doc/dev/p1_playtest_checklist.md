@@ -101,13 +101,23 @@ Town에서 아래 NPC를 바라보고 `E`로 상호작용한다.
 
 ## 조작감 확인
 
-- 마우스 감도
-- 이동 속도
+- 마우스 감도: 기본값 `0.14`, 이전 테스트에서 높았던 값을 낮춘 상태
+- 이동 속도: 기본값 `4.5`
 - 카메라 높이
-- NPC 상호작용 거리
+- NPC 상호작용 거리: 기본값 `4.0`
 - 몬스터 접촉 collider 크기
 - HUD 버튼이 화면 밖으로 밀리는지
 - Combat 버튼이 클릭하기 쉬운지
+
+## 이번 자동 검증에 포함된 항목
+
+- 전투 승리 시 quest target 완료, field monster cleanup, XP 지급
+- 사망 시 Ending 저장, Continue 시 Ending 복귀, Ending New Game 초기화
+- 전투 HUD용 dice face/선택/cooldown/status 문자열
+- Focus Strike의 Bleed 적용과 상태 이상 tick 로그
+- 장비/소모품/스킬 구분 표시 문자열
+- 대장장이/기술 상인/약재상/여관/훈련소/게이트 notice
+- 기술 상인 stock refresh notice
 
 ## 실패 기록 방식
 

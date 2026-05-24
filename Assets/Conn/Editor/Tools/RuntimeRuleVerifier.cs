@@ -22,6 +22,7 @@ namespace Conn.Editor.Tools
         {
             ContentDatabaseVerifier.VerifyContentDatabase();
             VerifyP1VerticalSliceFlow();
+            VerifyP1DeathContinueRouting();
             VerifyEquipmentDiceRules();
             VerifyArmorSlotEquipRules();
             VerifyArmorStatEffects();
@@ -45,6 +46,7 @@ namespace Conn.Editor.Tools
             VerifyShopServices();
             VerifySkillMerchantStockRefresh();
             VerifyRuntimeNotice();
+            VerifyChapterOneUxDisplayStrings();
             VerifySaveContractRoundTrip();
             VerifyEquipmentAndSkillDisplayData();
             VerifyEquipmentComparisonDisplayData();
@@ -81,15 +83,18 @@ namespace Conn.Editor.Tools
             Expect(session.Combat.EnemyAttackPower == MonsterCatalog.Find(MonsterCatalog.TestGuardId).EnemyActionPower, "P1 flow combat must use monster enemy action power data.");
             Expect(session.Combat.EnemyActionName == MonsterCatalog.Find(MonsterCatalog.TestGuardId).EnemyActionName, "P1 flow combat must use monster enemy action name data.");
             Expect(session.Combat.XpReward == EncounterCatalog.Find(EncounterCatalog.TestGuardId).XpReward, "P1 flow combat must use encounter XP reward data.");
+            Expect(CombatRuntimeService.DescribeDiceFace(session.Combat.DiceFaces[0]).Contains("ready"), "P1 combat HUD helper must report ready dice state.");
 
-            QuestRuntimeService.CompleteTarget(session, session.Combat.FieldMonsterStateKey);
-            session.Combat.Active = false;
+            session.Combat.Enemy.Setup(session.Quest.TargetMonsterId, "Loop Target", 1);
+            CombatRuntimeService.ToggleDieSelection(session, 0);
+            Expect(CombatRuntimeService.DescribeDiceFace(session.Combat.DiceFaces[0]).Contains("selected"), "P1 combat HUD helper must report selected dice state.");
+            CombatRuntimeService.ResolveSelectedDice(session);
             session.Mode = GameMode.Dungeon;
             Expect(session.Quest.TargetDefeated, "P1 flow combat win must mark quest target defeated.");
             Expect(session.Quest.ReturnAvailable, "P1 flow combat win must enable return.");
             Expect(FieldMonsterRuntimeService.IsDefeated(session, "field_monster_test_guard"), "P1 flow combat win must clear field monster.");
-            session.Player.GainXp(session.Combat.XpReward);
             Expect(session.Player.Xp >= EncounterCatalog.Find(EncounterCatalog.TestGuardId).XpReward, "P1 flow combat win must grant XP.");
+            Expect(session.Combat.LastMessage.Contains("Victory"), "P1 flow combat win must report victory feedback.");
 
             QuestRuntimeService.KeepExploring(session);
             Expect(session.Quest.ReturnPromptSeen, "P1 flow keep exploring must dismiss prompt.");
@@ -101,6 +106,32 @@ namespace Conn.Editor.Tools
             Expect(!session.Quest.HasActiveQuest, "P1 flow return must clear quest.");
             Expect(session.Gold == goldBeforeReturn + reward, "P1 flow return must grant reward.");
             Expect(session.Quest.LastGoldReward == reward, "P1 flow return must store reward summary.");
+        }
+
+        private static void VerifyP1DeathContinueRouting()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+            QuestRuntimeService.AcceptQuest(session, QuestCatalog.TestHuntId);
+            session.Mode = GameMode.Combat;
+            CombatRuntimeService.StartTestCombat(session);
+
+            CombatRuntimeService.Die(session);
+
+            Expect(session.Mode == GameMode.Ending, "P1 death flow must route to Ending.");
+            Expect(session.LastNotice.Contains("Defeat"), "P1 death flow must report defeat feedback.");
+
+            var loaded = new GameSessionState();
+            SaveRuntimeService.OverwriteFromJson(SaveRuntimeService.ToJson(session), loaded);
+            loaded.Combat.Clear();
+
+            Expect(loaded.Mode == GameMode.Ending, "P1 continue must preserve Ending mode after death save.");
+            Expect(SaveRuntimeService.SceneForLoadedState(loaded) == GameSceneId.Ending, "P1 continue must route death save to Ending scene.");
+
+            loaded.StartNewGame();
+
+            Expect(loaded.Mode == GameMode.Town, "P1 Ending New Game must overwrite death state with Town mode.");
+            Expect(!loaded.Player.IsDead, "P1 Ending New Game must restore a living player.");
         }
 
         private static void VerifyEquipmentDiceRules()
@@ -278,8 +309,10 @@ namespace Conn.Editor.Tools
             Expect(session.Combat.Enemy.StatusEffects.Count == 1, "Focus Strike must leave Bleed active after its first tick.");
             Expect(session.Combat.Enemy.StatusEffects[0].Kind == CombatStatusEffectKind.Bleed, "Focus Strike status must be Bleed.");
             Expect(session.Combat.Enemy.StatusEffects[0].RemainingTurns == 1, "Bleed duration must decrement after ticking.");
-            Expect(session.Combat.LastMessage.Contains("Focus Strike applied Bleed"), "Combat log must report Bleed application.");
+            Expect(session.Combat.LastMessage.Contains("Focus Strike effect: applied Bleed"), "Combat log must report Bleed application.");
             Expect(session.Combat.LastMessage.Contains("Test Gate Guard suffers 1 Bleed damage"), "Combat log must report Bleed tick damage.");
+            Expect(CombatRuntimeService.DescribeDiceFace(session.Combat.DiceFaces[0]).Contains("effect Bleed"), "Combat HUD helper must expose Focus Strike Bleed effect.");
+            Expect(CombatRuntimeService.DescribeCombatantStatuses(session.Combat.Enemy).Contains("Bleed"), "Combat HUD helper must expose active Bleed status.");
 
             CombatRuntimeService.ToggleDieSelection(session, 1);
             CombatRuntimeService.ResolveSelectedDice(session);
@@ -630,6 +663,34 @@ namespace Conn.Editor.Tools
             RuntimeNoticeService.Set(session, "notice check");
 
             Expect(session.LastNotice == "notice check", "Runtime notices must be stored on the session for HUD display.");
+        }
+
+        private static void VerifyChapterOneUxDisplayStrings()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+
+            Expect(ChapterOneUxText.EquipmentStatus(session, EquipmentCatalog.RustySwordId).Contains("Equipped"), "Equipment UX text must expose equipped status.");
+            Expect(ChapterOneUxText.EquipmentStatus(session, EquipmentCatalog.RustySwordId).Contains("starter weapon"), "Equipment UX text must explain starter sale lock.");
+
+            session.Inventory.AddItem(EquipmentCatalog.PaddedVestId);
+            Expect(ChapterOneUxText.EquipmentStatus(session, EquipmentCatalog.PaddedVestId).Contains("Sellable"), "Equipment UX text must expose sellable bag gear.");
+            Expect(ChapterOneUxText.EquipmentBuyStatus(session, EquipmentCatalog.IronShieldId).Contains("Buyable"), "Blacksmith UX text must expose buyable stock.");
+
+            Expect(ChapterOneUxText.ConsumableStatus(session, ConsumableCatalog.MinorPotionId).Contains("Owned x0"), "Consumable UX text must expose owned count.");
+
+            session.Skills.AddSkill(SkillCatalog.GuardId);
+            session.Skills.EquipFirstOpenFace(SkillCatalog.GuardId, session.Equipment.DiceCount);
+            Expect(ChapterOneUxText.SkillStatus(session, SkillCatalog.GuardId).Contains("Equipped x1"), "Skill UX text must expose equipped skill count.");
+            Expect(ChapterOneUxText.SkillStatus(session, SkillCatalog.GuardId).Contains("No loose copy"), "Skill UX text must explain sale lock for equipped-only cards.");
+
+            Expect(ChapterOneUxText.BlacksmithOpenNotice(session).Contains("Equipped items cannot be sold"), "Blacksmith notice must explain sale lock.");
+            Expect(ChapterOneUxText.SkillMerchantOpenNotice(session).Contains("Stock:"), "Skill merchant notice must list stock.");
+            SkillShopRuntimeService.RefreshSkillMerchantStock(session);
+            Expect(session.LastNotice.Contains("refreshed to #1"), "Skill merchant refresh notice must expose refresh number.");
+            Expect(ChapterOneUxText.GateBlockedNotice().Contains("Accept a quest"), "Gate blocked notice must explain required action.");
+            QuestRuntimeService.AcceptQuest(session, QuestCatalog.TestHuntId);
+            Expect(ChapterOneUxText.GateAllowedNotice(session).Contains(session.Quest.ActiveQuestTitle), "Gate allowed notice must name the active quest.");
         }
 
         private static void VerifySaveContractRoundTrip()

@@ -27,7 +27,7 @@ namespace Conn.Runtime.Skills
             session.Shop.SkillMerchantRefreshIndex++;
             GenerateSkillMerchantStock(session);
             SaveIfPlaying();
-            RuntimeNoticeService.Set(session, "Skill Merchant: stock refreshed.");
+            RuntimeNoticeService.Set(session, Conn.Runtime.World.ChapterOneUxText.SkillMerchantRefreshNotice(session));
         }
 
         public static bool CanBuy(GameSessionState session, string skillId)

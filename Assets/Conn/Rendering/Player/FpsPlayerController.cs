@@ -16,7 +16,7 @@ namespace Conn.Rendering.Player
     {
         [SerializeField] private Camera playerCamera;
         [SerializeField] private float moveSpeed = 4.5f;
-        [SerializeField] private float lookSensitivity = 0.28f;
+        [SerializeField] private float lookSensitivity = 0.14f;
         [SerializeField] private float gravity = -18.0f;
 
         private CharacterController controller;

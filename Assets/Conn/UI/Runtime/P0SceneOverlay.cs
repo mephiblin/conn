@@ -137,6 +137,16 @@ namespace Conn.UI.Runtime
             GUILayout.Space(8);
             GUILayout.Label("Equipment");
             GUILayout.Label($"Defense: {session.Equipment.DefenseBonus} (armor {session.Equipment.ArmorValue})");
+            GUILayout.Label($"Weapon: {EquipmentName(session.Equipment.EquippedWeaponId)}");
+            GUILayout.Label($"Shield: {EquipmentName(session.Equipment.EquippedShieldId)}");
+            GUILayout.Label("Armor");
+            GUILayout.Label($"Head: {EquipmentName(session.Equipment.EquippedHeadId)}");
+            GUILayout.Label($"Chest: {EquipmentName(session.Equipment.EquippedChestId)}");
+            GUILayout.Label($"Arms: {EquipmentName(session.Equipment.EquippedArmsId)}");
+            GUILayout.Label($"Legs: {EquipmentName(session.Equipment.EquippedLegsId)}");
+            GUILayout.Label($"Feet: {EquipmentName(session.Equipment.EquippedFeetId)}");
+            GUILayout.Space(4);
+            GUILayout.Label("Equipment Inventory");
             for (var i = 0; i < session.Inventory.ItemIds.Count; i++)
             {
                 var itemId = session.Inventory.ItemIds[i];
@@ -147,9 +157,10 @@ namespace Conn.UI.Runtime
                 }
 
                 var equipped = session.Equipment.IsEquipped(itemId);
+                GUILayout.Label(ChapterOneUxText.EquipmentStatus(session, itemId));
                 GUILayout.Label(session.Equipment.ComparisonLineFor(itemId));
                 GUI.enabled = !equipped;
-                if (GUILayout.Button(equipped ? $"Equipped: {item.DisplayName}" : $"Equip {item.DisplayName}"))
+                if (GUILayout.Button(equipped ? $"Equipped | {item.DisplayName}" : $"Equip | {item.DisplayName}"))
                 {
                     EquipmentRuntimeService.TryEquip(session, itemId);
                 }
@@ -158,8 +169,7 @@ namespace Conn.UI.Runtime
             }
 
             GUILayout.Label("Consumables");
-            var potionCount = ConsumableRuntimeService.Count(session, ConsumableCatalog.MinorPotionId);
-            GUILayout.Label($"{ConsumableCatalog.Find(ConsumableCatalog.MinorPotionId).DisplayName}: {potionCount}");
+            GUILayout.Label(ChapterOneUxText.ConsumableStatus(session, ConsumableCatalog.MinorPotionId));
             DrawConsumableControls(session);
 
             GUILayout.Label("Skill Faces");
@@ -184,7 +194,7 @@ namespace Conn.UI.Runtime
                 var owned = session.Skills.CountOwned(skill.SkillId);
                 if (owned > 0)
                 {
-                    GUILayout.Label($"{skill.DisplayName}: {owned}");
+                    GUILayout.Label(ChapterOneUxText.SkillStatus(session, skill.SkillId));
                 }
             }
 
@@ -332,10 +342,11 @@ namespace Conn.UI.Runtime
                 }
 
                 var owned = session.Inventory.HasItem(item.ItemId);
+                GUILayout.Label(ChapterOneUxText.EquipmentBuyStatus(session, item.ItemId));
                 GUI.enabled = !owned && EquipmentShopRuntimeService.CanBuy(session, item.ItemId);
                 if (GUILayout.Button(owned
-                    ? $"Owned: {item.DisplayName}"
-                    : $"Buy & Equip {item.DisplayName} ({item.BuyPrice}g)"))
+                    ? $"Owned | {item.DisplayName}"
+                    : $"Buy & Equip | {item.DisplayName} ({item.BuyPrice}g)"))
                 {
                     EquipmentShopRuntimeService.BuyAndEquip(session, item.ItemId);
                 }
@@ -355,7 +366,8 @@ namespace Conn.UI.Runtime
                 }
 
                 anySellable = true;
-                if (GUILayout.Button($"Sell {item.DisplayName} ({item.SellPrice}g)"))
+                GUILayout.Label(ChapterOneUxText.EquipmentStatus(session, itemId));
+                if (GUILayout.Button($"Sell | {item.DisplayName} ({item.SellPrice}g)"))
                 {
                     EquipmentShopRuntimeService.Sell(session, itemId);
                     break;
@@ -387,7 +399,8 @@ namespace Conn.UI.Runtime
                 }
 
                 GUI.enabled = SkillShopRuntimeService.CanBuy(session, skill.SkillId);
-                if (GUILayout.Button($"Buy & Equip {skill.DisplayName} ({skill.BuyPrice}g)"))
+                GUILayout.Label(ChapterOneUxText.SkillBuyStatus(session, skill.SkillId));
+                if (GUILayout.Button($"Buy & Equip | {skill.DisplayName} ({skill.BuyPrice}g)"))
                 {
                     SkillShopRuntimeService.BuyAndEquip(session, skill.SkillId);
                 }
@@ -411,7 +424,8 @@ namespace Conn.UI.Runtime
                 }
 
                 anySellable = true;
-                if (GUILayout.Button($"Sell {skill.DisplayName} ({skill.SellPrice}g)"))
+                GUILayout.Label(ChapterOneUxText.SkillStatus(session, skill.SkillId));
+                if (GUILayout.Button($"Sell Loose | {skill.DisplayName} ({skill.SellPrice}g)"))
                 {
                     SkillShopRuntimeService.SellLoose(session, skill.SkillId);
                 }
@@ -467,15 +481,16 @@ namespace Conn.UI.Runtime
 
             GUILayout.Label($"Round: {session.Combat.Round}");
             GUILayout.Label($"Player HP: {session.Combat.Player.Hp}/{session.Combat.Player.MaxHp}");
+            GUILayout.Label($"Player {CombatRuntimeService.DescribeCombatantStatuses(session.Combat.Player)}");
             GUILayout.Label($"Enemy HP: {session.Combat.Enemy.Hp}/{session.Combat.Enemy.MaxHp}");
-            GUILayout.Label($"Selected: {session.Combat.SelectedDiceCount}/3");
-            GUILayout.Label(session.Combat.LastMessage);
+            GUILayout.Label($"Enemy {CombatRuntimeService.DescribeCombatantStatuses(session.Combat.Enemy)}");
+            GUILayout.Label($"Selected: {session.Combat.SelectedDiceCount}/3 / Cooldown shown per die");
+            GUILayout.Label($"Log: {session.Combat.LastMessage}");
 
             for (var i = 0; i < session.Combat.DiceFaces.Count; i++)
             {
                 var face = session.Combat.DiceFaces[i];
-                var prefix = face.IsCoolingDown ? "[CD] " : face.Selected ? "[x] " : "[ ] ";
-                if (GUILayout.Button(prefix + face.Label))
+                if (GUILayout.Button(CombatRuntimeService.DescribeDiceFace(face)))
                 {
                     CombatRuntimeService.ToggleDieSelection(session, i);
                 }

@@ -17,10 +17,11 @@ namespace Conn.Runtime.World
         {
             if (!CanInteract)
             {
-                RuntimeNoticeService.Set(GameSession.Instance.State, "The gate is closed. Accept a quest first.");
+                RuntimeNoticeService.Set(GameSession.Instance.State, ChapterOneUxText.GateBlockedNotice());
                 return;
             }
 
+            RuntimeNoticeService.Set(GameSession.Instance.State, ChapterOneUxText.GateAllowedNotice(GameSession.Instance.State));
             SceneFlowService.Load(GameSceneId.Dungeon);
         }
     }

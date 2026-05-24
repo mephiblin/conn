@@ -1,4 +1,5 @@
 using UnityEngine;
+using Conn.Runtime.Session;
 
 namespace Conn.Runtime.World
 {
@@ -11,6 +12,7 @@ namespace Conn.Runtime.World
         public void Interact()
         {
             TownShopPanelState.Open(TownShopPanelKind.SkillMerchant);
+            RuntimeNoticeService.Set(GameSession.Instance.State, ChapterOneUxText.SkillMerchantOpenNotice(GameSession.Instance.State));
         }
     }
 }
