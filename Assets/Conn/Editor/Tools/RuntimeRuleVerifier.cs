@@ -4,6 +4,7 @@ using Conn.Core.Items;
 using Conn.Core.Quests;
 using Conn.Core.Session;
 using Conn.Core.Skills;
+using Conn.Runtime.Equipment;
 using Conn.Runtime.Inventory;
 using Conn.Runtime.Session;
 using Conn.Runtime.Combat;
@@ -17,6 +18,7 @@ namespace Conn.Editor.Tools
         public static void VerifyChapterOneCoreRules()
         {
             VerifyEquipmentDiceRules();
+            VerifyEquipmentLoadoutToggle();
             VerifyNewGameState();
             VerifyDiceSkillEffects();
             VerifyCombatHandoffStateKey();
@@ -65,6 +67,22 @@ namespace Conn.Editor.Tools
 
             QuestRuntimeService.RerollBoard(session);
             Expect(QuestRuntimeService.CurrentBoardOffer(session)?.QuestId == QuestCatalog.GuardPatrolId, "Quest board reroll must advance to next offer.");
+        }
+
+        private static void VerifyEquipmentLoadoutToggle()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+            session.Inventory.AddItem(EquipmentCatalog.IronShieldId);
+            session.Inventory.AddItem(EquipmentCatalog.GreatAxeId);
+
+            Expect(EquipmentRuntimeService.ToggleOwnedLoadout(session), "Owned loadout toggle must equip two-hand weapon when available.");
+            Expect(session.Equipment.WeaponGrip == WeaponGrip.TwoHand, "First loadout toggle must switch to two-hand.");
+            Expect(session.Equipment.DiceCount == 5, "Two-hand loadout must provide 5 dice.");
+
+            Expect(EquipmentRuntimeService.ToggleOwnedLoadout(session), "Owned loadout toggle must return to one-hand shield when available.");
+            Expect(session.Equipment.WeaponGrip == WeaponGrip.OneHandAndShield, "Second loadout toggle must switch to one-hand shield.");
+            Expect(session.Equipment.DiceCount == 3, "One-hand shield loadout must provide 3 dice.");
         }
 
         private static void VerifyDiceSkillEffects()

@@ -1,4 +1,5 @@
 using Conn.Core.Items;
+using Conn.Runtime.Equipment;
 using Conn.Runtime.Inventory;
 using Conn.Runtime.Session;
 using UnityEngine;
@@ -35,6 +36,7 @@ namespace Conn.Rendering.Player
             Look();
             Move();
             UsePotionShortcut();
+            ToggleLoadoutShortcut();
         }
 
         private void Look()
@@ -121,6 +123,27 @@ namespace Conn.Rendering.Player
             return Keyboard.current != null && Keyboard.current.qKey.wasPressedThisFrame;
 #elif ENABLE_LEGACY_INPUT_MANAGER
             return Input.GetKeyDown(KeyCode.Q);
+#else
+            return false;
+#endif
+        }
+
+        private static void ToggleLoadoutShortcut()
+        {
+            if (!ReadToggleLoadoutPressed())
+            {
+                return;
+            }
+
+            EquipmentRuntimeService.ToggleOwnedLoadout(GameSession.Instance.State);
+        }
+
+        private static bool ReadToggleLoadoutPressed()
+        {
+#if ENABLE_INPUT_SYSTEM
+            return Keyboard.current != null && Keyboard.current.rKey.wasPressedThisFrame;
+#elif ENABLE_LEGACY_INPUT_MANAGER
+            return Input.GetKeyDown(KeyCode.R);
 #else
             return false;
 #endif

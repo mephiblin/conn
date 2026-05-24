@@ -4,6 +4,7 @@ using Conn.Core.Quests;
 using Conn.Core.Session;
 using Conn.Core.Skills;
 using Conn.Runtime.Combat;
+using Conn.Runtime.Equipment;
 using Conn.Runtime.Inventory;
 using Conn.Runtime.Session;
 using Conn.Runtime.World;
@@ -54,6 +55,23 @@ namespace Conn.Tests.EditMode
             QuestRuntimeService.RerollBoard(session);
 
             Assert.That(QuestRuntimeService.CurrentBoardOffer(session)?.QuestId, Is.EqualTo(QuestCatalog.GuardPatrolId));
+        }
+
+        [Test]
+        public void OwnedLoadoutToggleSwitchesDiceRules()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+            session.Inventory.AddItem(EquipmentCatalog.IronShieldId);
+            session.Inventory.AddItem(EquipmentCatalog.GreatAxeId);
+
+            Assert.That(EquipmentRuntimeService.ToggleOwnedLoadout(session), Is.True);
+            Assert.That(session.Equipment.WeaponGrip, Is.EqualTo(WeaponGrip.TwoHand));
+            Assert.That(session.Equipment.DiceCount, Is.EqualTo(5));
+
+            Assert.That(EquipmentRuntimeService.ToggleOwnedLoadout(session), Is.True);
+            Assert.That(session.Equipment.WeaponGrip, Is.EqualTo(WeaponGrip.OneHandAndShield));
+            Assert.That(session.Equipment.DiceCount, Is.EqualTo(3));
         }
 
         [Test]

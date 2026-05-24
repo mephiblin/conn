@@ -1,4 +1,5 @@
 using Conn.Core.Equipment;
+using Conn.Runtime.Equipment;
 using Conn.Runtime.Session;
 using UnityEngine;
 
@@ -48,7 +49,7 @@ namespace Conn.Runtime.World
                 return;
             }
 
-            ToggleOwnedLoadout();
+            EquipmentRuntimeService.ToggleOwnedLoadout(session);
         }
 
         private static string GetNextOfferId(bool hasShield, bool hasGreatAxe)
@@ -81,25 +82,6 @@ namespace Conn.Runtime.World
             session.Equipment.Equip(itemId);
             GameSession.Instance.SaveGame();
             Debug.Log($"Bought and equipped {item.DisplayName}.");
-        }
-
-        private static void ToggleOwnedLoadout()
-        {
-            var session = GameSession.Instance.State;
-            if (session.Equipment.WeaponGrip == WeaponGrip.TwoHand && session.Inventory.HasItem(EquipmentCatalog.RustySwordId))
-            {
-                session.Equipment.Equip(EquipmentCatalog.RustySwordId);
-                if (session.Inventory.HasItem(EquipmentCatalog.IronShieldId))
-                {
-                    session.Equipment.Equip(EquipmentCatalog.IronShieldId);
-                }
-                return;
-            }
-
-            if (session.Inventory.HasItem(EquipmentCatalog.GreatAxeId))
-            {
-                session.Equipment.Equip(EquipmentCatalog.GreatAxeId);
-            }
         }
 
         private static string FindFirstSellableItemId()
