@@ -155,7 +155,7 @@ namespace Conn.UI.Runtime
 
                 if (GUILayout.Button("Keep Exploring"))
                 {
-                    session.Quest.ReturnPromptSeen = true;
+                    QuestRuntimeService.KeepExploring(session);
                 }
 
                 GUILayout.Space(8);

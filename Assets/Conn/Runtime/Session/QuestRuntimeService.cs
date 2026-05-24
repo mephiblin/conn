@@ -82,6 +82,17 @@ namespace Conn.Runtime.Session
             SaveIfPlaying();
         }
 
+        public static void KeepExploring(GameSessionState session)
+        {
+            if (!session.Quest.ReturnAvailable)
+            {
+                return;
+            }
+
+            session.Quest.ReturnPromptSeen = true;
+            SaveIfPlaying();
+        }
+
         public static void ReturnToTown(GameSessionState session)
         {
             CompleteReturn(session);

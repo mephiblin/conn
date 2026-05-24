@@ -206,5 +206,19 @@ namespace Conn.Tests.EditMode
             Assert.That(session.Quest.LastCompletedQuestTitle, Is.EqualTo(title));
             Assert.That(session.Quest.LastGoldReward, Is.EqualTo(reward));
         }
+
+        [Test]
+        public void KeepExploringDismissesReturnPromptButKeepsReturnAvailable()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+            QuestRuntimeService.AcceptQuest(session, QuestCatalog.TestHuntId);
+            QuestRuntimeService.CompleteTarget(session, "field_monster_alpha");
+
+            QuestRuntimeService.KeepExploring(session);
+
+            Assert.That(session.Quest.ReturnPromptSeen, Is.True);
+            Assert.That(session.Quest.ReturnAvailable, Is.True);
+        }
     }
 }

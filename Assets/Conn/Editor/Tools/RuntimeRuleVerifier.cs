@@ -26,6 +26,7 @@ namespace Conn.Editor.Tools
             VerifyCombatHandoffStateKey();
             VerifyQuestBoardFlow();
             VerifyQuestReturnRewardSummary();
+            VerifyKeepExploringReturnPrompt();
             VerifyEquipmentAndSkillDisplayData();
             VerifyConsumables();
             VerifySkillSaleProtection();
@@ -222,6 +223,22 @@ namespace Conn.Editor.Tools
             Expect(session.Gold == goldBefore + reward, "Returning to town must grant quest gold reward.");
             Expect(session.Quest.LastCompletedQuestTitle == title, "Returning to town must record completed quest title.");
             Expect(session.Quest.LastGoldReward == reward, "Returning to town must record gold reward summary.");
+        }
+
+        private static void VerifyKeepExploringReturnPrompt()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+            QuestRuntimeService.AcceptQuest(session, QuestCatalog.TestHuntId);
+            QuestRuntimeService.CompleteTarget(session, "field_monster_alpha");
+
+            Expect(session.Quest.ReturnAvailable, "Completing target must allow return.");
+            Expect(!session.Quest.ReturnPromptSeen, "Completing target must show return prompt.");
+
+            QuestRuntimeService.KeepExploring(session);
+
+            Expect(session.Quest.ReturnPromptSeen, "Keeping exploration must persist return prompt dismissal.");
+            Expect(session.Quest.ReturnAvailable, "Keeping exploration must keep return available.");
         }
 
         private static void Expect(bool condition, string message)
