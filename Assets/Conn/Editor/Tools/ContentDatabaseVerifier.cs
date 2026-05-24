@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Conn.Core.Combat;
 using Conn.Core.Equipment;
 using Conn.Core.Items;
 using Conn.Core.Quests;
@@ -17,6 +18,8 @@ namespace Conn.Editor.Tools
             VerifyEquipment();
             VerifyConsumables();
             VerifySkills();
+            VerifyMonsters();
+            VerifyEncounters();
             VerifyQuests();
             Debug.Log("Conn content database verification passed.");
         }
@@ -68,7 +71,34 @@ namespace Conn.Editor.Tools
                 ExpectId(ids, quest.QuestId, "quest");
                 Expect(!string.IsNullOrWhiteSpace(quest.DisplayName), $"Quest {quest.QuestId} must have display name.");
                 Expect(!string.IsNullOrWhiteSpace(quest.TargetMonsterId), $"Quest {quest.QuestId} must have target monster id.");
+                Expect(MonsterCatalog.Find(quest.TargetMonsterId) != null, $"Quest {quest.QuestId} target monster must exist: {quest.TargetMonsterId}");
+                Expect(EncounterCatalog.FindForMonster(quest.TargetMonsterId) != null, $"Quest {quest.QuestId} target monster must have an encounter: {quest.TargetMonsterId}");
                 Expect(quest.GoldReward > 0, $"Quest {quest.QuestId} gold reward must be positive.");
+            }
+        }
+
+        private static void VerifyMonsters()
+        {
+            var ids = new HashSet<string>();
+            foreach (var monster in MonsterCatalog.All)
+            {
+                ExpectId(ids, monster.MonsterId, "monster");
+                Expect(!string.IsNullOrWhiteSpace(monster.DisplayName), $"Monster {monster.MonsterId} must have display name.");
+                Expect(monster.MaxHp > 0, $"Monster {monster.MonsterId} max HP must be positive.");
+                Expect(monster.AttackPower > 0, $"Monster {monster.MonsterId} attack power must be positive.");
+                Expect(monster.XpReward >= 0, $"Monster {monster.MonsterId} XP reward must be non-negative.");
+            }
+        }
+
+        private static void VerifyEncounters()
+        {
+            var ids = new HashSet<string>();
+            foreach (var encounter in EncounterCatalog.All)
+            {
+                ExpectId(ids, encounter.EncounterId, "encounter");
+                Expect(!string.IsNullOrWhiteSpace(encounter.DisplayName), $"Encounter {encounter.EncounterId} must have display name.");
+                Expect(MonsterCatalog.Find(encounter.MonsterId) != null, $"Encounter {encounter.EncounterId} monster must exist: {encounter.MonsterId}");
+                Expect(encounter.XpReward >= 0, $"Encounter {encounter.EncounterId} XP reward must be non-negative.");
             }
         }
 

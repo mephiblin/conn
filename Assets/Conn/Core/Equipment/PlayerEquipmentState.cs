@@ -5,6 +5,11 @@ namespace Conn.Core.Equipment
     {
         public string EquippedWeaponId = EquipmentCatalog.RustySwordId;
         public string EquippedShieldId = string.Empty;
+        public string EquippedHeadId = string.Empty;
+        public string EquippedChestId = string.Empty;
+        public string EquippedArmsId = string.Empty;
+        public string EquippedLegsId = string.Empty;
+        public string EquippedFeetId = string.Empty;
 
         public WeaponGrip WeaponGrip
         {
@@ -45,7 +50,13 @@ namespace Conn.Core.Equipment
 
         public bool IsEquipped(string itemId)
         {
-            return EquippedWeaponId == itemId || EquippedShieldId == itemId;
+            return EquippedWeaponId == itemId
+                || EquippedShieldId == itemId
+                || EquippedHeadId == itemId
+                || EquippedChestId == itemId
+                || EquippedArmsId == itemId
+                || EquippedLegsId == itemId
+                || EquippedFeetId == itemId;
         }
 
         public void Equip(string itemId)
@@ -59,6 +70,36 @@ namespace Conn.Core.Equipment
             if (item.Kind == EquipmentKind.Shield)
             {
                 EquippedShieldId = itemId;
+                return;
+            }
+
+            if (item.Kind == EquipmentKind.HeadArmor)
+            {
+                EquippedHeadId = itemId;
+                return;
+            }
+
+            if (item.Kind == EquipmentKind.ChestArmor)
+            {
+                EquippedChestId = itemId;
+                return;
+            }
+
+            if (item.Kind == EquipmentKind.ArmsArmor)
+            {
+                EquippedArmsId = itemId;
+                return;
+            }
+
+            if (item.Kind == EquipmentKind.LegsArmor)
+            {
+                EquippedLegsId = itemId;
+                return;
+            }
+
+            if (item.Kind == EquipmentKind.FeetArmor)
+            {
+                EquippedFeetId = itemId;
                 return;
             }
 

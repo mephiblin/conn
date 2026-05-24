@@ -19,9 +19,19 @@ namespace Conn.Runtime.Combat
             session.Combat.PlayerDefenseBonus = session.Equipment.DefenseBonus;
             var handoff = FieldMonsterRuntimeService.FindCombatHandoff(session);
             session.Combat.FieldMonsterStateKey = handoff != null ? handoff.StateKey : string.Empty;
+            var encounter = ResolveEncounter(session, handoff);
+            var monsterId = encounter != null ? encounter.MonsterId : ResolveMonsterId(session, handoff);
+            var monster = MonsterCatalog.Find(monsterId);
             session.Skills.ResizeEquippedFaces(session.Combat.PlayerDiceCount);
             session.Combat.Player.Setup("player", "Player", session.Player.MaxHp, session.Player.Hp);
-            session.Combat.Enemy.Setup(session.Quest.TargetMonsterId, "Test Monster", 12);
+            session.Combat.EncounterId = encounter != null ? encounter.EncounterId : string.Empty;
+            session.Combat.MonsterId = monster != null ? monster.MonsterId : monsterId;
+            session.Combat.EnemyAttackPower = monster != null ? monster.AttackPower : 4;
+            session.Combat.XpReward = ResolveXpReward(encounter, monster);
+            session.Combat.Enemy.Setup(
+                session.Combat.MonsterId,
+                monster != null ? monster.DisplayName : "Unknown Monster",
+                monster != null ? monster.MaxHp : 12);
             BuildDiceFaces(session);
             session.Combat.LastMessage = $"Combat started. Dice: {session.Combat.PlayerDiceCount}";
         }
@@ -142,7 +152,8 @@ namespace Conn.Runtime.Combat
 
         private static void EnemyAttack(GameSessionState session, int guard)
         {
-            var damage = 4 - session.Combat.PlayerDefenseBonus - guard;
+            var attackPower = session.Combat.EnemyAttackPower > 0 ? session.Combat.EnemyAttackPower : 4;
+            var damage = attackPower - session.Combat.PlayerDefenseBonus - guard;
             if (damage < 1)
             {
                 damage = 1;
@@ -164,10 +175,15 @@ namespace Conn.Runtime.Combat
 
         private static void Win(GameSessionState session)
         {
+            var xpReward = session.Combat.XpReward;
             session.Combat.LastMessage = "Enemy defeated.";
             session.Combat.Active = false;
-            session.Player.GainXp(5);
-            RuntimeNoticeService.Set(session, "Enemy defeated. Gained 5 XP.");
+            if (xpReward > 0)
+            {
+                session.Player.GainXp(xpReward);
+            }
+
+            RuntimeNoticeService.Set(session, $"Enemy defeated. Gained {xpReward} XP.");
             var stateKey = string.IsNullOrWhiteSpace(session.Combat.FieldMonsterStateKey)
                 ? "field_monster_test_guard"
                 : session.Combat.FieldMonsterStateKey;
@@ -184,6 +200,32 @@ namespace Conn.Runtime.Combat
             {
                 StartTestCombat(session);
             }
+        }
+
+        private static EncounterDefinition ResolveEncounter(GameSessionState session, Conn.Core.World.FieldMonsterState handoff)
+        {
+            var encounter = handoff != null ? EncounterCatalog.Find(handoff.EncounterId) : null;
+            return encounter ?? EncounterCatalog.FindForMonster(ResolveMonsterId(session, handoff));
+        }
+
+        private static string ResolveMonsterId(GameSessionState session, Conn.Core.World.FieldMonsterState handoff)
+        {
+            if (handoff != null && !string.IsNullOrWhiteSpace(handoff.MonsterId))
+            {
+                return handoff.MonsterId;
+            }
+
+            return session.Quest.TargetMonsterId;
+        }
+
+        private static int ResolveXpReward(EncounterDefinition encounter, MonsterDefinition monster)
+        {
+            if (encounter != null && encounter.XpReward > 0)
+            {
+                return encounter.XpReward;
+            }
+
+            return monster != null ? monster.XpReward : 0;
         }
 
         private static void BuildDiceFaces(GameSessionState session)

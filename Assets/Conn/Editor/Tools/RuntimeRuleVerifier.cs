@@ -1,4 +1,5 @@
 using System;
+using Conn.Core.Combat;
 using Conn.Core.Equipment;
 using Conn.Core.Items;
 using Conn.Core.Quests;
@@ -22,11 +23,13 @@ namespace Conn.Editor.Tools
             ContentDatabaseVerifier.VerifyContentDatabase();
             VerifyP1VerticalSliceFlow();
             VerifyEquipmentDiceRules();
+            VerifyArmorSlotEquipRules();
             VerifyEquipmentLoadoutToggle();
             VerifyDirectEquipmentChangesResizeSkillFaces();
             VerifyNewGameState();
             VerifyDiceSkillEffects();
             VerifyCombatWinGrantsXp();
+            VerifyCombatContentDefinitions();
             VerifyCombatFleeRestoresDungeonState();
             VerifyCombatDeathRoutesToEndingState();
             VerifyFieldMonsterExpeditionStatus();
@@ -68,6 +71,11 @@ namespace Conn.Editor.Tools
             CombatRuntimeService.StartTestCombat(session);
             Expect(session.Combat.Active, "P1 flow combat scene must start combat session.");
             Expect(session.Combat.FieldMonsterStateKey == "field_monster_test_guard", "P1 flow combat must remember source monster state.");
+            Expect(session.Combat.EncounterId == EncounterCatalog.TestGuardId, "P1 flow combat must resolve the test guard encounter.");
+            Expect(session.Combat.Enemy.Id == MonsterCatalog.TestGuardId, "P1 flow combat must resolve the test guard monster.");
+            Expect(session.Combat.Enemy.MaxHp == MonsterCatalog.Find(MonsterCatalog.TestGuardId).MaxHp, "P1 flow combat must use monster HP data.");
+            Expect(session.Combat.EnemyAttackPower == MonsterCatalog.Find(MonsterCatalog.TestGuardId).AttackPower, "P1 flow combat must use monster attack data.");
+            Expect(session.Combat.XpReward == EncounterCatalog.Find(EncounterCatalog.TestGuardId).XpReward, "P1 flow combat must use encounter XP reward data.");
 
             QuestRuntimeService.CompleteTarget(session, session.Combat.FieldMonsterStateKey);
             session.Combat.Active = false;
@@ -75,8 +83,8 @@ namespace Conn.Editor.Tools
             Expect(session.Quest.TargetDefeated, "P1 flow combat win must mark quest target defeated.");
             Expect(session.Quest.ReturnAvailable, "P1 flow combat win must enable return.");
             Expect(FieldMonsterRuntimeService.IsDefeated(session, "field_monster_test_guard"), "P1 flow combat win must clear field monster.");
-            session.Player.GainXp(5);
-            Expect(session.Player.Xp >= 5, "P1 flow combat win must grant XP.");
+            session.Player.GainXp(session.Combat.XpReward);
+            Expect(session.Player.Xp >= EncounterCatalog.Find(EncounterCatalog.TestGuardId).XpReward, "P1 flow combat win must grant XP.");
 
             QuestRuntimeService.KeepExploring(session);
             Expect(session.Quest.ReturnPromptSeen, "P1 flow keep exploring must dismiss prompt.");
@@ -110,6 +118,24 @@ namespace Conn.Editor.Tools
             equipment.Equip(EquipmentCatalog.GreatAxeId);
             Expect(equipment.DiceCount == 5, "Two-hand weapon must provide 5 dice.");
             Expect(string.IsNullOrEmpty(equipment.EquippedShieldId), "Two-hand weapon must clear shield.");
+        }
+
+        private static void VerifyArmorSlotEquipRules()
+        {
+            var equipment = new PlayerEquipmentState();
+
+            equipment.Equip(EquipmentCatalog.LeatherCapId);
+            equipment.Equip(EquipmentCatalog.PaddedVestId);
+            equipment.Equip(EquipmentCatalog.TravelerGlovesId);
+            equipment.Equip(EquipmentCatalog.ReinforcedPantsId);
+            equipment.Equip(EquipmentCatalog.WornBootsId);
+
+            Expect(equipment.EquippedHeadId == EquipmentCatalog.LeatherCapId, "Head armor must equip into head slot.");
+            Expect(equipment.EquippedChestId == EquipmentCatalog.PaddedVestId, "Chest armor must equip into chest slot.");
+            Expect(equipment.EquippedArmsId == EquipmentCatalog.TravelerGlovesId, "Arms armor must equip into arms slot.");
+            Expect(equipment.EquippedLegsId == EquipmentCatalog.ReinforcedPantsId, "Leg armor must equip into legs slot.");
+            Expect(equipment.EquippedFeetId == EquipmentCatalog.WornBootsId, "Feet armor must equip into feet slot.");
+            Expect(equipment.IsEquipped(EquipmentCatalog.PaddedVestId), "Equipped armor must be reported as equipped.");
         }
 
         private static void VerifyNewGameState()
@@ -217,7 +243,7 @@ namespace Conn.Editor.Tools
             var session = new GameSessionState();
             session.StartNewGame();
             QuestRuntimeService.AcceptQuest(session, QuestCatalog.TestHuntId);
-            FieldMonsterRuntimeService.Register(session, "field_monster_alpha", "placement_alpha", "encounter_alpha", session.Quest.TargetMonsterId);
+            FieldMonsterRuntimeService.Register(session, "field_monster_alpha", "placement_alpha", EncounterCatalog.TestGuardId, session.Quest.TargetMonsterId);
             FieldMonsterRuntimeService.MarkCombatHandoff(session, "field_monster_alpha");
             CombatRuntimeService.StartTestCombat(session);
             session.Combat.Enemy.Setup(session.Quest.TargetMonsterId, "Test Monster", 1);
@@ -225,9 +251,25 @@ namespace Conn.Editor.Tools
             CombatRuntimeService.ToggleDieSelection(session, 0);
             CombatRuntimeService.ResolveSelectedDice(session);
 
-            Expect(session.Player.Xp == 5, "Combat win must grant XP.");
+            Expect(session.Player.Xp == EncounterCatalog.Find(EncounterCatalog.TestGuardId).XpReward, "Combat win must grant XP from encounter data.");
             Expect(session.Quest.TargetDefeated, "Combat win must complete quest target.");
-            Expect(session.LastNotice.Contains("Gained 5 XP"), "Combat win must report XP gain.");
+            Expect(session.LastNotice.Contains($"Gained {EncounterCatalog.Find(EncounterCatalog.TestGuardId).XpReward} XP"), "Combat win must report XP gain.");
+        }
+
+        private static void VerifyCombatContentDefinitions()
+        {
+            var monster = MonsterCatalog.Find(MonsterCatalog.TestGuardId);
+            var encounter = EncounterCatalog.Find(EncounterCatalog.TestGuardId);
+            var quest = QuestCatalog.Find(QuestCatalog.TestHuntId);
+
+            Expect(monster != null, "Test guard monster definition must exist.");
+            Expect(encounter != null, "Test guard encounter definition must exist.");
+            Expect(quest != null, "Test hunt quest definition must exist.");
+            Expect(monster.MaxHp == 12, "Test guard monster HP must match combat tuning data.");
+            Expect(monster.AttackPower == 4, "Test guard monster attack must match combat tuning data.");
+            Expect(encounter.MonsterId == monster.MonsterId, "Test guard encounter must reference the test guard monster.");
+            Expect(encounter.XpReward == 5, "Test guard encounter must define the combat XP reward.");
+            Expect(quest.TargetMonsterId == monster.MonsterId, "Test hunt quest target must link to the test guard monster.");
         }
 
         private static void VerifyCombatFleeRestoresDungeonState()
@@ -235,7 +277,7 @@ namespace Conn.Editor.Tools
             var session = new GameSessionState();
             session.StartNewGame();
             QuestRuntimeService.AcceptQuest(session, QuestCatalog.TestHuntId);
-            FieldMonsterRuntimeService.Register(session, "field_monster_alpha", "placement_alpha", "encounter_alpha", session.Quest.TargetMonsterId);
+            FieldMonsterRuntimeService.Register(session, "field_monster_alpha", "placement_alpha", EncounterCatalog.TestGuardId, session.Quest.TargetMonsterId);
             FieldMonsterRuntimeService.MarkCombatHandoff(session, "field_monster_alpha");
             CombatRuntimeService.StartTestCombat(session);
 
@@ -269,7 +311,7 @@ namespace Conn.Editor.Tools
 
             Expect(FieldMonsterRuntimeService.ExpeditionStatus(session).Contains("none registered"), "Expedition HUD must expose missing field monster registration.");
 
-            FieldMonsterRuntimeService.Register(session, "field_monster_alpha", "placement_alpha", "encounter_alpha", session.Quest.TargetMonsterId);
+            FieldMonsterRuntimeService.Register(session, "field_monster_alpha", "placement_alpha", EncounterCatalog.TestGuardId, session.Quest.TargetMonsterId);
 
             Expect(FieldMonsterRuntimeService.CountActive(session) == 1, "Field monster runtime must count active monsters.");
             Expect(FieldMonsterRuntimeService.ExpeditionStatus(session).Contains("1 active"), "Expedition HUD must expose active field monster count.");
@@ -324,7 +366,7 @@ namespace Conn.Editor.Tools
             var session = new GameSessionState();
             session.StartNewGame();
             QuestRuntimeService.AcceptQuest(session, QuestCatalog.TestHuntId);
-            FieldMonsterRuntimeService.Register(session, "field_monster_alpha", "placement_alpha", "encounter_alpha", session.Quest.TargetMonsterId);
+            FieldMonsterRuntimeService.Register(session, "field_monster_alpha", "placement_alpha", EncounterCatalog.TestGuardId, session.Quest.TargetMonsterId);
             FieldMonsterRuntimeService.MarkCombatHandoff(session, "field_monster_alpha");
 
             CombatRuntimeService.StartTestCombat(session);
@@ -445,10 +487,21 @@ namespace Conn.Editor.Tools
             Expect(session.Inventory.HasItem(EquipmentCatalog.IronShieldId), "Blacksmith purchase must add equipment to inventory.");
             Expect(session.Equipment.EquippedShieldId == EquipmentCatalog.IronShieldId, "Blacksmith purchase must equip shield.");
             Expect(!EquipmentShopRuntimeService.CanSell(session, EquipmentCatalog.IronShieldId), "Equipped shield must not be sellable.");
+            Expect(!EquipmentShopRuntimeService.CanSell(session, EquipmentCatalog.RustySwordId), "Required starter sword must not be sellable.");
+
+            Expect(EquipmentShopRuntimeService.CanBuy(session, EquipmentCatalog.LeatherCapId), "Blacksmith must expose affordable head armor purchase.");
+            Expect(EquipmentShopRuntimeService.BuyAndEquip(session, EquipmentCatalog.LeatherCapId), "Blacksmith must buy and equip head armor.");
+            Expect(session.Equipment.EquippedHeadId == EquipmentCatalog.LeatherCapId, "Blacksmith armor purchase must equip the matching armor slot.");
+            Expect(!EquipmentShopRuntimeService.CanSell(session, EquipmentCatalog.LeatherCapId), "Equipped armor must not be sellable.");
 
             session.Inventory.AddItem(EquipmentCatalog.GreatAxeId);
             Expect(EquipmentShopRuntimeService.Sell(session, EquipmentCatalog.GreatAxeId), "Blacksmith must sell unequipped equipment.");
             Expect(!session.Inventory.HasItem(EquipmentCatalog.GreatAxeId), "Blacksmith sale must remove equipment from inventory.");
+
+            session.Inventory.AddItem(EquipmentCatalog.PaddedVestId);
+            Expect(EquipmentShopRuntimeService.CanSell(session, EquipmentCatalog.PaddedVestId), "Unequipped armor must be sellable.");
+            Expect(EquipmentShopRuntimeService.Sell(session, EquipmentCatalog.PaddedVestId), "Blacksmith must sell unequipped armor.");
+            Expect(!session.Inventory.HasItem(EquipmentCatalog.PaddedVestId), "Blacksmith armor sale must remove equipment from inventory.");
 
             var goldBeforeSkill = session.Gold;
             Expect(SkillShopRuntimeService.BuyAndEquip(session, SkillCatalog.GuardId), "Skill merchant must buy and equip skill.");
@@ -479,7 +532,17 @@ namespace Conn.Editor.Tools
             source.Player.GainXp(7);
             source.Gold = 42;
             source.Inventory.AddItem(EquipmentCatalog.IronShieldId);
+            source.Inventory.AddItem(EquipmentCatalog.LeatherCapId);
+            source.Inventory.AddItem(EquipmentCatalog.PaddedVestId);
+            source.Inventory.AddItem(EquipmentCatalog.TravelerGlovesId);
+            source.Inventory.AddItem(EquipmentCatalog.ReinforcedPantsId);
+            source.Inventory.AddItem(EquipmentCatalog.WornBootsId);
             source.Equipment.Equip(EquipmentCatalog.IronShieldId);
+            source.Equipment.Equip(EquipmentCatalog.LeatherCapId);
+            source.Equipment.Equip(EquipmentCatalog.PaddedVestId);
+            source.Equipment.Equip(EquipmentCatalog.TravelerGlovesId);
+            source.Equipment.Equip(EquipmentCatalog.ReinforcedPantsId);
+            source.Equipment.Equip(EquipmentCatalog.WornBootsId);
             source.Skills.AddSkill(SkillCatalog.GuardId);
             SkillRuntimeService.CycleNextEditFace(source);
             QuestRuntimeService.AcceptQuest(source, QuestCatalog.TestHuntId);
@@ -496,10 +559,26 @@ namespace Conn.Editor.Tools
             Expect(loaded.Gold == 42, "Save contract must preserve gold.");
             Expect(loaded.LastNotice == "saved notice", "Save contract must preserve last notice.");
             Expect(loaded.Equipment.WeaponGrip == WeaponGrip.OneHandAndShield, "Save contract must preserve equipment.");
+            Expect(loaded.Equipment.EquippedHeadId == EquipmentCatalog.LeatherCapId, "Save contract must preserve head armor.");
+            Expect(loaded.Equipment.EquippedChestId == EquipmentCatalog.PaddedVestId, "Save contract must preserve chest armor.");
+            Expect(loaded.Equipment.EquippedArmsId == EquipmentCatalog.TravelerGlovesId, "Save contract must preserve arms armor.");
+            Expect(loaded.Equipment.EquippedLegsId == EquipmentCatalog.ReinforcedPantsId, "Save contract must preserve legs armor.");
+            Expect(loaded.Equipment.EquippedFeetId == EquipmentCatalog.WornBootsId, "Save contract must preserve feet armor.");
             Expect(loaded.Skills.NextEditFaceIndex == source.Skills.NextEditFaceIndex, "Save contract must preserve next skill edit face.");
             Expect(loaded.Quest.ActiveQuestId == QuestCatalog.TestHuntId, "Save contract must preserve active quest.");
             Expect(!loaded.Combat.Active, "Continue load must clear active combat.");
             Expect(SaveRuntimeService.SceneForLoadedState(loaded) == GameSceneId.Dungeon, "Continue from combat mode must resume in Dungeon.");
+
+            source.Mode = GameMode.Ending;
+            source.Player.Damage(source.Player.MaxHp);
+            source.LastNotice = "You died.";
+            json = SaveRuntimeService.ToJson(source);
+            SaveRuntimeService.OverwriteFromJson(json, loaded);
+            loaded.Combat.Clear();
+
+            Expect(loaded.Mode == GameMode.Ending, "Save contract must preserve terminal ending mode.");
+            Expect(loaded.Player.IsDead, "Save contract must preserve death state.");
+            Expect(SaveRuntimeService.SceneForLoadedState(loaded) == GameSceneId.Ending, "Continue from death must return to Ending.");
         }
 
         private static void Expect(bool condition, string message)

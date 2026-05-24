@@ -44,6 +44,8 @@ namespace Conn.UI.Runtime
             GUILayout.Label($"Loadout: {session.Equipment.WeaponGrip} ({session.Equipment.DiceCount} dice)");
             GUILayout.Label($"Weapon: {EquipmentName(session.Equipment.EquippedWeaponId)}");
             GUILayout.Label($"Shield: {EquipmentName(session.Equipment.EquippedShieldId)}");
+            GUILayout.Label($"Armor: H {EquipmentName(session.Equipment.EquippedHeadId)} / C {EquipmentName(session.Equipment.EquippedChestId)}");
+            GUILayout.Label($"Armor: A {EquipmentName(session.Equipment.EquippedArmsId)} / L {EquipmentName(session.Equipment.EquippedLegsId)} / F {EquipmentName(session.Equipment.EquippedFeetId)}");
             GUILayout.Label($"Q potion / R loadout / T face {session.Skills.NextEditFaceIndex + 1}");
             GUILayout.Label($"Items: {session.Inventory.ItemIds.Count}");
             GUILayout.Label($"Potions: {ConsumableRuntimeService.Count(session, ConsumableCatalog.MinorPotionId)}");
@@ -89,13 +91,27 @@ namespace Conn.UI.Runtime
             }
             else if (sceneId == GameSceneId.Ending)
             {
-                if (GUILayout.Button("Back To Title"))
-                {
-                    SceneFlowService.Load(GameSceneId.Title);
-                }
+                EndingControls(session);
             }
 
             GUILayout.EndArea();
+        }
+
+        private static void EndingControls(GameSessionState session)
+        {
+            GUILayout.Label("Run ended.");
+            GUILayout.Label(session.Player.IsDead ? "Result: death" : "Result: ending");
+            GUILayout.Label("Continue returns here until a New Game overwrites the save.");
+            if (GUILayout.Button("New Game"))
+            {
+                GameSession.Instance.StartNewGame();
+                SceneFlowService.Load(GameSceneId.Town);
+            }
+
+            if (GUILayout.Button("Back To Title"))
+            {
+                SceneFlowService.Load(GameSceneId.Title);
+            }
         }
 
         private static void DrawCharacterPanelToggle(GameSessionState session)

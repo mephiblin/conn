@@ -36,6 +36,11 @@ namespace Conn.Core.Session
             Inventory.AddItem(EquipmentCatalog.RustySwordId);
             Equipment.EquippedWeaponId = EquipmentCatalog.RustySwordId;
             Equipment.EquippedShieldId = string.Empty;
+            Equipment.EquippedHeadId = string.Empty;
+            Equipment.EquippedChestId = string.Empty;
+            Equipment.EquippedArmsId = string.Empty;
+            Equipment.EquippedLegsId = string.Empty;
+            Equipment.EquippedFeetId = string.Empty;
             Skills.Clear();
             Skills.AddSkill(SkillCatalog.SlashId);
             Skills.EquipFirstOpenFace(SkillCatalog.SlashId, Equipment.DiceCount);

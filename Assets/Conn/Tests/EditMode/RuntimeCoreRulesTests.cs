@@ -1,3 +1,4 @@
+using Conn.Core.Combat;
 using Conn.Core.Equipment;
 using Conn.Core.Items;
 using Conn.Core.Quests;
@@ -40,6 +41,25 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void ArmorPiecesEquipIntoDocumentedSlots()
+        {
+            var equipment = new PlayerEquipmentState();
+
+            equipment.Equip(EquipmentCatalog.LeatherCapId);
+            equipment.Equip(EquipmentCatalog.PaddedVestId);
+            equipment.Equip(EquipmentCatalog.TravelerGlovesId);
+            equipment.Equip(EquipmentCatalog.ReinforcedPantsId);
+            equipment.Equip(EquipmentCatalog.WornBootsId);
+
+            Assert.That(equipment.EquippedHeadId, Is.EqualTo(EquipmentCatalog.LeatherCapId));
+            Assert.That(equipment.EquippedChestId, Is.EqualTo(EquipmentCatalog.PaddedVestId));
+            Assert.That(equipment.EquippedArmsId, Is.EqualTo(EquipmentCatalog.TravelerGlovesId));
+            Assert.That(equipment.EquippedLegsId, Is.EqualTo(EquipmentCatalog.ReinforcedPantsId));
+            Assert.That(equipment.EquippedFeetId, Is.EqualTo(EquipmentCatalog.WornBootsId));
+            Assert.That(equipment.IsEquipped(EquipmentCatalog.PaddedVestId), Is.True);
+        }
+
+        [Test]
         public void P1VerticalSliceRuntimeStateFlowCloses()
         {
             var session = new GameSessionState();
@@ -56,6 +76,11 @@ namespace Conn.Tests.EditMode
             Assert.That(session.Combat.Active, Is.True);
             Assert.That(session.Combat.FieldMonsterStateKey, Is.EqualTo("field_monster_test_guard"));
             Assert.That(session.Quest.TargetMonsterId, Is.EqualTo(boardOffer.TargetMonsterId));
+            Assert.That(session.Combat.EncounterId, Is.EqualTo(EncounterCatalog.TestGuardId));
+            Assert.That(session.Combat.Enemy.Id, Is.EqualTo(MonsterCatalog.TestGuardId));
+            Assert.That(session.Combat.Enemy.MaxHp, Is.EqualTo(MonsterCatalog.Find(MonsterCatalog.TestGuardId).MaxHp));
+            Assert.That(session.Combat.EnemyAttackPower, Is.EqualTo(MonsterCatalog.Find(MonsterCatalog.TestGuardId).AttackPower));
+            Assert.That(session.Combat.XpReward, Is.EqualTo(EncounterCatalog.Find(EncounterCatalog.TestGuardId).XpReward));
 
             QuestRuntimeService.CompleteTarget(session, session.Combat.FieldMonsterStateKey);
             session.Combat.Active = false;
@@ -63,8 +88,8 @@ namespace Conn.Tests.EditMode
 
             Assert.That(session.Quest.ReturnAvailable, Is.True);
             Assert.That(FieldMonsterRuntimeService.IsDefeated(session, "field_monster_test_guard"), Is.True);
-            session.Player.GainXp(5);
-            Assert.That(session.Player.Xp, Is.GreaterThanOrEqualTo(5));
+            session.Player.GainXp(session.Combat.XpReward);
+            Assert.That(session.Player.Xp, Is.GreaterThanOrEqualTo(EncounterCatalog.Find(EncounterCatalog.TestGuardId).XpReward));
 
             var goldBeforeReturn = session.Gold;
             var reward = session.Quest.GoldReward;
@@ -167,12 +192,29 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void CombatContentDefinitionsLinkQuestEncounterAndMonster()
+        {
+            var monster = MonsterCatalog.Find(MonsterCatalog.TestGuardId);
+            var encounter = EncounterCatalog.Find(EncounterCatalog.TestGuardId);
+            var quest = QuestCatalog.Find(QuestCatalog.TestHuntId);
+
+            Assert.That(monster, Is.Not.Null);
+            Assert.That(encounter, Is.Not.Null);
+            Assert.That(quest, Is.Not.Null);
+            Assert.That(monster.MaxHp, Is.EqualTo(12));
+            Assert.That(monster.AttackPower, Is.EqualTo(4));
+            Assert.That(encounter.MonsterId, Is.EqualTo(monster.MonsterId));
+            Assert.That(encounter.XpReward, Is.EqualTo(5));
+            Assert.That(quest.TargetMonsterId, Is.EqualTo(monster.MonsterId));
+        }
+
+        [Test]
         public void CombatWinGrantsXpAndCompletesQuestTarget()
         {
             var session = new GameSessionState();
             session.StartNewGame();
             QuestRuntimeService.AcceptQuest(session, QuestCatalog.TestHuntId);
-            FieldMonsterRuntimeService.Register(session, "field_monster_alpha", "placement_alpha", "encounter_alpha", session.Quest.TargetMonsterId);
+            FieldMonsterRuntimeService.Register(session, "field_monster_alpha", "placement_alpha", EncounterCatalog.TestGuardId, session.Quest.TargetMonsterId);
             FieldMonsterRuntimeService.MarkCombatHandoff(session, "field_monster_alpha");
             CombatRuntimeService.StartTestCombat(session);
             session.Combat.Enemy.Setup(session.Quest.TargetMonsterId, "Test Monster", 1);
@@ -180,9 +222,9 @@ namespace Conn.Tests.EditMode
             CombatRuntimeService.ToggleDieSelection(session, 0);
             CombatRuntimeService.ResolveSelectedDice(session);
 
-            Assert.That(session.Player.Xp, Is.EqualTo(5));
+            Assert.That(session.Player.Xp, Is.EqualTo(EncounterCatalog.Find(EncounterCatalog.TestGuardId).XpReward));
             Assert.That(session.Quest.TargetDefeated, Is.True);
-            Assert.That(session.LastNotice, Does.Contain("Gained 5 XP"));
+            Assert.That(session.LastNotice, Does.Contain($"Gained {EncounterCatalog.Find(EncounterCatalog.TestGuardId).XpReward} XP"));
         }
 
         [Test]
@@ -191,7 +233,7 @@ namespace Conn.Tests.EditMode
             var session = new GameSessionState();
             session.StartNewGame();
             QuestRuntimeService.AcceptQuest(session, QuestCatalog.TestHuntId);
-            FieldMonsterRuntimeService.Register(session, "field_monster_alpha", "placement_alpha", "encounter_alpha", session.Quest.TargetMonsterId);
+            FieldMonsterRuntimeService.Register(session, "field_monster_alpha", "placement_alpha", EncounterCatalog.TestGuardId, session.Quest.TargetMonsterId);
             FieldMonsterRuntimeService.MarkCombatHandoff(session, "field_monster_alpha");
             CombatRuntimeService.StartTestCombat(session);
 
@@ -227,7 +269,7 @@ namespace Conn.Tests.EditMode
 
             Assert.That(FieldMonsterRuntimeService.ExpeditionStatus(session), Does.Contain("none registered"));
 
-            FieldMonsterRuntimeService.Register(session, "field_monster_alpha", "placement_alpha", "encounter_alpha", session.Quest.TargetMonsterId);
+            FieldMonsterRuntimeService.Register(session, "field_monster_alpha", "placement_alpha", EncounterCatalog.TestGuardId, session.Quest.TargetMonsterId);
 
             Assert.That(FieldMonsterRuntimeService.CountActive(session), Is.EqualTo(1));
             Assert.That(FieldMonsterRuntimeService.ExpeditionStatus(session), Does.Contain("1 active"));
@@ -302,7 +344,7 @@ namespace Conn.Tests.EditMode
             var session = new GameSessionState();
             session.StartNewGame();
             QuestRuntimeService.AcceptQuest(session, QuestCatalog.TestHuntId);
-            FieldMonsterRuntimeService.Register(session, "field_monster_alpha", "placement_alpha", "encounter_alpha", session.Quest.TargetMonsterId);
+            FieldMonsterRuntimeService.Register(session, "field_monster_alpha", "placement_alpha", EncounterCatalog.TestGuardId, session.Quest.TargetMonsterId);
             FieldMonsterRuntimeService.MarkCombatHandoff(session, "field_monster_alpha");
 
             CombatRuntimeService.StartTestCombat(session);
@@ -414,11 +456,23 @@ namespace Conn.Tests.EditMode
             Assert.That(session.Inventory.HasItem(EquipmentCatalog.IronShieldId), Is.True);
             Assert.That(session.Equipment.EquippedShieldId, Is.EqualTo(EquipmentCatalog.IronShieldId));
             Assert.That(EquipmentShopRuntimeService.CanSell(session, EquipmentCatalog.IronShieldId), Is.False);
+            Assert.That(EquipmentShopRuntimeService.CanSell(session, EquipmentCatalog.RustySwordId), Is.False);
+
+            Assert.That(EquipmentShopRuntimeService.CanBuy(session, EquipmentCatalog.LeatherCapId), Is.True);
+            Assert.That(EquipmentShopRuntimeService.BuyAndEquip(session, EquipmentCatalog.LeatherCapId), Is.True);
+            Assert.That(session.Equipment.EquippedHeadId, Is.EqualTo(EquipmentCatalog.LeatherCapId));
+            Assert.That(EquipmentShopRuntimeService.CanSell(session, EquipmentCatalog.LeatherCapId), Is.False);
 
             session.Inventory.AddItem(EquipmentCatalog.GreatAxeId);
 
             Assert.That(EquipmentShopRuntimeService.Sell(session, EquipmentCatalog.GreatAxeId), Is.True);
             Assert.That(session.Inventory.HasItem(EquipmentCatalog.GreatAxeId), Is.False);
+
+            session.Inventory.AddItem(EquipmentCatalog.PaddedVestId);
+
+            Assert.That(EquipmentShopRuntimeService.CanSell(session, EquipmentCatalog.PaddedVestId), Is.True);
+            Assert.That(EquipmentShopRuntimeService.Sell(session, EquipmentCatalog.PaddedVestId), Is.True);
+            Assert.That(session.Inventory.HasItem(EquipmentCatalog.PaddedVestId), Is.False);
         }
 
         [Test]
@@ -458,7 +512,17 @@ namespace Conn.Tests.EditMode
             source.Player.GainXp(7);
             source.Gold = 42;
             source.Inventory.AddItem(EquipmentCatalog.IronShieldId);
+            source.Inventory.AddItem(EquipmentCatalog.LeatherCapId);
+            source.Inventory.AddItem(EquipmentCatalog.PaddedVestId);
+            source.Inventory.AddItem(EquipmentCatalog.TravelerGlovesId);
+            source.Inventory.AddItem(EquipmentCatalog.ReinforcedPantsId);
+            source.Inventory.AddItem(EquipmentCatalog.WornBootsId);
             source.Equipment.Equip(EquipmentCatalog.IronShieldId);
+            source.Equipment.Equip(EquipmentCatalog.LeatherCapId);
+            source.Equipment.Equip(EquipmentCatalog.PaddedVestId);
+            source.Equipment.Equip(EquipmentCatalog.TravelerGlovesId);
+            source.Equipment.Equip(EquipmentCatalog.ReinforcedPantsId);
+            source.Equipment.Equip(EquipmentCatalog.WornBootsId);
             source.Skills.AddSkill(SkillCatalog.GuardId);
             SkillRuntimeService.CycleNextEditFace(source);
             QuestRuntimeService.AcceptQuest(source, QuestCatalog.TestHuntId);
@@ -475,10 +539,26 @@ namespace Conn.Tests.EditMode
             Assert.That(loaded.Gold, Is.EqualTo(42));
             Assert.That(loaded.LastNotice, Is.EqualTo("saved notice"));
             Assert.That(loaded.Equipment.WeaponGrip, Is.EqualTo(WeaponGrip.OneHandAndShield));
+            Assert.That(loaded.Equipment.EquippedHeadId, Is.EqualTo(EquipmentCatalog.LeatherCapId));
+            Assert.That(loaded.Equipment.EquippedChestId, Is.EqualTo(EquipmentCatalog.PaddedVestId));
+            Assert.That(loaded.Equipment.EquippedArmsId, Is.EqualTo(EquipmentCatalog.TravelerGlovesId));
+            Assert.That(loaded.Equipment.EquippedLegsId, Is.EqualTo(EquipmentCatalog.ReinforcedPantsId));
+            Assert.That(loaded.Equipment.EquippedFeetId, Is.EqualTo(EquipmentCatalog.WornBootsId));
             Assert.That(loaded.Skills.NextEditFaceIndex, Is.EqualTo(source.Skills.NextEditFaceIndex));
             Assert.That(loaded.Quest.ActiveQuestId, Is.EqualTo(QuestCatalog.TestHuntId));
             Assert.That(loaded.Combat.Active, Is.False);
             Assert.That(SaveRuntimeService.SceneForLoadedState(loaded), Is.EqualTo(GameSceneId.Dungeon));
+
+            source.Mode = GameMode.Ending;
+            source.Player.Damage(source.Player.MaxHp);
+            source.LastNotice = "You died.";
+            json = SaveRuntimeService.ToJson(source);
+            SaveRuntimeService.OverwriteFromJson(json, loaded);
+            loaded.Combat.Clear();
+
+            Assert.That(loaded.Mode, Is.EqualTo(GameMode.Ending));
+            Assert.That(loaded.Player.IsDead, Is.True);
+            Assert.That(SaveRuntimeService.SceneForLoadedState(loaded), Is.EqualTo(GameSceneId.Ending));
         }
     }
 }
