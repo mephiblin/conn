@@ -8,6 +8,7 @@ using Conn.Runtime.Equipment;
 using Conn.Runtime.Inventory;
 using Conn.Runtime.Session;
 using Conn.Runtime.Combat;
+using Conn.Runtime.Skills;
 using Conn.Runtime.World;
 using UnityEngine;
 
@@ -21,6 +22,7 @@ namespace Conn.Editor.Tools
             VerifyEquipmentLoadoutToggle();
             VerifyNewGameState();
             VerifyDiceSkillEffects();
+            VerifySkillFaceCycling();
             VerifyCombatHandoffStateKey();
             VerifyQuestBoardFlow();
             VerifyEquipmentAndSkillDisplayData();
@@ -126,6 +128,20 @@ namespace Conn.Editor.Tools
             Expect(skills.RemoveLooseSkill(SkillCatalog.SlashId), "Loose duplicate skill must be removable.");
             Expect(skills.CountOwned(SkillCatalog.SlashId) == 1, "Selling loose duplicate must leave one owned Slash.");
             Expect(skills.CountEquipped(SkillCatalog.SlashId) == 1, "Selling loose duplicate must preserve equipped Slash.");
+        }
+
+        private static void VerifySkillFaceCycling()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+            session.Skills.AddSkill(SkillCatalog.GuardId);
+            session.Skills.AddSkill(SkillCatalog.MendId);
+
+            Expect(SkillRuntimeService.CycleEquippedFace(session, 0), "Cycling skill face must equip another owned skill.");
+            Expect(session.Skills.EquippedSkillIds[0] == SkillCatalog.GuardId, "First cycle must move Slash to Guard.");
+
+            Expect(SkillRuntimeService.CycleEquippedFace(session, 0), "Cycling skill face must continue through owned skills.");
+            Expect(session.Skills.EquippedSkillIds[0] == SkillCatalog.MendId, "Second cycle must move Guard to Mend.");
         }
 
         private static void VerifyConsumables()

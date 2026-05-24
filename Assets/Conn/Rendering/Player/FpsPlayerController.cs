@@ -2,6 +2,7 @@ using Conn.Core.Items;
 using Conn.Runtime.Equipment;
 using Conn.Runtime.Inventory;
 using Conn.Runtime.Session;
+using Conn.Runtime.Skills;
 using UnityEngine;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
@@ -37,6 +38,7 @@ namespace Conn.Rendering.Player
             Move();
             UsePotionShortcut();
             ToggleLoadoutShortcut();
+            CycleSkillFaceShortcut();
         }
 
         private void Look()
@@ -144,6 +146,25 @@ namespace Conn.Rendering.Player
             return Keyboard.current != null && Keyboard.current.rKey.wasPressedThisFrame;
 #elif ENABLE_LEGACY_INPUT_MANAGER
             return Input.GetKeyDown(KeyCode.R);
+#else
+            return false;
+#endif
+        }
+
+        private static void CycleSkillFaceShortcut()
+        {
+            if (ReadCycleSkillFacePressed())
+            {
+                SkillRuntimeService.CycleEquippedFace(GameSession.Instance.State, 0);
+            }
+        }
+
+        private static bool ReadCycleSkillFacePressed()
+        {
+#if ENABLE_INPUT_SYSTEM
+            return Keyboard.current != null && Keyboard.current.tKey.wasPressedThisFrame;
+#elif ENABLE_LEGACY_INPUT_MANAGER
+            return Input.GetKeyDown(KeyCode.T);
 #else
             return false;
 #endif

@@ -7,6 +7,7 @@ using Conn.Runtime.Combat;
 using Conn.Runtime.Equipment;
 using Conn.Runtime.Inventory;
 using Conn.Runtime.Session;
+using Conn.Runtime.Skills;
 using Conn.Runtime.World;
 using NUnit.Framework;
 
@@ -118,6 +119,21 @@ namespace Conn.Tests.EditMode
             Assert.That(skills.RemoveLooseSkill(SkillCatalog.SlashId), Is.True);
             Assert.That(skills.CountOwned(SkillCatalog.SlashId), Is.EqualTo(1));
             Assert.That(skills.CountEquipped(SkillCatalog.SlashId), Is.EqualTo(1));
+        }
+
+        [Test]
+        public void SkillFaceCycleMovesThroughOwnedSkills()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+            session.Skills.AddSkill(SkillCatalog.GuardId);
+            session.Skills.AddSkill(SkillCatalog.MendId);
+
+            Assert.That(SkillRuntimeService.CycleEquippedFace(session, 0), Is.True);
+            Assert.That(session.Skills.EquippedSkillIds[0], Is.EqualTo(SkillCatalog.GuardId));
+
+            Assert.That(SkillRuntimeService.CycleEquippedFace(session, 0), Is.True);
+            Assert.That(session.Skills.EquippedSkillIds[0], Is.EqualTo(SkillCatalog.MendId));
         }
 
         [Test]

@@ -1,0 +1,64 @@
+using Conn.Core.Session;
+using Conn.Core.Skills;
+using Conn.Runtime.Session;
+using UnityEngine;
+
+namespace Conn.Runtime.Skills
+{
+    public static class SkillRuntimeService
+    {
+        public static bool CycleEquippedFace(GameSessionState session, int faceIndex)
+        {
+            var diceCount = session.Equipment.DiceCount;
+            if (faceIndex < 0 || faceIndex >= diceCount || session.Skills.OwnedSkillIds.Count == 0)
+            {
+                return false;
+            }
+
+            while (session.Skills.EquippedSkillIds.Count < diceCount)
+            {
+                session.Skills.EquippedSkillIds.Add(string.Empty);
+            }
+
+            var currentSkillId = session.Skills.EquippedSkillIds[faceIndex];
+            var currentOwnedIndex = FindOwnedIndexAfter(session, currentSkillId);
+            for (var i = 0; i < session.Skills.OwnedSkillIds.Count; i++)
+            {
+                var nextIndex = (currentOwnedIndex + i) % session.Skills.OwnedSkillIds.Count;
+                var nextSkillId = session.Skills.OwnedSkillIds[nextIndex];
+                if (SkillCatalog.Find(nextSkillId) == null || nextSkillId == currentSkillId)
+                {
+                    continue;
+                }
+
+                session.Skills.EquippedSkillIds[faceIndex] = nextSkillId;
+                SaveIfPlaying();
+                Debug.Log($"Equipped face {faceIndex + 1}: {SkillCatalog.Find(nextSkillId).DisplayName}.");
+                return true;
+            }
+
+            return false;
+        }
+
+        private static int FindOwnedIndexAfter(GameSessionState session, string skillId)
+        {
+            for (var i = 0; i < session.Skills.OwnedSkillIds.Count; i++)
+            {
+                if (session.Skills.OwnedSkillIds[i] == skillId)
+                {
+                    return (i + 1) % session.Skills.OwnedSkillIds.Count;
+                }
+            }
+
+            return 0;
+        }
+
+        private static void SaveIfPlaying()
+        {
+            if (Application.isPlaying)
+            {
+                GameSession.Instance.SaveGame();
+            }
+        }
+    }
+}
