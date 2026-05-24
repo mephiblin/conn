@@ -4,6 +4,7 @@ using Conn.Core.Session;
 using Conn.Core.Skills;
 using Conn.Runtime.Scenes;
 using Conn.Runtime.Session;
+using UnityEngine;
 
 namespace Conn.Runtime.Combat
 {
@@ -125,7 +126,11 @@ namespace Conn.Runtime.Combat
             session.Combat.Player.Damage(damage);
             session.Player.Damage(damage);
             session.Combat.LastMessage += $" Enemy deals {damage}.";
-            GameSession.Instance.SaveGame();
+            if (Application.isPlaying)
+            {
+                GameSession.Instance.SaveGame();
+            }
+
             if (session.Player.IsDead)
             {
                 Die(session);
