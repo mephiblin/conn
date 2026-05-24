@@ -1,0 +1,143 @@
+using Conn.Core.Scenes;
+using Conn.Rendering.Player;
+using Conn.Runtime.Scenes;
+using Conn.UI.Runtime;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+
+namespace Conn.Editor.Tools
+{
+    public static class P0SceneBuilder
+    {
+        private const string SceneFolder = "Assets/Conn/Scenes";
+
+        [MenuItem("Conn/Build P0 Scenes")]
+        public static void BuildP0Scenes()
+        {
+            EnsureFolder("Assets/Conn");
+            EnsureFolder(SceneFolder);
+
+            CreateScene(GameSceneId.Title, false);
+            CreateScene(GameSceneId.Town, true);
+            CreateScene(GameSceneId.Dungeon, true, true);
+            CreateScene(GameSceneId.Combat, false);
+            CreateScene(GameSceneId.Ending, false);
+
+            EditorBuildSettings.scenes = new[]
+            {
+                BuildScene("Title"),
+                BuildScene("Town"),
+                BuildScene("Dungeon"),
+                BuildScene("Combat"),
+                BuildScene("Ending")
+            };
+
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+        }
+
+        private static EditorBuildSettingsScene BuildScene(string sceneName)
+        {
+            return new EditorBuildSettingsScene($"{SceneFolder}/{sceneName}.unity", true);
+        }
+
+        private static void CreateScene(GameSceneId sceneId, bool includePlayer, bool includeMonster = false)
+        {
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            scene.name = sceneId.ToString();
+
+            var bootstrapObject = new GameObject("Scene Bootstrap");
+            var bootstrap = bootstrapObject.AddComponent<SceneBootstrap>();
+            bootstrap.SceneId = sceneId;
+
+            var overlay = bootstrapObject.AddComponent<P0SceneOverlay>();
+            overlay.SceneId = sceneId;
+
+            CreateLight();
+            if (includePlayer)
+            {
+                CreatePlayer();
+                CreateGround(sceneId);
+            }
+            else
+            {
+                CreateCamera();
+            }
+
+            if (includeMonster)
+            {
+                CreateMonsterMarker();
+            }
+
+            EditorSceneManager.SaveScene(scene, $"{SceneFolder}/{sceneId}.unity");
+        }
+
+        private static void CreateCamera()
+        {
+            var cameraObject = new GameObject("Main Camera");
+            cameraObject.tag = "MainCamera";
+            var camera = cameraObject.AddComponent<Camera>();
+            camera.clearFlags = CameraClearFlags.Skybox;
+            cameraObject.transform.position = new Vector3(0f, 2.2f, -6f);
+            cameraObject.transform.rotation = Quaternion.Euler(12f, 0f, 0f);
+        }
+
+        private static void CreatePlayer()
+        {
+            var player = new GameObject("Player");
+            player.transform.position = new Vector3(0f, 1f, -4f);
+            var controller = player.AddComponent<CharacterController>();
+            controller.height = 1.8f;
+            controller.radius = 0.35f;
+            controller.center = new Vector3(0f, 0.9f, 0f);
+
+            var cameraObject = new GameObject("Main Camera");
+            cameraObject.tag = "MainCamera";
+            cameraObject.transform.SetParent(player.transform);
+            cameraObject.transform.localPosition = new Vector3(0f, 1.6f, 0f);
+            cameraObject.AddComponent<Camera>();
+
+            player.AddComponent<FpsPlayerController>();
+        }
+
+        private static void CreateGround(GameSceneId sceneId)
+        {
+            var ground = GameObject.CreatePrimitive(PrimitiveType.Plane);
+            ground.name = $"{sceneId} Ground";
+            ground.transform.localScale = new Vector3(4f, 1f, 4f);
+        }
+
+        private static void CreateMonsterMarker()
+        {
+            var monster = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            monster.name = "Visible Monster Contact Placeholder";
+            monster.transform.position = new Vector3(0f, 1f, 4f);
+            monster.transform.localScale = new Vector3(1f, 1.2f, 1f);
+        }
+
+        private static void CreateLight()
+        {
+            var lightObject = new GameObject("Directional Light");
+            var light = lightObject.AddComponent<Light>();
+            light.type = LightType.Directional;
+            light.intensity = 1.2f;
+            lightObject.transform.rotation = Quaternion.Euler(50f, -30f, 0f);
+        }
+
+        private static void EnsureFolder(string path)
+        {
+            if (AssetDatabase.IsValidFolder(path))
+            {
+                return;
+            }
+
+            var slash = path.LastIndexOf('/');
+            var parent = slash > 0 ? path.Substring(0, slash) : "Assets";
+            var folder = slash > 0 ? path.Substring(slash + 1) : path;
+            EnsureFolder(parent);
+            AssetDatabase.CreateFolder(parent, folder);
+        }
+    }
+}

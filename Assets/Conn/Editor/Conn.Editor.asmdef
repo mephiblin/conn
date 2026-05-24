@@ -1,0 +1,21 @@
+{
+  "name": "Conn.Editor",
+  "rootNamespace": "Conn.Editor",
+  "references": [
+    "Conn.Core",
+    "Conn.Runtime",
+    "Conn.Rendering",
+    "Conn.UI"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

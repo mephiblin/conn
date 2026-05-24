@@ -1,0 +1,19 @@
+{
+  "name": "Conn.Tests",
+  "rootNamespace": "Conn.Tests",
+  "references": [
+    "Conn.Core",
+    "Conn.Runtime"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
