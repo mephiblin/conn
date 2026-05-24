@@ -1,6 +1,7 @@
 using Conn.Core.Combat;
 using Conn.Core.Equipment;
 using Conn.Core.Inventory;
+using Conn.Core.Skills;
 
 namespace Conn.Core.Session
 {
@@ -13,6 +14,7 @@ namespace Conn.Core.Session
         public PlayerPoseSnapshot PreEncounterSnapshot = new PlayerPoseSnapshot();
         public PlayerEquipmentState Equipment = new PlayerEquipmentState();
         public InventoryState Inventory = new InventoryState();
+        public SkillInventoryState Skills = new SkillInventoryState();
         public CombatSessionState Combat = new CombatSessionState();
 
         public void StartNewGame()
@@ -25,6 +27,9 @@ namespace Conn.Core.Session
             Inventory.AddItem(EquipmentCatalog.RustySwordId);
             Equipment.EquippedWeaponId = EquipmentCatalog.RustySwordId;
             Equipment.EquippedShieldId = string.Empty;
+            Skills.Clear();
+            Skills.AddSkill(SkillCatalog.SlashId);
+            Skills.EquipFirstOpenFace(SkillCatalog.SlashId, Equipment.DiceCount);
             Combat.Clear();
         }
     }

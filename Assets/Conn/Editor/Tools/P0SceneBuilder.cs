@@ -150,6 +150,12 @@ namespace Conn.Editor.Tools
             smith.transform.position = new Vector3(0f, 1f, 3.5f);
             smith.transform.localScale = new Vector3(1.4f, 1.3f, 0.5f);
             smith.AddComponent<BlacksmithInteractable>();
+
+            var skillMerchant = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            skillMerchant.name = "Skill Merchant";
+            skillMerchant.transform.position = new Vector3(-3.5f, 1f, 0f);
+            skillMerchant.transform.localScale = new Vector3(1f, 1.4f, 1f);
+            skillMerchant.AddComponent<SkillMerchantInteractable>();
         }
 
         private static void CreateLight()

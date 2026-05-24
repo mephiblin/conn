@@ -27,6 +27,7 @@ namespace Conn.UI.Runtime
             GUILayout.Label($"Gold: {session.Gold}");
             GUILayout.Label($"Weapon: {session.Equipment.WeaponGrip} ({session.Equipment.DiceCount} dice)");
             GUILayout.Label($"Items: {session.Inventory.ItemIds.Count}");
+            GUILayout.Label($"Skills: {session.Skills.OwnedCount}/{session.Skills.EquippedCount}");
             GUILayout.Space(8);
 
             if (sceneId == GameSceneId.Title)
@@ -133,6 +134,7 @@ namespace Conn.UI.Runtime
             GUILayout.Label($"Round: {session.Combat.Round}");
             GUILayout.Label($"Player HP: {session.Combat.Player.Hp}/{session.Combat.Player.MaxHp}");
             GUILayout.Label($"Enemy HP: {session.Combat.Enemy.Hp}/{session.Combat.Enemy.MaxHp}");
+            GUILayout.Label($"Skill Power: {session.Skills.EquippedPower(session.Combat.PlayerDiceCount)}");
             GUILayout.Label(session.Combat.LastMessage);
 
             if (GUILayout.Button("Attack With Dice"))

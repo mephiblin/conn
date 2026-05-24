@@ -13,6 +13,7 @@ namespace Conn.Runtime.Combat
             session.Combat.Round = 1;
             session.Combat.PlayerDiceCount = session.Equipment.DiceCount;
             session.Combat.PlayerDefenseBonus = session.Equipment.DefenseBonus;
+            session.Skills.ResizeEquippedFaces(session.Combat.PlayerDiceCount);
             session.Combat.Player.Setup("player", "Player", 20);
             session.Combat.Enemy.Setup(session.Quest.TargetMonsterId, "Test Monster", 12);
             session.Combat.LastMessage = $"Combat started. Dice: {session.Combat.PlayerDiceCount}";
@@ -21,7 +22,7 @@ namespace Conn.Runtime.Combat
         public static void PlayerAttack(GameSessionState session)
         {
             EnsureCombat(session);
-            var damage = session.Combat.PlayerDiceCount + 1;
+            var damage = session.Combat.PlayerDiceCount + 1 + session.Skills.EquippedPower(session.Combat.PlayerDiceCount);
             session.Combat.Enemy.Damage(damage);
             session.Combat.LastMessage = $"Player deals {damage}.";
 
