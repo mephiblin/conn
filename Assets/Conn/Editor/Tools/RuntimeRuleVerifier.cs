@@ -21,6 +21,7 @@ namespace Conn.Editor.Tools
             VerifyDiceSkillEffects();
             VerifyCombatHandoffStateKey();
             VerifyQuestBoardFlow();
+            VerifyEquipmentAndSkillDisplayData();
             VerifyConsumables();
             VerifySkillSaleProtection();
             Debug.Log("Conn runtime core rule verification passed.");
@@ -157,6 +158,16 @@ namespace Conn.Editor.Tools
             Expect(session.Quest.HasActiveQuest, "Accepting board offer must activate a quest.");
             Expect(session.Quest.ActiveQuestId == offer.QuestId, "Accepted quest must match current board offer.");
             Expect(session.Quest.GoldReward == offer.GoldReward, "Accepted quest must use current board reward.");
+        }
+
+        private static void VerifyEquipmentAndSkillDisplayData()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+
+            Expect(EquipmentCatalog.Find(session.Equipment.EquippedWeaponId) != null, "Equipped weapon must resolve to display data.");
+            Expect(session.Equipment.DiceCount > 0, "Equipment must expose positive dice count.");
+            Expect(SkillCatalog.Find(session.Skills.EquippedSkillIds[0]) != null, "Equipped skill face must resolve to display data.");
         }
 
         private static void Expect(bool condition, string message)

@@ -1,10 +1,12 @@
+using Conn.Core.Equipment;
+using Conn.Core.Items;
 using Conn.Core.Scenes;
 using Conn.Core.Session;
+using Conn.Core.Skills;
 using Conn.Runtime.Combat;
 using Conn.Runtime.Inventory;
 using Conn.Runtime.Scenes;
 using Conn.Runtime.Session;
-using Conn.Core.Items;
 using UnityEngine;
 
 namespace Conn.UI.Runtime
@@ -21,17 +23,20 @@ namespace Conn.UI.Runtime
 
         private void OnGUI()
         {
-            const int width = 260;
-            GUILayout.BeginArea(new Rect(16, 16, width, 520), GUI.skin.box);
+            const int width = 320;
+            GUILayout.BeginArea(new Rect(16, 16, width, 680), GUI.skin.box);
             GUILayout.Label($"Scene: {sceneId}");
             var session = GameSession.Instance.State;
             GUILayout.Label($"Mode: {session.Mode}");
             GUILayout.Label($"Gold: {session.Gold}");
             GUILayout.Label($"HP: {session.Player.Hp}/{session.Player.MaxHp}");
-            GUILayout.Label($"Weapon: {session.Equipment.WeaponGrip} ({session.Equipment.DiceCount} dice)");
+            GUILayout.Label($"Loadout: {session.Equipment.WeaponGrip} ({session.Equipment.DiceCount} dice)");
+            GUILayout.Label($"Weapon: {EquipmentName(session.Equipment.EquippedWeaponId)}");
+            GUILayout.Label($"Shield: {EquipmentName(session.Equipment.EquippedShieldId)}");
             GUILayout.Label($"Items: {session.Inventory.ItemIds.Count}");
             GUILayout.Label($"Potions: {ConsumableRuntimeService.Count(session, ConsumableCatalog.MinorPotionId)}");
             GUILayout.Label($"Skills: {session.Skills.OwnedCount}/{session.Skills.EquippedCount}");
+            DrawEquippedSkillFaces(session);
             GUILayout.Space(8);
 
             DrawConsumableControls(session);
@@ -89,6 +94,27 @@ namespace Conn.UI.Runtime
 
             GUI.enabled = true;
             GUILayout.Space(8);
+        }
+
+        private static void DrawEquippedSkillFaces(GameSessionState session)
+        {
+            var diceCount = session.Equipment.DiceCount;
+            for (var i = 0; i < diceCount; i++)
+            {
+                var skillId = i < session.Skills.EquippedSkillIds.Count
+                    ? session.Skills.EquippedSkillIds[i]
+                    : string.Empty;
+                var skill = SkillCatalog.Find(skillId);
+                GUILayout.Label(skill != null
+                    ? $"Face {i + 1}: {skill.DisplayName} / {skill.EffectKind} +{skill.Power}"
+                    : $"Face {i + 1}: Strike / Attack +0");
+            }
+        }
+
+        private static string EquipmentName(string itemId)
+        {
+            var item = EquipmentCatalog.Find(itemId);
+            return item != null ? item.DisplayName : "None";
         }
 
         private static void TownControls(GameSessionState session)
