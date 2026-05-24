@@ -11,11 +11,11 @@
 | 범위 | 진행률 | 상태 |
 | --- | ---: | --- |
 | P1 Runtime Vertical Slice | 96% | 자동 검증 기준 루프와 작은 화면 HUD 배치 계약은 통과했고, Play Mode 체감 확인만 남음 |
-| P2 전투/스킬/주사위 | 78-86% | 상태 이상/특수 효과/로그/HUD 가독성 1차 완료, encounter pattern/reward id Runtime 계약 연결 |
-| P3 장비/인벤토리/상점 | 75-85% | 장비/소모품/스킬 구분과 구매/판매 상태 표시 1차 완료 |
-| P4 마을 NPC 확장 | 70-80% | 8종 NPC와 최소 서비스/notice는 동작, 깊이 확장은 후속 |
+| P2 전투/스킬/주사위 | 82-88% | 상태 이상/특수 효과/로그/HUD 가독성 1차 완료, encounter pattern/reward id/enemy slot Runtime 계약 연결 |
+| P3 장비/인벤토리/상점 | 78-86% | 장비/소모품/스킬 구분과 구매/판매 상태 표시 1차 완료, generated item 계약 필드 추가 |
+| P4 마을 NPC 확장 | 72-82% | 8종 NPC와 최소 서비스/notice는 동작, NPC quest seed 네임스페이스 검증 정리 |
 | P5 Editor Tool 1차 | 70-80% | Content DB import/검증, encounter/quest/vendor/NPC Runtime 소비 1차 확대 |
-| P6 맵 생성 | 55-65% | compiledMap asset 저장/Runtime 우선 로드와 quest target/exit anchor 연결 1차 완료 |
+| P6 맵 생성 | 62-70% | compiledMap asset 저장/Runtime 우선 로드, start/quest target/boss/exit/monster/loot placement 계약 1차 완료 |
 
 Chapter 1 전체는 약 70-80% 진행으로 본다. 자동 검증 가능한 Runtime Core는
 통과했고, 남은 위험은 Play Mode 체감, 실제 Game view 가독성, 콘텐츠 다양성 쪽이다.
@@ -38,6 +38,9 @@ Chapter 1 전체는 약 70-80% 진행으로 본다. 자동 검증 가능한 Runt
 - 적 행동명/행동 power 기반 전투 메시지
 - Bleed 상태 이상과 Focus Strike 특수 효과
 - encounter 기반 XP 보상
+- encounter enemy slot/list 계약과 Runtime 표시 상태
+- `single_primary` fallback 유지
+- support/buff/debuff/lifesteal/summon effect kind 확장 지점
 - 장비 상태별 주사위 수
 - 머리/가슴/팔/다리/신발 방어구 슬롯
 - 방어구 armor value와 장비 비교 문구
@@ -72,6 +75,9 @@ Chapter 1 전체는 약 70-80% 진행으로 본다. 자동 검증 가능한 Runt
 - Generator Workbench compiledMap asset 저장 버튼
 - SceneBootstrap compiledMap asset 등록과 Runtime 우선 로드
 - compiledMap quest target placement -> field monster state 등록
+- compiledMap monster placement -> field monster state 추가 등록
+- compiledMap loot placement 데이터 계약
+- NPC `quest_seed_` 참조를 board quest가 아닌 NPC seed 네임스페이스로 검증
 
 ## P1에 남은 작업
 
@@ -118,13 +124,17 @@ P1은 자동 검증 기준으로 닫혔다. 실제 플레이 기준으로 아래
    - ContentDatabase encounter import/lookup: 1차 완료
    - CombatRuntimeService DB encounter 우선 소비: 1차 완료
    - encounter `pattern`/`rewardId`를 combat session 상태에 보존: 1차 완료
-   - 남은 작업: 다중 적 encounter pattern 실행과 reward table Runtime 처리
+   - 다중 적 encounter pattern 데이터 계약: 1차 완료
+   - enemy slot/list 계약과 참조 무결성 validator: 1차 완료
+   - Runtime은 현재 primary 적 1명을 실제 전투 대상으로 유지하고, enemy slot 상태와 HUD 표시 계약만 노출한다.
+   - 남은 작업: 다중 적 target 선택/턴 처리와 reward table 지급 실행
 
 2. 전투 룰 확장
    - 적 행동명/행동 power: 1차 완료
    - 상태 이상: Bleed 1차 완료
    - 스킬별 특수 효과: Focus Strike 1차 완료
-   - 남은 작업: 다중 패턴, 추가 상태 이상, 추가 스킬 효과
+   - 남은 작업: 다중 패턴 실제 실행, 추가 상태 이상, 추가 스킬 효과
+   - effect kind 확장 지점: support/buff/debuff/lifesteal/summon 1차 추가
    - 방어 보정 명확화: 1차 로그 완료
    - 회복/방어/공격 외 스킬 효과 확장 지점
    - 전투 로그 정리: 1차 완료
@@ -133,6 +143,7 @@ P1은 자동 검증 기준으로 닫혔다. 실제 플레이 기준으로 아래
 3. 보상 처리
    - XP 보상 데이터화
    - encounter reward id와 quest return reward 분리 계약: 1차 Runtime 상태 연결 완료
+   - encounter XP는 CombatRuntimeService에서 지급하고, quest return gold는 QuestRuntimeService에서 유지한다.
    - 골드/아이템 보상 확장 지점
    - 퀘스트 보상과 전투 보상 분리
 
@@ -169,7 +180,8 @@ P1은 자동 검증 기준으로 닫혔다. 실제 플레이 기준으로 아래
 
 4. generated item
    - 이번 Chapter 1에서는 고정 아이템만 사용한다.
-   - 단, `generated`, `rarityId`, `affixPoolId` 계약은 문서/데이터에 유지해야 한다.
+   - `generated`, `rarityId`, `affixPoolId` 계약 필드는 ContentDatabase equipment에 추가했다.
+   - `generated=true`인 장비는 `rarityId`와 `affixPoolId`가 비어 있으면 validator error로 처리한다.
 
 5. 저장 검증 확장
    - 장비 슬롯 확장 후 저장/불러오기 검증 필요
@@ -223,6 +235,7 @@ P1은 자동 검증 기준으로 닫혔다. 실제 플레이 기준으로 아래
    - 게시판 퀘스트 후보: ContentDatabase 우선 순환 1차 완료
    - 퀘스트 보상
    - target monster/encounter 연결: 1차 완료
+   - NPC `quest_seed_` 참조는 board quest 승격 대상이 아니라 NPC seed 네임스페이스로 유지한다.
 
 4. Map/Encounter Editor
    - 제작용 grid
@@ -244,12 +257,13 @@ P1은 자동 검증 기준으로 닫혔다. 실제 플레이 기준으로 아래
 3. `RoomGraph`: 1차 완료
 4. chunk/socket assembly: 1차 완료
 5. start/exit/quest target/boss anchor 보장: 1차 완료
-6. monster/loot placement pass: 아직 후속
+6. monster/loot placement pass: graph role 기반 1차 완료
 7. validation: 1차 완료
 8. compiledMap 생성: 1차 완료
 9. Runtime에서 compiledMap 로드: 저장 asset 우선, generator fallback 유지 1차 완료
-10. compiledMap quest target/exit anchor Runtime 연결: 1차 완료
-11. 자동 지도/fog 해제
+10. compiledMap quest target/exit/start anchor Runtime 연결: 1차 완료
+11. compiledMap monster placement의 field monster state 등록: 1차 완료
+12. 자동 지도/fog 해제
 
 현재 던전은 Chapter 1 검증용 단일 공간/단일 몬스터에 가깝다.
 
@@ -280,7 +294,7 @@ P1은 자동 검증 기준으로 닫혔다. 실제 플레이 기준으로 아래
 
 6. P6 맵 생성기
    - compiledMap 기반 Dungeon scene 생성으로 연결
-   - quest target placement는 field monster state로 1차 연결됨
+   - quest target/monster placement는 field monster state로 1차 연결됨
 
 ## 사용자가 확인해야 할 것
 
@@ -301,4 +315,6 @@ Chapter 1의 남은 위험은 사람이 직접 느껴야 하는 조작감과 UI 
 플레이에 필요한 콘텐츠 다양성이다. 전투 데이터, 상점 rotation, 맵/조우 다양성,
 Editor Tool 제작 파이프라인은 Chapter 2 이후에도 확장 축으로 남는다. 2026-05-25
 기준 Chapter 2 Runtime Data Consumption은 자동 검증으로 장비, 퀘스트, 상점 rotation,
-compiledMap placement의 1차 Runtime 연결을 통과했다.
+compiledMap placement의 1차 Runtime 연결을 통과했다. 같은 날짜에 encounter enemy slot
+계약, generated item 계약 필드, NPC quest seed 네임스페이스, monster/loot placement
+pass도 자동 검증 기준으로 추가되었다.

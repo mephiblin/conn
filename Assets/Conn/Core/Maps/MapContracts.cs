@@ -38,7 +38,9 @@ namespace Conn.Core.Maps
         Start = 0,
         QuestTarget = 1,
         Boss = 2,
-        Exit = 3
+        Exit = 3,
+        Monster = 4,
+        Loot = 5
     }
 
     [Serializable]

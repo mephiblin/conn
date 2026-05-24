@@ -15,7 +15,18 @@ namespace Conn.Tests.EditMode
             database.Equipment = new[] { new ContentEquipmentDefinition { Id = "rusty_sword", DisplayName = "Rusty Sword", Kind = "one_hand_weapon" } };
             database.Skills = new[] { new ContentSkillDefinition { Id = "skill_slash", DisplayName = "Slash", EffectKind = "attack", CatalogIds = new[] { "starter_catalog" } } };
             database.Monsters = new[] { new ContentMonsterDefinition { Id = "monster_guard", DisplayName = "Guard", MaxHp = 10, AttackPower = 3 } };
-            database.Encounters = new[] { new ContentEncounterDefinition { Id = "encounter_guard", DisplayName = "Guard Encounter", MonsterId = "monster_guard", XpReward = 4 } };
+            database.Encounters = new[]
+            {
+                new ContentEncounterDefinition
+                {
+                    Id = "encounter_guard",
+                    DisplayName = "Guard Encounter",
+                    MonsterId = "monster_guard",
+                    XpReward = 4,
+                    Pattern = "single_primary",
+                    EnemySlots = new[] { new ContentEncounterEnemySlot { SlotId = "primary", MonsterId = "monster_guard", Count = 1, Primary = true } }
+                }
+            };
             database.Quests = new[] { new ContentQuestDefinition { Id = "quest_guard", DisplayName = "Guard Quest", TargetMonsterId = "monster_guard", TargetEncounterId = "encounter_guard", MapProfileId = "profile_test", GoldReward = 1 } };
             database.Vendors = new[]
             {
@@ -115,6 +126,56 @@ namespace Conn.Tests.EditMode
             Assert.That(report.Errors, Has.Some.Contains("missing_item"));
             Assert.That(report.Errors, Has.Some.Contains("missing_skill"));
             Assert.That(report.Errors, Has.Some.Contains("missing_catalog"));
+        }
+
+        [Test]
+        public void ValidatorAllowsNpcQuestSeedNamespace()
+        {
+            var database = ScriptableObject.CreateInstance<ContentDatabaseDefinition>();
+            database.Npcs = new[]
+            {
+                new ContentNpcDefinition
+                {
+                    Id = "npc_wounded_mystic",
+                    DisplayName = "Wounded Mystic",
+                    QuestIds = new[] { "quest_seed_black_water_vow" }
+                }
+            };
+
+            var report = ContentDatabaseValidator.Validate(database);
+
+            Assert.That(report.Passed, Is.True);
+            Assert.That(report.Warnings, Is.Empty);
+        }
+
+        [Test]
+        public void ValidatorReportsInvalidEncounterEnemySlotContract()
+        {
+            var database = ScriptableObject.CreateInstance<ContentDatabaseDefinition>();
+            database.Monsters = new[] { new ContentMonsterDefinition { Id = "monster_guard", DisplayName = "Guard", MaxHp = 10, AttackPower = 3 } };
+            database.Encounters = new[]
+            {
+                new ContentEncounterDefinition
+                {
+                    Id = "encounter_bad_slots",
+                    DisplayName = "Bad Slots",
+                    MonsterId = "monster_guard",
+                    Pattern = "multi_pack",
+                    EnemySlots = new[]
+                    {
+                        new ContentEncounterEnemySlot { SlotId = "support", MonsterId = "missing_guard", Count = 0 },
+                        new ContentEncounterEnemySlot { SlotId = "support", MonsterId = "missing_guard", Count = 1 }
+                    }
+                }
+            };
+
+            var report = ContentDatabaseValidator.Validate(database);
+
+            Assert.That(report.Passed, Is.False);
+            Assert.That(report.Errors, Has.Some.Contains("duplicated"));
+            Assert.That(report.Errors, Has.Some.Contains("missing_guard"));
+            Assert.That(report.Errors, Has.Some.Contains("count must be positive"));
+            Assert.That(report.Errors, Has.Some.Contains("must include the primary monster"));
         }
 
         [Test]

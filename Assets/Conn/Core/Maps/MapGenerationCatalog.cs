@@ -29,7 +29,9 @@ namespace Conn.Core.Maps
                     MapAnchorKind.Start,
                     MapAnchorKind.QuestTarget,
                     MapAnchorKind.Boss,
-                    MapAnchorKind.Exit
+                    MapAnchorKind.Exit,
+                    MapAnchorKind.Monster,
+                    MapAnchorKind.Loot
                 }
             };
         }

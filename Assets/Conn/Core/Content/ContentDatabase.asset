@@ -68,48 +68,72 @@ MonoBehaviour:
     BuyPrice: 0
     SellPrice: 2
     ArmorValue: 0
+    Generated: 0
+    RarityId:
+    AffixPoolId:
   - Id: iron_shield
     DisplayName: Iron Shield
     Kind: shield
     BuyPrice: 6
     SellPrice: 3
     ArmorValue: 0
+    Generated: 0
+    RarityId:
+    AffixPoolId:
   - Id: great_axe
     DisplayName: Great Axe
     Kind: two_hand_weapon
     BuyPrice: 12
     SellPrice: 6
     ArmorValue: 0
+    Generated: 0
+    RarityId:
+    AffixPoolId:
   - Id: leather_cap
     DisplayName: Leather Cap
     Kind: head_armor
     BuyPrice: 4
     SellPrice: 2
     ArmorValue: 1
+    Generated: 0
+    RarityId:
+    AffixPoolId:
   - Id: padded_vest
     DisplayName: Padded Vest
     Kind: chest_armor
     BuyPrice: 8
     SellPrice: 4
     ArmorValue: 2
+    Generated: 0
+    RarityId:
+    AffixPoolId:
   - Id: traveler_gloves
     DisplayName: Traveler Gloves
     Kind: arms_armor
     BuyPrice: 5
     SellPrice: 2
     ArmorValue: 1
+    Generated: 0
+    RarityId:
+    AffixPoolId:
   - Id: reinforced_pants
     DisplayName: Reinforced Pants
     Kind: legs_armor
     BuyPrice: 7
     SellPrice: 3
     ArmorValue: 1
+    Generated: 0
+    RarityId:
+    AffixPoolId:
   - Id: worn_boots
     DisplayName: Worn Boots
     Kind: feet_armor
     BuyPrice: 5
     SellPrice: 2
     ArmorValue: 1
+    Generated: 0
+    RarityId:
+    AffixPoolId:
   Skills:
   - Id: skill_berserk
     DisplayName: "\uAD11\uBD84"
@@ -410,66 +434,121 @@ MonoBehaviour:
     XpReward: 8
     RewardId:
     Pattern: single_primary
+    EnemySlots:
+    - SlotId: primary
+      MonsterId: desert_rat
+      Count: 1
+      Primary: 1
   - Id: encounter_grave_robber
     DisplayName: "\uB3C4\uAD74\uAFBC \uC870\uC6B0"
     MonsterId: grave_robber
     XpReward: 14
     RewardId:
     Pattern: single_primary
+    EnemySlots:
+    - SlotId: primary
+      MonsterId: grave_robber
+      Count: 1
+      Primary: 1
   - Id: encounter_serpent_guard
     DisplayName: "\uBC40 \uC0AC\uC6D0 \uACBD\uBE44 \uC870\uC6B0"
     MonsterId: serpent_guard
     XpReward: 20
     RewardId:
     Pattern: single_primary
+    EnemySlots:
+    - SlotId: primary
+      MonsterId: serpent_guard
+      Count: 1
+      Primary: 1
   - Id: encounter_poisoned_raider
     DisplayName: "\uB3C5\uAD11 \uC57D\uD0C8\uC790 \uC870\uC6B0"
     MonsterId: poisoned_raider
     XpReward: 24
     RewardId:
     Pattern: single_primary
+    EnemySlots:
+    - SlotId: primary
+      MonsterId: poisoned_raider
+      Count: 1
+      Primary: 1
   - Id: encounter_cursed_gladiator
     DisplayName: "\uC800\uC8FC \uAC80\uD22C\uC0AC \uC870\uC6B0"
     MonsterId: cursed_gladiator
     XpReward: 34
     RewardId:
     Pattern: single_primary
+    EnemySlots:
+    - SlotId: primary
+      MonsterId: cursed_gladiator
+      Count: 1
+      Primary: 1
   - Id: encounter_black_water_beast
     DisplayName: "\uAC80\uC740 \uBB3C\uC758 \uD30C\uCDA9\uC218 \uC870\uC6B0"
     MonsterId: black_water_beast
     XpReward: 70
     RewardId:
     Pattern: single_primary
+    EnemySlots:
+    - SlotId: primary
+      MonsterId: black_water_beast
+      Count: 1
+      Primary: 1
   - Id: encounter_serpent_priest
     DisplayName: "\uBC40 \uC0AC\uC81C \uC870\uC6B0"
     MonsterId: serpent_guard
     XpReward: 20
     RewardId:
     Pattern: single_primary
+    EnemySlots:
+    - SlotId: primary
+      MonsterId: serpent_guard
+      Count: 1
+      Primary: 1
   - Id: encounter_blind_priest
     DisplayName: "\uB208\uBA3C \uC0AC\uC81C \uC870\uC6B0"
     MonsterId: blind_priest
     XpReward: 90
     RewardId:
     Pattern: single_primary
+    EnemySlots:
+    - SlotId: primary
+      MonsterId: blind_priest
+      Count: 1
+      Primary: 1
   - Id: encounter_crawling_fish
     DisplayName: "\uAE30\uC5B4\uB2E4\uB2C8\uB294 \uBB3C\uACE0\uAE30 \uC870\uC6B0"
     MonsterId: crawling_fish
     XpReward: 10
     RewardId:
     Pattern: single_primary
+    EnemySlots:
+    - SlotId: primary
+      MonsterId: crawling_fish
+      Count: 1
+      Primary: 1
   - Id: encounter_reef_cultist
     DisplayName: "\uC0B0\uD638 \uAD11\uC2E0\uB3C4 \uC870\uC6B0"
     MonsterId: reef_cultist
     XpReward: 18
     RewardId:
     Pattern: single_primary
+    EnemySlots:
+    - SlotId: primary
+      MonsterId: reef_cultist
+      Count: 1
+      Primary: 1
   - Id: encounter_ruin_husk
     DisplayName: "\uD3D0\uD5C8\uC758 \uBE48 \uAECD\uC9C8 \uC870\uC6B0"
     MonsterId: ruin_husk
     XpReward: 18
     RewardId:
     Pattern: single_primary
+    EnemySlots:
+    - SlotId: primary
+      MonsterId: ruin_husk
+      Count: 1
+      Primary: 1
   Quests:
   - Id: quest_twisted_temple_clear
     DisplayName: "\uB4A4\uD2C0\uB9B0 \uC0AC\uC6D0 \uC815\uCC30"

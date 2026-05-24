@@ -128,7 +128,8 @@ namespace Conn.Runtime.Content
                 contentEncounter.MonsterId,
                 contentEncounter.XpReward,
                 contentEncounter.RewardId,
-                contentEncounter.Pattern);
+                contentEncounter.Pattern,
+                ConvertEnemySlots(contentEncounter.EnemySlots));
         }
 
         public static EncounterDefinition FindEncounterForMonster(string monsterId)
@@ -352,8 +353,34 @@ namespace Conn.Runtime.Content
                 "attack" => SkillEffectKind.Attack,
                 "guard" => SkillEffectKind.Guard,
                 "heal" => SkillEffectKind.Heal,
+                "support" => SkillEffectKind.Support,
+                "buff" => SkillEffectKind.Buff,
+                "debuff" => SkillEffectKind.Debuff,
+                "lifesteal" => SkillEffectKind.Lifesteal,
+                "summon" => SkillEffectKind.Summon,
                 _ => SkillEffectKind.Attack
             };
+        }
+
+        private static EncounterEnemySlotDefinition[] ConvertEnemySlots(ContentEncounterEnemySlot[] slots)
+        {
+            if (slots == null || slots.Length == 0)
+            {
+                return Array.Empty<EncounterEnemySlotDefinition>();
+            }
+
+            var result = new EncounterEnemySlotDefinition[slots.Length];
+            for (var i = 0; i < slots.Length; i++)
+            {
+                var slot = slots[i];
+                result[i] = new EncounterEnemySlotDefinition(
+                    string.IsNullOrWhiteSpace(slot.SlotId) ? $"slot_{i}" : slot.SlotId,
+                    slot.MonsterId,
+                    slot.Count <= 0 ? 1 : slot.Count,
+                    slot.Primary);
+            }
+
+            return result;
         }
     }
 }

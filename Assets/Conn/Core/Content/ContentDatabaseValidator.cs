@@ -70,6 +70,16 @@ namespace Conn.Core.Content
                 {
                     report.Error($"Equipment {item.Id} armor value must not be negative.");
                 }
+
+                if (item.Generated && string.IsNullOrWhiteSpace(item.RarityId))
+                {
+                    report.Error($"Generated equipment {item.Id} rarity id must not be empty.");
+                }
+
+                if (item.Generated && string.IsNullOrWhiteSpace(item.AffixPoolId))
+                {
+                    report.Error($"Generated equipment {item.Id} affix pool id must not be empty.");
+                }
             }
         }
 
@@ -125,6 +135,50 @@ namespace Conn.Core.Content
                 {
                     report.Error($"Encounter {encounter.Id} pattern must not be empty.");
                 }
+
+                ValidateEncounterEnemySlots(encounter, registry, report);
+            }
+        }
+
+        private static void ValidateEncounterEnemySlots(ContentEncounterDefinition encounter, ContentIdRegistry registry, ContentValidationReport report)
+        {
+            var slots = encounter.EnemySlots ?? Array.Empty<ContentEncounterEnemySlot>();
+            if (slots.Length == 0)
+            {
+                return;
+            }
+
+            var hasPrimary = false;
+            var slotIds = new HashSet<string>();
+            for (var i = 0; i < slots.Length; i++)
+            {
+                var slot = slots[i];
+                var slotId = string.IsNullOrWhiteSpace(slot.SlotId) ? $"slot_{i}" : slot.SlotId;
+                if (!slotIds.Add(slotId))
+                {
+                    report.Error($"Encounter {encounter.Id} enemy slot id is duplicated: {slotId}");
+                }
+
+                if (string.IsNullOrWhiteSpace(slot.MonsterId))
+                {
+                    report.Error($"Encounter {encounter.Id} enemy slot {slotId} monster id must not be empty.");
+                }
+                else if (registry.FindMonster(slot.MonsterId) == null)
+                {
+                    report.Error($"Encounter {encounter.Id} enemy slot {slotId} monster is missing: {slot.MonsterId}");
+                }
+
+                if (slot.Count <= 0)
+                {
+                    report.Error($"Encounter {encounter.Id} enemy slot {slotId} count must be positive.");
+                }
+
+                hasPrimary |= slot.Primary || slot.MonsterId == encounter.MonsterId;
+            }
+
+            if (!hasPrimary)
+            {
+                report.Error($"Encounter {encounter.Id} enemy slots must include the primary monster: {encounter.MonsterId}");
             }
         }
 
@@ -280,12 +334,17 @@ namespace Conn.Core.Content
 
                 foreach (var questId in npc.QuestIds)
                 {
-                    if (registry.FindQuest(questId) == null)
+                    if (registry.FindQuest(questId) == null && !IsNpcQuestSeedId(questId))
                     {
                         report.Warning($"NPC {npc.Id} references quest seed not imported as board quest: {questId}");
                     }
                 }
             }
+        }
+
+        private static bool IsNpcQuestSeedId(string questId)
+        {
+            return !string.IsNullOrWhiteSpace(questId) && questId.StartsWith("quest_seed_", StringComparison.Ordinal);
         }
 
         private static void RequireName(string id, string displayName, string kind, ContentValidationReport report)

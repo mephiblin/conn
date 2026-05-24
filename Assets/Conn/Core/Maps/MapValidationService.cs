@@ -142,7 +142,7 @@ namespace Conn.Core.Maps
 
         private static bool TryPlacementKind(MapAnchorKind anchor, out MapPlacementKind kind)
         {
-            if ((int)anchor >= 0 && (int)anchor <= (int)MapPlacementKind.Exit)
+            if ((int)anchor >= 0 && (int)anchor <= (int)MapPlacementKind.Loot)
             {
                 kind = (MapPlacementKind)(int)anchor;
                 return true;

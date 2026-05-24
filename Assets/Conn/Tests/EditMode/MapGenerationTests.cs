@@ -44,6 +44,8 @@ namespace Conn.Tests.EditMode
             Assert.That(compiled.Placements.Exists(p => p.Kind == MapPlacementKind.QuestTarget), Is.True);
             Assert.That(compiled.Placements.Exists(p => p.Kind == MapPlacementKind.Boss), Is.True);
             Assert.That(compiled.Placements.Exists(p => p.Kind == MapPlacementKind.Exit), Is.True);
+            Assert.That(compiled.Placements.Exists(p => p.Kind == MapPlacementKind.Monster), Is.True);
+            Assert.That(compiled.Placements.Exists(p => p.Kind == MapPlacementKind.Loot), Is.True);
             Assert.That(compiled.Rooms.Count, Is.EqualTo(draft.Graph.Nodes.Count));
             Assert.That(compiled.Doors.Count, Is.EqualTo(draft.Graph.Edges.Count));
         }

@@ -11,6 +11,12 @@
 3. `Assets/Conn/Scenes/Title.unity`를 연다.
 4. Play Mode를 시작한다.
 
+## 2026-05-25 Codex 확인 상태
+
+- 자동 검증: `/home/inri/Unity/Hub/Editor/6000.4.8f1/Editor/Unity` batchmode 기준 Chapter 1/2 통과.
+- 데이터 계약: encounter enemy slot/list, generated item 필드, NPC `quest_seed_` 네임스페이스, compiledMap monster/loot placement 추가 확인.
+- 제한: 이 실행 환경에서는 실제 Unity Game view를 사람이 보는 Play Mode 수동 조작은 수행하지 못했다. 아래 항목은 Editor에서 직접 체크해야 하는 잔여 수동 확인으로 유지한다.
+
 ## 기본 루프
 
 아래 순서가 끊기지 않아야 한다.
@@ -34,7 +40,8 @@
 
 4. Dungeon
    - HUD에 활성 퀘스트, 목표, 필드 몬스터 상태가 표시되는지 확인
-   - compiledMap start/quest target/exit placement 기반 marker가 등록되는지 확인
+- compiledMap start/quest target/exit placement 기반 marker가 등록되는지 확인
+- compiledMap monster/loot placement 목록이 생성되는지 확인
    - 몬스터 오브젝트가 quest target placement 기준으로 보이는지 확인
    - 몬스터와 접촉하면 Combat으로 이동하는지 확인
    - 접촉 로그가 중복으로 여러 번 찍히지 않는지 확인
@@ -117,6 +124,10 @@ Town에서 아래 NPC를 바라보고 `E`로 상호작용한다.
 
 - 2026-05-25 `/home/inri/Unity/Hub/Editor/6000.4.8f1/Editor/Unity` batchmode 기준 `Conn > Build & Validate Chapter 1` 통과
 - 2026-05-25 같은 Unity 경로 기준 `Conn > Build & Validate Chapter 2` 통과
+- 2026-05-25 같은 Unity 경로 기준 encounter enemy slot/list 계약과 primary monster fallback 검증
+- 2026-05-25 같은 Unity 경로 기준 generated equipment의 `generated`, `rarityId`, `affixPoolId` 계약 검증
+- 2026-05-25 같은 Unity 경로 기준 NPC `quest_seed_` 참조를 NPC seed 네임스페이스로 인정
+- 2026-05-25 같은 Unity 경로 기준 compiledMap monster/loot placement pass 검증
 - 전투 승리 시 quest target 완료, field monster cleanup, XP 지급
 - 사망 시 Ending 저장, Continue 시 Ending 복귀, Ending New Game 초기화
 - 전투 HUD용 dice face/선택/cooldown/status 문자열

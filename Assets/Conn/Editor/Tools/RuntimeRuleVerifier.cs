@@ -230,7 +230,17 @@ namespace Conn.Editor.Tools
                     MonsterId = "db_only_guard",
                     XpReward = 9,
                     RewardId = "db_reward_probe",
-                    Pattern = "single_primary"
+                    Pattern = "single_primary",
+                    EnemySlots = new[]
+                    {
+                        new ContentEncounterEnemySlot
+                        {
+                            SlotId = "primary",
+                            MonsterId = "db_only_guard",
+                            Count = 1,
+                            Primary = true
+                        }
+                    }
                 }
             };
 
@@ -260,6 +270,8 @@ namespace Conn.Editor.Tools
                 Expect(session.Combat.EncounterRewardId == "db_reward_probe", "Combat must preserve the database encounter reward id contract.");
                 Expect(session.Combat.MonsterId == "db_only_guard", "Combat must resolve the database encounter monster.");
                 Expect(session.Combat.XpReward == 9, "Combat must use database encounter XP reward before monster fallback.");
+                Expect(session.Combat.EnemySlots.Count == 1, "Combat must expose encounter enemy slots for runtime UI and later multi-enemy execution.");
+                Expect(session.Combat.EnemySlots[0].MonsterId == "db_only_guard", "Combat enemy slot must preserve the primary monster reference.");
             }
             finally
             {

@@ -124,7 +124,17 @@ namespace Conn.Editor.Content
                     MonsterId = monsterId,
                     XpReward = MonsterXp(monsters, monsterId),
                     RewardId = Text(data, "reward", string.Empty),
-                    Pattern = Text(data, "pattern", "single_primary")
+                    Pattern = Text(data, "pattern", "single_primary"),
+                    EnemySlots = new[]
+                    {
+                        new ContentEncounterEnemySlot
+                        {
+                            SlotId = "primary",
+                            MonsterId = monsterId,
+                            Count = 1,
+                            Primary = true
+                        }
+                    }
                 });
             }
 
@@ -136,7 +146,17 @@ namespace Conn.Editor.Content
                     DisplayName = "Test Guard Encounter",
                     MonsterId = Conn.Core.Combat.MonsterCatalog.TestGuardId,
                     XpReward = 5,
-                    Pattern = "single_primary"
+                    Pattern = "single_primary",
+                    EnemySlots = new[]
+                    {
+                        new ContentEncounterEnemySlot
+                        {
+                            SlotId = "primary",
+                            MonsterId = Conn.Core.Combat.MonsterCatalog.TestGuardId,
+                            Count = 1,
+                            Primary = true
+                        }
+                    }
                 });
             }
 

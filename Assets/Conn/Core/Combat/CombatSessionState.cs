@@ -19,6 +19,7 @@ namespace Conn.Core.Combat
         public int XpReward;
         public CombatantState Player = new CombatantState();
         public CombatantState Enemy = new CombatantState();
+        public List<EncounterEnemySlotState> EnemySlots = new List<EncounterEnemySlotState>();
         public List<DiceFaceState> DiceFaces = new List<DiceFaceState>();
         public string LastMessage = string.Empty;
 
@@ -57,8 +58,26 @@ namespace Conn.Core.Combat
             Enemy.Setup(string.Empty, string.Empty, 0);
             Player.ClearStatusEffects();
             Enemy.ClearStatusEffects();
+            EnemySlots.Clear();
             DiceFaces.Clear();
             LastMessage = string.Empty;
+        }
+    }
+
+    [System.Serializable]
+    public sealed class EncounterEnemySlotState
+    {
+        public string SlotId = string.Empty;
+        public string MonsterId = string.Empty;
+        public string DisplayName = string.Empty;
+        public int Count;
+        public bool Primary;
+
+        public string Describe()
+        {
+            var name = string.IsNullOrWhiteSpace(DisplayName) ? MonsterId : DisplayName;
+            var role = Primary ? "primary" : "support";
+            return $"{SlotId}: {name} x{Count} ({role})";
         }
     }
 }

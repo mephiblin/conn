@@ -155,18 +155,39 @@ namespace Conn.Core.Maps
 
                 if (TryRequiredPlacementKind(node.Role, out var placementKind))
                 {
-                    var anchor = FindAnchor(chunk, AnchorKindForPlacement(placementKind));
-                    draft.Placements.Add(new MapPlacement
-                    {
-                        Id = placementKind.ToString().ToLowerInvariant(),
-                        Kind = placementKind,
-                        RoomId = node.Id,
-                        X = node.GridX * profile.RoomWidth + anchor.X,
-                        Y = node.GridY * profile.RoomHeight + anchor.Y,
-                        ReferenceId = placementKind.ToString()
-                    });
+                    AddPlacement(draft, profile, node, chunk, placementKind, placementKind.ToString().ToLowerInvariant());
+                }
+
+                if (node.Role == MapRoomRole.MainPath && HasAnchor(chunk, MapAnchorKind.Monster))
+                {
+                    AddPlacement(draft, profile, node, chunk, MapPlacementKind.Monster, $"monster_{node.Id}");
+                }
+
+                if (node.Role == MapRoomRole.SideBranch && HasAnchor(chunk, MapAnchorKind.Loot))
+                {
+                    AddPlacement(draft, profile, node, chunk, MapPlacementKind.Loot, $"loot_{node.Id}");
                 }
             }
+        }
+
+        private static void AddPlacement(
+            GeneratedMapDraft draft,
+            MapProfile profile,
+            RoomGraphNode node,
+            ChunkPreset chunk,
+            MapPlacementKind placementKind,
+            string placementId)
+        {
+            var anchor = FindAnchor(chunk, AnchorKindForPlacement(placementKind));
+            draft.Placements.Add(new MapPlacement
+            {
+                Id = placementId,
+                Kind = placementKind,
+                RoomId = node.Id,
+                X = node.GridX * profile.RoomWidth + anchor.X,
+                Y = node.GridY * profile.RoomHeight + anchor.Y,
+                ReferenceId = placementKind.ToString()
+            });
         }
 
         private static ChunkPreset FindChunk(IReadOnlyList<ChunkPreset> chunks, MapRoomRole role, MapDirection sockets, string theme, int width, int height)
@@ -193,6 +214,19 @@ namespace Conn.Core.Maps
             }
 
             throw new InvalidOperationException($"Chunk {chunk.Id} is missing required {kind} anchor.");
+        }
+
+        private static bool HasAnchor(ChunkPreset chunk, MapAnchorKind kind)
+        {
+            for (var i = 0; i < chunk.Anchors.Count; i++)
+            {
+                if (chunk.Anchors[i].Kind == kind)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static bool TryRequiredPlacementKind(MapRoomRole role, out MapPlacementKind kind)

@@ -37,6 +37,7 @@ namespace Conn.Runtime.Combat
                 session.Combat.MonsterId,
                 monster != null ? monster.DisplayName : "Unknown Monster",
                 monster != null ? monster.MaxHp : 12);
+            BuildEnemySlots(session, encounter, monster);
             BuildDiceFaces(session);
             session.Combat.LastMessage = $"Combat started. Dice: {session.Combat.PlayerDiceCount}";
         }
@@ -98,6 +99,20 @@ namespace Conn.Runtime.Combat
                     else if (face.EffectKind == SkillEffectKind.Heal)
                     {
                         healing += face.Power;
+                    }
+                    else if (face.EffectKind == SkillEffectKind.Guard || face.EffectKind == SkillEffectKind.Support || face.EffectKind == SkillEffectKind.Buff)
+                    {
+                        guard += face.Power;
+                    }
+                    else if (face.EffectKind == SkillEffectKind.Debuff)
+                    {
+                        attack += face.Power;
+                        appliedBleed = face.Power > 0;
+                    }
+                    else if (face.EffectKind == SkillEffectKind.Lifesteal)
+                    {
+                        attack += 1 + face.Power;
+                        healing += face.Power > 0 ? face.Power : 1;
                     }
                     else
                     {
@@ -198,6 +213,27 @@ namespace Conn.Runtime.Combat
 
                 var status = combatant.StatusEffects[i];
                 builder.Append($"{status.DisplayName} {status.RemainingTurns} turn(s), {status.TickDamage} damage");
+            }
+
+            return builder.ToString();
+        }
+
+        public static string DescribeEnemySlots(CombatSessionState combat)
+        {
+            if (combat == null || combat.EnemySlots == null || combat.EnemySlots.Count == 0)
+            {
+                return "Enemy slots: single primary";
+            }
+
+            var builder = new StringBuilder("Enemy slots: ");
+            for (var i = 0; i < combat.EnemySlots.Count; i++)
+            {
+                if (i > 0)
+                {
+                    builder.Append(", ");
+                }
+
+                builder.Append(combat.EnemySlots[i].Describe());
             }
 
             return builder.ToString();
@@ -396,6 +432,38 @@ namespace Conn.Runtime.Combat
             }
 
             return "Attack";
+        }
+
+        private static void BuildEnemySlots(GameSessionState session, EncounterDefinition encounter, MonsterDefinition primaryMonster)
+        {
+            session.Combat.EnemySlots.Clear();
+            if (encounter != null && encounter.EnemySlots != null && encounter.EnemySlots.Length > 0)
+            {
+                for (var i = 0; i < encounter.EnemySlots.Length; i++)
+                {
+                    var slot = encounter.EnemySlots[i];
+                    var slotMonster = RuntimeContentDatabase.FindMonster(slot.MonsterId);
+                    session.Combat.EnemySlots.Add(new EncounterEnemySlotState
+                    {
+                        SlotId = string.IsNullOrWhiteSpace(slot.SlotId) ? $"slot_{i}" : slot.SlotId,
+                        MonsterId = slot.MonsterId,
+                        DisplayName = slotMonster != null ? slotMonster.DisplayName : slot.MonsterId,
+                        Count = slot.Count <= 0 ? 1 : slot.Count,
+                        Primary = slot.Primary || slot.MonsterId == session.Combat.MonsterId
+                    });
+                }
+
+                return;
+            }
+
+            session.Combat.EnemySlots.Add(new EncounterEnemySlotState
+            {
+                SlotId = "primary",
+                MonsterId = session.Combat.MonsterId,
+                DisplayName = primaryMonster != null ? primaryMonster.DisplayName : session.Combat.Enemy.DisplayName,
+                Count = 1,
+                Primary = true
+            });
         }
 
         private static void BuildDiceFaces(GameSessionState session)

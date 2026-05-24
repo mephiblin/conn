@@ -50,6 +50,9 @@ namespace Conn.Core.Content
         public int BuyPrice;
         public int SellPrice;
         public int ArmorValue;
+        public bool Generated;
+        public string RarityId;
+        public string AffixPoolId;
     }
 
     [Serializable]
@@ -88,6 +91,16 @@ namespace Conn.Core.Content
         public int XpReward;
         public string RewardId;
         public string Pattern;
+        public ContentEncounterEnemySlot[] EnemySlots = Array.Empty<ContentEncounterEnemySlot>();
+    }
+
+    [Serializable]
+    public sealed class ContentEncounterEnemySlot
+    {
+        public string SlotId;
+        public string MonsterId;
+        public int Count = 1;
+        public bool Primary;
     }
 
     [Serializable]

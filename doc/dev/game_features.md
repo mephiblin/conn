@@ -322,6 +322,14 @@ Unity에서는 이를 `SkillDefinition`, `SkillInventory`, `DiceLoadout`,
 - Rule: 공식, 조건, 상태 이상, 보상 테이블, 생성 규칙
 - Build Manifest: 특정 게임 빌드에 포함되는 콘텐츠와 월드 목록
 
+2026-05-25 기준 구현 계약:
+
+- Encounter는 `pattern`, `rewardId`, primary monster, enemy slot/list를 가진다.
+- Runtime 전투 실행은 아직 단일 primary monster를 유지하지만, enemy slot 상태를 CombatSessionState와 HUD에 노출한다.
+- 장비 데이터는 generated item 확장을 위해 `generated`, `rarityId`, `affixPoolId` 필드를 가진다.
+- compiledMap placement는 start, quest target, boss, exit, monster, loot를 검증한다.
+- NPC의 `quest_seed_` 참조는 board quest가 아닌 NPC seed 네임스페이스로 유지한다.
+
 초기 구현은 ScriptableObject와 JSON 직렬화 가능한 DTO를 함께 사용한다. 에디터는
 제작 친화적인 ScriptableObject를 다루고, 런타임 빌드는 검증된 DTO 또는 번들을
 읽는 구조를 목표로 한다.

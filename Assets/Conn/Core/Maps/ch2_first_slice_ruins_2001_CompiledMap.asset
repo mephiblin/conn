@@ -14,65 +14,77 @@ MonoBehaviour:
   m_EditorClassIdentifier: Conn.Core::Conn.Core.Maps.CompiledMapAsset
   ProfileId: ch2_first_slice_ruins
   Seed: 2001
-  Json: "{\n    \"MapId\": \"ch2_first_slice_ruins_2001\",\n    \"ProfileId\": \"ch2_first_slice_ruins\",\n   
-    \"Seed\": 2001,\n    \"Width\": 80,\n    \"Height\": 64,\n    \"Rooms\": [\n       
+  Json: "{\n    \"MapId\": \"ch2_first_slice_ruins_2001\",\n    \"ProfileId\": \"ch2_first_slice_ruins\",\n
+    \"Seed\": 2001,\n    \"Width\": 80,\n    \"Height\": 64,\n    \"Rooms\": [\n
     {\n            \"Id\": \"main_0\",\n            \"GridX\": 0,\n            \"GridY\":
     3,\n            \"Role\": 0,\n            \"BranchDepth\": 0,\n            \"PathIndex\":
-    0,\n            \"SocketMask\": 2,\n            \"ChunkId\": \"ruins_start\"\n       
-    },\n        {\n            \"Id\": \"main_1\",\n            \"GridX\": 1,\n           
-    \"GridY\": 3,\n            \"Role\": 1,\n            \"BranchDepth\": 0,\n           
+    0,\n            \"SocketMask\": 2,\n            \"ChunkId\": \"ruins_start\"\n
+    },\n        {\n            \"Id\": \"main_1\",\n            \"GridX\": 1,\n
+    \"GridY\": 3,\n            \"Role\": 1,\n            \"BranchDepth\": 0,\n
     \"PathIndex\": 1,\n            \"SocketMask\": 11,\n            \"ChunkId\":
-    \"ruins_main\"\n        },\n        {\n            \"Id\": \"main_2\",\n           
-    \"GridX\": 2,\n            \"GridY\": 3,\n            \"Role\": 2,\n           
+    \"ruins_main\"\n        },\n        {\n            \"Id\": \"main_2\",\n
+    \"GridX\": 2,\n            \"GridY\": 3,\n            \"Role\": 2,\n
     \"BranchDepth\": 0,\n            \"PathIndex\": 2,\n            \"SocketMask\":
-    15,\n            \"ChunkId\": \"ruins_quest_target\"\n        },\n        {\n           
-    \"Id\": \"main_3\",\n            \"GridX\": 3,\n            \"GridY\": 3,\n           
-    \"Role\": 3,\n            \"BranchDepth\": 0,\n            \"PathIndex\": 3,\n           
-    \"SocketMask\": 14,\n            \"ChunkId\": \"ruins_boss\"\n        },\n       
+    15,\n            \"ChunkId\": \"ruins_quest_target\"\n        },\n        {\n
+    \"Id\": \"main_3\",\n            \"GridX\": 3,\n            \"GridY\": 3,\n
+    \"Role\": 3,\n            \"BranchDepth\": 0,\n            \"PathIndex\": 3,\n
+    \"SocketMask\": 14,\n            \"ChunkId\": \"ruins_boss\"\n        },\n
     {\n            \"Id\": \"main_4\",\n            \"GridX\": 4,\n            \"GridY\":
     3,\n            \"Role\": 4,\n            \"BranchDepth\": 0,\n            \"PathIndex\":
-    4,\n            \"SocketMask\": 8,\n            \"ChunkId\": \"ruins_exit\"\n       
-    },\n        {\n            \"Id\": \"side_0_a\",\n            \"GridX\": 1,\n           
-    \"GridY\": 4,\n            \"Role\": 5,\n            \"BranchDepth\": 1,\n           
+    4,\n            \"SocketMask\": 8,\n            \"ChunkId\": \"ruins_exit\"\n
+    },\n        {\n            \"Id\": \"side_0_a\",\n            \"GridX\": 1,\n
+    \"GridY\": 4,\n            \"Role\": 5,\n            \"BranchDepth\": 1,\n
     \"PathIndex\": -1,\n            \"SocketMask\": 6,\n            \"ChunkId\":
-    \"ruins_side\"\n        },\n        {\n            \"Id\": \"side_0_b\",\n           
-    \"GridX\": 2,\n            \"GridY\": 4,\n            \"Role\": 5,\n           
+    \"ruins_side\"\n        },\n        {\n            \"Id\": \"side_0_b\",\n
+    \"GridX\": 2,\n            \"GridY\": 4,\n            \"Role\": 5,\n
     \"BranchDepth\": 2,\n            \"PathIndex\": -1,\n            \"SocketMask\":
-    12,\n            \"ChunkId\": \"ruins_side\"\n        },\n        {\n           
-    \"Id\": \"side_1_a\",\n            \"GridX\": 2,\n            \"GridY\": 2,\n           
-    \"Role\": 5,\n            \"BranchDepth\": 1,\n            \"PathIndex\": -1,\n           
-    \"SocketMask\": 3,\n            \"ChunkId\": \"ruins_side\"\n        },\n       
-    {\n            \"Id\": \"side_1_b\",\n            \"GridX\": 3,\n           
-    \"GridY\": 2,\n            \"Role\": 5,\n            \"BranchDepth\": 2,\n           
+    12,\n            \"ChunkId\": \"ruins_side\"\n        },\n        {\n
+    \"Id\": \"side_1_a\",\n            \"GridX\": 2,\n            \"GridY\": 2,\n
+    \"Role\": 5,\n            \"BranchDepth\": 1,\n            \"PathIndex\": -1,\n
+    \"SocketMask\": 3,\n            \"ChunkId\": \"ruins_side\"\n        },\n
+    {\n            \"Id\": \"side_1_b\",\n            \"GridX\": 3,\n
+    \"GridY\": 2,\n            \"Role\": 5,\n            \"BranchDepth\": 2,\n
     \"PathIndex\": -1,\n            \"SocketMask\": 9,\n            \"ChunkId\":
     \"ruins_side\"\n        }\n    ],\n    \"Doors\": [\n        {\n            \"FromNodeId\":
-    \"main_0\",\n            \"ToNodeId\": \"main_1\",\n            \"Kind\": \"main\",\n           
-    \"Locked\": false\n        },\n        {\n            \"FromNodeId\": \"main_1\",\n           
+    \"main_0\",\n            \"ToNodeId\": \"main_1\",\n            \"Kind\": \"main\",\n
+    \"Locked\": false\n        },\n        {\n            \"FromNodeId\": \"main_1\",\n
     \"ToNodeId\": \"main_2\",\n            \"Kind\": \"main\",\n            \"Locked\":
-    false\n        },\n        {\n            \"FromNodeId\": \"main_2\",\n           
+    false\n        },\n        {\n            \"FromNodeId\": \"main_2\",\n
     \"ToNodeId\": \"main_3\",\n            \"Kind\": \"main\",\n            \"Locked\":
-    false\n        },\n        {\n            \"FromNodeId\": \"main_3\",\n           
+    false\n        },\n        {\n            \"FromNodeId\": \"main_3\",\n
     \"ToNodeId\": \"main_4\",\n            \"Kind\": \"main\",\n            \"Locked\":
-    false\n        },\n        {\n            \"FromNodeId\": \"main_1\",\n           
+    false\n        },\n        {\n            \"FromNodeId\": \"main_1\",\n
     \"ToNodeId\": \"side_0_a\",\n            \"Kind\": \"branch\",\n            \"Locked\":
-    false\n        },\n        {\n            \"FromNodeId\": \"side_0_a\",\n           
+    false\n        },\n        {\n            \"FromNodeId\": \"side_0_a\",\n
     \"ToNodeId\": \"side_0_b\",\n            \"Kind\": \"branch\",\n            \"Locked\":
-    false\n        },\n        {\n            \"FromNodeId\": \"main_2\",\n           
+    false\n        },\n        {\n            \"FromNodeId\": \"main_2\",\n
     \"ToNodeId\": \"side_1_a\",\n            \"Kind\": \"branch\",\n            \"Locked\":
-    false\n        },\n        {\n            \"FromNodeId\": \"side_1_a\",\n           
+    false\n        },\n        {\n            \"FromNodeId\": \"side_1_a\",\n
     \"ToNodeId\": \"side_1_b\",\n            \"Kind\": \"branch\",\n            \"Locked\":
-    false\n        },\n        {\n            \"FromNodeId\": \"side_0_b\",\n           
+    false\n        },\n        {\n            \"FromNodeId\": \"side_0_b\",\n
     \"ToNodeId\": \"main_2\",\n            \"Kind\": \"merge\",\n            \"Locked\":
-    false\n        },\n        {\n            \"FromNodeId\": \"side_1_b\",\n           
+    false\n        },\n        {\n            \"FromNodeId\": \"side_1_b\",\n
     \"ToNodeId\": \"main_3\",\n            \"Kind\": \"merge\",\n            \"Locked\":
     false\n        }\n    ],\n    \"Placements\": [\n        {\n            \"Id\":
-    \"start\",\n            \"Kind\": 0,\n            \"RoomId\": \"main_0\",\n           
-    \"X\": 6,\n            \"Y\": 35,\n            \"ReferenceId\": \"Start\"\n       
-    },\n        {\n            \"Id\": \"questtarget\",\n            \"Kind\": 1,\n           
-    \"RoomId\": \"main_2\",\n            \"X\": 30,\n            \"Y\": 35,\n           
-    \"ReferenceId\": \"QuestTarget\"\n        },\n        {\n            \"Id\":
-    \"boss\",\n            \"Kind\": 2,\n            \"RoomId\": \"main_3\",\n           
-    \"X\": 42,\n            \"Y\": 35,\n            \"ReferenceId\": \"Boss\"\n       
-    },\n        {\n            \"Id\": \"exit\",\n            \"Kind\": 3,\n           
-    \"RoomId\": \"main_4\",\n            \"X\": 54,\n            \"Y\": 35,\n           
-    \"ReferenceId\": \"Exit\"\n        }\n    ]\n}"
+    \"start\",\n            \"Kind\": 0,\n            \"RoomId\": \"main_0\",\n
+    \"X\": 6,\n            \"Y\": 35,\n            \"ReferenceId\": \"Start\"\n
+    },\n        {\n            \"Id\": \"monster_main_1\",\n            \"Kind\":
+    4,\n            \"RoomId\": \"main_1\",\n            \"X\": 18,\n
+    \"Y\": 35,\n            \"ReferenceId\": \"Monster\"\n        },\n        {\n
+    \"Id\": \"questtarget\",\n            \"Kind\": 1,\n            \"RoomId\": \"main_2\",\n
+    \"X\": 30,\n            \"Y\": 35,\n            \"ReferenceId\": \"QuestTarget\"\n
+    },\n        {\n            \"Id\": \"boss\",\n            \"Kind\": 2,\n
+    \"RoomId\": \"main_3\",\n            \"X\": 42,\n            \"Y\": 35,\n
+    \"ReferenceId\": \"Boss\"\n        },\n        {\n            \"Id\": \"exit\",\n
+    \"Kind\": 3,\n            \"RoomId\": \"main_4\",\n            \"X\": 54,\n
+    \"Y\": 35,\n            \"ReferenceId\": \"Exit\"\n        },\n        {\n
+    \"Id\": \"loot_side_0_a\",\n            \"Kind\": 5,\n            \"RoomId\":
+    \"side_0_a\",\n            \"X\": 18,\n            \"Y\": 45,\n            \"ReferenceId\":
+    \"Loot\"\n        },\n        {\n            \"Id\": \"loot_side_0_b\",\n
+    \"Kind\": 5,\n            \"RoomId\": \"side_0_b\",\n            \"X\": 30,\n
+    \"Y\": 45,\n            \"ReferenceId\": \"Loot\"\n        },\n        {\n
+    \"Id\": \"loot_side_1_a\",\n            \"Kind\": 5,\n            \"RoomId\":
+    \"side_1_a\",\n            \"X\": 30,\n            \"Y\": 25,\n            \"ReferenceId\":
+    \"Loot\"\n        },\n        {\n            \"Id\": \"loot_side_1_b\",\n
+    \"Kind\": 5,\n            \"RoomId\": \"side_1_b\",\n            \"X\": 42,\n
+    \"Y\": 25,\n            \"ReferenceId\": \"Loot\"\n        }\n    ]\n}"

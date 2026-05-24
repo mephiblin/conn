@@ -49,7 +49,36 @@ namespace Conn.Runtime.Maps
                 placement.Id,
                 encounterId,
                 monsterId);
+            RegisterMonsterPlacements(session, compiledMap, encounterId, monsterId);
             return true;
+        }
+
+        public static int RegisterMonsterPlacements(GameSessionState session, CompiledMap compiledMap, string encounterId, string monsterId)
+        {
+            if (session == null || compiledMap == null)
+            {
+                return 0;
+            }
+
+            var registered = 0;
+            for (var i = 0; i < compiledMap.Placements.Count; i++)
+            {
+                var placement = compiledMap.Placements[i];
+                if (placement.Kind != MapPlacementKind.Monster)
+                {
+                    continue;
+                }
+
+                FieldMonsterRuntimeService.Register(
+                    session,
+                    StateKeyFor(compiledMap, placement),
+                    placement.Id,
+                    encounterId,
+                    monsterId);
+                registered++;
+            }
+
+            return registered;
         }
 
         public static MapPlacement FindExitAnchor(CompiledMap compiledMap)
