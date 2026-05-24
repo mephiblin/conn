@@ -26,6 +26,7 @@ namespace Conn.Core.Session
             Gold = 25;
             Player.Reset();
             Quest.Clear();
+            Quest.ClearLastReward();
             Quest.BoardOfferIndex = 0;
             Quest.BoardRerollCount = 0;
             PreEncounterSnapshot.Clear();

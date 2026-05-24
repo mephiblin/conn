@@ -12,6 +12,8 @@ namespace Conn.Core.Session
         public int GoldReward;
         public int BoardOfferIndex;
         public int BoardRerollCount;
+        public string LastCompletedQuestTitle = string.Empty;
+        public int LastGoldReward;
 
         public bool HasActiveQuest => !string.IsNullOrWhiteSpace(ActiveQuestId);
 
@@ -24,6 +26,12 @@ namespace Conn.Core.Session
             ReturnAvailable = false;
             ReturnPromptSeen = false;
             GoldReward = 0;
+        }
+
+        public void ClearLastReward()
+        {
+            LastCompletedQuestTitle = string.Empty;
+            LastGoldReward = 0;
         }
     }
 }

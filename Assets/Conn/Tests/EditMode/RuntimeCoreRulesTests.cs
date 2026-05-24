@@ -188,5 +188,23 @@ namespace Conn.Tests.EditMode
             Assert.That(session.Quest.ActiveQuestId, Is.EqualTo(offer.QuestId));
             Assert.That(session.Quest.GoldReward, Is.EqualTo(offer.GoldReward));
         }
+
+        [Test]
+        public void ReturnToTownRecordsRewardSummary()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+            QuestRuntimeService.AcceptQuest(session, QuestCatalog.TestHuntId);
+            var title = session.Quest.ActiveQuestTitle;
+            var reward = session.Quest.GoldReward;
+            var goldBefore = session.Gold;
+
+            QuestRuntimeService.CompleteReturn(session);
+
+            Assert.That(session.Quest.HasActiveQuest, Is.False);
+            Assert.That(session.Gold, Is.EqualTo(goldBefore + reward));
+            Assert.That(session.Quest.LastCompletedQuestTitle, Is.EqualTo(title));
+            Assert.That(session.Quest.LastGoldReward, Is.EqualTo(reward));
+        }
     }
 }

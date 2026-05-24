@@ -25,6 +25,7 @@ namespace Conn.Editor.Tools
             VerifySkillFaceCycling();
             VerifyCombatHandoffStateKey();
             VerifyQuestBoardFlow();
+            VerifyQuestReturnRewardSummary();
             VerifyEquipmentAndSkillDisplayData();
             VerifyConsumables();
             VerifySkillSaleProtection();
@@ -204,6 +205,23 @@ namespace Conn.Editor.Tools
             Expect(EquipmentCatalog.Find(session.Equipment.EquippedWeaponId) != null, "Equipped weapon must resolve to display data.");
             Expect(session.Equipment.DiceCount > 0, "Equipment must expose positive dice count.");
             Expect(SkillCatalog.Find(session.Skills.EquippedSkillIds[0]) != null, "Equipped skill face must resolve to display data.");
+        }
+
+        private static void VerifyQuestReturnRewardSummary()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+            QuestRuntimeService.AcceptQuest(session, QuestCatalog.TestHuntId);
+            var title = session.Quest.ActiveQuestTitle;
+            var reward = session.Quest.GoldReward;
+            var goldBefore = session.Gold;
+
+            QuestRuntimeService.CompleteReturn(session);
+
+            Expect(!session.Quest.HasActiveQuest, "Returning to town must clear active quest.");
+            Expect(session.Gold == goldBefore + reward, "Returning to town must grant quest gold reward.");
+            Expect(session.Quest.LastCompletedQuestTitle == title, "Returning to town must record completed quest title.");
+            Expect(session.Quest.LastGoldReward == reward, "Returning to town must record gold reward summary.");
         }
 
         private static void Expect(bool condition, string message)

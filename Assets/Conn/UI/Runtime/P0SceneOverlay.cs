@@ -123,6 +123,11 @@ namespace Conn.UI.Runtime
             GUILayout.Label(session.Quest.HasActiveQuest
                 ? $"Quest: {session.Quest.ActiveQuestTitle}"
                 : "Quest: none");
+            if (!string.IsNullOrWhiteSpace(session.Quest.LastCompletedQuestTitle))
+            {
+                GUILayout.Label($"Last reward: {session.Quest.LastCompletedQuestTitle} +{session.Quest.LastGoldReward}g");
+            }
+
             var offer = QuestRuntimeService.CurrentBoardOffer(session);
             GUILayout.Label(offer != null
                 ? $"Board: {offer.DisplayName} ({offer.GoldReward}g)"

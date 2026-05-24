@@ -55,6 +55,7 @@ namespace Conn.Runtime.Session
 
         public static void AcceptQuest(GameSessionState session, string questId, string title, string targetMonsterId, int goldReward)
         {
+            session.Quest.ClearLastReward();
             session.Quest.ActiveQuestId = questId;
             session.Quest.ActiveQuestTitle = title;
             session.Quest.TargetMonsterId = targetMonsterId;
@@ -83,12 +84,21 @@ namespace Conn.Runtime.Session
 
         public static void ReturnToTown(GameSessionState session)
         {
-            session.Gold += session.Quest.GoldReward;
+            CompleteReturn(session);
+            SceneFlowService.Load(GameSceneId.Town);
+        }
+
+        public static void CompleteReturn(GameSessionState session)
+        {
+            var completedTitle = session.Quest.ActiveQuestTitle;
+            var goldReward = session.Quest.GoldReward;
+            session.Gold += goldReward;
             session.Quest.Clear();
+            session.Quest.LastCompletedQuestTitle = completedTitle;
+            session.Quest.LastGoldReward = goldReward;
             RerollBoard(session);
             session.PreEncounterSnapshot.Clear();
             SaveIfPlaying();
-            SceneFlowService.Load(GameSceneId.Town);
         }
 
         private static void SaveIfPlaying()
