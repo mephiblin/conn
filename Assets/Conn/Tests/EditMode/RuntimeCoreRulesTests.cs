@@ -138,5 +138,19 @@ namespace Conn.Tests.EditMode
 
             Assert.That(FieldMonsterRuntimeService.FindCombatHandoff(session), Is.Null);
         }
+
+        [Test]
+        public void BoardOfferCanActivateQuest()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+            var offer = QuestRuntimeService.CurrentBoardOffer(session);
+
+            QuestRuntimeService.AcceptCurrentBoardOffer(session);
+
+            Assert.That(session.Quest.HasActiveQuest, Is.True);
+            Assert.That(session.Quest.ActiveQuestId, Is.EqualTo(offer.QuestId));
+            Assert.That(session.Quest.GoldReward, Is.EqualTo(offer.GoldReward));
+        }
     }
 }

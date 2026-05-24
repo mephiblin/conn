@@ -96,21 +96,11 @@ namespace Conn.UI.Runtime
             GUILayout.Label(session.Quest.HasActiveQuest
                 ? $"Quest: {session.Quest.ActiveQuestTitle}"
                 : "Quest: none");
-
-            GUI.enabled = !session.Quest.HasActiveQuest;
             var offer = QuestRuntimeService.CurrentBoardOffer(session);
-            if (GUILayout.Button(offer != null ? $"Accept {offer.DisplayName}" : "No Quest Available"))
-            {
-                QuestRuntimeService.AcceptCurrentBoardOffer(session);
-            }
-            GUI.enabled = true;
-
-            GUI.enabled = session.Quest.HasActiveQuest;
-            if (GUILayout.Button("Enter Dungeon"))
-            {
-                SceneFlowService.Load(GameSceneId.Dungeon);
-            }
-            GUI.enabled = true;
+            GUILayout.Label(offer != null
+                ? $"Board: {offer.DisplayName} ({offer.GoldReward}g)"
+                : "Board: no quest");
+            GUILayout.Label("Use E on Quest Board and Gate.");
 
             if (GUILayout.Button("Back To Title"))
             {

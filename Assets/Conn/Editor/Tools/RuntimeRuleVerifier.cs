@@ -20,6 +20,7 @@ namespace Conn.Editor.Tools
             VerifyNewGameState();
             VerifyDiceSkillEffects();
             VerifyCombatHandoffStateKey();
+            VerifyQuestBoardFlow();
             VerifyConsumables();
             VerifySkillSaleProtection();
             Debug.Log("Conn runtime core rule verification passed.");
@@ -141,6 +142,21 @@ namespace Conn.Editor.Tools
             FieldMonsterRuntimeService.MarkIdle(session, session.Combat.FieldMonsterStateKey);
 
             Expect(FieldMonsterRuntimeService.FindCombatHandoff(session) == null, "Returning a combat handoff to idle must clear active handoff lookup.");
+        }
+
+        private static void VerifyQuestBoardFlow()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+
+            var offer = QuestRuntimeService.CurrentBoardOffer(session);
+            Expect(offer != null, "Quest board must expose a current offer.");
+
+            QuestRuntimeService.AcceptCurrentBoardOffer(session);
+
+            Expect(session.Quest.HasActiveQuest, "Accepting board offer must activate a quest.");
+            Expect(session.Quest.ActiveQuestId == offer.QuestId, "Accepted quest must match current board offer.");
+            Expect(session.Quest.GoldReward == offer.GoldReward, "Accepted quest must use current board reward.");
         }
 
         private static void Expect(bool condition, string message)
