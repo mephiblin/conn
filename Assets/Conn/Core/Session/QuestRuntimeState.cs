@@ -7,6 +7,7 @@ namespace Conn.Core.Session
         public string TargetMonsterId = string.Empty;
         public bool TargetDefeated;
         public bool ReturnAvailable;
+        public bool ReturnPromptSeen;
         public int GoldReward;
 
         public bool HasActiveQuest => !string.IsNullOrWhiteSpace(ActiveQuestId);
@@ -17,6 +18,7 @@ namespace Conn.Core.Session
             TargetMonsterId = string.Empty;
             TargetDefeated = false;
             ReturnAvailable = false;
+            ReturnPromptSeen = false;
             GoldReward = 0;
         }
     }

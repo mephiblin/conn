@@ -75,6 +75,7 @@ namespace Conn.UI.Runtime
                 session.Quest.GoldReward = 10;
                 session.Quest.TargetDefeated = false;
                 session.Quest.ReturnAvailable = false;
+                session.Quest.ReturnPromptSeen = false;
             }
 
             GUI.enabled = session.Quest.HasActiveQuest;
@@ -93,6 +94,24 @@ namespace Conn.UI.Runtime
         private static void DungeonControls(GameSessionState session)
         {
             GUILayout.Label(session.Quest.TargetDefeated ? "Target defeated" : "Find visible monster");
+            if (session.Quest.ReturnAvailable && !session.Quest.ReturnPromptSeen)
+            {
+                GUILayout.Space(8);
+                GUILayout.Label("Quest complete");
+                if (GUILayout.Button("Return Now"))
+                {
+                    ReturnToTown(session);
+                    return;
+                }
+
+                if (GUILayout.Button("Keep Exploring"))
+                {
+                    session.Quest.ReturnPromptSeen = true;
+                }
+
+                GUILayout.Space(8);
+            }
+
             if (GUILayout.Button("Simulate Monster Contact"))
             {
                 SceneFlowService.Load(GameSceneId.Combat);
@@ -101,9 +120,7 @@ namespace Conn.UI.Runtime
             GUI.enabled = session.Quest.ReturnAvailable;
             if (GUILayout.Button("Return To Town"))
             {
-                session.Gold += session.Quest.GoldReward;
-                session.Quest.Clear();
-                SceneFlowService.Load(GameSceneId.Town);
+                ReturnToTown(session);
             }
             GUI.enabled = true;
         }
@@ -114,6 +131,7 @@ namespace Conn.UI.Runtime
             {
                 session.Quest.TargetDefeated = true;
                 session.Quest.ReturnAvailable = true;
+                session.Quest.ReturnPromptSeen = false;
                 SceneFlowService.Load(GameSceneId.Dungeon);
             }
 
@@ -121,6 +139,13 @@ namespace Conn.UI.Runtime
             {
                 SceneFlowService.Load(GameSceneId.Ending);
             }
+        }
+
+        private static void ReturnToTown(GameSessionState session)
+        {
+            session.Gold += session.Quest.GoldReward;
+            session.Quest.Clear();
+            SceneFlowService.Load(GameSceneId.Town);
         }
     }
 }

@@ -34,6 +34,7 @@ namespace Conn.Runtime.World
             quest.GoldReward = goldReward;
             quest.TargetDefeated = false;
             quest.ReturnAvailable = false;
+            quest.ReturnPromptSeen = false;
             Debug.Log($"Accepted quest: {questId}");
         }
     }
