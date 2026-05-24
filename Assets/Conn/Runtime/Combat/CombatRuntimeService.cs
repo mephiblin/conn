@@ -31,6 +31,12 @@ namespace Conn.Runtime.Combat
             }
 
             var face = session.Combat.DiceFaces[dieIndex];
+            if (face.IsCoolingDown)
+            {
+                session.Combat.LastMessage = $"Die {dieIndex + 1} is cooling down.";
+                return;
+            }
+
             if (!face.Selected && session.Combat.SelectedDiceCount >= 3)
             {
                 session.Combat.LastMessage = "Select up to 3 dice.";
@@ -58,6 +64,7 @@ namespace Conn.Runtime.Combat
                 {
                     damage += 1 + face.Power;
                     face.Selected = false;
+                    face.Cooldown = 2;
                 }
             }
 
@@ -72,6 +79,7 @@ namespace Conn.Runtime.Combat
 
             EnemyAttack(session);
             session.Combat.Round++;
+            TickCooldowns(session);
         }
 
         public static void PlayerAttack(GameSessionState session)
@@ -131,8 +139,21 @@ namespace Conn.Runtime.Combat
                     Index = i,
                     SkillId = skillId,
                     Power = skill != null ? skill.Power : 0,
-                    Selected = false
+                    Selected = false,
+                    Cooldown = 0
                 });
+            }
+        }
+
+        private static void TickCooldowns(GameSessionState session)
+        {
+            for (var i = 0; i < session.Combat.DiceFaces.Count; i++)
+            {
+                var face = session.Combat.DiceFaces[i];
+                if (face.Cooldown > 0)
+                {
+                    face.Cooldown--;
+                }
             }
         }
     }

@@ -140,7 +140,7 @@ namespace Conn.UI.Runtime
             for (var i = 0; i < session.Combat.DiceFaces.Count; i++)
             {
                 var face = session.Combat.DiceFaces[i];
-                var prefix = face.Selected ? "[x] " : "[ ] ";
+                var prefix = face.IsCoolingDown ? "[CD] " : face.Selected ? "[x] " : "[ ] ";
                 if (GUILayout.Button(prefix + face.Label))
                 {
                     CombatRuntimeService.ToggleDieSelection(session, i);

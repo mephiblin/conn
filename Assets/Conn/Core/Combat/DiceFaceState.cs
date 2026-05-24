@@ -7,6 +7,9 @@ namespace Conn.Core.Combat
         public string SkillId = string.Empty;
         public int Power;
         public bool Selected;
+        public int Cooldown;
+
+        public bool IsCoolingDown => Cooldown > 0;
 
         public string Label => string.IsNullOrWhiteSpace(SkillId)
             ? $"Die {Index + 1}: Strike +{Power}"
