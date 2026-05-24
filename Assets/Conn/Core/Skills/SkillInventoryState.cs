@@ -7,6 +7,7 @@ namespace Conn.Core.Skills
     {
         public List<string> OwnedSkillIds = new List<string>();
         public List<string> EquippedSkillIds = new List<string>();
+        public int NextEditFaceIndex;
 
         public int OwnedCount => OwnedSkillIds.Count;
         public int EquippedCount => EquippedSkillIds.Count;
@@ -116,12 +117,22 @@ namespace Conn.Core.Skills
             {
                 EquippedSkillIds.RemoveAt(EquippedSkillIds.Count - 1);
             }
+
+            if (diceCount <= 0)
+            {
+                NextEditFaceIndex = 0;
+            }
+            else if (NextEditFaceIndex >= diceCount)
+            {
+                NextEditFaceIndex = 0;
+            }
         }
 
         public void Clear()
         {
             OwnedSkillIds.Clear();
             EquippedSkillIds.Clear();
+            NextEditFaceIndex = 0;
         }
     }
 }

@@ -129,11 +129,13 @@ namespace Conn.Tests.EditMode
             session.Skills.AddSkill(SkillCatalog.GuardId);
             session.Skills.AddSkill(SkillCatalog.MendId);
 
-            Assert.That(SkillRuntimeService.CycleEquippedFace(session, 0), Is.True);
+            Assert.That(SkillRuntimeService.CycleNextEditFace(session), Is.True);
             Assert.That(session.Skills.EquippedSkillIds[0], Is.EqualTo(SkillCatalog.GuardId));
+            Assert.That(session.Skills.NextEditFaceIndex, Is.EqualTo(1));
 
-            Assert.That(SkillRuntimeService.CycleEquippedFace(session, 0), Is.True);
-            Assert.That(session.Skills.EquippedSkillIds[0], Is.EqualTo(SkillCatalog.MendId));
+            Assert.That(SkillRuntimeService.CycleNextEditFace(session), Is.True);
+            Assert.That(session.Skills.EquippedSkillIds[1], Is.EqualTo(SkillCatalog.SlashId));
+            Assert.That(session.Skills.NextEditFaceIndex, Is.EqualTo(2));
         }
 
         [Test]

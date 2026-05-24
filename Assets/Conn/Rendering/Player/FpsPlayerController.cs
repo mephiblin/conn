@@ -155,7 +155,7 @@ namespace Conn.Rendering.Player
         {
             if (ReadCycleSkillFacePressed())
             {
-                SkillRuntimeService.CycleEquippedFace(GameSession.Instance.State, 0);
+                SkillRuntimeService.CycleNextEditFace(GameSession.Instance.State);
             }
         }
 

@@ -40,6 +40,26 @@ namespace Conn.Runtime.Skills
             return false;
         }
 
+        public static bool CycleNextEditFace(GameSessionState session)
+        {
+            var diceCount = session.Equipment.DiceCount;
+            if (diceCount <= 0)
+            {
+                return false;
+            }
+
+            if (session.Skills.NextEditFaceIndex >= diceCount)
+            {
+                session.Skills.NextEditFaceIndex = 0;
+            }
+
+            var faceIndex = session.Skills.NextEditFaceIndex;
+            var changed = CycleEquippedFace(session, faceIndex);
+            session.Skills.NextEditFaceIndex = (faceIndex + 1) % diceCount;
+            SaveIfPlaying();
+            return changed;
+        }
+
         private static int FindOwnedIndexAfter(GameSessionState session, string skillId)
         {
             for (var i = 0; i < session.Skills.OwnedSkillIds.Count; i++)

@@ -137,11 +137,13 @@ namespace Conn.Editor.Tools
             session.Skills.AddSkill(SkillCatalog.GuardId);
             session.Skills.AddSkill(SkillCatalog.MendId);
 
-            Expect(SkillRuntimeService.CycleEquippedFace(session, 0), "Cycling skill face must equip another owned skill.");
+            Expect(SkillRuntimeService.CycleNextEditFace(session), "Cycling skill face must equip another owned skill.");
             Expect(session.Skills.EquippedSkillIds[0] == SkillCatalog.GuardId, "First cycle must move Slash to Guard.");
+            Expect(session.Skills.NextEditFaceIndex == 1, "Cycling skill face must advance the edit face.");
 
-            Expect(SkillRuntimeService.CycleEquippedFace(session, 0), "Cycling skill face must continue through owned skills.");
-            Expect(session.Skills.EquippedSkillIds[0] == SkillCatalog.MendId, "Second cycle must move Guard to Mend.");
+            Expect(SkillRuntimeService.CycleNextEditFace(session), "Cycling next face must equip owned skill on following face.");
+            Expect(session.Skills.EquippedSkillIds[1] == SkillCatalog.SlashId, "Second cycle must edit face 2.");
+            Expect(session.Skills.NextEditFaceIndex == 2, "Second cycle must advance to face 3.");
         }
 
         private static void VerifyConsumables()

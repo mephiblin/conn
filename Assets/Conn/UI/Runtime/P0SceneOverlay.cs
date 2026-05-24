@@ -33,7 +33,7 @@ namespace Conn.UI.Runtime
             GUILayout.Label($"Loadout: {session.Equipment.WeaponGrip} ({session.Equipment.DiceCount} dice)");
             GUILayout.Label($"Weapon: {EquipmentName(session.Equipment.EquippedWeaponId)}");
             GUILayout.Label($"Shield: {EquipmentName(session.Equipment.EquippedShieldId)}");
-            GUILayout.Label("Q potion / R loadout / T face 1");
+            GUILayout.Label($"Q potion / R loadout / T face {session.Skills.NextEditFaceIndex + 1}");
             GUILayout.Label($"Items: {session.Inventory.ItemIds.Count}");
             GUILayout.Label($"Potions: {ConsumableRuntimeService.Count(session, ConsumableCatalog.MinorPotionId)}");
             GUILayout.Label($"Skills: {session.Skills.OwnedCount}/{session.Skills.EquippedCount}");
