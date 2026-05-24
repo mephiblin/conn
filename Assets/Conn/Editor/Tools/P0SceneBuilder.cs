@@ -1,6 +1,8 @@
 using Conn.Core.Scenes;
+using Conn.Rendering.Interaction;
 using Conn.Rendering.Player;
 using Conn.Runtime.Scenes;
+using Conn.Runtime.World;
 using Conn.UI.Runtime;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -20,8 +22,8 @@ namespace Conn.Editor.Tools
             EnsureFolder(SceneFolder);
 
             CreateScene(GameSceneId.Title, false);
-            CreateScene(GameSceneId.Town, true);
-            CreateScene(GameSceneId.Dungeon, true, true);
+            CreateScene(GameSceneId.Town, true, SceneContent.Town);
+            CreateScene(GameSceneId.Dungeon, true, SceneContent.Dungeon);
             CreateScene(GameSceneId.Combat, false);
             CreateScene(GameSceneId.Ending, false);
 
@@ -43,7 +45,7 @@ namespace Conn.Editor.Tools
             return new EditorBuildSettingsScene($"{SceneFolder}/{sceneName}.unity", true);
         }
 
-        private static void CreateScene(GameSceneId sceneId, bool includePlayer, bool includeMonster = false)
+        private static void CreateScene(GameSceneId sceneId, bool includePlayer, SceneContent content = SceneContent.None)
         {
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             scene.name = sceneId.ToString();
@@ -66,7 +68,11 @@ namespace Conn.Editor.Tools
                 CreateCamera();
             }
 
-            if (includeMonster)
+            if (content == SceneContent.Town)
+            {
+                CreateTownInteractables();
+            }
+            else if (content == SceneContent.Dungeon)
             {
                 CreateMonsterMarker();
             }
@@ -87,6 +93,7 @@ namespace Conn.Editor.Tools
         private static void CreatePlayer()
         {
             var player = new GameObject("Player");
+            player.tag = "Player";
             player.transform.position = new Vector3(0f, 1f, -4f);
             var controller = player.AddComponent<CharacterController>();
             controller.height = 1.8f;
@@ -100,6 +107,7 @@ namespace Conn.Editor.Tools
             cameraObject.AddComponent<Camera>();
 
             player.AddComponent<FpsPlayerController>();
+            player.AddComponent<PlayerWorldInteractor>();
         }
 
         private static void CreateGround(GameSceneId sceneId)
@@ -112,9 +120,29 @@ namespace Conn.Editor.Tools
         private static void CreateMonsterMarker()
         {
             var monster = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-            monster.name = "Visible Monster Contact Placeholder";
+            monster.name = "Visible Monster Contact";
             monster.transform.position = new Vector3(0f, 1f, 4f);
             monster.transform.localScale = new Vector3(1f, 1.2f, 1f);
+            var collider = monster.GetComponent<CapsuleCollider>();
+            collider.isTrigger = true;
+            var body = monster.AddComponent<Rigidbody>();
+            body.isKinematic = true;
+            monster.AddComponent<FieldMonsterContact>();
+        }
+
+        private static void CreateTownInteractables()
+        {
+            var board = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            board.name = "Quest Board";
+            board.transform.position = new Vector3(-2f, 1f, 2f);
+            board.transform.localScale = new Vector3(1.5f, 1.4f, 0.25f);
+            board.AddComponent<QuestBoardInteractable>();
+
+            var gate = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            gate.name = "Dungeon Gate";
+            gate.transform.position = new Vector3(2f, 1.25f, 2f);
+            gate.transform.localScale = new Vector3(1.2f, 2.5f, 0.3f);
+            gate.AddComponent<GateInteractable>();
         }
 
         private static void CreateLight()
@@ -138,6 +166,13 @@ namespace Conn.Editor.Tools
             var folder = slash > 0 ? path.Substring(slash + 1) : path;
             EnsureFolder(parent);
             AssetDatabase.CreateFolder(parent, folder);
+        }
+
+        private enum SceneContent
+        {
+            None,
+            Town,
+            Dungeon
         }
     }
 }
