@@ -144,6 +144,12 @@ namespace Conn.Editor.Tools
             gate.transform.position = new Vector3(2f, 1.25f, 2f);
             gate.transform.localScale = new Vector3(1.2f, 2.5f, 0.3f);
             gate.AddComponent<GateInteractable>();
+
+            var smith = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            smith.name = "Blacksmith";
+            smith.transform.position = new Vector3(0f, 1f, 3.5f);
+            smith.transform.localScale = new Vector3(1.4f, 1.3f, 0.5f);
+            smith.AddComponent<BlacksmithInteractable>();
         }
 
         private static void CreateLight()

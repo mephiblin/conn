@@ -1,5 +1,4 @@
 using Conn.Core.Scenes;
-using Conn.Core.Equipment;
 using Conn.Core.Session;
 using Conn.Runtime.Combat;
 using Conn.Runtime.Scenes;
@@ -27,6 +26,7 @@ namespace Conn.UI.Runtime
             GUILayout.Label($"Mode: {session.Mode}");
             GUILayout.Label($"Gold: {session.Gold}");
             GUILayout.Label($"Weapon: {session.Equipment.WeaponGrip} ({session.Equipment.DiceCount} dice)");
+            GUILayout.Label($"Items: {session.Inventory.ItemIds.Count}");
             GUILayout.Space(8);
 
             if (sceneId == GameSceneId.Title)
@@ -74,11 +74,6 @@ namespace Conn.UI.Runtime
             if (GUILayout.Button("Accept Test Hunt"))
             {
                 QuestRuntimeService.AcceptTestHunt(session);
-            }
-
-            if (GUILayout.Button("Cycle Weapon"))
-            {
-                CycleWeapon(session);
             }
 
             GUI.enabled = session.Quest.HasActiveQuest;
@@ -149,17 +144,6 @@ namespace Conn.UI.Runtime
             {
                 CombatRuntimeService.Die(session);
             }
-        }
-
-        private static void CycleWeapon(GameSessionState session)
-        {
-            session.Equipment.WeaponGrip = session.Equipment.WeaponGrip switch
-            {
-                WeaponGrip.OneHand => WeaponGrip.OneHandAndShield,
-                WeaponGrip.OneHandAndShield => WeaponGrip.TwoHand,
-                WeaponGrip.TwoHand => WeaponGrip.None,
-                _ => WeaponGrip.OneHand
-            };
         }
 
         private static void ReturnToTown(GameSessionState session)

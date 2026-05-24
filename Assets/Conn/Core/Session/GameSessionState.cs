@@ -1,5 +1,6 @@
 using Conn.Core.Combat;
 using Conn.Core.Equipment;
+using Conn.Core.Inventory;
 
 namespace Conn.Core.Session
 {
@@ -11,6 +12,7 @@ namespace Conn.Core.Session
         public QuestRuntimeState Quest = new QuestRuntimeState();
         public PlayerPoseSnapshot PreEncounterSnapshot = new PlayerPoseSnapshot();
         public PlayerEquipmentState Equipment = new PlayerEquipmentState();
+        public InventoryState Inventory = new InventoryState();
         public CombatSessionState Combat = new CombatSessionState();
 
         public void StartNewGame()
@@ -19,7 +21,10 @@ namespace Conn.Core.Session
             Gold = 25;
             Quest.Clear();
             PreEncounterSnapshot.Clear();
-            Equipment.WeaponGrip = WeaponGrip.OneHand;
+            Inventory.Clear();
+            Inventory.AddItem(EquipmentCatalog.RustySwordId);
+            Equipment.EquippedWeaponId = EquipmentCatalog.RustySwordId;
+            Equipment.EquippedShieldId = string.Empty;
             Combat.Clear();
         }
     }
