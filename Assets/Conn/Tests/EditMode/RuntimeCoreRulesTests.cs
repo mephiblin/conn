@@ -1,8 +1,10 @@
 using Conn.Core.Equipment;
+using Conn.Core.Items;
 using Conn.Core.Quests;
 using Conn.Core.Session;
 using Conn.Core.Skills;
 using Conn.Runtime.Combat;
+using Conn.Runtime.Inventory;
 using Conn.Runtime.Session;
 using NUnit.Framework;
 
@@ -97,6 +99,24 @@ namespace Conn.Tests.EditMode
             Assert.That(skills.RemoveLooseSkill(SkillCatalog.SlashId), Is.True);
             Assert.That(skills.CountOwned(SkillCatalog.SlashId), Is.EqualTo(1));
             Assert.That(skills.CountEquipped(SkillCatalog.SlashId), Is.EqualTo(1));
+        }
+
+        [Test]
+        public void ConsumablePurchaseAndUseUpdatesInventoryGoldAndHp()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+            var startingGold = session.Gold;
+
+            Assert.That(ConsumableRuntimeService.Buy(session, ConsumableCatalog.MinorPotionId), Is.True);
+            Assert.That(session.Gold, Is.EqualTo(startingGold - ConsumableCatalog.Find(ConsumableCatalog.MinorPotionId).BuyPrice));
+            Assert.That(ConsumableRuntimeService.Count(session, ConsumableCatalog.MinorPotionId), Is.EqualTo(1));
+
+            session.Player.Damage(8);
+
+            Assert.That(ConsumableRuntimeService.Use(session, ConsumableCatalog.MinorPotionId), Is.True);
+            Assert.That(session.Player.Hp, Is.EqualTo(18));
+            Assert.That(ConsumableRuntimeService.Count(session, ConsumableCatalog.MinorPotionId), Is.EqualTo(0));
         }
     }
 }

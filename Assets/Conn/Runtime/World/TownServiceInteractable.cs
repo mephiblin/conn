@@ -1,3 +1,5 @@
+using Conn.Core.Items;
+using Conn.Runtime.Inventory;
 using Conn.Runtime.Session;
 using UnityEngine;
 
@@ -16,7 +18,7 @@ namespace Conn.Runtime.World
                 return serviceKind switch
                 {
                     TownServiceKind.Inn => cost > 0 ? $"{serviceName}: Rest ({cost}g)" : $"{serviceName}: Rest",
-                    TownServiceKind.Apothecary => cost > 0 ? $"{serviceName}: Buy supplies ({cost}g)" : $"{serviceName}: Buy supplies",
+                    TownServiceKind.Apothecary => $"{serviceName}: Buy {ConsumableCatalog.Find(ConsumableCatalog.MinorPotionId)?.DisplayName} ({cost}g)",
                     _ => $"{serviceName}: Talk"
                 };
             }
@@ -57,7 +59,7 @@ namespace Conn.Runtime.World
 
             if (serviceKind == TownServiceKind.Apothecary)
             {
-                PayForService(session, "Bought basic supplies.");
+                ConsumableRuntimeService.Buy(session, ConsumableCatalog.MinorPotionId);
                 return;
             }
 

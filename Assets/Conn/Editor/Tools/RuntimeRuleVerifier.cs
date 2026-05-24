@@ -1,8 +1,10 @@
 using System;
 using Conn.Core.Equipment;
+using Conn.Core.Items;
 using Conn.Core.Quests;
 using Conn.Core.Session;
 using Conn.Core.Skills;
+using Conn.Runtime.Inventory;
 using Conn.Runtime.Session;
 using Conn.Runtime.Combat;
 using UnityEngine;
@@ -16,6 +18,7 @@ namespace Conn.Editor.Tools
             VerifyEquipmentDiceRules();
             VerifyNewGameState();
             VerifyDiceSkillEffects();
+            VerifyConsumables();
             VerifySkillSaleProtection();
             Debug.Log("Conn runtime core rule verification passed.");
         }
@@ -101,6 +104,23 @@ namespace Conn.Editor.Tools
             Expect(skills.RemoveLooseSkill(SkillCatalog.SlashId), "Loose duplicate skill must be removable.");
             Expect(skills.CountOwned(SkillCatalog.SlashId) == 1, "Selling loose duplicate must leave one owned Slash.");
             Expect(skills.CountEquipped(SkillCatalog.SlashId) == 1, "Selling loose duplicate must preserve equipped Slash.");
+        }
+
+        private static void VerifyConsumables()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+            var startingGold = session.Gold;
+
+            Expect(ConsumableRuntimeService.Buy(session, ConsumableCatalog.MinorPotionId), "Apothecary potion purchase must succeed.");
+            Expect(session.Gold == startingGold - ConsumableCatalog.Find(ConsumableCatalog.MinorPotionId).BuyPrice, "Potion purchase must spend gold.");
+            Expect(ConsumableRuntimeService.Count(session, ConsumableCatalog.MinorPotionId) == 1, "Potion purchase must add one potion.");
+
+            session.Player.Damage(8);
+
+            Expect(ConsumableRuntimeService.Use(session, ConsumableCatalog.MinorPotionId), "Owned potion must be usable.");
+            Expect(session.Player.Hp == 18, "Potion must heal the player by its configured amount.");
+            Expect(ConsumableRuntimeService.Count(session, ConsumableCatalog.MinorPotionId) == 0, "Potion use must consume one potion.");
         }
 
         private static void Expect(bool condition, string message)

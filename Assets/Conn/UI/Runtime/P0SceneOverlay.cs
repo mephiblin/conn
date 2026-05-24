@@ -1,8 +1,10 @@
 using Conn.Core.Scenes;
 using Conn.Core.Session;
 using Conn.Runtime.Combat;
+using Conn.Runtime.Inventory;
 using Conn.Runtime.Scenes;
 using Conn.Runtime.Session;
+using Conn.Core.Items;
 using UnityEngine;
 
 namespace Conn.UI.Runtime
@@ -28,8 +30,11 @@ namespace Conn.UI.Runtime
             GUILayout.Label($"HP: {session.Player.Hp}/{session.Player.MaxHp}");
             GUILayout.Label($"Weapon: {session.Equipment.WeaponGrip} ({session.Equipment.DiceCount} dice)");
             GUILayout.Label($"Items: {session.Inventory.ItemIds.Count}");
+            GUILayout.Label($"Potions: {ConsumableRuntimeService.Count(session, ConsumableCatalog.MinorPotionId)}");
             GUILayout.Label($"Skills: {session.Skills.OwnedCount}/{session.Skills.EquippedCount}");
             GUILayout.Space(8);
+
+            DrawConsumableControls(session);
 
             if (sceneId == GameSceneId.Title)
             {
@@ -71,6 +76,19 @@ namespace Conn.UI.Runtime
             }
 
             GUILayout.EndArea();
+        }
+
+        private static void DrawConsumableControls(GameSessionState session)
+        {
+            var potionCount = ConsumableRuntimeService.Count(session, ConsumableCatalog.MinorPotionId);
+            GUI.enabled = potionCount > 0 && session.Player.Hp < session.Player.MaxHp;
+            if (GUILayout.Button("Use Potion"))
+            {
+                ConsumableRuntimeService.Use(session, ConsumableCatalog.MinorPotionId);
+            }
+
+            GUI.enabled = true;
+            GUILayout.Space(8);
         }
 
         private static void TownControls(GameSessionState session)
@@ -121,11 +139,6 @@ namespace Conn.UI.Runtime
                 GUILayout.Space(8);
             }
 
-            if (GUILayout.Button("Simulate Monster Contact"))
-            {
-                SceneFlowService.Load(GameSceneId.Combat);
-            }
-
             GUI.enabled = session.Quest.ReturnAvailable;
             if (GUILayout.Button("Return To Town"))
             {
@@ -162,10 +175,6 @@ namespace Conn.UI.Runtime
                 CombatRuntimeService.ResolveSelectedDice(session);
             }
 
-            if (GUILayout.Button("Die"))
-            {
-                CombatRuntimeService.Die(session);
-            }
         }
 
         private static void ReturnToTown(GameSessionState session)
