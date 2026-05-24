@@ -13,7 +13,15 @@ namespace Conn.Runtime.World
                 var nextSkillId = GetNextOfferId();
                 if (string.IsNullOrEmpty(nextSkillId))
                 {
-                    return "Equip owned skill";
+                    var sellable = FindFirstSellableSkillId();
+                    if (!string.IsNullOrEmpty(sellable))
+                    {
+                        var sellSkill = SkillCatalog.Find(sellable);
+                        return $"Sell {sellSkill.DisplayName} ({sellSkill.SellPrice}g)";
+                    }
+
+                    var duplicate = SkillCatalog.Find(SkillCatalog.FocusStrikeId);
+                    return $"Buy {duplicate.DisplayName} ({duplicate.BuyPrice}g)";
                 }
 
                 var skill = SkillCatalog.Find(nextSkillId);
@@ -32,6 +40,14 @@ namespace Conn.Runtime.World
                 return;
             }
 
+            var sellable = FindFirstSellableSkillId();
+            if (!string.IsNullOrEmpty(sellable))
+            {
+                SellSkill(sellable);
+                return;
+            }
+
+            BuyAndEquip(SkillCatalog.FocusStrikeId);
             EquipBestKnownSkill();
         }
 
@@ -80,6 +96,35 @@ namespace Conn.Runtime.World
             {
                 session.Skills.EquipFirstOpenFace(SkillCatalog.GuardId, session.Equipment.DiceCount);
             }
+        }
+
+        private static string FindFirstSellableSkillId()
+        {
+            var skills = GameSession.Instance.State.Skills;
+            for (var i = 0; i < skills.OwnedSkillIds.Count; i++)
+            {
+                var skillId = skills.OwnedSkillIds[i];
+                if (skills.CountOwned(skillId) > skills.CountEquipped(skillId) && SkillCatalog.Find(skillId) != null)
+                {
+                    return skillId;
+                }
+            }
+
+            return string.Empty;
+        }
+
+        private static void SellSkill(string skillId)
+        {
+            var session = GameSession.Instance.State;
+            var skill = SkillCatalog.Find(skillId);
+            if (skill == null || !session.Skills.RemoveLooseSkill(skillId))
+            {
+                Debug.Log("Cannot sell equipped skill.");
+                return;
+            }
+
+            session.Gold += skill.SellPrice;
+            Debug.Log($"Sold {skill.DisplayName}.");
         }
     }
 }

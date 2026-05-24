@@ -18,6 +18,13 @@ namespace Conn.Runtime.World
                     return $"Buy {item.DisplayName} ({item.BuyPrice}g)";
                 }
 
+                var sellable = FindFirstSellableItemId();
+                if (!string.IsNullOrEmpty(sellable))
+                {
+                    var item = EquipmentCatalog.Find(sellable);
+                    return $"Sell {item.DisplayName} ({item.SellPrice}g)";
+                }
+
                 return "Switch equipped weapon";
             }
         }
@@ -31,6 +38,13 @@ namespace Conn.Runtime.World
             if (!string.IsNullOrEmpty(nextOffer))
             {
                 BuyAndEquip(nextOffer);
+                return;
+            }
+
+            var sellable = FindFirstSellableItemId();
+            if (!string.IsNullOrEmpty(sellable))
+            {
+                SellItem(sellable);
                 return;
             }
 
@@ -85,6 +99,39 @@ namespace Conn.Runtime.World
             {
                 session.Equipment.Equip(EquipmentCatalog.GreatAxeId);
             }
+        }
+
+        private static string FindFirstSellableItemId()
+        {
+            var session = GameSession.Instance.State;
+            for (var i = 0; i < session.Inventory.ItemIds.Count; i++)
+            {
+                var itemId = session.Inventory.ItemIds[i];
+                if (itemId == EquipmentCatalog.RustySwordId || session.Equipment.IsEquipped(itemId))
+                {
+                    continue;
+                }
+
+                if (EquipmentCatalog.Find(itemId) != null)
+                {
+                    return itemId;
+                }
+            }
+
+            return string.Empty;
+        }
+
+        private static void SellItem(string itemId)
+        {
+            var session = GameSession.Instance.State;
+            var item = EquipmentCatalog.Find(itemId);
+            if (item == null || !session.Inventory.RemoveItem(itemId))
+            {
+                return;
+            }
+
+            session.Gold += item.SellPrice;
+            Debug.Log($"Sold {item.DisplayName}.");
         }
     }
 }

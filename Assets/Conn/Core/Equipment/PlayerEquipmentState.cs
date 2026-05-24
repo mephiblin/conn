@@ -43,6 +43,11 @@ namespace Conn.Core.Equipment
 
         public int DefenseBonus => WeaponGrip == WeaponGrip.OneHandAndShield ? 1 : 0;
 
+        public bool IsEquipped(string itemId)
+        {
+            return EquippedWeaponId == itemId || EquippedShieldId == itemId;
+        }
+
         public void Equip(string itemId)
         {
             var item = EquipmentCatalog.Find(itemId);
