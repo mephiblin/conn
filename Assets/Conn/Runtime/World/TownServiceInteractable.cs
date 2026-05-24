@@ -47,7 +47,11 @@ namespace Conn.Runtime.World
             var session = GameSession.Instance.State;
             if (serviceKind == TownServiceKind.Inn)
             {
-                PayForService(session, "Rested at the inn.");
+                if (PayForService(session, "Rested at the inn."))
+                {
+                    session.Player.HealToFull();
+                    GameSession.Instance.SaveGame();
+                }
                 return;
             }
 
@@ -60,17 +64,18 @@ namespace Conn.Runtime.World
             Debug.Log($"{serviceName}: service is not implemented yet.");
         }
 
-        private void PayForService(Core.Session.GameSessionState session, string successMessage)
+        private bool PayForService(Core.Session.GameSessionState session, string successMessage)
         {
             if (cost > 0 && session.Gold < cost)
             {
                 Debug.Log($"{serviceName}: not enough gold.");
-                return;
+                return false;
             }
 
             session.Gold -= cost;
             GameSession.Instance.SaveGame();
             Debug.Log($"{serviceName}: {successMessage}");
+            return true;
         }
     }
 }

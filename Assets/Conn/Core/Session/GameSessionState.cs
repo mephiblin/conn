@@ -10,6 +10,7 @@ namespace Conn.Core.Session
     {
         public GameMode Mode = GameMode.Title;
         public int Gold;
+        public PlayerRuntimeState Player = new PlayerRuntimeState();
         public QuestRuntimeState Quest = new QuestRuntimeState();
         public PlayerPoseSnapshot PreEncounterSnapshot = new PlayerPoseSnapshot();
         public PlayerEquipmentState Equipment = new PlayerEquipmentState();
@@ -21,6 +22,7 @@ namespace Conn.Core.Session
         {
             Mode = GameMode.Town;
             Gold = 25;
+            Player.Reset();
             Quest.Clear();
             PreEncounterSnapshot.Clear();
             Inventory.Clear();

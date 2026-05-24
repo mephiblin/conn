@@ -29,6 +29,7 @@ namespace Conn.Runtime.Session
             session.Quest.TargetDefeated = true;
             session.Quest.ReturnAvailable = true;
             session.Quest.ReturnPromptSeen = false;
+            GameSession.Instance.SaveGame();
         }
 
         public static void ReturnToTown(GameSessionState session)

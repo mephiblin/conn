@@ -25,6 +25,7 @@ namespace Conn.UI.Runtime
             var session = GameSession.Instance.State;
             GUILayout.Label($"Mode: {session.Mode}");
             GUILayout.Label($"Gold: {session.Gold}");
+            GUILayout.Label($"HP: {session.Player.Hp}/{session.Player.MaxHp}");
             GUILayout.Label($"Weapon: {session.Equipment.WeaponGrip} ({session.Equipment.DiceCount} dice)");
             GUILayout.Label($"Items: {session.Inventory.ItemIds.Count}");
             GUILayout.Label($"Skills: {session.Skills.OwnedCount}/{session.Skills.EquippedCount}");

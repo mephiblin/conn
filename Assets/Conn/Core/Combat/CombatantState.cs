@@ -18,6 +18,14 @@ namespace Conn.Core.Combat
             Hp = maxHp;
         }
 
+        public void Setup(string id, string displayName, int maxHp, int hp)
+        {
+            Id = id;
+            DisplayName = displayName;
+            MaxHp = maxHp;
+            Hp = hp;
+        }
+
         public void Damage(int amount)
         {
             Hp -= amount;

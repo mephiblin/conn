@@ -16,7 +16,7 @@ namespace Conn.Runtime.Combat
             session.Combat.PlayerDiceCount = session.Equipment.DiceCount;
             session.Combat.PlayerDefenseBonus = session.Equipment.DefenseBonus;
             session.Skills.ResizeEquippedFaces(session.Combat.PlayerDiceCount);
-            session.Combat.Player.Setup("player", "Player", 20);
+            session.Combat.Player.Setup("player", "Player", session.Player.MaxHp, session.Player.Hp);
             session.Combat.Enemy.Setup(session.Quest.TargetMonsterId, "Test Monster", 12);
             BuildDiceFaces(session);
             session.Combat.LastMessage = $"Combat started. Dice: {session.Combat.PlayerDiceCount}";
@@ -91,6 +91,7 @@ namespace Conn.Runtime.Combat
         {
             session.Combat.Clear();
             SceneFlowService.Load(GameSceneId.Ending);
+            GameSession.Instance.SaveGame();
         }
 
         private static void EnemyAttack(GameSessionState session)
@@ -102,8 +103,10 @@ namespace Conn.Runtime.Combat
             }
 
             session.Combat.Player.Damage(damage);
+            session.Player.Damage(damage);
             session.Combat.LastMessage += $" Enemy deals {damage}.";
-            if (session.Combat.Player.IsDead)
+            GameSession.Instance.SaveGame();
+            if (session.Player.IsDead)
             {
                 Die(session);
             }
