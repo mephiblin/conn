@@ -118,6 +118,7 @@ namespace Conn.Tests.EditMode
             Assert.That(ConsumableRuntimeService.Use(session, ConsumableCatalog.MinorPotionId), Is.True);
             Assert.That(session.Player.Hp, Is.EqualTo(18));
             Assert.That(ConsumableRuntimeService.Count(session, ConsumableCatalog.MinorPotionId), Is.EqualTo(0));
+            Assert.That(ConsumableRuntimeService.Use(session, ConsumableCatalog.MinorPotionId), Is.False);
         }
 
         [Test]

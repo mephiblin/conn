@@ -1,3 +1,6 @@
+using Conn.Core.Items;
+using Conn.Runtime.Inventory;
+using Conn.Runtime.Session;
 using UnityEngine;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
@@ -31,6 +34,7 @@ namespace Conn.Rendering.Player
         {
             Look();
             Move();
+            UsePotionShortcut();
         }
 
         private void Look()
@@ -92,6 +96,33 @@ namespace Conn.Rendering.Player
             return new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
 #else
             return Vector2.zero;
+#endif
+        }
+
+        private static void UsePotionShortcut()
+        {
+            if (!ReadUsePotionPressed())
+            {
+                return;
+            }
+
+            var session = GameSession.Instance.State;
+            if (session.Player.Hp >= session.Player.MaxHp)
+            {
+                return;
+            }
+
+            ConsumableRuntimeService.Use(session, ConsumableCatalog.MinorPotionId);
+        }
+
+        private static bool ReadUsePotionPressed()
+        {
+#if ENABLE_INPUT_SYSTEM
+            return Keyboard.current != null && Keyboard.current.qKey.wasPressedThisFrame;
+#elif ENABLE_LEGACY_INPUT_MANAGER
+            return Input.GetKeyDown(KeyCode.Q);
+#else
+            return false;
 #endif
         }
 

@@ -123,6 +123,7 @@ namespace Conn.Editor.Tools
             Expect(ConsumableRuntimeService.Use(session, ConsumableCatalog.MinorPotionId), "Owned potion must be usable.");
             Expect(session.Player.Hp == 18, "Potion must heal the player by its configured amount.");
             Expect(ConsumableRuntimeService.Count(session, ConsumableCatalog.MinorPotionId) == 0, "Potion use must consume one potion.");
+            Expect(!ConsumableRuntimeService.Use(session, ConsumableCatalog.MinorPotionId), "Using a missing potion must fail.");
         }
 
         private static void VerifyCombatHandoffStateKey()
