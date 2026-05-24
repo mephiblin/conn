@@ -1,0 +1,104 @@
+using System;
+using System.Collections.Generic;
+
+namespace Conn.Core.Content
+{
+    public enum ContentIdKind
+    {
+        Item,
+        Equipment,
+        Skill,
+        Monster,
+        Quest,
+        Vendor,
+        Npc
+    }
+
+    public sealed class ContentIdRegistry
+    {
+        private readonly Dictionary<string, ContentItemDefinition> items = new Dictionary<string, ContentItemDefinition>();
+        private readonly Dictionary<string, ContentEquipmentDefinition> equipment = new Dictionary<string, ContentEquipmentDefinition>();
+        private readonly Dictionary<string, ContentSkillDefinition> skills = new Dictionary<string, ContentSkillDefinition>();
+        private readonly Dictionary<string, ContentMonsterDefinition> monsters = new Dictionary<string, ContentMonsterDefinition>();
+        private readonly Dictionary<string, ContentQuestDefinition> quests = new Dictionary<string, ContentQuestDefinition>();
+        private readonly Dictionary<string, ContentVendorDefinition> vendors = new Dictionary<string, ContentVendorDefinition>();
+        private readonly Dictionary<string, ContentNpcDefinition> npcs = new Dictionary<string, ContentNpcDefinition>();
+
+        public ContentItemDefinition FindItem(string id) => Find(items, id);
+        public ContentEquipmentDefinition FindEquipment(string id) => Find(equipment, id);
+        public ContentSkillDefinition FindSkill(string id) => Find(skills, id);
+        public ContentMonsterDefinition FindMonster(string id) => Find(monsters, id);
+        public ContentQuestDefinition FindQuest(string id) => Find(quests, id);
+        public ContentVendorDefinition FindVendor(string id) => Find(vendors, id);
+        public ContentNpcDefinition FindNpc(string id) => Find(npcs, id);
+
+        public bool ContainsAnyItemLikeId(string id)
+        {
+            return !string.IsNullOrWhiteSpace(id) && (items.ContainsKey(id) || equipment.ContainsKey(id));
+        }
+
+        public void RegisterItems(IEnumerable<ContentItemDefinition> definitions)
+        {
+            Register(items, definitions, item => item.Id, ContentIdKind.Item);
+        }
+
+        public void RegisterEquipment(IEnumerable<ContentEquipmentDefinition> definitions)
+        {
+            Register(equipment, definitions, item => item.Id, ContentIdKind.Equipment);
+        }
+
+        public void RegisterSkills(IEnumerable<ContentSkillDefinition> definitions)
+        {
+            Register(skills, definitions, skill => skill.Id, ContentIdKind.Skill);
+        }
+
+        public void RegisterMonsters(IEnumerable<ContentMonsterDefinition> definitions)
+        {
+            Register(monsters, definitions, monster => monster.Id, ContentIdKind.Monster);
+        }
+
+        public void RegisterQuests(IEnumerable<ContentQuestDefinition> definitions)
+        {
+            Register(quests, definitions, quest => quest.Id, ContentIdKind.Quest);
+        }
+
+        public void RegisterVendors(IEnumerable<ContentVendorDefinition> definitions)
+        {
+            Register(vendors, definitions, vendor => vendor.Id, ContentIdKind.Vendor);
+        }
+
+        public void RegisterNpcs(IEnumerable<ContentNpcDefinition> definitions)
+        {
+            Register(npcs, definitions, npc => npc.Id, ContentIdKind.Npc);
+        }
+
+        private static T Find<T>(Dictionary<string, T> definitions, string id)
+        {
+            return !string.IsNullOrWhiteSpace(id) && definitions.TryGetValue(id, out var definition) ? definition : default;
+        }
+
+        private static void Register<T>(Dictionary<string, T> target, IEnumerable<T> definitions, Func<T, string> getId, ContentIdKind kind)
+        {
+            if (definitions == null)
+            {
+                return;
+            }
+
+            foreach (var definition in definitions)
+            {
+                var id = getId(definition);
+                if (string.IsNullOrWhiteSpace(id))
+                {
+                    throw new InvalidOperationException($"{kind} id must not be empty.");
+                }
+
+                if (target.ContainsKey(id))
+                {
+                    throw new InvalidOperationException($"Duplicate {kind} id: {id}");
+                }
+
+                target.Add(id, definition);
+            }
+        }
+    }
+}

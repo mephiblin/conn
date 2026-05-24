@@ -14,8 +14,8 @@
 | P2 전투/스킬/주사위 | 75-85% | 상태 이상/특수 효과/로그/HUD 가독성 1차 완료 |
 | P3 장비/인벤토리/상점 | 75-85% | 장비/소모품/스킬 구분과 구매/판매 상태 표시 1차 완료 |
 | P4 마을 NPC 확장 | 70-80% | 8종 NPC와 최소 서비스/notice는 동작, 깊이 확장은 후속 |
-| P5 Editor Tool 1차 | 15-25% | 검증/빌드 도구만 있고 제작용 에디터는 아직 시작 전 |
-| P6 맵 생성 | 0-10% | 문서만 있고 Runtime 연결은 아직 없음 |
+| P5 Editor Tool 1차 | 35-45% | Content Database import/검증과 Chapter 2 validator 1차 완료 |
+| P6 맵 생성 | 25-35% | deterministic profile/seed 생성과 compiledMap 1차 완료 |
 
 Chapter 1 전체는 약 70-80% 진행으로 본다. 자동 검증 가능한 Runtime Core는
 통과했고, 남은 위험은 Play Mode 체감, UI 배치, 콘텐츠 다양성 쪽이다.
@@ -57,6 +57,10 @@ Chapter 1 전체는 약 70-80% 진행으로 본다. 자동 검증 가능한 Runt
 - 캐릭터 패널의 장비 장착과 스킬 face 순환
 - 던전 HUD의 원정/몬스터/귀환 상태 표시
 - `Conn > Build & Validate Chapter 1` batchmode 검증
+- `Conn > Content Database > Import Legacy JSON`
+- `Conn > Content Database > Window`
+- `Conn > Map > Generator Workbench`
+- `Conn > Build & Validate Chapter 2`
 
 ## P1에 남은 작업
 
@@ -172,50 +176,53 @@ P1은 자동 검증 기준으로 닫혔다. 실제 플레이 기준으로 아래
 
 ## P5에 남은 작업: Editor Tool 1차
 
-현재 Editor Tool은 검증과 씬 생성에 가깝다. 본격 제작 도구는 남아 있다.
+현재 Editor Tool은 Content Database와 Generator Workbench의 1차 골격이 생겼다.
+아직 본격 제작 UX와 Runtime data bundle 전환은 남아 있다.
 
 우선순위:
 
 1. Content Database
-   - equipment
-   - skill
-   - monster
-   - encounter
-   - quest
-   - vendor
-   - npc
+   - item, skill, monster, quest, vendor, npc legacy JSON import: 1차 완료
+   - equipment legacy import: 아직 별도 장비 데이터가 없어 빈 배열
+   - ID registry와 definition lookup: 1차 완료
+   - `ContentDatabase.asset` 생성: 1차 완료
+   - 남은 작업: imported data를 Runtime catalog의 실제 source로 전환
 
 2. Build & Validation 확장
-   - ID registry 검증
-   - quest -> encounter -> monster 참조 검증
-   - vendor stock 참조 검증
-   - skill/equipment 가격 검증
+   - ID registry 검증: 1차 완료
+   - quest -> monster 참조 검증: 1차 완료
+   - quest -> dungeon -> encounter 검증: 아직 후속
+   - vendor stock 참조 검증: 1차 완료
+   - skill/equipment 가격 검증: 1차 완료
    - 저장 계약 검증
+   - `Conn > Build & Validate Chapter 2`: 1차 완료
 
 3. NPC/Quest Editor
+   - NPC service type import: 1차 완료
    - 게시판 퀘스트 후보
    - 퀘스트 보상
    - target monster/encounter 연결
-   - NPC service type
 
 4. Map/Encounter Editor
    - 제작용 grid
    - monster placement
    - gate/exit anchor
    - loot/quest anchor
+   - Generator Workbench preview: 1차 완료
 
 ## P6에 남은 작업: 던전/맵 생성
 
-`diablo_map_generation_design.md` 기준 구현은 아직 남아 있다.
+`diablo_map_generation_design.md` 기준 1차 deterministic 생성 파이프라인이 들어갔다.
+실제 씬 빌드와 authored map editor는 아직 남아 있다.
 
-1. `MapProfile`
-2. seed 기반 deterministic generation
-3. `RoomGraph`
-4. chunk/socket assembly
-5. start/exit/quest target anchor 보장
-6. monster/loot placement pass
-7. validation
-8. compiledMap 생성
+1. `MapProfile`: 1차 완료
+2. seed 기반 deterministic generation: 1차 완료
+3. `RoomGraph`: 1차 완료
+4. chunk/socket assembly: 1차 완료
+5. start/exit/quest target/boss anchor 보장: 1차 완료
+6. monster/loot placement pass: 아직 후속
+7. validation: 1차 완료
+8. compiledMap 생성: 1차 완료
 9. Runtime에서 compiledMap 로드
 10. 자동 지도/fog 해제
 

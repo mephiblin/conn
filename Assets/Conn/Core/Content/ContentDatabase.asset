@@ -1,0 +1,510 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f8e1a3a5cb7bb7d6fb3d25b4ca2c6198, type: 3}
+  m_Name: ContentDatabase
+  m_EditorClassIdentifier: Conn.Core::Conn.Core.Content.ContentDatabaseDefinition
+  Items:
+  - Id: bandage
+    DisplayName: "\uBD95\uB300"
+    Kind: consumable
+    BuyPrice: 0
+    SellPrice: 0
+    HealAmount: 10
+  - Id: antivenom
+    DisplayName: "\uD574\uB3C5\uC81C"
+    Kind: consumable
+    BuyPrice: 0
+    SellPrice: 0
+    HealAmount: 0
+  - Id: throwing_knife
+    DisplayName: "\uD22C\uCC99 \uB2E8\uAC80"
+    Kind: consumable
+    BuyPrice: 0
+    SellPrice: 0
+    HealAmount: 0
+  - Id: firebomb
+    DisplayName: "\uD654\uC5FC\uBCD1"
+    Kind: consumable
+    BuyPrice: 0
+    SellPrice: 0
+    HealAmount: 0
+  - Id: bronze_key
+    DisplayName: "\uCCAD\uB3D9 \uBC40 \uC5F4\uC1E0"
+    Kind: key
+    BuyPrice: 0
+    SellPrice: 0
+    HealAmount: 0
+  - Id: obsidian_key
+    DisplayName: "\uD751\uC694\uC11D \uBB38\uC7A5 \uC5F4\uC1E0"
+    Kind: key
+    BuyPrice: 0
+    SellPrice: 0
+    HealAmount: 0
+  - Id: black_dagger
+    DisplayName: "\uAC80\uC740 \uC0AC\uC81C\uC758 \uB2E8\uAC80"
+    Kind: artifact
+    BuyPrice: 0
+    SellPrice: 0
+    HealAmount: 0
+  - Id: priest_mask
+    DisplayName: "\uBC40 \uC0AC\uC81C\uC758 \uAC00\uBA74"
+    Kind: quest
+    BuyPrice: 0
+    SellPrice: 0
+    HealAmount: 0
+  Equipment: []
+  Skills:
+  - Id: skill_berserk
+    DisplayName: "\uAD11\uBD84"
+    EffectKind: attack
+    TargetMode: enemy
+    Formula: die_times_effect
+    BuyPrice: 12
+    SellPrice: 6
+    Power: 3
+    CatalogIds:
+    - merchant_basic
+  - Id: skill_guard_stance
+    DisplayName: "\uBC29\uC5B4 \uD0DC\uC138"
+    EffectKind: guard
+    TargetMode: self
+    Formula: die_plus_effect
+    BuyPrice: 10
+    SellPrice: 5
+    Power: 2
+    CatalogIds:
+    - merchant_basic
+  - Id: skill_vital_stab
+    DisplayName: "\uAE09\uC18C \uCC0C\uB974\uAE30"
+    EffectKind: attack
+    TargetMode: enemy
+    Formula: die_plus_effect
+    BuyPrice: 14
+    SellPrice: 7
+    Power: 4
+    CatalogIds:
+    - merchant_basic
+  - Id: skill_piercing_shot
+    DisplayName: "\uAD00\uD1B5 \uC0AC\uACA9"
+    EffectKind: attack
+    TargetMode: enemy
+    Formula: die_times_effect
+    BuyPrice: 13
+    SellPrice: 6
+    Power: 2
+    CatalogIds:
+    - merchant_basic
+  - Id: skill_serpent_phantasm
+    DisplayName: "\uBC40\uC758 \uD658\uC601"
+    EffectKind: attack
+    TargetMode: enemy
+    Formula: die_equals_effect
+    BuyPrice: 22
+    SellPrice: 11
+    Power: 6
+    CatalogIds:
+    - merchant_basic
+  - Id: skill_purify
+    DisplayName: "\uC815\uD654"
+    EffectKind: support
+    TargetMode: ally
+    Formula: die_plus_effect
+    BuyPrice: 11
+    SellPrice: 5
+    Power: 2
+    CatalogIds:
+    - merchant_basic
+  - Id: skill_weakness_read
+    DisplayName: "\uC57D\uC810 \uBD84\uC11D"
+    EffectKind: support
+    TargetMode: enemy
+    Formula: die_as_effect
+    BuyPrice: 9
+    SellPrice: 4
+    Power: 0
+    CatalogIds:
+    - merchant_basic
+  - Id: skill_blood_cleave
+    DisplayName: "\uD54F\uBE5B \uD6A1\uBCA0\uAE30"
+    EffectKind: attack
+    TargetMode: enemy
+    Formula: die_plus_effect
+    BuyPrice: 18
+    SellPrice: 9
+    Power: 6
+    CatalogIds:
+    - merchant_basic
+  - Id: skill_bastion_vow
+    DisplayName: "\uBCF4\uB8E8\uC758 \uB9F9\uC138"
+    EffectKind: guard
+    TargetMode: self
+    Formula: die_times_effect
+    BuyPrice: 17
+    SellPrice: 8
+    Power: 2
+    CatalogIds:
+    - merchant_basic
+  - Id: skill_chain_lightning
+    DisplayName: "\uC0AC\uC2AC \uBC88\uAC1C"
+    EffectKind: attack
+    TargetMode: enemy
+    Formula: die_plus_effect
+    BuyPrice: 20
+    SellPrice: 10
+    Power: 5
+    CatalogIds:
+    - merchant_basic
+  - Id: skill_mending_wave
+    DisplayName: "\uCE58\uC720 \uD30C\uB3D9"
+    EffectKind: heal
+    TargetMode: ally
+    Formula: die_times_effect
+    BuyPrice: 16
+    SellPrice: 8
+    Power: 2
+    CatalogIds:
+    - merchant_basic
+  - Id: skill_venom_mark
+    DisplayName: "\uB3C5\uD754 \uD45C\uC2DD"
+    EffectKind: support
+    TargetMode: enemy
+    Formula: die_plus_effect
+    BuyPrice: 12
+    SellPrice: 6
+    Power: 1
+    CatalogIds:
+    - merchant_basic
+  - Id: skill_storm_bolt
+    DisplayName: "\uD3ED\uD48D \uB9DD\uCE58"
+    EffectKind: debuff
+    TargetMode: enemy
+    Formula: die_plus_effect
+    BuyPrice: 24
+    SellPrice: 12
+    Power: 1
+    CatalogIds:
+    - merchant_basic
+    - trainer_skill_rotation
+  - Id: skill_thunder_clap
+    DisplayName: "\uCC9C\uB465 \uBC1C\uAD6C\uB974\uAE30"
+    EffectKind: debuff
+    TargetMode: enemy
+    Formula: die_minus_effect
+    BuyPrice: 21
+    SellPrice: 10
+    Power: 2
+    CatalogIds:
+    - merchant_basic
+  - Id: skill_holy_light
+    DisplayName: "\uC131\uC2A4\uB7EC\uC6B4 \uBE5B"
+    EffectKind: heal
+    TargetMode: ally
+    Formula: die_plus_effect
+    BuyPrice: 19
+    SellPrice: 9
+    Power: 5
+    CatalogIds:
+    - merchant_basic
+    - trainer_skill_rotation
+  - Id: skill_death_coil
+    DisplayName: "\uC8FD\uC74C\uC758 \uACE0\uB9AC"
+    EffectKind: lifesteal
+    TargetMode: enemy
+    Formula: die_times_effect
+    BuyPrice: 23
+    SellPrice: 11
+    Power: 2
+    CatalogIds:
+    - merchant_basic
+  - Id: skill_avatar_vow
+    DisplayName: "\uD654\uC2E0\uC758 \uB9F9\uC138"
+    EffectKind: buff
+    TargetMode: self
+    Formula: die_as_effect
+    BuyPrice: 26
+    SellPrice: 13
+    Power: 0
+    CatalogIds:
+    - trainer_skill_rotation
+  - Id: skill_mana_burn
+    DisplayName: "\uB9C8\uB098 \uD0DC\uC6B0\uAE30"
+    EffectKind: debuff
+    TargetMode: enemy
+    Formula: die_as_effect
+    BuyPrice: 18
+    SellPrice: 9
+    Power: 0
+    CatalogIds:
+    - merchant_basic
+    - trainer_skill_rotation
+  - Id: skill_divide_guard
+    DisplayName: "\uBC18\uBD84 \uBC29\uBCBD"
+    EffectKind: guard
+    TargetMode: self
+    Formula: die_divide_effect
+    BuyPrice: 8
+    SellPrice: 4
+    Power: 2
+    CatalogIds:
+    - merchant_basic
+  - Id: skill_summon_serpent_egg
+    DisplayName: "\uBC40\uC54C \uBD80\uB974\uAE30"
+    EffectKind: summon
+    TargetMode: self
+    Formula: die_equals_effect
+    BuyPrice: 30
+    SellPrice: 15
+    Power: 1
+    CatalogIds:
+    - trainer_skill_rotation
+  Monsters:
+  - Id: desert_rat
+    DisplayName: "\uC0AC\uB9C9 \uC9D0\uC2B9"
+    MaxHp: 15
+    AttackPower: 4
+    Defense: 1
+    XpReward: 8
+    Boss: 0
+    Ai: aggressive
+  - Id: grave_robber
+    DisplayName: "\uB3C4\uAD74\uAFBC"
+    MaxHp: 22
+    AttackPower: 6
+    Defense: 2
+    XpReward: 14
+    Boss: 0
+    Ai: coward
+  - Id: serpent_guard
+    DisplayName: "\uBC40 \uC0AC\uC6D0 \uACBD\uBE44\uBCD1"
+    MaxHp: 28
+    AttackPower: 7
+    Defense: 4
+    XpReward: 20
+    Boss: 0
+    Ai: guardian
+  - Id: poisoned_raider
+    DisplayName: "\uB3C5\uC5D0 \uBBF8\uCE5C \uC57D\uD0C8\uC790"
+    MaxHp: 30
+    AttackPower: 8
+    Defense: 3
+    XpReward: 24
+    Boss: 0
+    Ai: ambusher
+  - Id: cursed_gladiator
+    DisplayName: "\uC800\uC8FC\uBC1B\uC740 \uAC80\uD22C\uC0AC"
+    MaxHp: 42
+    AttackPower: 11
+    Defense: 5
+    XpReward: 34
+    Boss: 0
+    Ai: defensive
+  - Id: black_water_beast
+    DisplayName: "\uAC80\uC740 \uBB3C\uC758 \uD30C\uCDA9\uC218"
+    MaxHp: 70
+    AttackPower: 12
+    Defense: 5
+    XpReward: 70
+    Boss: 1
+    Ai: aggressive
+  - Id: serpent_priest
+    DisplayName: "\uBC40 \uC0AC\uC81C"
+    MaxHp: 36
+    AttackPower: 9
+    Defense: 3
+    XpReward: 32
+    Boss: 0
+    Ai: caster
+  - Id: blind_priest
+    DisplayName: "\uB208\uBA3C \uC0AC\uC81C"
+    MaxHp: 82
+    AttackPower: 13
+    Defense: 5
+    XpReward: 90
+    Boss: 1
+    Ai: caster
+  - Id: crawling_fish
+    DisplayName: "\uAE30\uC5B4\uB2E4\uB2C8\uB294 \uBB3C\uACE0\uAE30"
+    MaxHp: 10
+    AttackPower: 8
+    Defense: 1
+    XpReward: 10
+    Boss: 0
+    Ai: aggressive
+  - Id: reef_cultist
+    DisplayName: "\uC0B0\uD638 \uAD11\uC2E0\uB3C4"
+    MaxHp: 24
+    AttackPower: 7
+    Defense: 2
+    XpReward: 18
+    Boss: 0
+    Ai: caster
+  - Id: ruin_husk
+    DisplayName: "\uD3D0\uD5C8\uC758 \uBE48 \uAECD\uC9C8"
+    MaxHp: 26
+    AttackPower: 7
+    Defense: 3
+    XpReward: 18
+    Boss: 0
+    Ai: defensive
+  Quests:
+  - Id: quest_twisted_temple_clear
+    DisplayName: "\uB4A4\uD2C0\uB9B0 \uC0AC\uC6D0 \uC815\uCC30"
+    Description: "\uAC8C\uC2DC\uD310\uC758 \uCCAB \uC6D0\uC815 \uC758\uB8B0\uB2E4.
+      \uB4A4\uD2C0\uB9B0 \uC0AC\uC6D0 1\uCE35\uC758 \uC704\uD611\uC744 \uC815\uB9AC\uD558\uACE0
+      \uADC0\uD658\uD55C\uB2E4."
+    MapKind: twisted_temple
+    TargetMonsterId: 
+    TargetEncounterId: 
+    GoldReward: 18
+    XpReward: 10
+    RewardItems:
+    - ItemId: bandage
+      Quantity: 1
+  Vendors:
+  - Id: vendor_inn
+    ServiceType: heal_party
+    GoldCost: 5
+    Summary: "\uAE08\uD654 5\uAC1C\uB85C \uC804\uC5F4\uACFC \uD6C4\uC5F4\uC758 HP\uB97C
+      \uD68C\uBCF5\uD55C\uB2E4."
+    StockItemIds: []
+    StockSkillIds: []
+  - Id: vendor_trainer
+    ServiceType: train_party
+    GoldCost: 0
+    Summary: "\uD074\uB798\uC2A4\uBCC4 \uB2E4\uC74C \uD6C8\uB828 \uB2E8\uACC4\uAC00
+      \uC788\uC73C\uBA74 XP\uB97C \uC368\uC11C \uC131\uC7A5\uC2DC\uD0A8\uB2E4."
+    StockItemIds: []
+    StockSkillIds: []
+  - Id: vendor_smith
+    ServiceType: buff_frontline
+    GoldCost: 12
+    Summary: "\uAE08\uD654 12\uAC1C\uB85C \uC804\uC5F4\uC758 \uACF5\uACA9\uB825\uC744
+      1 \uC62C\uB9B0\uB2E4."
+    StockItemIds: []
+    StockSkillIds: []
+  - Id: vendor_apothecary
+    ServiceType: sell_bundle
+    GoldCost: 8
+    Summary: "\uAE08\uD654 8\uAC1C\uB85C \uBD95\uB300\uC640 \uD574\uB3C5\uC81C\uB97C
+      \uC0B0\uB2E4."
+    StockItemIds:
+    - bandage
+    - antivenom
+    StockSkillIds: []
+  - Id: merchant_basic
+    ServiceType: skill_shop
+    GoldCost: 0
+    Summary: "\uC7A5\uCC29\uB418\uC9C0 \uC54A\uC740 \uCE74\uB4DC\uB9CC \uD310\uB9E4\uD560
+      \uC218 \uC788\uB2E4."
+    StockItemIds: []
+    StockSkillIds:
+    - skill_berserk
+    - skill_guard_stance
+    - skill_vital_stab
+    - skill_piercing_shot
+    - skill_serpent_phantasm
+    - skill_purify
+    - skill_weakness_read
+    - skill_blood_cleave
+    - skill_bastion_vow
+    - skill_chain_lightning
+    - skill_mending_wave
+    - skill_venom_mark
+    - skill_storm_bolt
+    - skill_thunder_clap
+    - skill_holy_light
+    - skill_death_coil
+    - skill_avatar_vow
+    - skill_mana_burn
+    - skill_divide_guard
+    - skill_summon_serpent_egg
+  Npcs:
+  - Id: npc_innkeeper
+    DisplayName: "\uC5EC\uAD00"
+    Description: "\uAE08\uD654 5\uAC1C\uB85C \uC804\uC5F4\uACFC \uD6C4\uC5F4\uC758
+      HP\uB97C \uD68C\uBCF5\uD55C\uB2E4."
+    ServiceType: 
+    VendorId: vendor_inn
+    QuestIds: []
+  - Id: npc_trainer
+    DisplayName: "\uD6C8\uB828\uC18C"
+    Description: "XP 30 \uC774\uC0C1\uC778 \uCE90\uB9AD\uD130\uAC00 \uB2A5\uB825\uCE58\uB97C
+      \uC62C\uB9B0\uB2E4."
+    ServiceType: talk
+    VendorId: vendor_trainer
+    QuestIds: []
+  - Id: npc_smith
+    DisplayName: "\uB300\uC7A5\uAC04"
+    Description: "\uAE08\uD654 12\uAC1C\uB85C \uC804\uC5F4\uC758 \uACF5\uACA9\uB825\uC744
+      \uBCF4\uAC15\uD55C\uB2E4."
+    ServiceType: 
+    VendorId: vendor_smith
+    QuestIds: []
+  - Id: npc_apothecary
+    DisplayName: "\uC57D\uC7AC\uC0C1"
+    Description: "\uAE08\uD654 8\uAC1C\uB85C \uBD95\uB300\uC640 \uD574\uB3C5\uC81C\uB97C
+      \uC0B0\uB2E4."
+    ServiceType: 
+    VendorId: vendor_apothecary
+    QuestIds: []
+  - Id: npc_skill_merchant
+    DisplayName: "\uAE30\uC220 \uC0C1\uC778"
+    Description: "\uC8FC\uC0AC\uC704 \uBA74\uC5D0 \uAF42\uC744 \uAE30\uC220 \uCE74\uB4DC\uB97C
+      \uC0AC\uACE0\uD310\uB2E4."
+    ServiceType: skill_shop,talk
+    VendorId: 
+    QuestIds: []
+  - Id: npc_bulletin_board
+    DisplayName: "\uAC8C\uC2DC\uD310"
+    Description: "\uCD0C\uC7A5\uC774 \uB0A8\uAE34 \uC6D0\uC815 \uACF5\uACE0\uC640
+      \uBCF4\uC0C1 \uC804\uD45C\uB97C \uD655\uC778\uD55C\uB2E4."
+    ServiceType: 
+    VendorId: 
+    QuestIds: []
+  - Id: npc_scholar
+    DisplayName: "\uD559\uC790\uC758 \uBC29"
+    Description: "\uC81C\uB2E8\uACFC \uBE44\uBC00\uBB38\uC5D0 \uB300\uD55C \uB2E8\uC11C\uB97C
+      \uB4E3\uB294\uB2E4."
+    ServiceType: quest,talk,identify
+    VendorId: 
+    QuestIds:
+    - quest_seed_black_mural
+  - Id: npc_gatekeeper
+    DisplayName: "\uBB38"
+    Description: "\uC218\uC8FC\uD55C \uC758\uB8B0 \uC804\uD45C\uAC00 \uC788\uC744
+      \uB54C\uB9CC \uB358\uC804\uC73C\uB85C \uC774\uC5B4\uC9C0\uB294 \uBB38\uC774
+      \uC5F4\uB9B0\uB2E4."
+    ServiceType: 
+    VendorId: 
+    QuestIds: []
+  - Id: npc_exile_scout
+    DisplayName: "\uCD94\uBC29\uB41C \uC815\uCC30\uBCD1"
+    Description: "\uD568\uC815\uACFC \uC228\uC740 \uD1B5\uB85C\uB97C \uC544\uB294
+      \uC815\uCC30\uBCD1\uC774 \uBCBD\uC5D0 \uAE30\uB300\uC5B4 \uC228\uC744 \uACE0\uB978\uB2E4."
+    ServiceType: talk,recruit
+    VendorId: 
+    QuestIds: []
+  - Id: npc_wounded_mystic
+    DisplayName: "\uC0C1\uCC98 \uC785\uC740 \uC2E0\uBE44\uAC00"
+    Description: "\uAC80\uC740 \uBB3C\uC5D0 \uC816\uC740 \uC2E0\uBE44\uAC00\uAC00
+      \uC800\uC8FC\uC640 \uB3C5\uC758 \uD754\uC801\uC744 \uC0B4\uD540\uB2E4."
+    ServiceType: quest,talk,trade,heal,identify
+    VendorId: 
+    QuestIds:
+    - quest_seed_black_water_vow
+  - Id: npc_deserter_captain
+    DisplayName: "\uB3C4\uB9DD\uCE5C \uACBD\uBE44\uB300\uC7A5"
+    Description: "\uCCAD\uB3D9 \uC0AC\uC2AC\uC744 \uB450\uB978 \uACBD\uBE44\uB300\uC7A5\uC774
+      \uAE38\uC744 \uB9C9\uACE0 \uAE08\uC744 \uC694\uAD6C\uD55C\uB2E4."
+    ServiceType: talk,fight
+    VendorId: 
+    QuestIds: []

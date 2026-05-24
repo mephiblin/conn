@@ -19,6 +19,7 @@ namespace Conn.UI.Runtime
         [SerializeField] private GameSceneId sceneId;
         private static bool characterPanelOpen;
         private static Vector2 overlayScroll;
+        private static GameSceneId? lastSceneId;
 
         public GameSceneId SceneId
         {
@@ -28,6 +29,8 @@ namespace Conn.UI.Runtime
 
         private void OnGUI()
         {
+            ResetTransientUiOnSceneChange();
+
             const int width = 360;
             GUILayout.BeginArea(new Rect(16, 16, width, Screen.height - 32), GUI.skin.box);
             overlayScroll = GUILayout.BeginScrollView(
@@ -103,6 +106,18 @@ namespace Conn.UI.Runtime
 
             GUILayout.EndScrollView();
             GUILayout.EndArea();
+        }
+
+        private void ResetTransientUiOnSceneChange()
+        {
+            if (lastSceneId == sceneId)
+            {
+                return;
+            }
+
+            characterPanelOpen = false;
+            overlayScroll = Vector2.zero;
+            lastSceneId = sceneId;
         }
 
         private static void EndingControls(GameSessionState session)

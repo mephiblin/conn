@@ -16,11 +16,8 @@ namespace Conn.Runtime.Scenes
         public static void Load(GameSceneId sceneId)
         {
             GameSession.Instance.State.Mode = ToMode(sceneId);
-            if (sceneId != GameSceneId.Town)
-            {
-                TownQuestBoardPanelState.Close();
-                TownShopPanelState.Close();
-            }
+            TownQuestBoardPanelState.Close();
+            TownShopPanelState.Close();
 
             SceneManager.LoadScene(SceneName(sceneId));
         }

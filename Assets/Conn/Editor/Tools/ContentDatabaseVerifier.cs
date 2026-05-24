@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using Conn.Core.Content;
 using Conn.Core.Combat;
 using Conn.Core.Equipment;
 using Conn.Core.Items;
 using Conn.Core.Quests;
 using Conn.Core.Skills;
+using Conn.Editor.Content;
 using UnityEditor;
 using UnityEngine;
 
@@ -21,6 +23,7 @@ namespace Conn.Editor.Tools
             VerifyMonsters();
             VerifyEncounters();
             VerifyQuests();
+            VerifyImportedContentDatabase();
             Debug.Log("Conn content database verification passed.");
         }
 
@@ -103,6 +106,29 @@ namespace Conn.Editor.Tools
                 Expect(MonsterCatalog.Find(encounter.MonsterId) != null, $"Encounter {encounter.EncounterId} monster must exist: {encounter.MonsterId}");
                 Expect(encounter.XpReward >= 0, $"Encounter {encounter.EncounterId} XP reward must be non-negative.");
             }
+        }
+
+        private static void VerifyImportedContentDatabase()
+        {
+            var database = AssetDatabase.LoadAssetAtPath<ContentDatabaseDefinition>(LegacyContentJsonImporter.DefaultDatabaseAssetPath);
+            if (database == null)
+            {
+                Debug.LogWarning($"Content database asset not found yet: {LegacyContentJsonImporter.DefaultDatabaseAssetPath}");
+                return;
+            }
+
+            var report = ContentDatabaseValidator.Validate(database);
+            foreach (var warning in report.Warnings)
+            {
+                Debug.LogWarning(warning);
+            }
+
+            foreach (var error in report.Errors)
+            {
+                Debug.LogError(error);
+            }
+
+            Expect(report.Passed, $"Imported content database validation failed with {report.Errors.Count} error(s).");
         }
 
         private static void ExpectId(HashSet<string> ids, string id, string kind)
