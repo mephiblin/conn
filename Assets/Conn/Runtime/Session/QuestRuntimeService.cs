@@ -64,16 +64,21 @@ namespace Conn.Runtime.Session
             session.Quest.ReturnPromptSeen = false;
             session.PreEncounterSnapshot.Clear();
             FieldMonsterRuntimeService.ClearForNewQuest(session);
-            GameSession.Instance.SaveGame();
+            SaveIfPlaying();
         }
 
         public static void CompleteTarget(GameSessionState session)
         {
+            CompleteTarget(session, "field_monster_test_guard");
+        }
+
+        public static void CompleteTarget(GameSessionState session, string fieldMonsterStateKey)
+        {
             session.Quest.TargetDefeated = true;
             session.Quest.ReturnAvailable = true;
             session.Quest.ReturnPromptSeen = false;
-            FieldMonsterRuntimeService.MarkDefeated(session, "field_monster_test_guard");
-            GameSession.Instance.SaveGame();
+            FieldMonsterRuntimeService.MarkDefeated(session, fieldMonsterStateKey);
+            SaveIfPlaying();
         }
 
         public static void ReturnToTown(GameSessionState session)
@@ -82,8 +87,16 @@ namespace Conn.Runtime.Session
             session.Quest.Clear();
             RerollBoard(session);
             session.PreEncounterSnapshot.Clear();
-            GameSession.Instance.SaveGame();
+            SaveIfPlaying();
             SceneFlowService.Load(GameSceneId.Town);
+        }
+
+        private static void SaveIfPlaying()
+        {
+            if (Application.isPlaying)
+            {
+                GameSession.Instance.SaveGame();
+            }
         }
 
         public static void CapturePreEncounter(GameSessionState session, Transform player)

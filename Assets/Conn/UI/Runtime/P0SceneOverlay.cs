@@ -175,6 +175,10 @@ namespace Conn.UI.Runtime
                 CombatRuntimeService.ResolveSelectedDice(session);
             }
 
+            if (GUILayout.Button("Flee"))
+            {
+                CombatRuntimeService.Flee(session);
+            }
         }
 
         private static void ReturnToTown(GameSessionState session)

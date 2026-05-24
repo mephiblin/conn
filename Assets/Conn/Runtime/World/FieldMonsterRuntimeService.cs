@@ -25,6 +25,29 @@ namespace Conn.Runtime.World
             }
         }
 
+        public static FieldMonsterState FindCombatHandoff(GameSessionState session)
+        {
+            for (var i = 0; i < session.World.FieldMonsters.Count; i++)
+            {
+                var state = session.World.FieldMonsters[i];
+                if (state.Status == FieldMonsterStatus.CombatHandoff && !state.Defeated)
+                {
+                    return state;
+                }
+            }
+
+            return null;
+        }
+
+        public static void MarkIdle(GameSessionState session, string stateKey)
+        {
+            var state = session.World.FindFieldMonster(stateKey);
+            if (state != null && !state.Defeated)
+            {
+                state.Status = FieldMonsterStatus.Idle;
+            }
+        }
+
         public static void MarkDefeated(GameSessionState session, string stateKey)
         {
             var state = session.World.FindFieldMonster(stateKey);

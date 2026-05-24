@@ -46,6 +46,11 @@ namespace Conn.Runtime.World
             GameSession.Instance.SaveGame();
 
             consumed = true;
+            if (contactCollider != null)
+            {
+                contactCollider.enabled = false;
+            }
+
             Debug.Log($"Field monster contact: {monsterId}");
             SceneFlowService.Load(GameSceneId.Combat);
         }

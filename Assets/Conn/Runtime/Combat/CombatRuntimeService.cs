@@ -4,6 +4,7 @@ using Conn.Core.Session;
 using Conn.Core.Skills;
 using Conn.Runtime.Scenes;
 using Conn.Runtime.Session;
+using Conn.Runtime.World;
 using UnityEngine;
 
 namespace Conn.Runtime.Combat
@@ -16,6 +17,8 @@ namespace Conn.Runtime.Combat
             session.Combat.Round = 1;
             session.Combat.PlayerDiceCount = session.Equipment.DiceCount;
             session.Combat.PlayerDefenseBonus = session.Equipment.DefenseBonus;
+            var handoff = FieldMonsterRuntimeService.FindCombatHandoff(session);
+            session.Combat.FieldMonsterStateKey = handoff != null ? handoff.StateKey : string.Empty;
             session.Skills.ResizeEquippedFaces(session.Combat.PlayerDiceCount);
             session.Combat.Player.Setup("player", "Player", session.Player.MaxHp, session.Player.Hp);
             session.Combat.Enemy.Setup(session.Quest.TargetMonsterId, "Test Monster", 12);
@@ -115,6 +118,23 @@ namespace Conn.Runtime.Combat
             GameSession.Instance.SaveGame();
         }
 
+        public static void Flee(GameSessionState session)
+        {
+            var stateKey = session.Combat.FieldMonsterStateKey;
+            if (!string.IsNullOrWhiteSpace(stateKey))
+            {
+                FieldMonsterRuntimeService.MarkIdle(session, stateKey);
+            }
+
+            session.Combat.Clear();
+            if (Application.isPlaying)
+            {
+                GameSession.Instance.SaveGame();
+            }
+
+            SceneFlowService.Load(GameSceneId.Dungeon);
+        }
+
         private static void EnemyAttack(GameSessionState session, int guard)
         {
             var damage = 4 - session.Combat.PlayerDefenseBonus - guard;
@@ -141,7 +161,10 @@ namespace Conn.Runtime.Combat
         {
             session.Combat.LastMessage = "Enemy defeated.";
             session.Combat.Active = false;
-            QuestRuntimeService.CompleteTarget(session);
+            var stateKey = string.IsNullOrWhiteSpace(session.Combat.FieldMonsterStateKey)
+                ? "field_monster_test_guard"
+                : session.Combat.FieldMonsterStateKey;
+            QuestRuntimeService.CompleteTarget(session, stateKey);
             SceneFlowService.Load(GameSceneId.Dungeon);
         }
 

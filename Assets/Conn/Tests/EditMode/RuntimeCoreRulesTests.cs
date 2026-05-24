@@ -6,6 +6,7 @@ using Conn.Core.Skills;
 using Conn.Runtime.Combat;
 using Conn.Runtime.Inventory;
 using Conn.Runtime.Session;
+using Conn.Runtime.World;
 using NUnit.Framework;
 
 namespace Conn.Tests.EditMode
@@ -117,6 +118,24 @@ namespace Conn.Tests.EditMode
             Assert.That(ConsumableRuntimeService.Use(session, ConsumableCatalog.MinorPotionId), Is.True);
             Assert.That(session.Player.Hp, Is.EqualTo(18));
             Assert.That(ConsumableRuntimeService.Count(session, ConsumableCatalog.MinorPotionId), Is.EqualTo(0));
+        }
+
+        [Test]
+        public void CombatSessionRemembersFieldMonsterHandoffKey()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+            QuestRuntimeService.AcceptQuest(session, QuestCatalog.TestHuntId);
+            FieldMonsterRuntimeService.Register(session, "field_monster_alpha", "placement_alpha", "encounter_alpha", session.Quest.TargetMonsterId);
+            FieldMonsterRuntimeService.MarkCombatHandoff(session, "field_monster_alpha");
+
+            CombatRuntimeService.StartTestCombat(session);
+
+            Assert.That(session.Combat.FieldMonsterStateKey, Is.EqualTo("field_monster_alpha"));
+
+            FieldMonsterRuntimeService.MarkIdle(session, session.Combat.FieldMonsterStateKey);
+
+            Assert.That(FieldMonsterRuntimeService.FindCombatHandoff(session), Is.Null);
         }
     }
 }

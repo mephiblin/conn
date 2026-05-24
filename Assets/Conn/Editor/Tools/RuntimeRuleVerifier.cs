@@ -7,6 +7,7 @@ using Conn.Core.Skills;
 using Conn.Runtime.Inventory;
 using Conn.Runtime.Session;
 using Conn.Runtime.Combat;
+using Conn.Runtime.World;
 using UnityEngine;
 
 namespace Conn.Editor.Tools
@@ -18,6 +19,7 @@ namespace Conn.Editor.Tools
             VerifyEquipmentDiceRules();
             VerifyNewGameState();
             VerifyDiceSkillEffects();
+            VerifyCombatHandoffStateKey();
             VerifyConsumables();
             VerifySkillSaleProtection();
             Debug.Log("Conn runtime core rule verification passed.");
@@ -121,6 +123,23 @@ namespace Conn.Editor.Tools
             Expect(ConsumableRuntimeService.Use(session, ConsumableCatalog.MinorPotionId), "Owned potion must be usable.");
             Expect(session.Player.Hp == 18, "Potion must heal the player by its configured amount.");
             Expect(ConsumableRuntimeService.Count(session, ConsumableCatalog.MinorPotionId) == 0, "Potion use must consume one potion.");
+        }
+
+        private static void VerifyCombatHandoffStateKey()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+            QuestRuntimeService.AcceptQuest(session, QuestCatalog.TestHuntId);
+            FieldMonsterRuntimeService.Register(session, "field_monster_alpha", "placement_alpha", "encounter_alpha", session.Quest.TargetMonsterId);
+            FieldMonsterRuntimeService.MarkCombatHandoff(session, "field_monster_alpha");
+
+            CombatRuntimeService.StartTestCombat(session);
+
+            Expect(session.Combat.FieldMonsterStateKey == "field_monster_alpha", "Combat session must remember the field monster handoff key.");
+
+            FieldMonsterRuntimeService.MarkIdle(session, session.Combat.FieldMonsterStateKey);
+
+            Expect(FieldMonsterRuntimeService.FindCombatHandoff(session) == null, "Returning a combat handoff to idle must clear active handoff lookup.");
         }
 
         private static void Expect(bool condition, string message)
