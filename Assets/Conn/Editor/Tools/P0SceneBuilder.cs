@@ -156,6 +156,23 @@ namespace Conn.Editor.Tools
             skillMerchant.transform.position = new Vector3(-3.5f, 1f, 0f);
             skillMerchant.transform.localScale = new Vector3(1f, 1.4f, 1f);
             skillMerchant.AddComponent<SkillMerchantInteractable>();
+
+            CreateTownService("Inn", TownServiceKind.Inn, 3, new Vector3(3.5f, 1f, 0f));
+            CreateTownService("Trainer", TownServiceKind.Trainer, 0, new Vector3(3.5f, 1f, -2f));
+            CreateTownService("Apothecary", TownServiceKind.Apothecary, 4, new Vector3(-3.5f, 1f, -2f));
+            CreateTownService("Scholar", TownServiceKind.Scholar, 0, new Vector3(0f, 1f, -3.5f));
+        }
+
+        private static void CreateTownService(string name, TownServiceKind kind, int cost, Vector3 position)
+        {
+            var service = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            service.name = name;
+            service.transform.position = position;
+            service.transform.localScale = new Vector3(1f, 1.3f, 1f);
+            var interactable = service.AddComponent<TownServiceInteractable>();
+            interactable.ServiceName = name;
+            interactable.ServiceKind = kind;
+            interactable.Cost = cost;
         }
 
         private static void CreateLight()
