@@ -5,6 +5,7 @@ namespace Conn.Core.Session
     {
         public int MaxHp = 20;
         public int Hp = 20;
+        public int Xp;
 
         public bool IsDead => Hp <= 0;
 
@@ -12,6 +13,7 @@ namespace Conn.Core.Session
         {
             MaxHp = 20;
             Hp = MaxHp;
+            Xp = 0;
         }
 
         public void Damage(int amount)
@@ -35,6 +37,25 @@ namespace Conn.Core.Session
         public void HealToFull()
         {
             Hp = MaxHp;
+        }
+
+        public void GainXp(int amount)
+        {
+            if (amount > 0)
+            {
+                Xp += amount;
+            }
+        }
+
+        public bool SpendXp(int amount)
+        {
+            if (amount < 0 || Xp < amount)
+            {
+                return false;
+            }
+
+            Xp -= amount;
+            return true;
         }
     }
 }

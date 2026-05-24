@@ -161,11 +161,16 @@ namespace Conn.Runtime.Combat
         {
             session.Combat.LastMessage = "Enemy defeated.";
             session.Combat.Active = false;
+            session.Player.GainXp(5);
+            RuntimeNoticeService.Set(session, "Enemy defeated. Gained 5 XP.");
             var stateKey = string.IsNullOrWhiteSpace(session.Combat.FieldMonsterStateKey)
                 ? "field_monster_test_guard"
                 : session.Combat.FieldMonsterStateKey;
             QuestRuntimeService.CompleteTarget(session, stateKey);
-            SceneFlowService.Load(GameSceneId.Dungeon);
+            if (Application.isPlaying)
+            {
+                SceneFlowService.Load(GameSceneId.Dungeon);
+            }
         }
 
         private static void EnsureCombat(GameSessionState session)

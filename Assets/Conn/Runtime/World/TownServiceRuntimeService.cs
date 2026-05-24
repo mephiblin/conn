@@ -20,10 +20,11 @@ namespace Conn.Runtime.World
             return true;
         }
 
-        public static bool Train(GameSessionState session, int cost)
+        public static bool Train(GameSessionState session, int xpCost)
         {
-            if (!Pay(session, cost, "Trainer"))
+            if (!session.Player.SpendXp(xpCost))
             {
+                RuntimeNoticeService.Set(session, $"Trainer: not enough XP.");
                 return false;
             }
 

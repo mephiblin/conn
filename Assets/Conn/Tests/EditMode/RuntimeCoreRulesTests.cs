@@ -62,6 +62,8 @@ namespace Conn.Tests.EditMode
 
             Assert.That(session.Quest.ReturnAvailable, Is.True);
             Assert.That(FieldMonsterRuntimeService.IsDefeated(session, "field_monster_test_guard"), Is.True);
+            session.Player.GainXp(5);
+            Assert.That(session.Player.Xp, Is.GreaterThanOrEqualTo(5));
 
             var goldBeforeReturn = session.Gold;
             var reward = session.Quest.GoldReward;
@@ -137,6 +139,25 @@ namespace Conn.Tests.EditMode
             Assert.That(session.Combat.LastMessage, Does.Contain("2 guard"));
             Assert.That(session.Combat.LastMessage, Does.Contain("3 heal"));
             Assert.That(session.Combat.LastMessage, Does.Contain("Enemy deals 2"));
+        }
+
+        [Test]
+        public void CombatWinGrantsXpAndCompletesQuestTarget()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+            QuestRuntimeService.AcceptQuest(session, QuestCatalog.TestHuntId);
+            FieldMonsterRuntimeService.Register(session, "field_monster_alpha", "placement_alpha", "encounter_alpha", session.Quest.TargetMonsterId);
+            FieldMonsterRuntimeService.MarkCombatHandoff(session, "field_monster_alpha");
+            CombatRuntimeService.StartTestCombat(session);
+            session.Combat.Enemy.Setup(session.Quest.TargetMonsterId, "Test Monster", 1);
+
+            CombatRuntimeService.ToggleDieSelection(session, 0);
+            CombatRuntimeService.ResolveSelectedDice(session);
+
+            Assert.That(session.Player.Xp, Is.EqualTo(5));
+            Assert.That(session.Quest.TargetDefeated, Is.True);
+            Assert.That(session.LastNotice, Does.Contain("Gained 5 XP"));
         }
 
         [Test]
@@ -262,9 +283,12 @@ namespace Conn.Tests.EditMode
             var session = new GameSessionState();
             session.StartNewGame();
             var goldBefore = session.Gold;
+            session.Player.GainXp(5);
+            var xpBefore = session.Player.Xp;
 
             Assert.That(TownServiceRuntimeService.Train(session, 5), Is.True);
-            Assert.That(session.Gold, Is.EqualTo(goldBefore - 5));
+            Assert.That(session.Gold, Is.EqualTo(goldBefore));
+            Assert.That(session.Player.Xp, Is.EqualTo(xpBefore - 5));
             Assert.That(session.Player.MaxHp, Is.EqualTo(22));
             Assert.That(session.Player.Hp, Is.EqualTo(session.Player.MaxHp));
             Assert.That(TownServiceRuntimeService.ScholarHint(session), Does.Contain("board offer"));

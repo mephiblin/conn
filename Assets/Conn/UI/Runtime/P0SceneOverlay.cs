@@ -34,8 +34,9 @@ namespace Conn.UI.Runtime
             }
 
             GUILayout.Label($"Gold: {session.Gold}");
+            GUILayout.Label($"XP: {session.Player.Xp}");
             GUILayout.Label($"HP: {session.Player.Hp}/{session.Player.MaxHp}");
-            GUILayout.Label("Trainer: +2 Max HP / 5g");
+            GUILayout.Label("Trainer: +2 Max HP / 5 XP");
             GUILayout.Label($"Loadout: {session.Equipment.WeaponGrip} ({session.Equipment.DiceCount} dice)");
             GUILayout.Label($"Weapon: {EquipmentName(session.Equipment.EquippedWeaponId)}");
             GUILayout.Label($"Shield: {EquipmentName(session.Equipment.EquippedShieldId)}");

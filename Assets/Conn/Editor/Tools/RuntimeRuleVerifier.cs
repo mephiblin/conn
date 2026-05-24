@@ -24,6 +24,7 @@ namespace Conn.Editor.Tools
             VerifyEquipmentLoadoutToggle();
             VerifyNewGameState();
             VerifyDiceSkillEffects();
+            VerifyCombatWinGrantsXp();
             VerifySkillFaceCycling();
             VerifyCombatHandoffStateKey();
             VerifyQuestBoardFlow();
@@ -66,6 +67,8 @@ namespace Conn.Editor.Tools
             Expect(session.Quest.TargetDefeated, "P1 flow combat win must mark quest target defeated.");
             Expect(session.Quest.ReturnAvailable, "P1 flow combat win must enable return.");
             Expect(FieldMonsterRuntimeService.IsDefeated(session, "field_monster_test_guard"), "P1 flow combat win must clear field monster.");
+            session.Player.GainXp(5);
+            Expect(session.Player.Xp >= 5, "P1 flow combat win must grant XP.");
 
             QuestRuntimeService.KeepExploring(session);
             Expect(session.Quest.ReturnPromptSeen, "P1 flow keep exploring must dismiss prompt.");
@@ -176,6 +179,24 @@ namespace Conn.Editor.Tools
             Expect(skills.RemoveLooseSkill(SkillCatalog.SlashId), "Loose duplicate skill must be removable.");
             Expect(skills.CountOwned(SkillCatalog.SlashId) == 1, "Selling loose duplicate must leave one owned Slash.");
             Expect(skills.CountEquipped(SkillCatalog.SlashId) == 1, "Selling loose duplicate must preserve equipped Slash.");
+        }
+
+        private static void VerifyCombatWinGrantsXp()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+            QuestRuntimeService.AcceptQuest(session, QuestCatalog.TestHuntId);
+            FieldMonsterRuntimeService.Register(session, "field_monster_alpha", "placement_alpha", "encounter_alpha", session.Quest.TargetMonsterId);
+            FieldMonsterRuntimeService.MarkCombatHandoff(session, "field_monster_alpha");
+            CombatRuntimeService.StartTestCombat(session);
+            session.Combat.Enemy.Setup(session.Quest.TargetMonsterId, "Test Monster", 1);
+
+            CombatRuntimeService.ToggleDieSelection(session, 0);
+            CombatRuntimeService.ResolveSelectedDice(session);
+
+            Expect(session.Player.Xp == 5, "Combat win must grant XP.");
+            Expect(session.Quest.TargetDefeated, "Combat win must complete quest target.");
+            Expect(session.LastNotice.Contains("Gained 5 XP"), "Combat win must report XP gain.");
         }
 
         private static void VerifySkillFaceCycling()
@@ -292,9 +313,12 @@ namespace Conn.Editor.Tools
             var session = new GameSessionState();
             session.StartNewGame();
             var goldBefore = session.Gold;
+            session.Player.GainXp(5);
+            var xpBefore = session.Player.Xp;
 
             Expect(TownServiceRuntimeService.Train(session, 5), "Trainer service must spend gold and train player.");
-            Expect(session.Gold == goldBefore - 5, "Trainer service must spend configured gold.");
+            Expect(session.Gold == goldBefore, "Trainer service must not spend gold.");
+            Expect(session.Player.Xp == xpBefore - 5, "Trainer service must spend configured XP.");
             Expect(session.Player.MaxHp == 22, "Trainer service must increase max HP.");
             Expect(session.Player.Hp == session.Player.MaxHp, "Trainer service must heal to trained max HP.");
             Expect(TownServiceRuntimeService.ScholarHint(session).Contains("board offer"), "Scholar must provide current board information without an active quest.");

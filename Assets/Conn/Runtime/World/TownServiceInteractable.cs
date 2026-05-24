@@ -18,7 +18,7 @@ namespace Conn.Runtime.World
                 return serviceKind switch
                 {
                     TownServiceKind.Inn => cost > 0 ? $"{serviceName}: Rest ({cost}g)" : $"{serviceName}: Rest",
-                    TownServiceKind.Trainer => cost > 0 ? $"{serviceName}: Train Max HP ({cost}g)" : $"{serviceName}: Train Max HP",
+                    TownServiceKind.Trainer => cost > 0 ? $"{serviceName}: Train Max HP ({cost} XP)" : $"{serviceName}: Train Max HP",
                     TownServiceKind.Apothecary => $"{serviceName}: Buy {ConsumableCatalog.Find(ConsumableCatalog.MinorPotionId)?.DisplayName} ({cost}g)",
                     TownServiceKind.Scholar => $"{serviceName}: Ask about quest",
                     _ => $"{serviceName}: Talk"
