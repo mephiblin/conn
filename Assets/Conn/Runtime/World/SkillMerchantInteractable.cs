@@ -59,6 +59,11 @@ namespace Conn.Runtime.World
                 return SkillCatalog.GuardId;
             }
 
+            if (!skills.HasSkill(SkillCatalog.MendId))
+            {
+                return SkillCatalog.MendId;
+            }
+
             return skills.HasSkill(SkillCatalog.FocusStrikeId) ? string.Empty : SkillCatalog.FocusStrikeId;
         }
 

@@ -56,20 +56,40 @@ namespace Conn.Runtime.Combat
                 return;
             }
 
-            var damage = 0;
+            var attack = 0;
+            var guard = 0;
+            var healing = 0;
             for (var i = 0; i < session.Combat.DiceFaces.Count; i++)
             {
                 var face = session.Combat.DiceFaces[i];
                 if (face.Selected)
                 {
-                    damage += 1 + face.Power;
+                    if (face.EffectKind == SkillEffectKind.Guard)
+                    {
+                        guard += face.Power;
+                    }
+                    else if (face.EffectKind == SkillEffectKind.Heal)
+                    {
+                        healing += face.Power;
+                    }
+                    else
+                    {
+                        attack += 1 + face.Power;
+                    }
+
                     face.Selected = false;
                     face.Cooldown = 2;
                 }
             }
 
-            session.Combat.Enemy.Damage(damage);
-            session.Combat.LastMessage = $"Resolved {selected} dice for {damage} damage.";
+            if (healing > 0)
+            {
+                session.Player.Heal(healing);
+                session.Combat.Player.Hp = session.Player.Hp;
+            }
+
+            session.Combat.Enemy.Damage(attack);
+            session.Combat.LastMessage = $"Resolved {selected}: {attack} damage, {guard} guard, {healing} heal.";
 
             if (session.Combat.Enemy.IsDead)
             {
@@ -77,7 +97,7 @@ namespace Conn.Runtime.Combat
                 return;
             }
 
-            EnemyAttack(session);
+            EnemyAttack(session, guard);
             session.Combat.Round++;
             TickCooldowns(session);
         }
@@ -94,9 +114,9 @@ namespace Conn.Runtime.Combat
             GameSession.Instance.SaveGame();
         }
 
-        private static void EnemyAttack(GameSessionState session)
+        private static void EnemyAttack(GameSessionState session, int guard)
         {
-            var damage = 4 - session.Combat.PlayerDefenseBonus;
+            var damage = 4 - session.Combat.PlayerDefenseBonus - guard;
             if (damage < 1)
             {
                 damage = 1;
@@ -137,10 +157,13 @@ namespace Conn.Runtime.Combat
                     ? session.Skills.EquippedSkillIds[i]
                     : string.Empty;
                 var skill = SkillCatalog.Find(skillId);
+                var displayName = skill != null ? skill.DisplayName : "Strike";
                 session.Combat.DiceFaces.Add(new DiceFaceState
                 {
                     Index = i,
                     SkillId = skillId,
+                    DisplayName = displayName,
+                    EffectKind = skill != null ? skill.EffectKind : SkillEffectKind.Attack,
                     Power = skill != null ? skill.Power : 0,
                     Selected = false,
                     Cooldown = 0

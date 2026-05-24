@@ -23,6 +23,15 @@ namespace Conn.Core.Session
             }
         }
 
+        public void Heal(int amount)
+        {
+            Hp += amount;
+            if (Hp > MaxHp)
+            {
+                Hp = MaxHp;
+            }
+        }
+
         public void HealToFull()
         {
             Hp = MaxHp;
