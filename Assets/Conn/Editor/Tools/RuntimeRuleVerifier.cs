@@ -38,6 +38,7 @@ namespace Conn.Editor.Tools
             VerifyCombatWinGrantsXp();
             VerifyCombatContentDefinitions();
             VerifyRuntimeContentDatabaseMonsterLookup();
+            VerifyChapterTwoRuntimeDataConsumption();
             VerifyCombatFleeRestoresDungeonState();
             VerifyCombatDeathRoutesToEndingState();
             VerifyFieldMonsterExpeditionStatus();
@@ -59,6 +60,15 @@ namespace Conn.Editor.Tools
             VerifySkillSaleProtection();
             VerifyCompiledMapRuntimeLoader();
             Debug.Log("Conn runtime core rule verification passed.");
+        }
+
+        public static void VerifyChapterTwoRuntimeDataConsumption()
+        {
+            VerifyRuntimeContentDatabaseEquipmentRules();
+            VerifyRuntimeContentDatabaseQuestEncounterRuntime();
+            VerifyVendorRotationRuntimeStock();
+            VerifyCompiledMapDungeonRuntimeConnection();
+            Debug.Log("Conn Chapter 2 runtime data consumption verification passed.");
         }
 
         private static void VerifyCompiledMapRuntimeLoader()
@@ -116,6 +126,197 @@ namespace Conn.Editor.Tools
             {
                 RuntimeContentDatabase.SetActive(null);
             }
+        }
+
+        private static void VerifyRuntimeContentDatabaseEquipmentRules()
+        {
+            var database = ScriptableObject.CreateInstance<ContentDatabaseDefinition>();
+            database.Equipment = new[]
+            {
+                new ContentEquipmentDefinition
+                {
+                    Id = "db_only_greatsword",
+                    DisplayName = "DB Only Greatsword",
+                    Kind = "two_hand_weapon",
+                    BuyPrice = 15,
+                    SellPrice = 7
+                },
+                new ContentEquipmentDefinition
+                {
+                    Id = "db_only_helm",
+                    DisplayName = "DB Only Helm",
+                    Kind = "head_armor",
+                    BuyPrice = 5,
+                    SellPrice = 2,
+                    ArmorValue = 2
+                }
+            };
+
+            try
+            {
+                RuntimeContentDatabase.SetActive(database);
+                var session = new GameSessionState();
+                session.StartNewGame();
+                session.Inventory.AddItem("db_only_greatsword");
+                session.Inventory.AddItem("db_only_helm");
+
+                Expect(EquipmentRuntimeService.TryEquip(session, "db_only_greatsword"), "Runtime must equip database-only two-hand equipment.");
+                Expect(session.Equipment.WeaponGrip == WeaponGrip.TwoHand, "Database-only two-hand weapon must drive weapon grip.");
+                Expect(session.Equipment.DiceCount == 5, "Database-only two-hand weapon must drive dice count.");
+
+                Expect(EquipmentRuntimeService.TryEquip(session, "db_only_helm"), "Runtime must equip database-only armor.");
+                Expect(session.Equipment.EquippedHeadId == "db_only_helm", "Database-only armor must occupy the correct armor slot.");
+                Expect(session.Equipment.ArmorValue >= 2, "Database-only armor must contribute armor value.");
+                Expect(session.Equipment.DefenseBonus >= 2, "Database-only armor must contribute combat defense.");
+                Expect(session.Equipment.ComparisonLineFor("db_only_helm").Contains("DB Only Helm"), "Database-only equipment must resolve comparison display data.");
+            }
+            finally
+            {
+                RuntimeContentDatabase.SetActive(null);
+            }
+        }
+
+        private static void VerifyRuntimeContentDatabaseQuestEncounterRuntime()
+        {
+            var database = ScriptableObject.CreateInstance<ContentDatabaseDefinition>();
+            database.Quests = new[]
+            {
+                new ContentQuestDefinition
+                {
+                    Id = "db_only_guard_quest",
+                    DisplayName = "DB Only Guard Quest",
+                    TargetMonsterId = MonsterCatalog.TestGuardId,
+                    TargetEncounterId = EncounterCatalog.TestGuardId,
+                    MapProfileId = MapGenerationCatalog.ChapterTwoFirstSliceProfileId,
+                    GoldReward = 3
+                }
+            };
+
+            try
+            {
+                RuntimeContentDatabase.SetActive(database);
+                var session = new GameSessionState();
+                session.StartNewGame();
+                QuestRuntimeService.AcceptQuest(session, "db_only_guard_quest");
+
+                Expect(session.Quest.ActiveQuestId == "db_only_guard_quest", "Runtime quest acceptance must consume database-only quest ids.");
+                Expect(session.Quest.TargetEncounterId == EncounterCatalog.TestGuardId, "Runtime quest state must keep database encounter reference.");
+                Expect(session.Quest.MapProfileId == MapGenerationCatalog.ChapterTwoFirstSliceProfileId, "Runtime quest state must keep database map profile reference.");
+
+                var compiled = CompiledMapDungeonRuntimeService.BuildQuestCompiledMap(session);
+                var profile = MapGenerationCatalog.ChapterTwoFirstSliceProfile();
+                var quest = RuntimeContentDatabase.FindQuest("db_only_guard_quest");
+                var report = MapValidationService.ValidateQuestMapContract(quest, profile, compiled);
+                Expect(report.Passed, "Database quest map profile must validate against generated compiled map.");
+
+                session.Mode = GameMode.Combat;
+                CombatRuntimeService.StartTestCombat(session);
+                Expect(session.Combat.EncounterId == EncounterCatalog.TestGuardId, "Combat must resolve the quest encounter before monster fallback.");
+                Expect(session.Combat.MonsterId == MonsterCatalog.TestGuardId, "Combat must resolve the quest encounter monster.");
+            }
+            finally
+            {
+                RuntimeContentDatabase.SetActive(null);
+            }
+        }
+
+        private static void VerifyVendorRotationRuntimeStock()
+        {
+            var database = ScriptableObject.CreateInstance<ContentDatabaseDefinition>();
+            database.Skills = new[]
+            {
+                new ContentSkillDefinition
+                {
+                    Id = "db_vendor_guard",
+                    DisplayName = "DB Vendor Guard",
+                    EffectKind = "guard",
+                    BuyPrice = 4,
+                    SellPrice = 2,
+                    Power = 1,
+                    CatalogIds = new[] { "merchant_basic" }
+                },
+                new ContentSkillDefinition
+                {
+                    Id = "db_vendor_focus",
+                    DisplayName = "DB Vendor Focus",
+                    EffectKind = "attack",
+                    BuyPrice = 6,
+                    SellPrice = 3,
+                    Power = 2,
+                    CatalogIds = new[] { "merchant_basic" }
+                },
+                new ContentSkillDefinition
+                {
+                    Id = "db_vendor_floor_two",
+                    DisplayName = "DB Vendor Floor Two",
+                    EffectKind = "attack",
+                    BuyPrice = 8,
+                    SellPrice = 4,
+                    Power = 3,
+                    CatalogIds = new[] { "merchant_advanced" }
+                }
+            };
+            database.Vendors = new[]
+            {
+                new ContentVendorDefinition
+                {
+                    Id = "merchant_basic",
+                    ServiceType = "skill_shop",
+                    StockSkillIds = new[] { "db_vendor_guard", "db_vendor_focus" },
+                    Rotations = new[]
+                    {
+                        new ContentVendorRotationDefinition
+                        {
+                            MinFloor = 2,
+                            StockSkillIds = new[] { "db_vendor_floor_two" }
+                        }
+                    }
+                }
+            };
+
+            try
+            {
+                RuntimeContentDatabase.SetActive(database);
+                var session = new GameSessionState();
+                session.StartNewGame();
+
+                var baseStock = SkillShopRuntimeService.SkillMerchantStock(session);
+                Expect(baseStock.Length == 2, "Database vendor stock must flow into runtime skill shop stock.");
+                Expect(baseStock[0] == "db_vendor_guard", "Runtime skill shop must use database vendor stock order.");
+                Expect(SkillShopRuntimeService.BuyAndEquip(session, "db_vendor_guard"), "Runtime skill shop must sell database-only skill stock.");
+                Expect(session.Skills.HasSkill("db_vendor_guard"), "Runtime skill purchase must add database-only skill to inventory.");
+
+                SkillShopRuntimeService.RefreshSkillMerchantStock(session, 2, 0);
+                var rotatedStock = SkillShopRuntimeService.SkillMerchantStock(session, 2, 0);
+                Expect(rotatedStock.Length == 1, "Vendor rotation must replace runtime skill shop stock.");
+                Expect(rotatedStock[0] == "db_vendor_floor_two", "Runtime skill shop must consume floor-based vendor rotation stock.");
+            }
+            finally
+            {
+                RuntimeContentDatabase.SetActive(null);
+            }
+        }
+
+        private static void VerifyCompiledMapDungeonRuntimeConnection()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+            QuestRuntimeService.AcceptQuest(session, QuestCatalog.TestHuntId);
+            var compiled = CompiledMapDungeonRuntimeService.BuildQuestCompiledMap(session);
+            var start = CompiledMapDungeonRuntimeService.FindStartAnchor(compiled);
+            var exit = CompiledMapDungeonRuntimeService.FindExitAnchor(compiled);
+            var questTarget = CompiledMapRuntimeLoader.FindPlacement(compiled, MapPlacementKind.QuestTarget);
+
+            Expect(start.Kind == MapPlacementKind.Start, "Compiled map runtime connection must expose a start anchor.");
+            Expect(exit.Kind == MapPlacementKind.Exit, "Compiled map runtime connection must expose an exit anchor.");
+            Expect(CompiledMapDungeonRuntimeService.RegisterQuestTargetFieldMonster(session, compiled), "Compiled map quest placement must register a field monster.");
+
+            var stateKey = CompiledMapDungeonRuntimeService.StateKeyFor(compiled, questTarget);
+            var state = session.World.FindFieldMonster(stateKey);
+            Expect(state != null, "Compiled map placement must create runtime field monster state.");
+            Expect(state.PlacementId == questTarget.Id, "Runtime field monster must remember compiled placement id.");
+            Expect(state.EncounterId == session.Quest.TargetEncounterId, "Runtime field monster must use quest encounter reference.");
+            Expect(state.MonsterId == session.Quest.TargetMonsterId, "Runtime field monster must use quest monster reference.");
         }
 
         private static void VerifyP1VerticalSliceFlow()

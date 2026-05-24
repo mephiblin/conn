@@ -341,6 +341,16 @@ namespace Conn.Runtime.Combat
         private static EncounterDefinition ResolveEncounter(GameSessionState session, Conn.Core.World.FieldMonsterState handoff)
         {
             var encounter = handoff != null ? EncounterCatalog.Find(handoff.EncounterId) : null;
+            if (encounter != null)
+            {
+                return encounter;
+            }
+
+            if (!string.IsNullOrWhiteSpace(session.Quest.TargetEncounterId))
+            {
+                encounter = EncounterCatalog.Find(session.Quest.TargetEncounterId);
+            }
+
             return encounter ?? EncounterCatalog.FindForMonster(ResolveMonsterId(session, handoff));
         }
 
@@ -384,7 +394,7 @@ namespace Conn.Runtime.Combat
                 var skillId = i < session.Skills.EquippedSkillIds.Count
                     ? session.Skills.EquippedSkillIds[i]
                     : string.Empty;
-                var skill = SkillCatalog.Find(skillId);
+                var skill = RuntimeContentDatabase.FindSkill(skillId);
                 var displayName = skill != null ? skill.DisplayName : "Strike";
                 session.Combat.DiceFaces.Add(new DiceFaceState
                 {

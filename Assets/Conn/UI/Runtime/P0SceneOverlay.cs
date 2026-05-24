@@ -4,6 +4,7 @@ using Conn.Core.Scenes;
 using Conn.Core.Session;
 using Conn.Core.Skills;
 using Conn.Runtime.Combat;
+using Conn.Runtime.Content;
 using Conn.Runtime.Inventory;
 using Conn.Runtime.Scenes;
 using Conn.Runtime.Session;
@@ -165,7 +166,7 @@ namespace Conn.UI.Runtime
             for (var i = 0; i < session.Inventory.ItemIds.Count; i++)
             {
                 var itemId = session.Inventory.ItemIds[i];
-                var item = EquipmentCatalog.Find(itemId);
+                var item = RuntimeContentDatabase.FindEquipment(itemId);
                 if (item == null)
                 {
                     continue;
@@ -194,7 +195,7 @@ namespace Conn.UI.Runtime
                 var skillId = i < session.Skills.EquippedSkillIds.Count
                     ? session.Skills.EquippedSkillIds[i]
                     : string.Empty;
-                var skill = SkillCatalog.Find(skillId);
+                var skill = RuntimeContentDatabase.FindSkill(skillId);
                 var label = skill != null ? skill.DisplayName : "Strike";
                 if (GUILayout.Button($"Cycle Face {i + 1}: {label}"))
                 {
@@ -203,11 +204,10 @@ namespace Conn.UI.Runtime
             }
 
             GUILayout.Label("Owned Skills");
-            for (var i = 0; i < SkillCatalog.All.Length; i++)
+            for (var i = 0; i < session.Skills.OwnedSkillIds.Count; i++)
             {
-                var skill = SkillCatalog.All[i];
-                var owned = session.Skills.CountOwned(skill.SkillId);
-                if (owned > 0)
+                var skill = RuntimeContentDatabase.FindSkill(session.Skills.OwnedSkillIds[i]);
+                if (skill != null)
                 {
                     GUILayout.Label(ChapterOneUxText.SkillStatus(session, skill.SkillId));
                 }
@@ -237,7 +237,7 @@ namespace Conn.UI.Runtime
                 var skillId = i < session.Skills.EquippedSkillIds.Count
                     ? session.Skills.EquippedSkillIds[i]
                     : string.Empty;
-                var skill = SkillCatalog.Find(skillId);
+                var skill = RuntimeContentDatabase.FindSkill(skillId);
                 GUILayout.Label(skill != null
                     ? $"Face {i + 1}: {skill.DisplayName} / {skill.EffectKind} +{skill.Power}"
                     : $"Face {i + 1}: Strike / Attack +0");
@@ -246,7 +246,7 @@ namespace Conn.UI.Runtime
 
         private static string EquipmentName(string itemId)
         {
-            var item = EquipmentCatalog.Find(itemId);
+            var item = RuntimeContentDatabase.FindEquipment(itemId);
             return item != null ? item.DisplayName : "None";
         }
 
@@ -348,9 +348,12 @@ namespace Conn.UI.Runtime
         private static void DrawBlacksmithPanel(GameSessionState session)
         {
             GUILayout.Label("Blacksmith");
-            for (var i = 0; i < EquipmentCatalog.All.Length; i++)
+            var stockItemIds = RuntimeContentDatabase.EquipmentIdsForVendor("vendor_smith");
+            for (var i = 0; i < (stockItemIds.Length > 0 ? stockItemIds.Length : EquipmentCatalog.All.Length); i++)
             {
-                var item = EquipmentCatalog.All[i];
+                var item = stockItemIds.Length > 0
+                    ? RuntimeContentDatabase.FindEquipment(stockItemIds[i])
+                    : EquipmentCatalog.All[i];
                 if (item.BuyPrice <= 0)
                 {
                     continue;
@@ -374,7 +377,7 @@ namespace Conn.UI.Runtime
             for (var i = 0; i < session.Inventory.ItemIds.Count; i++)
             {
                 var itemId = session.Inventory.ItemIds[i];
-                var item = EquipmentCatalog.Find(itemId);
+                var item = RuntimeContentDatabase.FindEquipment(itemId);
                 if (item == null || !EquipmentShopRuntimeService.CanSell(session, itemId))
                 {
                     continue;
@@ -407,7 +410,7 @@ namespace Conn.UI.Runtime
             GUILayout.Label($"Stock refresh #{session.Shop.SkillMerchantRefreshIndex}");
             for (var i = 0; i < stockSkillIds.Length; i++)
             {
-                var skill = SkillCatalog.Find(stockSkillIds[i]);
+                var skill = RuntimeContentDatabase.FindSkill(stockSkillIds[i]);
                 if (skill == null || skill.BuyPrice <= 0)
                 {
                     continue;
@@ -430,9 +433,14 @@ namespace Conn.UI.Runtime
 
             GUILayout.Label("Sell Loose Skills");
             var anySellable = false;
-            for (var i = 0; i < SkillCatalog.All.Length; i++)
+            for (var i = 0; i < session.Skills.OwnedSkillIds.Count; i++)
             {
-                var skill = SkillCatalog.All[i];
+                var skill = RuntimeContentDatabase.FindSkill(session.Skills.OwnedSkillIds[i]);
+                if (skill == null)
+                {
+                    continue;
+                }
+
                 if (!SkillShopRuntimeService.CanSellLoose(session, skill.SkillId))
                 {
                     continue;

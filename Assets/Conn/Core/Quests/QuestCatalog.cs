@@ -10,9 +10,9 @@ namespace Conn.Core.Quests
 
         private static readonly QuestDefinition[] BoardQuests =
         {
-            new QuestDefinition(TestHuntId, "Cull the Gate Guard", "monster_test_guard", 10, MapGenerationCatalog.ChapterTwoFirstSliceProfileId, MapPlacementKind.QuestTarget),
-            new QuestDefinition(GuardPatrolId, "Break the Guard Patrol", "monster_test_guard", 14, MapGenerationCatalog.ChapterTwoFirstSliceProfileId, MapPlacementKind.QuestTarget),
-            new QuestDefinition(DeepScavengerId, "Clear the Deep Scavenger", "monster_test_guard", 18, MapGenerationCatalog.ChapterTwoFirstSliceProfileId, MapPlacementKind.QuestTarget)
+            new QuestDefinition(TestHuntId, "Cull the Gate Guard", "monster_test_guard", 10, MapGenerationCatalog.ChapterTwoFirstSliceProfileId, MapPlacementKind.QuestTarget, "encounter_test_guard"),
+            new QuestDefinition(GuardPatrolId, "Break the Guard Patrol", "monster_test_guard", 14, MapGenerationCatalog.ChapterTwoFirstSliceProfileId, MapPlacementKind.QuestTarget, "encounter_test_guard"),
+            new QuestDefinition(DeepScavengerId, "Clear the Deep Scavenger", "monster_test_guard", 18, MapGenerationCatalog.ChapterTwoFirstSliceProfileId, MapPlacementKind.QuestTarget, "encounter_test_guard")
         };
 
         public static QuestDefinition[] AllBoardQuests => BoardQuests;

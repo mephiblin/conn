@@ -1,6 +1,7 @@
 using Conn.Core.Scenes;
 using Conn.Core.Quests;
 using Conn.Core.Session;
+using Conn.Runtime.Content;
 using Conn.Runtime.Scenes;
 using Conn.Runtime.World;
 using UnityEngine;
@@ -37,7 +38,7 @@ namespace Conn.Runtime.Session
 
         public static void AcceptQuest(GameSessionState session, string questId)
         {
-            var definition = QuestCatalog.Find(questId);
+            var definition = RuntimeContentDatabase.FindQuest(questId);
             if (definition != null)
             {
                 AcceptQuest(session, definition);
@@ -46,20 +47,41 @@ namespace Conn.Runtime.Session
 
         public static void AcceptQuest(GameSessionState session, QuestDefinition definition)
         {
-            AcceptQuest(session, definition.QuestId, definition.DisplayName, definition.TargetMonsterId, definition.GoldReward);
+            AcceptQuest(
+                session,
+                definition.QuestId,
+                definition.DisplayName,
+                definition.TargetMonsterId,
+                definition.GoldReward,
+                definition.TargetEncounterId,
+                definition.MapProfileId);
         }
 
         public static void AcceptQuest(GameSessionState session, string questId, string targetMonsterId, int goldReward)
         {
-            AcceptQuest(session, questId, questId, targetMonsterId, goldReward);
+            AcceptQuest(session, questId, questId, targetMonsterId, goldReward, string.Empty, string.Empty);
         }
 
         public static void AcceptQuest(GameSessionState session, string questId, string title, string targetMonsterId, int goldReward)
+        {
+            AcceptQuest(session, questId, title, targetMonsterId, goldReward, string.Empty, string.Empty);
+        }
+
+        public static void AcceptQuest(
+            GameSessionState session,
+            string questId,
+            string title,
+            string targetMonsterId,
+            int goldReward,
+            string targetEncounterId,
+            string mapProfileId)
         {
             session.Quest.ClearLastReward();
             session.Quest.ActiveQuestId = questId;
             session.Quest.ActiveQuestTitle = title;
             session.Quest.TargetMonsterId = targetMonsterId;
+            session.Quest.TargetEncounterId = targetEncounterId;
+            session.Quest.MapProfileId = mapProfileId;
             session.Quest.GoldReward = goldReward;
             session.Quest.TargetDefeated = false;
             session.Quest.ReturnAvailable = false;

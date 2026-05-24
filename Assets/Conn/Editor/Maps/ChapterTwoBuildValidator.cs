@@ -1,6 +1,7 @@
 using Conn.Core.Maps;
 using Conn.Core.Quests;
 using Conn.Editor.Content;
+using Conn.Editor.Tools;
 using UnityEditor;
 using UnityEngine;
 
@@ -13,6 +14,7 @@ namespace Conn.Editor.Maps
         {
             BuildAndValidateChapterTwoContentSlice();
             BuildAndValidateChapterTwoMapSlice();
+            RuntimeRuleVerifier.VerifyChapterTwoRuntimeDataConsumption();
             Debug.Log("Conn Chapter 2 data and editor pipeline validation passed.");
         }
 

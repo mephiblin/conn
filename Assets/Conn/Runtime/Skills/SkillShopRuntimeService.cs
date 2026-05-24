@@ -16,6 +16,17 @@ namespace Conn.Runtime.Skills
             return session.Shop.SkillMerchantStockSkillIds.ToArray();
         }
 
+        public static string[] SkillMerchantStock(GameSessionState session, int floor, int bossesDefeated)
+        {
+            EnsureShopState(session);
+            if (session.Shop.SkillMerchantStockSkillIds.Count == 0)
+            {
+                GenerateSkillMerchantStock(session, floor, bossesDefeated);
+            }
+
+            return session.Shop.SkillMerchantStockSkillIds.ToArray();
+        }
+
         public static bool IsSkillMerchantStocked(GameSessionState session, string skillId)
         {
             EnsureSkillMerchantStock(session);
@@ -27,6 +38,15 @@ namespace Conn.Runtime.Skills
             EnsureShopState(session);
             session.Shop.SkillMerchantRefreshIndex++;
             GenerateSkillMerchantStock(session);
+            SaveIfPlaying();
+            RuntimeNoticeService.Set(session, Conn.Runtime.World.ChapterOneUxText.SkillMerchantRefreshNotice(session));
+        }
+
+        public static void RefreshSkillMerchantStock(GameSessionState session, int floor, int bossesDefeated)
+        {
+            EnsureShopState(session);
+            session.Shop.SkillMerchantRefreshIndex++;
+            GenerateSkillMerchantStock(session, floor, bossesDefeated);
             SaveIfPlaying();
             RuntimeNoticeService.Set(session, Conn.Runtime.World.ChapterOneUxText.SkillMerchantRefreshNotice(session));
         }
@@ -119,7 +139,19 @@ namespace Conn.Runtime.Skills
 
         private static void GenerateSkillMerchantStock(GameSessionState session)
         {
+            GenerateSkillMerchantStock(session, 1, 0);
+        }
+
+        private static void GenerateSkillMerchantStock(GameSessionState session, int floor, int bossesDefeated)
+        {
             session.Shop.SkillMerchantStockSkillIds.Clear();
+            var databaseSkillIds = RuntimeContentDatabase.SkillIdsForVendor("merchant_basic", floor, bossesDefeated);
+            if (databaseSkillIds.Length > 0)
+            {
+                AddRotatingStock(session, databaseSkillIds);
+                return;
+            }
+
             var purchasableCount = CountPurchasableSkills();
             if (purchasableCount == 0)
             {
@@ -139,6 +171,20 @@ namespace Conn.Runtime.Skills
 
                 session.Shop.SkillMerchantStockSkillIds.Add(skill.SkillId);
                 added++;
+            }
+        }
+
+        private static void AddRotatingStock(GameSessionState session, string[] skillIds)
+        {
+            var stockSize = Mathf.Min(SkillMerchantStockSize, skillIds.Length);
+            var startIndex = PositiveModulo(session.Shop.SkillMerchantRefreshIndex, skillIds.Length);
+            for (var offset = 0; offset < skillIds.Length && session.Shop.SkillMerchantStockSkillIds.Count < stockSize; offset++)
+            {
+                var skillId = skillIds[(startIndex + offset) % skillIds.Length];
+                if (RuntimeContentDatabase.FindSkill(skillId) != null)
+                {
+                    session.Shop.SkillMerchantStockSkillIds.Add(skillId);
+                }
             }
         }
 

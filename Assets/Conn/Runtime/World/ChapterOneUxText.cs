@@ -1,7 +1,7 @@
 using Conn.Core.Equipment;
 using Conn.Core.Items;
 using Conn.Core.Session;
-using Conn.Core.Skills;
+using Conn.Runtime.Content;
 using Conn.Runtime.Equipment;
 using Conn.Runtime.Inventory;
 using Conn.Runtime.Skills;
@@ -12,7 +12,7 @@ namespace Conn.Runtime.World
     {
         public static string EquipmentStatus(GameSessionState session, string itemId)
         {
-            var item = EquipmentCatalog.Find(itemId);
+            var item = RuntimeContentDatabase.FindEquipment(itemId);
             if (item == null)
             {
                 return "Unknown equipment";
@@ -25,7 +25,7 @@ namespace Conn.Runtime.World
 
         public static string EquipmentBuyStatus(GameSessionState session, string itemId)
         {
-            var item = EquipmentCatalog.Find(itemId);
+            var item = RuntimeContentDatabase.FindEquipment(itemId);
             if (item == null)
             {
                 return "Unknown equipment";
@@ -46,7 +46,7 @@ namespace Conn.Runtime.World
 
         public static string SkillStatus(GameSessionState session, string skillId)
         {
-            var skill = SkillCatalog.Find(skillId);
+            var skill = RuntimeContentDatabase.FindSkill(skillId);
             if (skill == null)
             {
                 return "Unknown skill";
@@ -61,7 +61,7 @@ namespace Conn.Runtime.World
 
         public static string SkillBuyStatus(GameSessionState session, string skillId)
         {
-            var skill = SkillCatalog.Find(skillId);
+            var skill = RuntimeContentDatabase.FindSkill(skillId);
             if (skill == null)
             {
                 return "Unknown skill";
@@ -129,7 +129,7 @@ namespace Conn.Runtime.World
                 return "Sell locked: equipped";
             }
 
-            var item = EquipmentCatalog.Find(itemId);
+            var item = RuntimeContentDatabase.FindEquipment(itemId);
             return EquipmentShopRuntimeService.CanSell(session, itemId)
                 ? $"Sellable ({item.SellPrice}g)"
                 : "Not sellable";
@@ -145,7 +145,7 @@ namespace Conn.Runtime.World
             var result = string.Empty;
             for (var i = 0; i < skillIds.Length; i++)
             {
-                var skill = SkillCatalog.Find(skillIds[i]);
+                var skill = RuntimeContentDatabase.FindSkill(skillIds[i]);
                 if (skill == null)
                 {
                     continue;

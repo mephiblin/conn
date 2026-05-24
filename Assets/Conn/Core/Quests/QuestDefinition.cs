@@ -10,7 +10,8 @@ namespace Conn.Core.Quests
             string targetMonsterId,
             int goldReward,
             string mapProfileId = "",
-            MapPlacementKind requiredMapPlacement = MapPlacementKind.QuestTarget)
+            MapPlacementKind requiredMapPlacement = MapPlacementKind.QuestTarget,
+            string targetEncounterId = "")
         {
             QuestId = questId;
             DisplayName = displayName;
@@ -18,6 +19,7 @@ namespace Conn.Core.Quests
             GoldReward = goldReward;
             MapProfileId = mapProfileId;
             RequiredMapPlacement = requiredMapPlacement;
+            TargetEncounterId = targetEncounterId;
         }
 
         public string QuestId { get; }
@@ -26,5 +28,6 @@ namespace Conn.Core.Quests
         public int GoldReward { get; }
         public string MapProfileId { get; }
         public MapPlacementKind RequiredMapPlacement { get; }
+        public string TargetEncounterId { get; }
     }
 }

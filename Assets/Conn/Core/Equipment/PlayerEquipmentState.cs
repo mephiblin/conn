@@ -1,8 +1,12 @@
 namespace Conn.Core.Equipment
 {
+    using System;
+
     [System.Serializable]
     public sealed class PlayerEquipmentState
     {
+        public static Func<string, EquipmentItemDefinition> EquipmentResolver = EquipmentCatalog.Find;
+
         public string EquippedWeaponId = EquipmentCatalog.RustySwordId;
         public string EquippedShieldId = string.Empty;
         public string EquippedHeadId = string.Empty;
@@ -15,7 +19,7 @@ namespace Conn.Core.Equipment
         {
             get
             {
-                var weapon = EquipmentCatalog.Find(EquippedWeaponId);
+                var weapon = ResolveEquipment(EquippedWeaponId);
                 if (weapon == null)
                 {
                     return WeaponGrip.None;
@@ -68,7 +72,7 @@ namespace Conn.Core.Equipment
 
         public void Equip(string itemId)
         {
-            var item = EquipmentCatalog.Find(itemId);
+            var item = ResolveEquipment(itemId);
             if (item == null)
             {
                 return;
@@ -133,13 +137,13 @@ namespace Conn.Core.Equipment
 
         public string ComparisonLineFor(string candidateItemId)
         {
-            var candidate = EquipmentCatalog.Find(candidateItemId);
+            var candidate = ResolveEquipment(candidateItemId);
             if (candidate == null)
             {
                 return "Unknown equipment";
             }
 
-            var current = EquipmentCatalog.Find(EquippedItemIdForKind(candidate.Kind));
+            var current = ResolveEquipment(EquippedItemIdForKind(candidate.Kind));
             var currentName = current != null ? current.DisplayName : "None";
             var defenseDelta = DefenseDeltaFor(candidate);
             var diceDelta = DiceDeltaFor(candidate);
@@ -208,8 +212,13 @@ namespace Conn.Core.Equipment
 
         private static int ArmorValueFor(string itemId)
         {
-            var item = EquipmentCatalog.Find(itemId);
+            var item = ResolveEquipment(itemId);
             return item != null ? item.ArmorValue : 0;
+        }
+
+        private static EquipmentItemDefinition ResolveEquipment(string itemId)
+        {
+            return EquipmentResolver != null ? EquipmentResolver(itemId) : EquipmentCatalog.Find(itemId);
         }
 
         private static string FormatDelta(int value)

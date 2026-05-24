@@ -6,6 +6,8 @@ namespace Conn.Core.Session
         public string ActiveQuestId = string.Empty;
         public string ActiveQuestTitle = string.Empty;
         public string TargetMonsterId = string.Empty;
+        public string TargetEncounterId = string.Empty;
+        public string MapProfileId = string.Empty;
         public bool TargetDefeated;
         public bool ReturnAvailable;
         public bool ReturnPromptSeen;
@@ -22,6 +24,8 @@ namespace Conn.Core.Session
             ActiveQuestId = string.Empty;
             ActiveQuestTitle = string.Empty;
             TargetMonsterId = string.Empty;
+            TargetEncounterId = string.Empty;
+            MapProfileId = string.Empty;
             TargetDefeated = false;
             ReturnAvailable = false;
             ReturnPromptSeen = false;

@@ -1,5 +1,5 @@
 using Conn.Core.Session;
-using Conn.Core.Skills;
+using Conn.Runtime.Content;
 using Conn.Runtime.Session;
 using UnityEngine;
 
@@ -26,14 +26,15 @@ namespace Conn.Runtime.Skills
             {
                 var nextIndex = (currentOwnedIndex + i) % session.Skills.OwnedSkillIds.Count;
                 var nextSkillId = session.Skills.OwnedSkillIds[nextIndex];
-                if (SkillCatalog.Find(nextSkillId) == null || nextSkillId == currentSkillId)
+                var skill = RuntimeContentDatabase.FindSkill(nextSkillId);
+                if (skill == null || nextSkillId == currentSkillId)
                 {
                     continue;
                 }
 
                 session.Skills.EquippedSkillIds[faceIndex] = nextSkillId;
                 SaveIfPlaying();
-                RuntimeNoticeService.Set(session, $"Equipped face {faceIndex + 1}: {SkillCatalog.Find(nextSkillId).DisplayName}.");
+                RuntimeNoticeService.Set(session, $"Equipped face {faceIndex + 1}: {skill.DisplayName}.");
                 return true;
             }
 

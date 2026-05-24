@@ -4,6 +4,8 @@ using Conn.Core.Equipment;
 using Conn.Core.Maps;
 using Conn.Core.Quests;
 using Conn.Core.Skills;
+using System;
+using System.Collections.Generic;
 
 namespace Conn.Runtime.Content
 {
@@ -19,6 +21,7 @@ namespace Conn.Runtime.Content
         {
             activeDatabase = database;
             activeRegistry = database != null ? database.BuildRegistry() : null;
+            PlayerEquipmentState.EquipmentResolver = database != null ? FindEquipment : EquipmentCatalog.Find;
         }
 
         public static MonsterDefinition FindMonster(string monsterId)
@@ -90,7 +93,130 @@ namespace Conn.Runtime.Content
                 contentQuest.TargetMonsterId,
                 contentQuest.GoldReward,
                 string.IsNullOrWhiteSpace(contentQuest.MapProfileId) ? string.Empty : contentQuest.MapProfileId,
-                MapPlacementKind.QuestTarget);
+                MapPlacementKind.QuestTarget,
+                contentQuest.TargetEncounterId);
+        }
+
+        public static ContentVendorDefinition FindVendor(string vendorId)
+        {
+            return activeRegistry?.FindVendor(vendorId);
+        }
+
+        public static ContentVendorRotationDefinition SelectVendorRotation(string vendorId, int floor, int bossesDefeated)
+        {
+            var vendor = FindVendor(vendorId);
+            if (vendor == null || vendor.Rotations == null || vendor.Rotations.Length == 0)
+            {
+                return null;
+            }
+
+            ContentVendorRotationDefinition selected = null;
+            for (var i = 0; i < vendor.Rotations.Length; i++)
+            {
+                var rotation = vendor.Rotations[i];
+                if (floor < rotation.MinFloor || bossesDefeated < rotation.BossesDefeated)
+                {
+                    continue;
+                }
+
+                if (selected == null
+                    || rotation.MinFloor > selected.MinFloor
+                    || rotation.BossesDefeated > selected.BossesDefeated)
+                {
+                    selected = rotation;
+                }
+            }
+
+            return selected;
+        }
+
+        public static string[] SkillIdsForVendor(string vendorId, int floor = 1, int bossesDefeated = 0)
+        {
+            var vendor = FindVendor(vendorId);
+            if (vendor == null)
+            {
+                return Array.Empty<string>();
+            }
+
+            var rotation = SelectVendorRotation(vendorId, floor, bossesDefeated);
+            var directSkillIds = rotation != null && rotation.StockSkillIds != null && rotation.StockSkillIds.Length > 0
+                ? rotation.StockSkillIds
+                : vendor.StockSkillIds;
+            if (directSkillIds != null && directSkillIds.Length > 0)
+            {
+                return directSkillIds;
+            }
+
+            var catalogIds = rotation != null && rotation.CatalogIds != null && rotation.CatalogIds.Length > 0
+                ? rotation.CatalogIds
+                : vendor.CatalogIds;
+            return SkillIdsInCatalogs(catalogIds);
+        }
+
+        public static string[] EquipmentIdsForVendor(string vendorId, int floor = 1, int bossesDefeated = 0)
+        {
+            var vendor = FindVendor(vendorId);
+            if (vendor == null)
+            {
+                return Array.Empty<string>();
+            }
+
+            var rotation = SelectVendorRotation(vendorId, floor, bossesDefeated);
+            var stockItemIds = rotation != null && rotation.StockItemIds != null && rotation.StockItemIds.Length > 0
+                ? rotation.StockItemIds
+                : vendor.StockItemIds;
+            if (stockItemIds == null || stockItemIds.Length == 0)
+            {
+                return Array.Empty<string>();
+            }
+
+            var result = new List<string>();
+            for (var i = 0; i < stockItemIds.Length; i++)
+            {
+                if (FindEquipment(stockItemIds[i]) != null)
+                {
+                    result.Add(stockItemIds[i]);
+                }
+            }
+
+            return result.ToArray();
+        }
+
+        private static string[] SkillIdsInCatalogs(string[] catalogIds)
+        {
+            if (activeDatabase == null || catalogIds == null || catalogIds.Length == 0)
+            {
+                return Array.Empty<string>();
+            }
+
+            var result = new List<string>();
+            for (var i = 0; i < activeDatabase.Skills.Length; i++)
+            {
+                var skill = activeDatabase.Skills[i];
+                for (var j = 0; j < skill.CatalogIds.Length; j++)
+                {
+                    if (Contains(catalogIds, skill.CatalogIds[j]))
+                    {
+                        result.Add(skill.Id);
+                        break;
+                    }
+                }
+            }
+
+            return result.ToArray();
+        }
+
+        private static bool Contains(string[] values, string value)
+        {
+            for (var i = 0; i < values.Length; i++)
+            {
+                if (values[i] == value)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static EquipmentKind EquipmentKindFor(string kind)

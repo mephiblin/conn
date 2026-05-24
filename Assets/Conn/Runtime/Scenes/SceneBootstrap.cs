@@ -2,6 +2,7 @@ using Conn.Core.Scenes;
 using Conn.Runtime.Combat;
 using Conn.Core.Content;
 using Conn.Runtime.Content;
+using Conn.Runtime.Maps;
 using Conn.Runtime.Session;
 using UnityEngine;
 
@@ -32,6 +33,11 @@ namespace Conn.Runtime.Scenes
             if (sceneId == GameSceneId.Combat)
             {
                 CombatRuntimeService.StartTestCombat(session.State);
+            }
+            else if (sceneId == GameSceneId.Dungeon)
+            {
+                var compiledMap = CompiledMapDungeonRuntimeService.BuildQuestCompiledMap(session.State);
+                CompiledMapDungeonRuntimeService.RegisterQuestTargetFieldMonster(session.State, compiledMap);
             }
         }
     }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Conn.Core.Combat;
 
 namespace Conn.Core.Content
 {
@@ -110,6 +111,19 @@ namespace Conn.Core.Content
                 if (!string.IsNullOrWhiteSpace(quest.TargetMonsterId) && registry.FindMonster(quest.TargetMonsterId) == null)
                 {
                     report.Error($"Quest {quest.Id} target monster is missing: {quest.TargetMonsterId}");
+                }
+
+                if (!string.IsNullOrWhiteSpace(quest.TargetEncounterId))
+                {
+                    var encounter = EncounterCatalog.Find(quest.TargetEncounterId);
+                    if (encounter == null)
+                    {
+                        report.Error($"Quest {quest.Id} target encounter is missing: {quest.TargetEncounterId}");
+                    }
+                    else if (!string.IsNullOrWhiteSpace(quest.TargetMonsterId) && encounter.MonsterId != quest.TargetMonsterId)
+                    {
+                        report.Error($"Quest {quest.Id} target encounter monster mismatch: {quest.TargetEncounterId} -> {encounter.MonsterId}, expected {quest.TargetMonsterId}");
+                    }
                 }
 
                 if (string.IsNullOrWhiteSpace(quest.MapKind) && string.IsNullOrWhiteSpace(quest.MapProfileId))
