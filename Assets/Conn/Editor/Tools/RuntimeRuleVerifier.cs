@@ -2,6 +2,7 @@ using System;
 using Conn.Core.Equipment;
 using Conn.Core.Items;
 using Conn.Core.Quests;
+using Conn.Core.Scenes;
 using Conn.Core.Session;
 using Conn.Core.Skills;
 using Conn.Runtime.Equipment;
@@ -32,6 +33,7 @@ namespace Conn.Editor.Tools
             VerifyKeepExploringReturnPrompt();
             VerifyTownServices();
             VerifyRuntimeNotice();
+            VerifySaveContractRoundTrip();
             VerifyEquipmentAndSkillDisplayData();
             VerifyConsumables();
             VerifySkillSaleProtection();
@@ -332,6 +334,37 @@ namespace Conn.Editor.Tools
             RuntimeNoticeService.Set(session, "notice check");
 
             Expect(session.LastNotice == "notice check", "Runtime notices must be stored on the session for HUD display.");
+        }
+
+        private static void VerifySaveContractRoundTrip()
+        {
+            var source = new GameSessionState();
+            source.StartNewGame();
+            source.Mode = GameMode.Combat;
+            source.Player.GainXp(7);
+            source.Gold = 42;
+            source.Inventory.AddItem(EquipmentCatalog.IronShieldId);
+            source.Equipment.Equip(EquipmentCatalog.IronShieldId);
+            source.Skills.AddSkill(SkillCatalog.GuardId);
+            SkillRuntimeService.CycleNextEditFace(source);
+            QuestRuntimeService.AcceptQuest(source, QuestCatalog.TestHuntId);
+            source.LastNotice = "saved notice";
+            source.Combat.Active = true;
+
+            var json = SaveRuntimeService.ToJson(source);
+            var loaded = new GameSessionState();
+            SaveRuntimeService.OverwriteFromJson(json, loaded);
+            loaded.Combat.Clear();
+
+            Expect(loaded.Mode == GameMode.Combat, "Save contract must preserve mode for continue routing.");
+            Expect(loaded.Player.Xp == 7, "Save contract must preserve XP.");
+            Expect(loaded.Gold == 42, "Save contract must preserve gold.");
+            Expect(loaded.LastNotice == "saved notice", "Save contract must preserve last notice.");
+            Expect(loaded.Equipment.WeaponGrip == WeaponGrip.OneHandAndShield, "Save contract must preserve equipment.");
+            Expect(loaded.Skills.NextEditFaceIndex == source.Skills.NextEditFaceIndex, "Save contract must preserve next skill edit face.");
+            Expect(loaded.Quest.ActiveQuestId == QuestCatalog.TestHuntId, "Save contract must preserve active quest.");
+            Expect(!loaded.Combat.Active, "Continue load must clear active combat.");
+            Expect(SaveRuntimeService.SceneForLoadedState(loaded) == GameSceneId.Dungeon, "Continue from combat mode must resume in Dungeon.");
         }
 
         private static void Expect(bool condition, string message)

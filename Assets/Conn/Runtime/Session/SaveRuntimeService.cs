@@ -22,7 +22,7 @@ namespace Conn.Runtime.Session
                 Directory.CreateDirectory(directory);
             }
 
-            File.WriteAllText(SavePath, JsonUtility.ToJson(session, true));
+            File.WriteAllText(SavePath, ToJson(session));
         }
 
         public static bool TryLoad(GameSessionState target)
@@ -32,9 +32,19 @@ namespace Conn.Runtime.Session
                 return false;
             }
 
-            JsonUtility.FromJsonOverwrite(File.ReadAllText(SavePath), target);
+            OverwriteFromJson(File.ReadAllText(SavePath), target);
             target.Combat.Clear();
             return true;
+        }
+
+        public static string ToJson(GameSessionState session)
+        {
+            return JsonUtility.ToJson(session, true);
+        }
+
+        public static void OverwriteFromJson(string json, GameSessionState target)
+        {
+            JsonUtility.FromJsonOverwrite(json, target);
         }
 
         public static GameSceneId SceneForLoadedState(GameSessionState session)

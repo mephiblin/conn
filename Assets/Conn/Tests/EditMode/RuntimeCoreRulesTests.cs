@@ -1,6 +1,7 @@
 using Conn.Core.Equipment;
 using Conn.Core.Items;
 using Conn.Core.Quests;
+using Conn.Core.Scenes;
 using Conn.Core.Session;
 using Conn.Core.Skills;
 using Conn.Runtime.Combat;
@@ -303,6 +304,38 @@ namespace Conn.Tests.EditMode
             RuntimeNoticeService.Set(session, "notice check");
 
             Assert.That(session.LastNotice, Is.EqualTo("notice check"));
+        }
+
+        [Test]
+        public void SaveContractRoundTripPreservesChapterOneState()
+        {
+            var source = new GameSessionState();
+            source.StartNewGame();
+            source.Mode = GameMode.Combat;
+            source.Player.GainXp(7);
+            source.Gold = 42;
+            source.Inventory.AddItem(EquipmentCatalog.IronShieldId);
+            source.Equipment.Equip(EquipmentCatalog.IronShieldId);
+            source.Skills.AddSkill(SkillCatalog.GuardId);
+            SkillRuntimeService.CycleNextEditFace(source);
+            QuestRuntimeService.AcceptQuest(source, QuestCatalog.TestHuntId);
+            source.LastNotice = "saved notice";
+            source.Combat.Active = true;
+
+            var json = SaveRuntimeService.ToJson(source);
+            var loaded = new GameSessionState();
+            SaveRuntimeService.OverwriteFromJson(json, loaded);
+            loaded.Combat.Clear();
+
+            Assert.That(loaded.Mode, Is.EqualTo(GameMode.Combat));
+            Assert.That(loaded.Player.Xp, Is.EqualTo(7));
+            Assert.That(loaded.Gold, Is.EqualTo(42));
+            Assert.That(loaded.LastNotice, Is.EqualTo("saved notice"));
+            Assert.That(loaded.Equipment.WeaponGrip, Is.EqualTo(WeaponGrip.OneHandAndShield));
+            Assert.That(loaded.Skills.NextEditFaceIndex, Is.EqualTo(source.Skills.NextEditFaceIndex));
+            Assert.That(loaded.Quest.ActiveQuestId, Is.EqualTo(QuestCatalog.TestHuntId));
+            Assert.That(loaded.Combat.Active, Is.False);
+            Assert.That(SaveRuntimeService.SceneForLoadedState(loaded), Is.EqualTo(GameSceneId.Dungeon));
         }
     }
 }
