@@ -134,12 +134,22 @@ namespace Conn.UI.Runtime
             GUILayout.Label($"Round: {session.Combat.Round}");
             GUILayout.Label($"Player HP: {session.Combat.Player.Hp}/{session.Combat.Player.MaxHp}");
             GUILayout.Label($"Enemy HP: {session.Combat.Enemy.Hp}/{session.Combat.Enemy.MaxHp}");
-            GUILayout.Label($"Skill Power: {session.Skills.EquippedPower(session.Combat.PlayerDiceCount)}");
+            GUILayout.Label($"Selected: {session.Combat.SelectedDiceCount}/3");
             GUILayout.Label(session.Combat.LastMessage);
 
-            if (GUILayout.Button("Attack With Dice"))
+            for (var i = 0; i < session.Combat.DiceFaces.Count; i++)
             {
-                CombatRuntimeService.PlayerAttack(session);
+                var face = session.Combat.DiceFaces[i];
+                var prefix = face.Selected ? "[x] " : "[ ] ";
+                if (GUILayout.Button(prefix + face.Label))
+                {
+                    CombatRuntimeService.ToggleDieSelection(session, i);
+                }
+            }
+
+            if (GUILayout.Button("Resolve Selected Dice"))
+            {
+                CombatRuntimeService.ResolveSelectedDice(session);
             }
 
             if (GUILayout.Button("Die"))

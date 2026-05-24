@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Conn.Core.Combat
 {
     [System.Serializable]
@@ -9,7 +11,25 @@ namespace Conn.Core.Combat
         public int PlayerDefenseBonus;
         public CombatantState Player = new CombatantState();
         public CombatantState Enemy = new CombatantState();
+        public List<DiceFaceState> DiceFaces = new List<DiceFaceState>();
         public string LastMessage = string.Empty;
+
+        public int SelectedDiceCount
+        {
+            get
+            {
+                var count = 0;
+                for (var i = 0; i < DiceFaces.Count; i++)
+                {
+                    if (DiceFaces[i].Selected)
+                    {
+                        count++;
+                    }
+                }
+
+                return count;
+            }
+        }
 
         public void Clear()
         {
@@ -19,6 +39,7 @@ namespace Conn.Core.Combat
             PlayerDefenseBonus = 0;
             Player.Setup(string.Empty, string.Empty, 0);
             Enemy.Setup(string.Empty, string.Empty, 0);
+            DiceFaces.Clear();
             LastMessage = string.Empty;
         }
     }

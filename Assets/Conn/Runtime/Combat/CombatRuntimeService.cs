@@ -1,5 +1,7 @@
+using Conn.Core.Combat;
 using Conn.Core.Scenes;
 using Conn.Core.Session;
+using Conn.Core.Skills;
 using Conn.Runtime.Scenes;
 using Conn.Runtime.Session;
 
@@ -16,15 +18,51 @@ namespace Conn.Runtime.Combat
             session.Skills.ResizeEquippedFaces(session.Combat.PlayerDiceCount);
             session.Combat.Player.Setup("player", "Player", 20);
             session.Combat.Enemy.Setup(session.Quest.TargetMonsterId, "Test Monster", 12);
+            BuildDiceFaces(session);
             session.Combat.LastMessage = $"Combat started. Dice: {session.Combat.PlayerDiceCount}";
         }
 
-        public static void PlayerAttack(GameSessionState session)
+        public static void ToggleDieSelection(GameSessionState session, int dieIndex)
         {
             EnsureCombat(session);
-            var damage = session.Combat.PlayerDiceCount + 1 + session.Skills.EquippedPower(session.Combat.PlayerDiceCount);
+            if (dieIndex < 0 || dieIndex >= session.Combat.DiceFaces.Count)
+            {
+                return;
+            }
+
+            var face = session.Combat.DiceFaces[dieIndex];
+            if (!face.Selected && session.Combat.SelectedDiceCount >= 3)
+            {
+                session.Combat.LastMessage = "Select up to 3 dice.";
+                return;
+            }
+
+            face.Selected = !face.Selected;
+        }
+
+        public static void ResolveSelectedDice(GameSessionState session)
+        {
+            EnsureCombat(session);
+            var selected = session.Combat.SelectedDiceCount;
+            if (selected == 0)
+            {
+                session.Combat.LastMessage = "Select at least 1 die.";
+                return;
+            }
+
+            var damage = 0;
+            for (var i = 0; i < session.Combat.DiceFaces.Count; i++)
+            {
+                var face = session.Combat.DiceFaces[i];
+                if (face.Selected)
+                {
+                    damage += 1 + face.Power;
+                    face.Selected = false;
+                }
+            }
+
             session.Combat.Enemy.Damage(damage);
-            session.Combat.LastMessage = $"Player deals {damage}.";
+            session.Combat.LastMessage = $"Resolved {selected} dice for {damage} damage.";
 
             if (session.Combat.Enemy.IsDead)
             {
@@ -34,6 +72,11 @@ namespace Conn.Runtime.Combat
 
             EnemyAttack(session);
             session.Combat.Round++;
+        }
+
+        public static void PlayerAttack(GameSessionState session)
+        {
+            ResolveSelectedDice(session);
         }
 
         public static void Die(GameSessionState session)
@@ -71,6 +114,25 @@ namespace Conn.Runtime.Combat
             if (!session.Combat.Active)
             {
                 StartTestCombat(session);
+            }
+        }
+
+        private static void BuildDiceFaces(GameSessionState session)
+        {
+            session.Combat.DiceFaces.Clear();
+            for (var i = 0; i < session.Combat.PlayerDiceCount; i++)
+            {
+                var skillId = i < session.Skills.EquippedSkillIds.Count
+                    ? session.Skills.EquippedSkillIds[i]
+                    : string.Empty;
+                var skill = SkillCatalog.Find(skillId);
+                session.Combat.DiceFaces.Add(new DiceFaceState
+                {
+                    Index = i,
+                    SkillId = skillId,
+                    Power = skill != null ? skill.Power : 0,
+                    Selected = false
+                });
             }
         }
     }
