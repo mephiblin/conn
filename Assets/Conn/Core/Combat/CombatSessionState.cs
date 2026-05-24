@@ -12,6 +12,7 @@ namespace Conn.Core.Combat
         public string FieldMonsterStateKey = string.Empty;
         public string EncounterId = string.Empty;
         public string MonsterId = string.Empty;
+        public string EnemyActionName = string.Empty;
         public int EnemyAttackPower;
         public int XpReward;
         public CombatantState Player = new CombatantState();
@@ -45,6 +46,7 @@ namespace Conn.Core.Combat
             FieldMonsterStateKey = string.Empty;
             EncounterId = string.Empty;
             MonsterId = string.Empty;
+            EnemyActionName = string.Empty;
             EnemyAttackPower = 0;
             XpReward = 0;
             Player.Setup(string.Empty, string.Empty, 0);

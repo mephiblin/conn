@@ -41,6 +41,7 @@ namespace Conn.Editor.Tools
             VerifyKeepExploringReturnPrompt();
             VerifyTownServices();
             VerifyShopServices();
+            VerifySkillMerchantStockRefresh();
             VerifyRuntimeNotice();
             VerifySaveContractRoundTrip();
             VerifyEquipmentAndSkillDisplayData();
@@ -74,7 +75,8 @@ namespace Conn.Editor.Tools
             Expect(session.Combat.EncounterId == EncounterCatalog.TestGuardId, "P1 flow combat must resolve the test guard encounter.");
             Expect(session.Combat.Enemy.Id == MonsterCatalog.TestGuardId, "P1 flow combat must resolve the test guard monster.");
             Expect(session.Combat.Enemy.MaxHp == MonsterCatalog.Find(MonsterCatalog.TestGuardId).MaxHp, "P1 flow combat must use monster HP data.");
-            Expect(session.Combat.EnemyAttackPower == MonsterCatalog.Find(MonsterCatalog.TestGuardId).AttackPower, "P1 flow combat must use monster attack data.");
+            Expect(session.Combat.EnemyAttackPower == MonsterCatalog.Find(MonsterCatalog.TestGuardId).EnemyActionPower, "P1 flow combat must use monster enemy action power data.");
+            Expect(session.Combat.EnemyActionName == MonsterCatalog.Find(MonsterCatalog.TestGuardId).EnemyActionName, "P1 flow combat must use monster enemy action name data.");
             Expect(session.Combat.XpReward == EncounterCatalog.Find(EncounterCatalog.TestGuardId).XpReward, "P1 flow combat must use encounter XP reward data.");
 
             QuestRuntimeService.CompleteTarget(session, session.Combat.FieldMonsterStateKey);
@@ -220,7 +222,9 @@ namespace Conn.Editor.Tools
             Expect(session.Combat.LastMessage.Contains("2 damage"), "Combat message must report damage.");
             Expect(session.Combat.LastMessage.Contains("2 guard"), "Combat message must report guard.");
             Expect(session.Combat.LastMessage.Contains("3 heal"), "Combat message must report healing.");
-            Expect(session.Combat.LastMessage.Contains("Enemy deals 2"), "Combat message must report reduced enemy damage.");
+            Expect(session.Combat.LastMessage.Contains("Test Gate Guard uses Halberd thrust for 2 damage"), "Combat message must report enemy action and reduced damage.");
+            Expect(session.Combat.LastMessage.Contains("4 power"), "Combat message must report enemy action power.");
+            Expect(session.Combat.LastMessage.Contains("2 blocked"), "Combat message must report blocked enemy damage.");
         }
 
         private static void VerifySkillSaleProtection()
@@ -267,6 +271,8 @@ namespace Conn.Editor.Tools
             Expect(quest != null, "Test hunt quest definition must exist.");
             Expect(monster.MaxHp == 12, "Test guard monster HP must match combat tuning data.");
             Expect(monster.AttackPower == 4, "Test guard monster attack must match combat tuning data.");
+            Expect(monster.EnemyActionName == "Halberd thrust", "Test guard monster enemy action name must match combat tuning data.");
+            Expect(monster.EnemyActionPower == 4, "Test guard monster enemy action power must match combat tuning data.");
             Expect(encounter.MonsterId == monster.MonsterId, "Test guard encounter must reference the test guard monster.");
             Expect(encounter.XpReward == 5, "Test guard encounter must define the combat XP reward.");
             Expect(quest.TargetMonsterId == monster.MonsterId, "Test hunt quest target must link to the test guard monster.");
@@ -514,6 +520,25 @@ namespace Conn.Editor.Tools
             Expect(SkillShopRuntimeService.SellLoose(session, SkillCatalog.GuardId), "Skill merchant must sell loose duplicate skill.");
         }
 
+        private static void VerifySkillMerchantStockRefresh()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+
+            var firstStock = SkillShopRuntimeService.SkillMerchantStock(session);
+            Expect(firstStock.Length == SkillShopRuntimeService.SkillMerchantStockSize, "Skill merchant stock must be limited to the configured stock size.");
+            Expect(firstStock[0] == SkillCatalog.GuardId, "Initial skill merchant stock must start at the first purchasable skill.");
+            Expect(firstStock[1] == SkillCatalog.FocusStrikeId, "Initial skill merchant stock must include the next purchasable skill.");
+            Expect(!SkillShopRuntimeService.IsSkillMerchantStocked(session, SkillCatalog.MendId), "Initial skill merchant stock must not expose every purchasable skill.");
+
+            SkillShopRuntimeService.RefreshSkillMerchantStock(session);
+            var refreshedStock = SkillShopRuntimeService.SkillMerchantStock(session);
+            Expect(session.Shop.SkillMerchantRefreshIndex == 1, "Skill merchant stock refresh must advance the persisted refresh index.");
+            Expect(refreshedStock[0] == SkillCatalog.FocusStrikeId, "Skill merchant refresh must rotate the first stock slot deterministically.");
+            Expect(refreshedStock[1] == SkillCatalog.MendId, "Skill merchant refresh must rotate the second stock slot deterministically.");
+            Expect(SkillShopRuntimeService.BuyAndEquip(session, SkillCatalog.GuardId), "Fixed catalog skill purchase path must keep working even when UI stock rotates.");
+        }
+
         private static void VerifyRuntimeNotice()
         {
             var session = new GameSessionState();
@@ -545,6 +570,7 @@ namespace Conn.Editor.Tools
             source.Equipment.Equip(EquipmentCatalog.WornBootsId);
             source.Skills.AddSkill(SkillCatalog.GuardId);
             SkillRuntimeService.CycleNextEditFace(source);
+            SkillShopRuntimeService.RefreshSkillMerchantStock(source);
             QuestRuntimeService.AcceptQuest(source, QuestCatalog.TestHuntId);
             source.LastNotice = "saved notice";
             source.Combat.Active = true;
@@ -565,6 +591,9 @@ namespace Conn.Editor.Tools
             Expect(loaded.Equipment.EquippedLegsId == EquipmentCatalog.ReinforcedPantsId, "Save contract must preserve legs armor.");
             Expect(loaded.Equipment.EquippedFeetId == EquipmentCatalog.WornBootsId, "Save contract must preserve feet armor.");
             Expect(loaded.Skills.NextEditFaceIndex == source.Skills.NextEditFaceIndex, "Save contract must preserve next skill edit face.");
+            Expect(loaded.Shop.SkillMerchantRefreshIndex == 1, "Save contract must preserve skill merchant refresh index.");
+            Expect(loaded.Shop.SkillMerchantStockSkillIds.Count == source.Shop.SkillMerchantStockSkillIds.Count, "Save contract must preserve skill merchant stock count.");
+            Expect(loaded.Shop.SkillMerchantStockSkillIds[0] == source.Shop.SkillMerchantStockSkillIds[0], "Save contract must preserve skill merchant stock order.");
             Expect(loaded.Quest.ActiveQuestId == QuestCatalog.TestHuntId, "Save contract must preserve active quest.");
             Expect(!loaded.Combat.Active, "Continue load must clear active combat.");
             Expect(SaveRuntimeService.SceneForLoadedState(loaded) == GameSceneId.Dungeon, "Continue from combat mode must resume in Dungeon.");

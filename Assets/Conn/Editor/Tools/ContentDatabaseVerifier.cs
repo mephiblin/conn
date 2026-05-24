@@ -86,6 +86,8 @@ namespace Conn.Editor.Tools
                 Expect(!string.IsNullOrWhiteSpace(monster.DisplayName), $"Monster {monster.MonsterId} must have display name.");
                 Expect(monster.MaxHp > 0, $"Monster {monster.MonsterId} max HP must be positive.");
                 Expect(monster.AttackPower > 0, $"Monster {monster.MonsterId} attack power must be positive.");
+                Expect(!string.IsNullOrWhiteSpace(monster.EnemyActionName), $"Monster {monster.MonsterId} enemy action name must not be empty.");
+                Expect(monster.EnemyActionPower > 0, $"Monster {monster.MonsterId} enemy action power must be positive.");
                 Expect(monster.XpReward >= 0, $"Monster {monster.MonsterId} XP reward must be non-negative.");
             }
         }

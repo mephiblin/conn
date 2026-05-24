@@ -79,7 +79,8 @@ namespace Conn.Tests.EditMode
             Assert.That(session.Combat.EncounterId, Is.EqualTo(EncounterCatalog.TestGuardId));
             Assert.That(session.Combat.Enemy.Id, Is.EqualTo(MonsterCatalog.TestGuardId));
             Assert.That(session.Combat.Enemy.MaxHp, Is.EqualTo(MonsterCatalog.Find(MonsterCatalog.TestGuardId).MaxHp));
-            Assert.That(session.Combat.EnemyAttackPower, Is.EqualTo(MonsterCatalog.Find(MonsterCatalog.TestGuardId).AttackPower));
+            Assert.That(session.Combat.EnemyAttackPower, Is.EqualTo(MonsterCatalog.Find(MonsterCatalog.TestGuardId).EnemyActionPower));
+            Assert.That(session.Combat.EnemyActionName, Is.EqualTo(MonsterCatalog.Find(MonsterCatalog.TestGuardId).EnemyActionName));
             Assert.That(session.Combat.XpReward, Is.EqualTo(EncounterCatalog.Find(EncounterCatalog.TestGuardId).XpReward));
 
             QuestRuntimeService.CompleteTarget(session, session.Combat.FieldMonsterStateKey);
@@ -188,7 +189,79 @@ namespace Conn.Tests.EditMode
             Assert.That(session.Combat.LastMessage, Does.Contain("2 damage"));
             Assert.That(session.Combat.LastMessage, Does.Contain("2 guard"));
             Assert.That(session.Combat.LastMessage, Does.Contain("3 heal"));
-            Assert.That(session.Combat.LastMessage, Does.Contain("Enemy deals 2"));
+            Assert.That(session.Combat.LastMessage, Does.Contain("Test Gate Guard uses Halberd thrust for 2 damage"));
+            Assert.That(session.Combat.LastMessage, Does.Contain("4 power"));
+            Assert.That(session.Combat.LastMessage, Does.Contain("2 blocked"));
+        }
+
+        [Test]
+        public void EnemyTurnUsesAttackPowerFromMonsterActionData()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+            var monster = MonsterCatalog.Find(MonsterCatalog.TestGuardId);
+
+            CombatRuntimeService.StartTestCombat(session);
+            CombatRuntimeService.ToggleDieSelection(session, 0);
+            CombatRuntimeService.ResolveSelectedDice(session);
+
+            Assert.That(session.Combat.EnemyAttackPower, Is.EqualTo(monster.EnemyActionPower));
+            Assert.That(session.Combat.EnemyActionName, Is.EqualTo(monster.EnemyActionName));
+            Assert.That(session.Player.Hp, Is.EqualTo(session.Player.MaxHp - monster.EnemyActionPower));
+        }
+
+        [Test]
+        public void EnemyTurnDamageIsReducedByGuard()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+            session.Skills.AddSkill(SkillCatalog.GuardId);
+            session.Skills.EquippedSkillIds[0] = SkillCatalog.GuardId;
+
+            CombatRuntimeService.StartTestCombat(session);
+            CombatRuntimeService.ToggleDieSelection(session, 0);
+            CombatRuntimeService.ResolveSelectedDice(session);
+
+            Assert.That(session.Player.Hp, Is.EqualTo(session.Player.MaxHp - 2));
+            Assert.That(session.Combat.LastMessage, Does.Contain("2 blocked"));
+        }
+
+        [Test]
+        public void EnemyTurnDamageHasMinimumOneAfterGuardAndDefense()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+            session.Inventory.AddItem(EquipmentCatalog.IronShieldId);
+            Assert.That(EquipmentRuntimeService.TryEquip(session, EquipmentCatalog.IronShieldId), Is.True);
+            session.Skills.AddSkill(SkillCatalog.GuardId);
+            session.Skills.EquippedSkillIds[0] = SkillCatalog.GuardId;
+            session.Skills.EquippedSkillIds[1] = SkillCatalog.GuardId;
+
+            CombatRuntimeService.StartTestCombat(session);
+            CombatRuntimeService.ToggleDieSelection(session, 0);
+            CombatRuntimeService.ToggleDieSelection(session, 1);
+            CombatRuntimeService.ResolveSelectedDice(session);
+
+            Assert.That(session.Player.Hp, Is.EqualTo(session.Player.MaxHp - 1));
+            Assert.That(session.Combat.LastMessage, Does.Contain("1 damage"));
+            Assert.That(session.Combat.LastMessage, Does.Contain("3 blocked"));
+        }
+
+        [Test]
+        public void EnemyTurnMessageNamesActionPowerAndBlockedDamage()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+            session.Skills.AddSkill(SkillCatalog.GuardId);
+            session.Skills.EquippedSkillIds[0] = SkillCatalog.GuardId;
+
+            CombatRuntimeService.StartTestCombat(session);
+            CombatRuntimeService.ToggleDieSelection(session, 0);
+            CombatRuntimeService.ResolveSelectedDice(session);
+
+            Assert.That(session.Combat.LastMessage, Does.Contain("Test Gate Guard uses Halberd thrust"));
+            Assert.That(session.Combat.LastMessage, Does.Contain("4 power"));
+            Assert.That(session.Combat.LastMessage, Does.Contain("2 blocked"));
         }
 
         [Test]
@@ -203,6 +276,8 @@ namespace Conn.Tests.EditMode
             Assert.That(quest, Is.Not.Null);
             Assert.That(monster.MaxHp, Is.EqualTo(12));
             Assert.That(monster.AttackPower, Is.EqualTo(4));
+            Assert.That(monster.EnemyActionName, Is.EqualTo("Halberd thrust"));
+            Assert.That(monster.EnemyActionPower, Is.EqualTo(4));
             Assert.That(encounter.MonsterId, Is.EqualTo(monster.MonsterId));
             Assert.That(encounter.XpReward, Is.EqualTo(5));
             Assert.That(quest.TargetMonsterId, Is.EqualTo(monster.MonsterId));
@@ -493,6 +568,28 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void SkillMerchantStockRefreshesDeterministicallyButCatalogPurchasesStillWork()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+
+            var firstStock = SkillShopRuntimeService.SkillMerchantStock(session);
+
+            Assert.That(firstStock, Has.Length.EqualTo(SkillShopRuntimeService.SkillMerchantStockSize));
+            Assert.That(firstStock[0], Is.EqualTo(SkillCatalog.GuardId));
+            Assert.That(firstStock[1], Is.EqualTo(SkillCatalog.FocusStrikeId));
+            Assert.That(SkillShopRuntimeService.IsSkillMerchantStocked(session, SkillCatalog.MendId), Is.False);
+
+            SkillShopRuntimeService.RefreshSkillMerchantStock(session);
+            var refreshedStock = SkillShopRuntimeService.SkillMerchantStock(session);
+
+            Assert.That(session.Shop.SkillMerchantRefreshIndex, Is.EqualTo(1));
+            Assert.That(refreshedStock[0], Is.EqualTo(SkillCatalog.FocusStrikeId));
+            Assert.That(refreshedStock[1], Is.EqualTo(SkillCatalog.MendId));
+            Assert.That(SkillShopRuntimeService.BuyAndEquip(session, SkillCatalog.GuardId), Is.True);
+        }
+
+        [Test]
         public void RuntimeNoticeStoresLastMessageOnSession()
         {
             var session = new GameSessionState();
@@ -525,6 +622,7 @@ namespace Conn.Tests.EditMode
             source.Equipment.Equip(EquipmentCatalog.WornBootsId);
             source.Skills.AddSkill(SkillCatalog.GuardId);
             SkillRuntimeService.CycleNextEditFace(source);
+            SkillShopRuntimeService.RefreshSkillMerchantStock(source);
             QuestRuntimeService.AcceptQuest(source, QuestCatalog.TestHuntId);
             source.LastNotice = "saved notice";
             source.Combat.Active = true;
@@ -545,6 +643,8 @@ namespace Conn.Tests.EditMode
             Assert.That(loaded.Equipment.EquippedLegsId, Is.EqualTo(EquipmentCatalog.ReinforcedPantsId));
             Assert.That(loaded.Equipment.EquippedFeetId, Is.EqualTo(EquipmentCatalog.WornBootsId));
             Assert.That(loaded.Skills.NextEditFaceIndex, Is.EqualTo(source.Skills.NextEditFaceIndex));
+            Assert.That(loaded.Shop.SkillMerchantRefreshIndex, Is.EqualTo(1));
+            Assert.That(loaded.Shop.SkillMerchantStockSkillIds, Is.EqualTo(source.Shop.SkillMerchantStockSkillIds));
             Assert.That(loaded.Quest.ActiveQuestId, Is.EqualTo(QuestCatalog.TestHuntId));
             Assert.That(loaded.Combat.Active, Is.False);
             Assert.That(SaveRuntimeService.SceneForLoadedState(loaded), Is.EqualTo(GameSceneId.Dungeon));

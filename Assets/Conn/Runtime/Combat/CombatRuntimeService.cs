@@ -26,7 +26,8 @@ namespace Conn.Runtime.Combat
             session.Combat.Player.Setup("player", "Player", session.Player.MaxHp, session.Player.Hp);
             session.Combat.EncounterId = encounter != null ? encounter.EncounterId : string.Empty;
             session.Combat.MonsterId = monster != null ? monster.MonsterId : monsterId;
-            session.Combat.EnemyAttackPower = monster != null ? monster.AttackPower : 4;
+            session.Combat.EnemyActionName = ResolveEnemyActionName(monster);
+            session.Combat.EnemyAttackPower = monster != null && monster.EnemyActionPower > 0 ? monster.EnemyActionPower : 4;
             session.Combat.XpReward = ResolveXpReward(encounter, monster);
             session.Combat.Enemy.Setup(
                 session.Combat.MonsterId,
@@ -161,7 +162,19 @@ namespace Conn.Runtime.Combat
 
             session.Combat.Player.Damage(damage);
             session.Player.Damage(damage);
-            session.Combat.LastMessage += $" Enemy deals {damage}.";
+            var blocked = attackPower - damage;
+            if (blocked < 0)
+            {
+                blocked = 0;
+            }
+
+            var actionName = string.IsNullOrWhiteSpace(session.Combat.EnemyActionName)
+                ? "Attack"
+                : session.Combat.EnemyActionName;
+            var enemyName = string.IsNullOrWhiteSpace(session.Combat.Enemy.DisplayName)
+                ? "Enemy"
+                : session.Combat.Enemy.DisplayName;
+            session.Combat.LastMessage += $" {enemyName} uses {actionName} for {damage} damage ({attackPower} power, {blocked} blocked).";
             if (Application.isPlaying)
             {
                 GameSession.Instance.SaveGame();
@@ -215,7 +228,9 @@ namespace Conn.Runtime.Combat
                 return handoff.MonsterId;
             }
 
-            return session.Quest.TargetMonsterId;
+            return string.IsNullOrWhiteSpace(session.Quest.TargetMonsterId)
+                ? MonsterCatalog.TestGuardId
+                : session.Quest.TargetMonsterId;
         }
 
         private static int ResolveXpReward(EncounterDefinition encounter, MonsterDefinition monster)
@@ -226,6 +241,16 @@ namespace Conn.Runtime.Combat
             }
 
             return monster != null ? monster.XpReward : 0;
+        }
+
+        private static string ResolveEnemyActionName(MonsterDefinition monster)
+        {
+            if (monster != null && !string.IsNullOrWhiteSpace(monster.EnemyActionName))
+            {
+                return monster.EnemyActionName;
+            }
+
+            return "Attack";
         }
 
         private static void BuildDiceFaces(GameSessionState session)

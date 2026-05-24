@@ -11,8 +11,8 @@
 | 범위 | 진행률 | 상태 |
 | --- | ---: | --- |
 | P1 Runtime Vertical Slice | 85-90% | 기본 루프는 닫혔고, 플레이 테스트 보정이 남음 |
-| P2 전투/스킬/주사위 | 55-65% | 몬스터/조우 데이터 분리는 시작됐고, 전투 깊이와 UI가 남음 |
-| P3 장비/인벤토리/상점 | 55-65% | 방어구 슬롯은 추가됐고, 재고/UX가 임시 |
+| P2 전투/스킬/주사위 | 60-70% | 몬스터/조우 데이터와 적 행동 메시지는 시작됐고, 전투 깊이와 UI가 남음 |
+| P3 장비/인벤토리/상점 | 60-70% | 방어구 슬롯과 기술상인 stock은 추가됐고, UX가 임시 |
 | P4 마을 NPC 확장 | 55-65% | 8종 NPC는 존재하나 일부 서비스가 얕음 |
 | P5 Editor Tool 1차 | 15-25% | 검증/빌드 도구만 있고 제작용 에디터는 아직 시작 전 |
 | P6 맵 생성 | 0-10% | 문서만 있고 Runtime 연결은 아직 없음 |
@@ -34,12 +34,14 @@ Chapter 1 전체는 약 55-60% 진행으로 본다.
 - 사망 시 Ending 상태 전환
 - 최소 주사위/스킬 전투
 - `MonsterDefinition`/`EncounterDefinition` 기반 전투 데이터
+- 적 행동명/행동 power 기반 전투 메시지
 - encounter 기반 XP 보상
 - 장비 상태별 주사위 수
 - 머리/가슴/팔/다리/신발 방어구 슬롯
 - 골드, XP, HP, 저장/Continue 기초
 - 대장장이 장비 구매/판매
 - 기술 상인 스킬 구매/판매
+- 기술 상인 deterministic stock refresh
 - 약재상 소모품 구매, 포션 사용
 - 여관 회복
 - 훈련소 XP 훈련
@@ -92,7 +94,8 @@ P1은 기능적으로 거의 닫혔지만, 실제 플레이 기준으로 아래 
    - 남은 작업: 하드코딩 catalog를 ScriptableObject/JSON import 가능한 데이터로 이전
 
 2. 전투 룰 확장
-   - 적 턴 패턴
+   - 적 행동명/행동 power: 1차 완료
+   - 남은 작업: 다중 패턴, 상태 이상, 스킬별 특수 효과
    - 방어 보정 명확화
    - 회복/방어/공격 외 스킬 효과 확장 지점
    - 전투 로그 정리
@@ -125,11 +128,11 @@ P1은 기능적으로 거의 닫혔지만, 실제 플레이 기준으로 아래 
    - 장착 중/판매 가능/사용 가능 상태가 더 명확해야 한다.
 
 3. 상점 재고 규칙
-   - 현재는 고정 catalog 기반이다.
+   - 현재 기술 상인은 deterministic limited stock 기반이다.
    - 남은 Diablo II식 요소:
      - 진행도 기반 rotation
-     - stock refresh
-     - skill stock size
+     - stock refresh: 1차 완료
+     - skill stock size: 1차 완료
      - rarity/affix/generated offer 계약
 
 4. generated item

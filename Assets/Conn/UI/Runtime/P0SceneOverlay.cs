@@ -361,10 +361,12 @@ namespace Conn.UI.Runtime
         private static void DrawSkillMerchantPanel(GameSessionState session)
         {
             GUILayout.Label("Skill Merchant");
-            for (var i = 0; i < SkillCatalog.All.Length; i++)
+            var stockSkillIds = SkillShopRuntimeService.SkillMerchantStock(session);
+            GUILayout.Label($"Stock refresh #{session.Shop.SkillMerchantRefreshIndex}");
+            for (var i = 0; i < stockSkillIds.Length; i++)
             {
-                var skill = SkillCatalog.All[i];
-                if (skill.BuyPrice <= 0)
+                var skill = SkillCatalog.Find(stockSkillIds[i]);
+                if (skill == null || skill.BuyPrice <= 0)
                 {
                     continue;
                 }
@@ -376,6 +378,11 @@ namespace Conn.UI.Runtime
                 }
 
                 GUI.enabled = true;
+            }
+
+            if (GUILayout.Button("Refresh Skill Stock"))
+            {
+                SkillShopRuntimeService.RefreshSkillMerchantStock(session);
             }
 
             GUILayout.Label("Sell Loose Skills");

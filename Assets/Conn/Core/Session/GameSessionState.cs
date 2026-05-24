@@ -20,6 +20,7 @@ namespace Conn.Core.Session
         public SkillInventoryState Skills = new SkillInventoryState();
         public CombatSessionState Combat = new CombatSessionState();
         public WorldRuntimeState World = new WorldRuntimeState();
+        public ShopRuntimeState Shop = new ShopRuntimeState();
 
         public void StartNewGame()
         {
@@ -46,6 +47,12 @@ namespace Conn.Core.Session
             Skills.EquipFirstOpenFace(SkillCatalog.SlashId, Equipment.DiceCount);
             Combat.Clear();
             World.Clear();
+            if (Shop == null)
+            {
+                Shop = new ShopRuntimeState();
+            }
+
+            Shop.Reset();
         }
     }
 }
