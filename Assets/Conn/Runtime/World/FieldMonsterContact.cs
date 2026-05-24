@@ -41,6 +41,17 @@ namespace Conn.Runtime.World
                 return;
             }
 
+            if (FieldMonsterRuntimeService.FindCombatHandoff(session) != null)
+            {
+                consumed = true;
+                if (contactCollider != null)
+                {
+                    contactCollider.enabled = false;
+                }
+
+                return;
+            }
+
             QuestRuntimeService.CapturePreEncounter(session, other.transform);
             FieldMonsterRuntimeService.MarkCombatHandoff(session, stateKey);
             GameSession.Instance.SaveGame();

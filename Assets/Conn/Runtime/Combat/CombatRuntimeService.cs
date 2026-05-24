@@ -114,8 +114,13 @@ namespace Conn.Runtime.Combat
         public static void Die(GameSessionState session)
         {
             session.Combat.Clear();
-            SceneFlowService.Load(GameSceneId.Ending);
-            GameSession.Instance.SaveGame();
+            session.Mode = GameMode.Ending;
+            RuntimeNoticeService.Set(session, "You died.");
+            if (Application.isPlaying)
+            {
+                GameSession.Instance.SaveGame();
+                SceneFlowService.Load(GameSceneId.Ending);
+            }
         }
 
         public static void Flee(GameSessionState session)
@@ -127,12 +132,12 @@ namespace Conn.Runtime.Combat
             }
 
             session.Combat.Clear();
+            session.Mode = GameMode.Dungeon;
             if (Application.isPlaying)
             {
                 GameSession.Instance.SaveGame();
+                SceneFlowService.Load(GameSceneId.Dungeon);
             }
-
-            SceneFlowService.Load(GameSceneId.Dungeon);
         }
 
         private static void EnemyAttack(GameSessionState session, int guard)

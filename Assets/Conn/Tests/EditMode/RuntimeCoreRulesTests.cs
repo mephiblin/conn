@@ -162,6 +162,39 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void CombatFleeReturnsToDungeonWithoutDefeatingMonster()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+            QuestRuntimeService.AcceptQuest(session, QuestCatalog.TestHuntId);
+            FieldMonsterRuntimeService.Register(session, "field_monster_alpha", "placement_alpha", "encounter_alpha", session.Quest.TargetMonsterId);
+            FieldMonsterRuntimeService.MarkCombatHandoff(session, "field_monster_alpha");
+            CombatRuntimeService.StartTestCombat(session);
+
+            CombatRuntimeService.Flee(session);
+
+            Assert.That(session.Mode, Is.EqualTo(GameMode.Dungeon));
+            Assert.That(session.Combat.Active, Is.False);
+            Assert.That(FieldMonsterRuntimeService.FindCombatHandoff(session), Is.Null);
+            Assert.That(FieldMonsterRuntimeService.IsDefeated(session, "field_monster_alpha"), Is.False);
+        }
+
+        [Test]
+        public void CombatDeathRoutesToEndingState()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+            QuestRuntimeService.AcceptQuest(session, QuestCatalog.TestHuntId);
+            CombatRuntimeService.StartTestCombat(session);
+
+            CombatRuntimeService.Die(session);
+
+            Assert.That(session.Mode, Is.EqualTo(GameMode.Ending));
+            Assert.That(session.Combat.Active, Is.False);
+            Assert.That(session.LastNotice, Does.Contain("died"));
+        }
+
+        [Test]
         public void EquippedSkillCannotBeSoldWithoutLooseCopy()
         {
             var skills = new SkillInventoryState();

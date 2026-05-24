@@ -26,6 +26,8 @@ namespace Conn.Editor.Tools
             VerifyNewGameState();
             VerifyDiceSkillEffects();
             VerifyCombatWinGrantsXp();
+            VerifyCombatFleeRestoresDungeonState();
+            VerifyCombatDeathRoutesToEndingState();
             VerifySkillFaceCycling();
             VerifyCombatHandoffStateKey();
             VerifyQuestBoardFlow();
@@ -199,6 +201,37 @@ namespace Conn.Editor.Tools
             Expect(session.Player.Xp == 5, "Combat win must grant XP.");
             Expect(session.Quest.TargetDefeated, "Combat win must complete quest target.");
             Expect(session.LastNotice.Contains("Gained 5 XP"), "Combat win must report XP gain.");
+        }
+
+        private static void VerifyCombatFleeRestoresDungeonState()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+            QuestRuntimeService.AcceptQuest(session, QuestCatalog.TestHuntId);
+            FieldMonsterRuntimeService.Register(session, "field_monster_alpha", "placement_alpha", "encounter_alpha", session.Quest.TargetMonsterId);
+            FieldMonsterRuntimeService.MarkCombatHandoff(session, "field_monster_alpha");
+            CombatRuntimeService.StartTestCombat(session);
+
+            CombatRuntimeService.Flee(session);
+
+            Expect(session.Mode == GameMode.Dungeon, "Flee must return runtime state to Dungeon mode.");
+            Expect(!session.Combat.Active, "Flee must clear active combat.");
+            Expect(FieldMonsterRuntimeService.FindCombatHandoff(session) == null, "Flee must clear combat handoff state.");
+            Expect(!FieldMonsterRuntimeService.IsDefeated(session, "field_monster_alpha"), "Flee must not defeat the field monster.");
+        }
+
+        private static void VerifyCombatDeathRoutesToEndingState()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+            QuestRuntimeService.AcceptQuest(session, QuestCatalog.TestHuntId);
+            CombatRuntimeService.StartTestCombat(session);
+
+            CombatRuntimeService.Die(session);
+
+            Expect(session.Mode == GameMode.Ending, "Combat death must route runtime state to Ending mode.");
+            Expect(!session.Combat.Active, "Combat death must clear active combat.");
+            Expect(session.LastNotice.Contains("died"), "Combat death must report death notice.");
         }
 
         private static void VerifySkillFaceCycling()
