@@ -39,6 +39,51 @@ namespace Conn.Runtime.World
             return null;
         }
 
+        public static int CountActive(GameSessionState session)
+        {
+            var count = 0;
+            for (var i = 0; i < session.World.FieldMonsters.Count; i++)
+            {
+                if (!session.World.FieldMonsters[i].Defeated)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        public static int CountDefeated(GameSessionState session)
+        {
+            var count = 0;
+            for (var i = 0; i < session.World.FieldMonsters.Count; i++)
+            {
+                if (session.World.FieldMonsters[i].Defeated)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        public static string ExpeditionStatus(GameSessionState session)
+        {
+            var handoff = FindCombatHandoff(session);
+            if (handoff != null)
+            {
+                return $"Combat handoff: {handoff.MonsterId}";
+            }
+
+            if (session.Quest.TargetDefeated)
+            {
+                return "Target defeated";
+            }
+
+            var active = CountActive(session);
+            return active > 0 ? $"Field monsters: {active} active" : "Field monsters: none registered";
+        }
+
         public static void MarkIdle(GameSessionState session, string stateKey)
         {
             var state = session.World.FindFieldMonster(stateKey);

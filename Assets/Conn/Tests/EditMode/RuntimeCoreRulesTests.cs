@@ -219,6 +219,31 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void FieldMonsterExpeditionStatusReportsRuntimeProgress()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+            QuestRuntimeService.AcceptQuest(session, QuestCatalog.TestHuntId);
+
+            Assert.That(FieldMonsterRuntimeService.ExpeditionStatus(session), Does.Contain("none registered"));
+
+            FieldMonsterRuntimeService.Register(session, "field_monster_alpha", "placement_alpha", "encounter_alpha", session.Quest.TargetMonsterId);
+
+            Assert.That(FieldMonsterRuntimeService.CountActive(session), Is.EqualTo(1));
+            Assert.That(FieldMonsterRuntimeService.ExpeditionStatus(session), Does.Contain("1 active"));
+
+            FieldMonsterRuntimeService.MarkCombatHandoff(session, "field_monster_alpha");
+
+            Assert.That(FieldMonsterRuntimeService.ExpeditionStatus(session), Does.Contain(session.Quest.TargetMonsterId));
+
+            QuestRuntimeService.CompleteTarget(session, "field_monster_alpha");
+
+            Assert.That(FieldMonsterRuntimeService.CountActive(session), Is.EqualTo(0));
+            Assert.That(FieldMonsterRuntimeService.CountDefeated(session), Is.EqualTo(1));
+            Assert.That(FieldMonsterRuntimeService.ExpeditionStatus(session), Does.Contain("Target defeated"));
+        }
+
+        [Test]
         public void EquippedSkillCannotBeSoldWithoutLooseCopy()
         {
             var skills = new SkillInventoryState();

@@ -387,7 +387,13 @@ namespace Conn.UI.Runtime
 
         private static void DungeonControls(GameSessionState session)
         {
-            GUILayout.Label(session.Quest.TargetDefeated ? "Target defeated" : "Find visible monster");
+            GUILayout.Label(session.Quest.HasActiveQuest
+                ? $"Quest: {session.Quest.ActiveQuestTitle}"
+                : "Quest: none");
+            GUILayout.Label($"Target: {session.Quest.TargetMonsterId}");
+            GUILayout.Label($"Expedition: {FieldMonsterRuntimeService.ExpeditionStatus(session)}");
+            GUILayout.Label($"Return: {(session.Quest.ReturnAvailable ? "available" : "locked")}");
+            GUILayout.Label($"Snapshot: {(session.PreEncounterSnapshot.Valid ? "saved" : "none")}");
             if (session.Quest.ReturnAvailable && !session.Quest.ReturnPromptSeen)
             {
                 GUILayout.Space(8);

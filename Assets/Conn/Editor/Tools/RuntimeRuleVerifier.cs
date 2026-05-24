@@ -29,6 +29,7 @@ namespace Conn.Editor.Tools
             VerifyCombatWinGrantsXp();
             VerifyCombatFleeRestoresDungeonState();
             VerifyCombatDeathRoutesToEndingState();
+            VerifyFieldMonsterExpeditionStatus();
             VerifySkillFaceCycling();
             VerifyCombatHandoffStateKey();
             VerifyQuestBoardFlow();
@@ -258,6 +259,30 @@ namespace Conn.Editor.Tools
             Expect(session.Mode == GameMode.Ending, "Combat death must route runtime state to Ending mode.");
             Expect(!session.Combat.Active, "Combat death must clear active combat.");
             Expect(session.LastNotice.Contains("died"), "Combat death must report death notice.");
+        }
+
+        private static void VerifyFieldMonsterExpeditionStatus()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+            QuestRuntimeService.AcceptQuest(session, QuestCatalog.TestHuntId);
+
+            Expect(FieldMonsterRuntimeService.ExpeditionStatus(session).Contains("none registered"), "Expedition HUD must expose missing field monster registration.");
+
+            FieldMonsterRuntimeService.Register(session, "field_monster_alpha", "placement_alpha", "encounter_alpha", session.Quest.TargetMonsterId);
+
+            Expect(FieldMonsterRuntimeService.CountActive(session) == 1, "Field monster runtime must count active monsters.");
+            Expect(FieldMonsterRuntimeService.ExpeditionStatus(session).Contains("1 active"), "Expedition HUD must expose active field monster count.");
+
+            FieldMonsterRuntimeService.MarkCombatHandoff(session, "field_monster_alpha");
+
+            Expect(FieldMonsterRuntimeService.ExpeditionStatus(session).Contains(session.Quest.TargetMonsterId), "Expedition HUD must expose combat handoff monster.");
+
+            QuestRuntimeService.CompleteTarget(session, "field_monster_alpha");
+
+            Expect(FieldMonsterRuntimeService.CountActive(session) == 0, "Defeated field monster must not count as active.");
+            Expect(FieldMonsterRuntimeService.CountDefeated(session) == 1, "Field monster runtime must count defeated monsters.");
+            Expect(FieldMonsterRuntimeService.ExpeditionStatus(session).Contains("Target defeated"), "Expedition HUD must expose target completion.");
         }
 
         private static void VerifySkillFaceCycling()
