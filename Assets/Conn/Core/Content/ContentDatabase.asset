@@ -410,6 +410,66 @@ MonoBehaviour:
     XpReward: 8
     RewardId:
     Pattern: single_primary
+  - Id: encounter_grave_robber
+    DisplayName: "\uB3C4\uAD74\uAFBC \uC870\uC6B0"
+    MonsterId: grave_robber
+    XpReward: 14
+    RewardId:
+    Pattern: single_primary
+  - Id: encounter_serpent_guard
+    DisplayName: "\uBC40 \uC0AC\uC6D0 \uACBD\uBE44 \uC870\uC6B0"
+    MonsterId: serpent_guard
+    XpReward: 20
+    RewardId:
+    Pattern: single_primary
+  - Id: encounter_poisoned_raider
+    DisplayName: "\uB3C5\uAD11 \uC57D\uD0C8\uC790 \uC870\uC6B0"
+    MonsterId: poisoned_raider
+    XpReward: 24
+    RewardId:
+    Pattern: single_primary
+  - Id: encounter_cursed_gladiator
+    DisplayName: "\uC800\uC8FC \uAC80\uD22C\uC0AC \uC870\uC6B0"
+    MonsterId: cursed_gladiator
+    XpReward: 34
+    RewardId:
+    Pattern: single_primary
+  - Id: encounter_black_water_beast
+    DisplayName: "\uAC80\uC740 \uBB3C\uC758 \uD30C\uCDA9\uC218 \uC870\uC6B0"
+    MonsterId: black_water_beast
+    XpReward: 70
+    RewardId:
+    Pattern: single_primary
+  - Id: encounter_serpent_priest
+    DisplayName: "\uBC40 \uC0AC\uC81C \uC870\uC6B0"
+    MonsterId: serpent_guard
+    XpReward: 20
+    RewardId:
+    Pattern: single_primary
+  - Id: encounter_blind_priest
+    DisplayName: "\uB208\uBA3C \uC0AC\uC81C \uC870\uC6B0"
+    MonsterId: blind_priest
+    XpReward: 90
+    RewardId:
+    Pattern: single_primary
+  - Id: encounter_crawling_fish
+    DisplayName: "\uAE30\uC5B4\uB2E4\uB2C8\uB294 \uBB3C\uACE0\uAE30 \uC870\uC6B0"
+    MonsterId: crawling_fish
+    XpReward: 10
+    RewardId:
+    Pattern: single_primary
+  - Id: encounter_reef_cultist
+    DisplayName: "\uC0B0\uD638 \uAD11\uC2E0\uB3C4 \uC870\uC6B0"
+    MonsterId: reef_cultist
+    XpReward: 18
+    RewardId:
+    Pattern: single_primary
+  - Id: encounter_ruin_husk
+    DisplayName: "\uD3D0\uD5C8\uC758 \uBE48 \uAECD\uC9C8 \uC870\uC6B0"
+    MonsterId: ruin_husk
+    XpReward: 18
+    RewardId:
+    Pattern: single_primary
   Quests:
   - Id: quest_twisted_temple_clear
     DisplayName: "\uB4A4\uD2C0\uB9B0 \uC0AC\uC6D0 \uC815\uCC30"
@@ -431,13 +491,7 @@ MonoBehaviour:
     GoldCost: 5
     Summary: "\uAE08\uD654 5\uAC1C\uB85C \uC804\uC5F4\uACFC \uD6C4\uC5F4\uC758 HP\uB97C
       \uD68C\uBCF5\uD55C\uB2E4."
-    StockItemIds:
-    - iron_shield
-    - leather_cap
-    - padded_vest
-    - traveler_gloves
-    - reinforced_pants
-    - worn_boots
+    StockItemIds: []
     StockSkillIds: []
     CatalogIds: []
     Rotations: []
@@ -455,10 +509,7 @@ MonoBehaviour:
       GoldCost: 0
       Summary: "\uCD08\uAE30 \uB2E8\uACC4\uC5D0\uC11C\uB294 \uAE30\uBCF8 \uD6C8\uB828
         \uC704\uC8FC\uB85C XP\uB97C \uC18C\uBAA8\uD55C\uB2E4."
-      StockItemIds:
-      - great_axe
-      - iron_shield
-      - padded_vest
+      StockItemIds: []
       StockSkillIds: []
       CatalogIds: []
     - MinFloor: 2
@@ -466,10 +517,7 @@ MonoBehaviour:
       GoldCost: 0
       Summary: "\uAE4A\uC740 \uCE35\uC5D0 \uB3C4\uB2EC\uD558\uBA74 \uC0C1\uAE09 \uD6C8\uB828
         \uB2E8\uACC4\uAC00 \uC5F4\uB9B0\uB2E4."
-      StockItemIds:
-      - great_axe
-      - iron_shield
-      - padded_vest
+      StockItemIds: []
       StockSkillIds: []
       CatalogIds: []
   - Id: vendor_smith
@@ -477,7 +525,13 @@ MonoBehaviour:
     GoldCost: 12
     Summary: "\uAE08\uD654 12\uAC1C\uB85C \uC804\uC5F4\uC758 \uACF5\uACA9\uB825\uC744
       1 \uC62C\uB9B0\uB2E4."
-    StockItemIds: []
+    StockItemIds:
+    - iron_shield
+    - leather_cap
+    - padded_vest
+    - traveler_gloves
+    - reinforced_pants
+    - worn_boots
     StockSkillIds: []
     CatalogIds: []
     Rotations:
@@ -486,7 +540,10 @@ MonoBehaviour:
       GoldCost: 16
       Summary: "2\uCE35 \uC774\uD6C4\uC5D0\uB294 \uAC15\uD654 \uC5F0\uB9C8\uB85C
         \uC804\uC5F4 \uACF5\uACA9\uB825\uC744 2 \uC62C\uB9B0\uB2E4."
-      StockItemIds: []
+      StockItemIds:
+      - great_axe
+      - iron_shield
+      - padded_vest
       StockSkillIds: []
       CatalogIds: []
     - MinFloor: 3
@@ -494,7 +551,10 @@ MonoBehaviour:
       GoldCost: 20
       Summary: "\uD6C4\uBC18\uC5D0\uB294 \uC0AC\uC6D0 \uAC15\uCCA0 \uC5F0\uB9C8\uB85C
         \uC804\uC5F4 \uACF5\uACA9\uB825\uC744 3 \uC62C\uB9B0\uB2E4."
-      StockItemIds: []
+      StockItemIds:
+      - great_axe
+      - iron_shield
+      - padded_vest
       StockSkillIds: []
       CatalogIds: []
   - Id: vendor_apothecary
@@ -566,7 +626,7 @@ MonoBehaviour:
     DisplayName: "\uC5EC\uAD00"
     Description: "\uAE08\uD654 5\uAC1C\uB85C \uC804\uC5F4\uACFC \uD6C4\uC5F4\uC758
       HP\uB97C \uD68C\uBCF5\uD55C\uB2E4."
-    ServiceType: 
+    ServiceType:
     VendorId: vendor_inn
     QuestIds: []
   - Id: npc_trainer
@@ -580,14 +640,14 @@ MonoBehaviour:
     DisplayName: "\uB300\uC7A5\uAC04"
     Description: "\uAE08\uD654 12\uAC1C\uB85C \uC804\uC5F4\uC758 \uACF5\uACA9\uB825\uC744
       \uBCF4\uAC15\uD55C\uB2E4."
-    ServiceType: 
+    ServiceType:
     VendorId: vendor_smith
     QuestIds: []
   - Id: npc_apothecary
     DisplayName: "\uC57D\uC7AC\uC0C1"
     Description: "\uAE08\uD654 8\uAC1C\uB85C \uBD95\uB300\uC640 \uD574\uB3C5\uC81C\uB97C
       \uC0B0\uB2E4."
-    ServiceType: 
+    ServiceType:
     VendorId: vendor_apothecary
     QuestIds: []
   - Id: npc_skill_merchant
@@ -595,21 +655,21 @@ MonoBehaviour:
     Description: "\uC8FC\uC0AC\uC704 \uBA74\uC5D0 \uAF42\uC744 \uAE30\uC220 \uCE74\uB4DC\uB97C
       \uC0AC\uACE0\uD310\uB2E4."
     ServiceType: skill_shop,talk
-    VendorId: 
+    VendorId:
     QuestIds: []
   - Id: npc_bulletin_board
     DisplayName: "\uAC8C\uC2DC\uD310"
     Description: "\uCD0C\uC7A5\uC774 \uB0A8\uAE34 \uC6D0\uC815 \uACF5\uACE0\uC640
       \uBCF4\uC0C1 \uC804\uD45C\uB97C \uD655\uC778\uD55C\uB2E4."
-    ServiceType: 
-    VendorId: 
+    ServiceType:
+    VendorId:
     QuestIds: []
   - Id: npc_scholar
     DisplayName: "\uD559\uC790\uC758 \uBC29"
     Description: "\uC81C\uB2E8\uACFC \uBE44\uBC00\uBB38\uC5D0 \uB300\uD55C \uB2E8\uC11C\uB97C
       \uB4E3\uB294\uB2E4."
     ServiceType: quest,talk,identify
-    VendorId: 
+    VendorId:
     QuestIds:
     - quest_seed_black_mural
   - Id: npc_gatekeeper
@@ -617,22 +677,22 @@ MonoBehaviour:
     Description: "\uC218\uC8FC\uD55C \uC758\uB8B0 \uC804\uD45C\uAC00 \uC788\uC744
       \uB54C\uB9CC \uB358\uC804\uC73C\uB85C \uC774\uC5B4\uC9C0\uB294 \uBB38\uC774
       \uC5F4\uB9B0\uB2E4."
-    ServiceType: 
-    VendorId: 
+    ServiceType:
+    VendorId:
     QuestIds: []
   - Id: npc_exile_scout
     DisplayName: "\uCD94\uBC29\uB41C \uC815\uCC30\uBCD1"
     Description: "\uD568\uC815\uACFC \uC228\uC740 \uD1B5\uB85C\uB97C \uC544\uB294
       \uC815\uCC30\uBCD1\uC774 \uBCBD\uC5D0 \uAE30\uB300\uC5B4 \uC228\uC744 \uACE0\uB978\uB2E4."
     ServiceType: talk,recruit
-    VendorId: 
+    VendorId:
     QuestIds: []
   - Id: npc_wounded_mystic
     DisplayName: "\uC0C1\uCC98 \uC785\uC740 \uC2E0\uBE44\uAC00"
     Description: "\uAC80\uC740 \uBB3C\uC5D0 \uC816\uC740 \uC2E0\uBE44\uAC00\uAC00
       \uC800\uC8FC\uC640 \uB3C5\uC758 \uD754\uC801\uC744 \uC0B4\uD540\uB2E4."
     ServiceType: quest,talk,trade,heal,identify
-    VendorId: 
+    VendorId:
     QuestIds:
     - quest_seed_black_water_vow
   - Id: npc_deserter_captain
@@ -640,5 +700,5 @@ MonoBehaviour:
     Description: "\uCCAD\uB3D9 \uC0AC\uC2AC\uC744 \uB450\uB978 \uACBD\uBE44\uB300\uC7A5\uC774
       \uAE38\uC744 \uB9C9\uACE0 \uAE08\uC744 \uC694\uAD6C\uD55C\uB2E4."
     ServiceType: talk,fight
-    VendorId: 
+    VendorId:
     QuestIds: []

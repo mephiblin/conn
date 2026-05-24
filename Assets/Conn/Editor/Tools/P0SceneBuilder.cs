@@ -22,6 +22,7 @@ namespace Conn.Editor.Tools
         {
             EnsureFolder("Assets/Conn");
             EnsureFolder(SceneFolder);
+            EnsureCompiledMapAsset();
 
             CreateScene(GameSceneId.Title, false);
             CreateScene(GameSceneId.Town, true, SceneContent.Town);
@@ -45,6 +46,20 @@ namespace Conn.Editor.Tools
         private static EditorBuildSettingsScene BuildScene(string sceneName)
         {
             return new EditorBuildSettingsScene($"{SceneFolder}/{sceneName}.unity", true);
+        }
+
+        private static void EnsureCompiledMapAsset()
+        {
+            if (AssetDatabase.LoadAssetAtPath<Conn.Core.Maps.CompiledMapAsset>(ChapterTwoBuildValidator.DefaultCompiledMapAssetPath) != null)
+            {
+                return;
+            }
+
+            var profile = Conn.Core.Maps.MapGenerationCatalog.ChapterTwoFirstSliceProfile();
+            var chunks = Conn.Core.Maps.MapGenerationCatalog.ChapterTwoFirstSliceChunks();
+            var draft = Conn.Core.Maps.MapGenerationService.Generate(profile, chunks, Conn.Runtime.Maps.CompiledMapDungeonRuntimeService.DefaultDungeonSeed);
+            var compiled = Conn.Core.Maps.MapGenerationService.Compile(profile, draft);
+            ChapterTwoBuildValidator.SaveCompiledMapAsset(compiled, Conn.Runtime.Maps.CompiledMapDungeonRuntimeService.DefaultDungeonSeed);
         }
 
         private static void CreateScene(GameSceneId sceneId, bool includePlayer, SceneContent content = SceneContent.None)

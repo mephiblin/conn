@@ -1,6 +1,7 @@
 using Conn.Core.Scenes;
 using Conn.Runtime.Combat;
 using Conn.Core.Content;
+using Conn.Core.Maps;
 using Conn.Runtime.Content;
 using Conn.Runtime.Maps;
 using Conn.Runtime.Session;
