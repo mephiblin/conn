@@ -272,11 +272,37 @@ namespace Conn.Tests.EditMode
             session.StartNewGame();
             var offer = QuestRuntimeService.CurrentBoardOffer(session);
 
+            QuestRuntimeService.RerollBoard(session);
+            var rerolledOffer = QuestRuntimeService.CurrentBoardOffer(session);
+
+            Assert.That(rerolledOffer, Is.Not.Null);
+            Assert.That(rerolledOffer.QuestId, Is.Not.EqualTo(offer.QuestId));
+            Assert.That(session.Quest.BoardRerollCount, Is.EqualTo(1));
+
             QuestRuntimeService.AcceptCurrentBoardOffer(session);
 
             Assert.That(session.Quest.HasActiveQuest, Is.True);
-            Assert.That(session.Quest.ActiveQuestId, Is.EqualTo(offer.QuestId));
-            Assert.That(session.Quest.GoldReward, Is.EqualTo(offer.GoldReward));
+            Assert.That(session.Quest.ActiveQuestId, Is.EqualTo(rerolledOffer.QuestId));
+            Assert.That(session.Quest.GoldReward, Is.EqualTo(rerolledOffer.GoldReward));
+        }
+
+        [Test]
+        public void TownPanelsAreMutuallyExclusive()
+        {
+            TownShopPanelState.Close();
+            TownQuestBoardPanelState.Close();
+
+            TownShopPanelState.Open(TownShopPanelKind.Blacksmith);
+
+            Assert.That(TownShopPanelState.Current, Is.EqualTo(TownShopPanelKind.Blacksmith));
+            Assert.That(TownQuestBoardPanelState.IsOpen, Is.False);
+
+            TownQuestBoardPanelState.Open();
+
+            Assert.That(TownQuestBoardPanelState.IsOpen, Is.True);
+            Assert.That(TownShopPanelState.Current, Is.EqualTo(TownShopPanelKind.None));
+
+            TownQuestBoardPanelState.Close();
         }
 
         [Test]

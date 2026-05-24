@@ -74,6 +74,7 @@ namespace Conn.UI.Runtime
             else if (sceneId == GameSceneId.Town)
             {
                 TownControls(session);
+                QuestBoardControls(session);
                 TownShopControls(session);
             }
             else if (sceneId == GameSceneId.Dungeon)
@@ -148,6 +149,56 @@ namespace Conn.UI.Runtime
             if (GUILayout.Button("Back To Title"))
             {
                 SceneFlowService.Load(GameSceneId.Title);
+            }
+        }
+
+        private static void QuestBoardControls(GameSessionState session)
+        {
+            if (!TownQuestBoardPanelState.IsOpen)
+            {
+                return;
+            }
+
+            GUILayout.Space(8);
+            GUILayout.Label("Quest Board");
+            if (session.Quest.HasActiveQuest)
+            {
+                GUILayout.Label($"Active: {session.Quest.ActiveQuestTitle}");
+                GUILayout.Label($"Target: {session.Quest.TargetMonsterId}");
+                GUILayout.Label($"Reward: {session.Quest.GoldReward}g");
+                GUILayout.Label("Only one quest can be active.");
+            }
+            else
+            {
+                var offer = QuestRuntimeService.CurrentBoardOffer(session);
+                if (offer == null)
+                {
+                    GUILayout.Label("No quest available.");
+                }
+                else
+                {
+                    GUILayout.Label($"Offer: {offer.DisplayName}");
+                    GUILayout.Label($"Target: {offer.TargetMonsterId}");
+                    GUILayout.Label($"Reward: {offer.GoldReward}g");
+                    GUILayout.Label($"Board rolls: {session.Quest.BoardRerollCount}");
+                    if (GUILayout.Button("Accept Quest"))
+                    {
+                        QuestRuntimeService.AcceptCurrentBoardOffer(session);
+                        RuntimeNoticeService.Set(session, $"Accepted quest: {offer.QuestId}");
+                        TownQuestBoardPanelState.Close();
+                    }
+
+                    if (GUILayout.Button("Reroll Board"))
+                    {
+                        QuestRuntimeService.RerollBoard(session);
+                        RuntimeNoticeService.Set(session, "Quest board rerolled.");
+                    }
+                }
+            }
+
+            if (GUILayout.Button("Close Board"))
+            {
+                TownQuestBoardPanelState.Close();
             }
         }
 

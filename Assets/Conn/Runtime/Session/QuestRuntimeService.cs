@@ -32,6 +32,7 @@ namespace Conn.Runtime.Session
         {
             session.Quest.BoardOfferIndex++;
             session.Quest.BoardRerollCount++;
+            SaveIfPlaying();
         }
 
         public static void AcceptQuest(GameSessionState session, string questId)

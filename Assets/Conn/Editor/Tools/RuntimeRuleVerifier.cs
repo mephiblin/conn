@@ -31,6 +31,7 @@ namespace Conn.Editor.Tools
             VerifySkillFaceCycling();
             VerifyCombatHandoffStateKey();
             VerifyQuestBoardFlow();
+            VerifyTownPanelState();
             VerifyQuestReturnRewardSummary();
             VerifyKeepExploringReturnPrompt();
             VerifyTownServices();
@@ -294,11 +295,36 @@ namespace Conn.Editor.Tools
             var offer = QuestRuntimeService.CurrentBoardOffer(session);
             Expect(offer != null, "Quest board must expose a current offer.");
 
+            QuestRuntimeService.RerollBoard(session);
+            var rerolledOffer = QuestRuntimeService.CurrentBoardOffer(session);
+
+            Expect(rerolledOffer != null, "Quest board reroll must expose a new current offer.");
+            Expect(rerolledOffer.QuestId != offer.QuestId, "Quest board reroll must rotate the offer.");
+            Expect(session.Quest.BoardRerollCount == 1, "Quest board reroll must increment visible reroll count.");
+
             QuestRuntimeService.AcceptCurrentBoardOffer(session);
 
             Expect(session.Quest.HasActiveQuest, "Accepting board offer must activate a quest.");
-            Expect(session.Quest.ActiveQuestId == offer.QuestId, "Accepted quest must match current board offer.");
-            Expect(session.Quest.GoldReward == offer.GoldReward, "Accepted quest must use current board reward.");
+            Expect(session.Quest.ActiveQuestId == rerolledOffer.QuestId, "Accepted quest must match current board offer.");
+            Expect(session.Quest.GoldReward == rerolledOffer.GoldReward, "Accepted quest must use current board reward.");
+        }
+
+        private static void VerifyTownPanelState()
+        {
+            TownShopPanelState.Close();
+            TownQuestBoardPanelState.Close();
+
+            TownShopPanelState.Open(TownShopPanelKind.Blacksmith);
+
+            Expect(TownShopPanelState.Current == TownShopPanelKind.Blacksmith, "Opening blacksmith must set shop panel state.");
+            Expect(!TownQuestBoardPanelState.IsOpen, "Opening shop must close quest board panel.");
+
+            TownQuestBoardPanelState.Open();
+
+            Expect(TownQuestBoardPanelState.IsOpen, "Opening quest board must set board panel state.");
+            Expect(TownShopPanelState.Current == TownShopPanelKind.None, "Opening quest board must close shop panel.");
+
+            TownQuestBoardPanelState.Close();
         }
 
         private static void VerifyEquipmentAndSkillDisplayData()

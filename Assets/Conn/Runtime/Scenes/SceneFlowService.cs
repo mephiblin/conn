@@ -1,6 +1,7 @@
 using Conn.Core.Scenes;
 using Conn.Core.Session;
 using Conn.Runtime.Session;
+using Conn.Runtime.World;
 using UnityEngine.SceneManagement;
 
 namespace Conn.Runtime.Scenes
@@ -15,6 +16,12 @@ namespace Conn.Runtime.Scenes
         public static void Load(GameSceneId sceneId)
         {
             GameSession.Instance.State.Mode = ToMode(sceneId);
+            if (sceneId != GameSceneId.Town)
+            {
+                TownQuestBoardPanelState.Close();
+                TownShopPanelState.Close();
+            }
+
             SceneManager.LoadScene(SceneName(sceneId));
         }
 

@@ -6,6 +6,7 @@ namespace Conn.Runtime.World
 
         public static void Open(TownShopPanelKind panelKind)
         {
+            TownQuestBoardPanelState.Close();
             Current = panelKind;
         }
 
