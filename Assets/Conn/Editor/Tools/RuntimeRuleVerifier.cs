@@ -18,6 +18,7 @@ namespace Conn.Editor.Tools
     {
         public static void VerifyChapterOneCoreRules()
         {
+            ContentDatabaseVerifier.VerifyContentDatabase();
             VerifyEquipmentDiceRules();
             VerifyEquipmentLoadoutToggle();
             VerifyNewGameState();

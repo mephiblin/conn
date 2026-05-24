@@ -15,6 +15,8 @@ namespace Conn.Core.Skills
             new SkillDefinition(MendId, "Mend", SkillEffectKind.Heal, 7, 3, 3)
         };
 
+        public static SkillDefinition[] All => Skills;
+
         public static SkillDefinition Find(string skillId)
         {
             for (var i = 0; i < Skills.Length; i++)

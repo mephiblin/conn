@@ -13,6 +13,8 @@ namespace Conn.Core.Quests
             new QuestDefinition(DeepScavengerId, "Clear the Deep Scavenger", "monster_test_guard", 18)
         };
 
+        public static QuestDefinition[] AllBoardQuests => BoardQuests;
+
         public static QuestDefinition Find(string questId)
         {
             for (var i = 0; i < BoardQuests.Length; i++)

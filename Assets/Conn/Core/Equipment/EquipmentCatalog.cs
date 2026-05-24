@@ -13,6 +13,8 @@ namespace Conn.Core.Equipment
             new EquipmentItemDefinition(GreatAxeId, "Great Axe", EquipmentKind.TwoHandWeapon, 12, 6)
         };
 
+        public static EquipmentItemDefinition[] All => Items;
+
         public static EquipmentItemDefinition Find(string itemId)
         {
             for (var i = 0; i < Items.Length; i++)

@@ -9,6 +9,8 @@ namespace Conn.Core.Items
             new ConsumableItemDefinition(MinorPotionId, "Minor Potion", 4, 2, 6)
         };
 
+        public static ConsumableItemDefinition[] All => Items;
+
         public static ConsumableItemDefinition Find(string itemId)
         {
             for (var i = 0; i < Items.Length; i++)

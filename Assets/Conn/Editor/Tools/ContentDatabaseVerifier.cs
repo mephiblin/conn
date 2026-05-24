@@ -1,0 +1,89 @@
+using System;
+using System.Collections.Generic;
+using Conn.Core.Equipment;
+using Conn.Core.Items;
+using Conn.Core.Quests;
+using Conn.Core.Skills;
+using UnityEditor;
+using UnityEngine;
+
+namespace Conn.Editor.Tools
+{
+    public static class ContentDatabaseVerifier
+    {
+        [MenuItem("Conn/Verify Content Database")]
+        public static void VerifyContentDatabase()
+        {
+            VerifyEquipment();
+            VerifyConsumables();
+            VerifySkills();
+            VerifyQuests();
+            Debug.Log("Conn content database verification passed.");
+        }
+
+        private static void VerifyEquipment()
+        {
+            var ids = new HashSet<string>();
+            foreach (var item in EquipmentCatalog.All)
+            {
+                ExpectId(ids, item.ItemId, "equipment");
+                Expect(!string.IsNullOrWhiteSpace(item.DisplayName), $"Equipment {item.ItemId} must have display name.");
+                Expect(item.BuyPrice >= 0, $"Equipment {item.ItemId} buy price must be non-negative.");
+                Expect(item.SellPrice >= 0, $"Equipment {item.ItemId} sell price must be non-negative.");
+                Expect(item.SellPrice <= item.BuyPrice || item.BuyPrice == 0, $"Equipment {item.ItemId} sell price must not exceed buy price.");
+            }
+        }
+
+        private static void VerifyConsumables()
+        {
+            var ids = new HashSet<string>();
+            foreach (var item in ConsumableCatalog.All)
+            {
+                ExpectId(ids, item.ItemId, "consumable");
+                Expect(!string.IsNullOrWhiteSpace(item.DisplayName), $"Consumable {item.ItemId} must have display name.");
+                Expect(item.BuyPrice >= 0, $"Consumable {item.ItemId} buy price must be non-negative.");
+                Expect(item.SellPrice >= 0, $"Consumable {item.ItemId} sell price must be non-negative.");
+                Expect(item.HealAmount > 0, $"Consumable {item.ItemId} heal amount must be positive.");
+            }
+        }
+
+        private static void VerifySkills()
+        {
+            var ids = new HashSet<string>();
+            foreach (var skill in SkillCatalog.All)
+            {
+                ExpectId(ids, skill.SkillId, "skill");
+                Expect(!string.IsNullOrWhiteSpace(skill.DisplayName), $"Skill {skill.SkillId} must have display name.");
+                Expect(skill.BuyPrice >= 0, $"Skill {skill.SkillId} buy price must be non-negative.");
+                Expect(skill.SellPrice >= 0, $"Skill {skill.SkillId} sell price must be non-negative.");
+                Expect(skill.Power >= 0, $"Skill {skill.SkillId} power must be non-negative.");
+            }
+        }
+
+        private static void VerifyQuests()
+        {
+            var ids = new HashSet<string>();
+            foreach (var quest in QuestCatalog.AllBoardQuests)
+            {
+                ExpectId(ids, quest.QuestId, "quest");
+                Expect(!string.IsNullOrWhiteSpace(quest.DisplayName), $"Quest {quest.QuestId} must have display name.");
+                Expect(!string.IsNullOrWhiteSpace(quest.TargetMonsterId), $"Quest {quest.QuestId} must have target monster id.");
+                Expect(quest.GoldReward > 0, $"Quest {quest.QuestId} gold reward must be positive.");
+            }
+        }
+
+        private static void ExpectId(HashSet<string> ids, string id, string kind)
+        {
+            Expect(!string.IsNullOrWhiteSpace(id), $"{kind} id must not be empty.");
+            Expect(ids.Add(id), $"Duplicate {kind} id: {id}");
+        }
+
+        private static void Expect(bool condition, string message)
+        {
+            if (!condition)
+            {
+                throw new InvalidOperationException(message);
+            }
+        }
+    }
+}
