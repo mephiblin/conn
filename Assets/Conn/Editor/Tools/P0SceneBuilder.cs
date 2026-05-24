@@ -1,4 +1,5 @@
 using Conn.Core.Scenes;
+using Conn.Editor.Content;
 using Conn.Rendering.Interaction;
 using Conn.Rendering.Player;
 using Conn.Runtime.Scenes;
@@ -53,6 +54,7 @@ namespace Conn.Editor.Tools
             var bootstrapObject = new GameObject("Scene Bootstrap");
             var bootstrap = bootstrapObject.AddComponent<SceneBootstrap>();
             bootstrap.SceneId = sceneId;
+            bootstrap.ContentDatabase = AssetDatabase.LoadAssetAtPath<Conn.Core.Content.ContentDatabaseDefinition>(LegacyContentJsonImporter.DefaultDatabaseAssetPath);
 
             var overlay = bootstrapObject.AddComponent<P0SceneOverlay>();
             overlay.SceneId = sceneId;

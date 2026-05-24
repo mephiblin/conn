@@ -8,6 +8,7 @@ namespace Conn.Editor.Maps
     {
         private int seed = 2001;
         private GeneratedMapDraft draft;
+        private CompiledMap compiled;
         private MapValidationReport report;
         private Vector2 scroll;
 
@@ -45,6 +46,11 @@ namespace Conn.Editor.Maps
                 EditorGUILayout.LabelField("Edges", draft.Graph.Edges.Count.ToString());
                 EditorGUILayout.LabelField("Placements", draft.Placements.Count.ToString());
                 EditorGUILayout.LabelField("Critical Path", string.Join(" -> ", draft.Graph.CriticalPath.ToArray()));
+                if (compiled != null)
+                {
+                    EditorGUILayout.LabelField("Compiled Map", compiled.MapId);
+                    EditorGUILayout.LabelField("Compiled Size", $"{compiled.Width}x{compiled.Height}");
+                }
 
                 EditorGUILayout.Space();
                 EditorGUILayout.LabelField("Validation", report != null && report.Passed ? "Passed" : "Failed");
@@ -57,6 +63,15 @@ namespace Conn.Editor.Maps
                 }
 
                 EditorGUILayout.Space();
+                EditorGUILayout.LabelField("Placement Details", EditorStyles.boldLabel);
+                for (var i = 0; i < draft.Placements.Count; i++)
+                {
+                    var placement = draft.Placements[i];
+                    EditorGUILayout.LabelField($"{placement.Id}: {placement.Kind} room={placement.RoomId} pos=({placement.X},{placement.Y}) ref={placement.ReferenceId}");
+                }
+
+                EditorGUILayout.Space();
+                EditorGUILayout.LabelField("Room Details", EditorStyles.boldLabel);
                 for (var i = 0; i < draft.Graph.Nodes.Count; i++)
                 {
                     var node = draft.Graph.Nodes[i];
@@ -73,6 +88,7 @@ namespace Conn.Editor.Maps
             var chunks = MapGenerationCatalog.ChapterTwoFirstSliceChunks();
             draft = MapGenerationService.Generate(profile, chunks, seed);
             report = MapValidationService.Validate(profile, draft);
+            compiled = MapGenerationService.Compile(profile, draft);
         }
     }
 }

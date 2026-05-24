@@ -1,5 +1,8 @@
 using Conn.Core.Maps;
+using Conn.Core.Quests;
+using Conn.Runtime.Maps;
 using NUnit.Framework;
+using UnityEngine;
 
 namespace Conn.Tests.EditMode
 {
@@ -43,6 +46,25 @@ namespace Conn.Tests.EditMode
             Assert.That(compiled.Placements.Exists(p => p.Kind == MapPlacementKind.Exit), Is.True);
             Assert.That(compiled.Rooms.Count, Is.EqualTo(draft.Graph.Nodes.Count));
             Assert.That(compiled.Doors.Count, Is.EqualTo(draft.Graph.Edges.Count));
+        }
+
+        [Test]
+        public void RuntimeLoaderReadsGeneratedCompiledMapPlacements()
+        {
+            var profile = MapGenerationCatalog.ChapterTwoFirstSliceProfile();
+            var chunks = MapGenerationCatalog.ChapterTwoFirstSliceChunks();
+            var draft = MapGenerationService.Generate(profile, chunks, 2001);
+            var compiled = MapGenerationService.Compile(profile, draft);
+            var json = JsonUtility.ToJson(compiled);
+
+            var loaded = CompiledMapRuntimeLoader.LoadAndValidateFromJson(json, profile);
+            var questPlacement = CompiledMapRuntimeLoader.FindPlacement(loaded, MapPlacementKind.QuestTarget);
+            var questReport = MapValidationService.ValidateQuestMapContract(QuestCatalog.Find(QuestCatalog.TestHuntId), profile, loaded);
+
+            Assert.That(loaded.MapId, Is.EqualTo(compiled.MapId));
+            Assert.That(loaded.Placements.Count, Is.EqualTo(compiled.Placements.Count));
+            Assert.That(questPlacement.RoomId, Is.Not.Empty);
+            Assert.That(questReport.Passed, Is.True, string.Join("\n", questReport.Errors.ToArray()));
         }
     }
 }

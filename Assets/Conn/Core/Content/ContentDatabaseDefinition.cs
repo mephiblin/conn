@@ -84,6 +84,7 @@ namespace Conn.Core.Content
         public string DisplayName;
         public string Description;
         public string MapKind;
+        public string MapProfileId;
         public string TargetMonsterId;
         public string TargetEncounterId;
         public int GoldReward;
@@ -107,6 +108,20 @@ namespace Conn.Core.Content
         public string Summary;
         public string[] StockItemIds = Array.Empty<string>();
         public string[] StockSkillIds = Array.Empty<string>();
+        public string[] CatalogIds = Array.Empty<string>();
+        public ContentVendorRotationDefinition[] Rotations = Array.Empty<ContentVendorRotationDefinition>();
+    }
+
+    [Serializable]
+    public sealed class ContentVendorRotationDefinition
+    {
+        public int MinFloor;
+        public int BossesDefeated;
+        public int GoldCost;
+        public string Summary;
+        public string[] StockItemIds = Array.Empty<string>();
+        public string[] StockSkillIds = Array.Empty<string>();
+        public string[] CatalogIds = Array.Empty<string>();
     }
 
     [Serializable]

@@ -3,6 +3,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using Conn.Core.Content;
+using Conn.Core.Equipment;
+using Conn.Core.Maps;
 using UnityEditor;
 using UnityEngine;
 
@@ -30,7 +32,7 @@ namespace Conn.Editor.Content
             }
 
             database.Items = ImportItems(Path.Combine(legacyDataPath, "items.json"));
-            database.Equipment = System.Array.Empty<ContentEquipmentDefinition>();
+            database.Equipment = ImportEquipmentSeeds();
             database.Skills = ImportSkills(Path.Combine(legacyDataPath, "skills.json"));
             database.Monsters = ImportMonsters(Path.Combine(legacyDataPath, "monsters.json"));
             database.Quests = ImportQuests(Path.Combine(legacyDataPath, "quests.json"));
@@ -120,6 +122,7 @@ namespace Conn.Editor.Content
                     DisplayName = Text(data, "name", entry.Key),
                     Description = Text(data, "description", string.Empty),
                     MapKind = Text(data, "mapKind", string.Empty),
+                    MapProfileId = Text(data, "profileId", MapGenerationCatalog.ChapterTwoFirstSliceProfileId),
                     GoldReward = Int(rewards, "gold"),
                     XpReward = Int(rewards, "xp"),
                     RewardItems = ItemStacks(rewards, "items")
@@ -141,7 +144,10 @@ namespace Conn.Editor.Content
                     ServiceType = Text(data, "serviceType", string.Empty),
                     GoldCost = Int(Object(data, "cost"), "gold"),
                     Summary = Text(data, "summary", string.Empty),
-                    StockItemIds = StringArray(data, "inventory")
+                    StockItemIds = StringArray(data, "inventory"),
+                    StockSkillIds = StringArray(data, "skillIds"),
+                    CatalogIds = StringArray(data, "catalogIds"),
+                    Rotations = VendorRotations(data)
                 });
             }
 
@@ -172,10 +178,32 @@ namespace Conn.Editor.Content
                         Id = string.IsNullOrWhiteSpace(catalogId) ? $"{entry.Key}_skill_shop" : catalogId,
                         ServiceType = "skill_shop",
                         Summary = Text(serviceData, "note", string.Empty),
-                        StockSkillIds = StringArray(serviceData, "skillIds")
+                        StockSkillIds = StringArray(serviceData, "skillIds"),
+                        CatalogIds = string.IsNullOrWhiteSpace(catalogId)
+                            ? System.Array.Empty<string>()
+                            : new[] { catalogId }
                     };
                 }
             }
+        }
+
+        private static ContentEquipmentDefinition[] ImportEquipmentSeeds()
+        {
+            var result = new List<ContentEquipmentDefinition>();
+            foreach (var item in EquipmentCatalog.All)
+            {
+                result.Add(new ContentEquipmentDefinition
+                {
+                    Id = item.ItemId,
+                    DisplayName = item.DisplayName,
+                    Kind = EquipmentKindId(item.Kind),
+                    BuyPrice = item.BuyPrice,
+                    SellPrice = item.SellPrice,
+                    ArmorValue = item.ArmorValue
+                });
+            }
+
+            return result.ToArray();
         }
 
         private static ContentNpcDefinition[] ImportNpcs(string path)
@@ -228,6 +256,44 @@ namespace Conn.Editor.Content
             }
 
             return ids.ToArray();
+        }
+
+        private static ContentVendorRotationDefinition[] VendorRotations(Dictionary<string, object> data)
+        {
+            var result = new List<ContentVendorRotationDefinition>();
+            foreach (var value in Array(data, "rotation"))
+            {
+                var rotation = AsObject(value);
+                var when = Object(rotation, "when");
+                result.Add(new ContentVendorRotationDefinition
+                {
+                    MinFloor = Int(when, "minFloor"),
+                    BossesDefeated = Int(when, "bossesDefeatedAtLeast"),
+                    GoldCost = Int(Object(rotation, "cost"), "gold"),
+                    Summary = Text(rotation, "summary", string.Empty),
+                    StockItemIds = StringArray(rotation, "inventory"),
+                    StockSkillIds = StringArray(rotation, "skillIds"),
+                    CatalogIds = StringArray(rotation, "catalogIds")
+                });
+            }
+
+            return result.ToArray();
+        }
+
+        private static string EquipmentKindId(EquipmentKind kind)
+        {
+            return kind switch
+            {
+                EquipmentKind.OneHandWeapon => "one_hand_weapon",
+                EquipmentKind.TwoHandWeapon => "two_hand_weapon",
+                EquipmentKind.Shield => "shield",
+                EquipmentKind.HeadArmor => "head_armor",
+                EquipmentKind.ChestArmor => "chest_armor",
+                EquipmentKind.ArmsArmor => "arms_armor",
+                EquipmentKind.LegsArmor => "legs_armor",
+                EquipmentKind.FeetArmor => "feet_armor",
+                _ => "equipment"
+            };
         }
 
         private static Dictionary<string, object> ReadObject(string path)

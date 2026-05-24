@@ -1,5 +1,6 @@
 using Conn.Core.Equipment;
 using Conn.Core.Session;
+using Conn.Runtime.Content;
 using Conn.Runtime.Session;
 using UnityEngine;
 
@@ -9,13 +10,13 @@ namespace Conn.Runtime.Equipment
     {
         public static bool CanBuy(GameSessionState session, string itemId)
         {
-            var item = EquipmentCatalog.Find(itemId);
+            var item = RuntimeContentDatabase.FindEquipment(itemId);
             return item != null && item.BuyPrice > 0 && !session.Inventory.HasItem(itemId) && session.Gold >= item.BuyPrice;
         }
 
         public static bool BuyAndEquip(GameSessionState session, string itemId)
         {
-            var item = EquipmentCatalog.Find(itemId);
+            var item = RuntimeContentDatabase.FindEquipment(itemId);
             if (item == null || item.BuyPrice <= 0)
             {
                 return false;
@@ -43,7 +44,7 @@ namespace Conn.Runtime.Equipment
 
         public static bool CanSell(GameSessionState session, string itemId)
         {
-            var item = EquipmentCatalog.Find(itemId);
+            var item = RuntimeContentDatabase.FindEquipment(itemId);
             return item != null
                 && itemId != EquipmentCatalog.RustySwordId
                 && session.Inventory.HasItem(itemId)
@@ -52,7 +53,7 @@ namespace Conn.Runtime.Equipment
 
         public static bool Sell(GameSessionState session, string itemId)
         {
-            var item = EquipmentCatalog.Find(itemId);
+            var item = RuntimeContentDatabase.FindEquipment(itemId);
             if (item == null || !CanSell(session, itemId) || !session.Inventory.RemoveItem(itemId))
             {
                 RuntimeNoticeService.Set(session, "Cannot sell equipped or required equipment.");

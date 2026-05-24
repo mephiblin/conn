@@ -14,8 +14,8 @@
 | P2 전투/스킬/주사위 | 75-85% | 상태 이상/특수 효과/로그/HUD 가독성 1차 완료 |
 | P3 장비/인벤토리/상점 | 75-85% | 장비/소모품/스킬 구분과 구매/판매 상태 표시 1차 완료 |
 | P4 마을 NPC 확장 | 70-80% | 8종 NPC와 최소 서비스/notice는 동작, 깊이 확장은 후속 |
-| P5 Editor Tool 1차 | 35-45% | Content Database import/검증과 Chapter 2 validator 1차 완료 |
-| P6 맵 생성 | 25-35% | deterministic profile/seed 생성과 compiledMap 1차 완료 |
+| P5 Editor Tool 1차 | 45-55% | Content DB import/검증, equipment seed, vendor rotation 계약 1차 완료 |
+| P6 맵 생성 | 35-45% | compiledMap Runtime loader와 quest-map anchor 검증 1차 완료 |
 
 Chapter 1 전체는 약 70-80% 진행으로 본다. 자동 검증 가능한 Runtime Core는
 통과했고, 남은 위험은 Play Mode 체감, UI 배치, 콘텐츠 다양성 쪽이다.
@@ -183,16 +183,19 @@ P1은 자동 검증 기준으로 닫혔다. 실제 플레이 기준으로 아래
 
 1. Content Database
    - item, skill, monster, quest, vendor, npc legacy JSON import: 1차 완료
-   - equipment legacy import: 아직 별도 장비 데이터가 없어 빈 배열
+   - equipment seed data: 1차 완료
    - ID registry와 definition lookup: 1차 완료
    - `ContentDatabase.asset` 생성: 1차 완료
-   - 남은 작업: imported data를 Runtime catalog의 실제 source로 전환
+   - Runtime lookup path: monster/equipment/skill/quest 1차 연결, 기존 C# catalog fallback 유지
+   - 남은 작업: UI 표시와 모든 catalog 호출을 점진적으로 database source로 전환
 
 2. Build & Validation 확장
    - ID registry 검증: 1차 완료
    - quest -> monster 참조 검증: 1차 완료
-   - quest -> dungeon -> encounter 검증: 아직 후속
+   - quest -> map profile/anchor 검증: 1차 완료
+   - quest -> encounter 검증: 아직 후속
    - vendor stock 참조 검증: 1차 완료
+   - vendor rotation 계약 검증: 1차 완료
    - skill/equipment 가격 검증: 1차 완료
    - 저장 계약 검증
    - `Conn > Build & Validate Chapter 2`: 1차 완료
@@ -209,6 +212,7 @@ P1은 자동 검증 기준으로 닫혔다. 실제 플레이 기준으로 아래
    - gate/exit anchor
    - loot/quest anchor
    - Generator Workbench preview: 1차 완료
+   - compiledMap Runtime loader: 1차 완료
 
 ## P6에 남은 작업: 던전/맵 생성
 
@@ -223,7 +227,7 @@ P1은 자동 검증 기준으로 닫혔다. 실제 플레이 기준으로 아래
 6. monster/loot placement pass: 아직 후속
 7. validation: 1차 완료
 8. compiledMap 생성: 1차 완료
-9. Runtime에서 compiledMap 로드
+9. Runtime에서 compiledMap 로드: 1차 완료
 10. 자동 지도/fog 해제
 
 현재 던전은 Chapter 1 검증용 단일 공간/단일 몬스터에 가깝다.
@@ -247,13 +251,13 @@ P1은 자동 검증 기준으로 닫혔다. 실제 플레이 기준으로 아래
 
 4. P4 상점 재고 규칙
    - skill stock refresh: 1차 완료
-   - vendor rotation
+   - vendor rotation: 데이터 계약/검증 1차 완료, Runtime 적용은 후속
 
 5. P5 Content Database
-   - 하드코딩 catalog를 제작 데이터로 이전하기 시작
+   - Runtime database lookup 적용 범위 확장
 
 6. P6 맵 생성기
-   - Chapter 1 core가 더 안정된 뒤 시작
+   - compiledMap 기반 Dungeon scene 생성으로 연결
 
 ## 사용자가 확인해야 할 것
 

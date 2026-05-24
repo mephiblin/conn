@@ -54,7 +54,36 @@ namespace Conn.Editor.Windows
             EditorGUILayout.LabelField("Quests", database.Quests.Length.ToString());
             EditorGUILayout.LabelField("Vendors", database.Vendors.Length.ToString());
             EditorGUILayout.LabelField("NPCs", database.Npcs.Length.ToString());
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Vendor Rotation Entries", CountVendorRotations(database).ToString());
+            EditorGUILayout.LabelField("Vendor Catalog References", CountVendorCatalogReferences(database).ToString());
             EditorGUILayout.EndScrollView();
+        }
+
+        private static int CountVendorRotations(ContentDatabaseDefinition database)
+        {
+            var count = 0;
+            foreach (var vendor in database.Vendors)
+            {
+                count += vendor.Rotations?.Length ?? 0;
+            }
+
+            return count;
+        }
+
+        private static int CountVendorCatalogReferences(ContentDatabaseDefinition database)
+        {
+            var count = 0;
+            foreach (var vendor in database.Vendors)
+            {
+                count += vendor.CatalogIds?.Length ?? 0;
+                foreach (var rotation in vendor.Rotations ?? System.Array.Empty<ContentVendorRotationDefinition>())
+                {
+                    count += rotation.CatalogIds?.Length ?? 0;
+                }
+            }
+
+            return count;
         }
 
         private static void LogReport(ContentValidationReport report)

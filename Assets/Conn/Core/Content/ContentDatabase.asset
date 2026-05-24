@@ -61,7 +61,55 @@ MonoBehaviour:
     BuyPrice: 0
     SellPrice: 0
     HealAmount: 0
-  Equipment: []
+  Equipment:
+  - Id: rusty_sword
+    DisplayName: Rusty Sword
+    Kind: one_hand_weapon
+    BuyPrice: 0
+    SellPrice: 2
+    ArmorValue: 0
+  - Id: iron_shield
+    DisplayName: Iron Shield
+    Kind: shield
+    BuyPrice: 6
+    SellPrice: 3
+    ArmorValue: 0
+  - Id: great_axe
+    DisplayName: Great Axe
+    Kind: two_hand_weapon
+    BuyPrice: 12
+    SellPrice: 6
+    ArmorValue: 0
+  - Id: leather_cap
+    DisplayName: Leather Cap
+    Kind: head_armor
+    BuyPrice: 4
+    SellPrice: 2
+    ArmorValue: 1
+  - Id: padded_vest
+    DisplayName: Padded Vest
+    Kind: chest_armor
+    BuyPrice: 8
+    SellPrice: 4
+    ArmorValue: 2
+  - Id: traveler_gloves
+    DisplayName: Traveler Gloves
+    Kind: arms_armor
+    BuyPrice: 5
+    SellPrice: 2
+    ArmorValue: 1
+  - Id: reinforced_pants
+    DisplayName: Reinforced Pants
+    Kind: legs_armor
+    BuyPrice: 7
+    SellPrice: 3
+    ArmorValue: 1
+  - Id: worn_boots
+    DisplayName: Worn Boots
+    Kind: feet_armor
+    BuyPrice: 5
+    SellPrice: 2
+    ArmorValue: 1
   Skills:
   - Id: skill_berserk
     DisplayName: "\uAD11\uBD84"
@@ -362,6 +410,7 @@ MonoBehaviour:
       \uB4A4\uD2C0\uB9B0 \uC0AC\uC6D0 1\uCE35\uC758 \uC704\uD611\uC744 \uC815\uB9AC\uD558\uACE0
       \uADC0\uD658\uD55C\uB2E4."
     MapKind: twisted_temple
+    MapProfileId: ch2_first_slice_ruins
     TargetMonsterId: 
     TargetEncounterId: 
     GoldReward: 18
@@ -377,6 +426,8 @@ MonoBehaviour:
       \uD68C\uBCF5\uD55C\uB2E4."
     StockItemIds: []
     StockSkillIds: []
+    CatalogIds: []
+    Rotations: []
   - Id: vendor_trainer
     ServiceType: train_party
     GoldCost: 0
@@ -384,6 +435,24 @@ MonoBehaviour:
       \uC788\uC73C\uBA74 XP\uB97C \uC368\uC11C \uC131\uC7A5\uC2DC\uD0A8\uB2E4."
     StockItemIds: []
     StockSkillIds: []
+    CatalogIds: []
+    Rotations:
+    - MinFloor: 0
+      BossesDefeated: 0
+      GoldCost: 0
+      Summary: "\uCD08\uAE30 \uB2E8\uACC4\uC5D0\uC11C\uB294 \uAE30\uBCF8 \uD6C8\uB828
+        \uC704\uC8FC\uB85C XP\uB97C \uC18C\uBAA8\uD55C\uB2E4."
+      StockItemIds: []
+      StockSkillIds: []
+      CatalogIds: []
+    - MinFloor: 2
+      BossesDefeated: 0
+      GoldCost: 0
+      Summary: "\uAE4A\uC740 \uCE35\uC5D0 \uB3C4\uB2EC\uD558\uBA74 \uC0C1\uAE09 \uD6C8\uB828
+        \uB2E8\uACC4\uAC00 \uC5F4\uB9B0\uB2E4."
+      StockItemIds: []
+      StockSkillIds: []
+      CatalogIds: []
   - Id: vendor_smith
     ServiceType: buff_frontline
     GoldCost: 12
@@ -391,6 +460,24 @@ MonoBehaviour:
       1 \uC62C\uB9B0\uB2E4."
     StockItemIds: []
     StockSkillIds: []
+    CatalogIds: []
+    Rotations:
+    - MinFloor: 2
+      BossesDefeated: 0
+      GoldCost: 16
+      Summary: "2\uCE35 \uC774\uD6C4\uC5D0\uB294 \uAC15\uD654 \uC5F0\uB9C8\uB85C
+        \uC804\uC5F4 \uACF5\uACA9\uB825\uC744 2 \uC62C\uB9B0\uB2E4."
+      StockItemIds: []
+      StockSkillIds: []
+      CatalogIds: []
+    - MinFloor: 3
+      BossesDefeated: 1
+      GoldCost: 20
+      Summary: "\uD6C4\uBC18\uC5D0\uB294 \uC0AC\uC6D0 \uAC15\uCCA0 \uC5F0\uB9C8\uB85C
+        \uC804\uC5F4 \uACF5\uACA9\uB825\uC744 3 \uC62C\uB9B0\uB2E4."
+      StockItemIds: []
+      StockSkillIds: []
+      CatalogIds: []
   - Id: vendor_apothecary
     ServiceType: sell_bundle
     GoldCost: 8
@@ -400,6 +487,31 @@ MonoBehaviour:
     - bandage
     - antivenom
     StockSkillIds: []
+    CatalogIds: []
+    Rotations:
+    - MinFloor: 2
+      BossesDefeated: 0
+      GoldCost: 10
+      Summary: "2\uCE35 \uC774\uD6C4\uC5D0\uB294 \uBD95\uB300 2\uAC1C\uC640 \uD574\uB3C5\uC81C
+        1\uAC1C \uBB36\uC74C\uC744 \uD310\uB2E4."
+      StockItemIds:
+      - bandage
+      - bandage
+      - antivenom
+      StockSkillIds: []
+      CatalogIds: []
+    - MinFloor: 3
+      BossesDefeated: 1
+      GoldCost: 14
+      Summary: "\uD6C4\uBC18\uC5D0\uB294 \uBD95\uB300 2\uAC1C\uC640 \uD574\uB3C5\uC81C
+        2\uAC1C \uBB36\uC74C\uC744 \uD310\uB2E4."
+      StockItemIds:
+      - bandage
+      - bandage
+      - antivenom
+      - antivenom
+      StockSkillIds: []
+      CatalogIds: []
   - Id: merchant_basic
     ServiceType: skill_shop
     GoldCost: 0
@@ -427,6 +539,9 @@ MonoBehaviour:
     - skill_mana_burn
     - skill_divide_guard
     - skill_summon_serpent_egg
+    CatalogIds:
+    - merchant_basic
+    Rotations: []
   Npcs:
   - Id: npc_innkeeper
     DisplayName: "\uC5EC\uAD00"

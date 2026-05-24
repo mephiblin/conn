@@ -1,5 +1,6 @@
 using Conn.Core.Session;
 using Conn.Core.Skills;
+using Conn.Runtime.Content;
 using Conn.Runtime.Session;
 using UnityEngine;
 
@@ -32,13 +33,13 @@ namespace Conn.Runtime.Skills
 
         public static bool CanBuy(GameSessionState session, string skillId)
         {
-            var skill = SkillCatalog.Find(skillId);
+            var skill = RuntimeContentDatabase.FindSkill(skillId);
             return skill != null && skill.BuyPrice > 0 && session.Gold >= skill.BuyPrice;
         }
 
         public static bool BuyAndEquip(GameSessionState session, string skillId)
         {
-            var skill = SkillCatalog.Find(skillId);
+            var skill = RuntimeContentDatabase.FindSkill(skillId);
             if (skill == null)
             {
                 return false;
@@ -67,13 +68,13 @@ namespace Conn.Runtime.Skills
 
         public static bool CanSellLoose(GameSessionState session, string skillId)
         {
-            var skill = SkillCatalog.Find(skillId);
+            var skill = RuntimeContentDatabase.FindSkill(skillId);
             return skill != null && session.Skills.CountOwned(skillId) > session.Skills.CountEquipped(skillId);
         }
 
         public static bool SellLoose(GameSessionState session, string skillId)
         {
-            var skill = SkillCatalog.Find(skillId);
+            var skill = RuntimeContentDatabase.FindSkill(skillId);
             if (skill == null || !session.Skills.RemoveLooseSkill(skillId))
             {
                 RuntimeNoticeService.Set(session, "Cannot sell equipped skill.");

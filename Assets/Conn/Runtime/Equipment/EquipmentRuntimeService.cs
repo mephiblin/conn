@@ -1,5 +1,6 @@
 using Conn.Core.Equipment;
 using Conn.Core.Session;
+using Conn.Runtime.Content;
 using Conn.Runtime.Session;
 using Conn.Runtime.Skills;
 using UnityEngine;
@@ -10,7 +11,7 @@ namespace Conn.Runtime.Equipment
     {
         public static bool TryEquip(GameSessionState session, string itemId)
         {
-            var item = EquipmentCatalog.Find(itemId);
+            var item = RuntimeContentDatabase.FindEquipment(itemId);
             if (!session.Inventory.HasItem(itemId) || item == null)
             {
                 return false;

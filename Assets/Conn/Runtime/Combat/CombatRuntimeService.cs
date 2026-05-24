@@ -3,6 +3,7 @@ using Conn.Core.Combat;
 using Conn.Core.Scenes;
 using Conn.Core.Session;
 using Conn.Core.Skills;
+using Conn.Runtime.Content;
 using Conn.Runtime.Scenes;
 using Conn.Runtime.Session;
 using Conn.Runtime.World;
@@ -22,7 +23,7 @@ namespace Conn.Runtime.Combat
             session.Combat.FieldMonsterStateKey = handoff != null ? handoff.StateKey : string.Empty;
             var encounter = ResolveEncounter(session, handoff);
             var monsterId = encounter != null ? encounter.MonsterId : ResolveMonsterId(session, handoff);
-            var monster = MonsterCatalog.Find(monsterId);
+            var monster = RuntimeContentDatabase.FindMonster(monsterId);
             session.Skills.ResizeEquippedFaces(session.Combat.PlayerDiceCount);
             session.Combat.Player.Setup("player", "Player", session.Player.MaxHp, session.Player.Hp);
             session.Combat.EncounterId = encounter != null ? encounter.EncounterId : string.Empty;

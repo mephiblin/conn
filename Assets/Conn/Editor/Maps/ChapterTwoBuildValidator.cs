@@ -1,4 +1,5 @@
 using Conn.Core.Maps;
+using Conn.Core.Quests;
 using Conn.Editor.Content;
 using UnityEditor;
 using UnityEngine;
@@ -39,6 +40,8 @@ namespace Conn.Editor.Maps
             var report = MapValidationService.Validate(profile, draft);
             MapValidationService.ThrowIfFailed(report);
             var compiled = MapGenerationService.Compile(profile, draft);
+            MapValidationService.ThrowIfFailed(MapValidationService.ValidateCompiled(profile, compiled));
+            MapValidationService.ThrowIfFailed(MapValidationService.ValidateQuestMapContract(QuestCatalog.Find(QuestCatalog.TestHuntId), profile, compiled));
 
             if (compiled.Placements.Count < profile.RequiredAnchors.Count)
             {

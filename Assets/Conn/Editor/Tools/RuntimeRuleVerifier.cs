@@ -1,15 +1,19 @@
 using System;
 using Conn.Core.Combat;
+using Conn.Core.Content;
 using Conn.Core.Equipment;
 using Conn.Core.Items;
+using Conn.Core.Maps;
 using Conn.Core.Quests;
 using Conn.Core.Scenes;
 using Conn.Core.Session;
 using Conn.Core.Skills;
 using Conn.Runtime.Equipment;
 using Conn.Runtime.Inventory;
+using Conn.Runtime.Maps;
 using Conn.Runtime.Session;
 using Conn.Runtime.Combat;
+using Conn.Runtime.Content;
 using Conn.Runtime.Skills;
 using Conn.Runtime.World;
 using UnityEngine;
@@ -33,6 +37,7 @@ namespace Conn.Editor.Tools
             VerifyCombatStatusEffects();
             VerifyCombatWinGrantsXp();
             VerifyCombatContentDefinitions();
+            VerifyRuntimeContentDatabaseMonsterLookup();
             VerifyCombatFleeRestoresDungeonState();
             VerifyCombatDeathRoutesToEndingState();
             VerifyFieldMonsterExpeditionStatus();
@@ -52,7 +57,65 @@ namespace Conn.Editor.Tools
             VerifyEquipmentComparisonDisplayData();
             VerifyConsumables();
             VerifySkillSaleProtection();
+            VerifyCompiledMapRuntimeLoader();
             Debug.Log("Conn runtime core rule verification passed.");
+        }
+
+        private static void VerifyCompiledMapRuntimeLoader()
+        {
+            var profile = MapGenerationCatalog.ChapterTwoFirstSliceProfile();
+            var chunks = MapGenerationCatalog.ChapterTwoFirstSliceChunks();
+            var draft = MapGenerationService.Generate(profile, chunks, 2001);
+            var compiled = MapGenerationService.Compile(profile, draft);
+            var json = JsonUtility.ToJson(compiled);
+            var loaded = CompiledMapRuntimeLoader.LoadAndValidateFromJson(json, profile);
+            var quest = QuestCatalog.Find(QuestCatalog.TestHuntId);
+            var questReport = MapValidationService.ValidateQuestMapContract(quest, profile, loaded);
+            var questPlacement = CompiledMapRuntimeLoader.FindPlacement(loaded, MapPlacementKind.QuestTarget);
+
+            Expect(loaded.ProfileId == profile.ProfileId, "Runtime compiled map loader must preserve profile id.");
+            Expect(loaded.Rooms.Count == compiled.Rooms.Count, "Runtime compiled map loader must preserve rooms.");
+            Expect(loaded.Doors.Count == compiled.Doors.Count, "Runtime compiled map loader must preserve doors.");
+            Expect(loaded.Placements.Count == compiled.Placements.Count, "Runtime compiled map loader must preserve placements.");
+            Expect(questReport.Passed, "Quest map contract must accept the generated compiled map.");
+            Expect(!string.IsNullOrEmpty(questPlacement.RoomId), "Runtime compiled map loader must expose the quest target placement room.");
+        }
+
+        private static void VerifyRuntimeContentDatabaseMonsterLookup()
+        {
+            var database = ScriptableObject.CreateInstance<ContentDatabaseDefinition>();
+            database.Monsters = new[]
+            {
+                new ContentMonsterDefinition
+                {
+                    Id = "monster_runtime_database_probe",
+                    DisplayName = "Runtime Database Probe",
+                    MaxHp = 9,
+                    AttackPower = 3,
+                    XpReward = 7,
+                    Ai = "Probe strike"
+                }
+            };
+
+            try
+            {
+                RuntimeContentDatabase.SetActive(database);
+                var session = new GameSessionState();
+                session.StartNewGame();
+                QuestRuntimeService.AcceptQuest(session, "quest_runtime_database_probe", "Runtime Probe", "monster_runtime_database_probe", 1);
+                session.Mode = GameMode.Combat;
+                CombatRuntimeService.StartTestCombat(session);
+
+                Expect(session.Combat.MonsterId == "monster_runtime_database_probe", "Runtime combat must consume ContentDatabase monster ids before catalog fallback.");
+                Expect(session.Combat.Enemy.DisplayName == "Runtime Database Probe", "Runtime combat must use ContentDatabase monster display name.");
+                Expect(session.Combat.Enemy.MaxHp == 9, "Runtime combat must use ContentDatabase monster HP.");
+                Expect(session.Combat.EnemyAttackPower == 3, "Runtime combat must use ContentDatabase monster attack power.");
+                Expect(session.Combat.XpReward == 7, "Runtime combat must use ContentDatabase monster XP fallback.");
+            }
+            finally
+            {
+                RuntimeContentDatabase.SetActive(null);
+            }
         }
 
         private static void VerifyP1VerticalSliceFlow()

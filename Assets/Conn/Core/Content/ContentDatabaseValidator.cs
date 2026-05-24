@@ -56,9 +56,19 @@ namespace Conn.Core.Content
             foreach (var item in database.Equipment)
             {
                 RequireName(item.Id, item.DisplayName, "equipment", report);
+                if (string.IsNullOrWhiteSpace(item.Kind))
+                {
+                    report.Error($"Equipment {item.Id} kind must not be empty.");
+                }
+
                 if (item.BuyPrice < 0 || item.SellPrice < 0)
                 {
                     report.Error($"Equipment {item.Id} prices must not be negative.");
+                }
+
+                if (item.ArmorValue < 0)
+                {
+                    report.Error($"Equipment {item.Id} armor value must not be negative.");
                 }
             }
         }
@@ -102,6 +112,11 @@ namespace Conn.Core.Content
                     report.Error($"Quest {quest.Id} target monster is missing: {quest.TargetMonsterId}");
                 }
 
+                if (string.IsNullOrWhiteSpace(quest.MapKind) && string.IsNullOrWhiteSpace(quest.MapProfileId))
+                {
+                    report.Warning($"Quest {quest.Id} has no map kind or map profile id yet.");
+                }
+
                 if (quest.GoldReward < 0 || quest.XpReward < 0)
                 {
                     report.Error($"Quest {quest.Id} rewards must not be negative.");
@@ -143,20 +158,60 @@ namespace Conn.Core.Content
                     report.Error("Vendor id must not be empty.");
                 }
 
-                foreach (var itemId in vendor.StockItemIds)
-                {
-                    if (!registry.ContainsAnyItemLikeId(itemId))
-                    {
-                        report.Error($"Vendor {vendor.Id} stock item is missing: {itemId}");
-                    }
-                }
+                ValidateVendorStock(vendor.Id, vendor.StockItemIds, vendor.StockSkillIds, vendor.CatalogIds, registry, skillCatalogs, report);
 
-                foreach (var skillId in vendor.StockSkillIds)
+                foreach (var rotation in vendor.Rotations ?? Array.Empty<ContentVendorRotationDefinition>())
                 {
-                    if (registry.FindSkill(skillId) == null && !skillCatalogs.Contains(skillId))
+                    if (rotation.MinFloor < 0)
                     {
-                        report.Error($"Vendor {vendor.Id} stock skill/catalog is missing: {skillId}");
+                        report.Error($"Vendor {vendor.Id} rotation min floor must not be negative.");
                     }
+
+                    if (rotation.BossesDefeated < 0)
+                    {
+                        report.Error($"Vendor {vendor.Id} rotation bosses defeated must not be negative.");
+                    }
+
+                    if (rotation.GoldCost < 0)
+                    {
+                        report.Error($"Vendor {vendor.Id} rotation gold cost must not be negative.");
+                    }
+
+                    ValidateVendorStock(vendor.Id, rotation.StockItemIds, rotation.StockSkillIds, rotation.CatalogIds, registry, skillCatalogs, report);
+                }
+            }
+        }
+
+        private static void ValidateVendorStock(
+            string vendorId,
+            IEnumerable<string> itemIds,
+            IEnumerable<string> skillIds,
+            IEnumerable<string> catalogIds,
+            ContentIdRegistry registry,
+            HashSet<string> skillCatalogs,
+            ContentValidationReport report)
+        {
+            foreach (var itemId in itemIds ?? Array.Empty<string>())
+            {
+                if (!registry.ContainsAnyItemLikeId(itemId))
+                {
+                    report.Error($"Vendor {vendorId} stock item is missing: {itemId}");
+                }
+            }
+
+            foreach (var skillId in skillIds ?? Array.Empty<string>())
+            {
+                if (registry.FindSkill(skillId) == null)
+                {
+                    report.Error($"Vendor {vendorId} stock skill is missing: {skillId}");
+                }
+            }
+
+            foreach (var catalogId in catalogIds ?? Array.Empty<string>())
+            {
+                if (!skillCatalogs.Contains(catalogId))
+                {
+                    report.Error($"Vendor {vendorId} stock catalog is missing: {catalogId}");
                 }
             }
         }

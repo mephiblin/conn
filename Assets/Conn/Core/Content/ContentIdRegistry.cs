@@ -32,6 +32,14 @@ namespace Conn.Core.Content
         public ContentVendorDefinition FindVendor(string id) => Find(vendors, id);
         public ContentNpcDefinition FindNpc(string id) => Find(npcs, id);
 
+        public bool TryFindItem(string id, out ContentItemDefinition definition) => TryFind(items, id, out definition);
+        public bool TryFindEquipment(string id, out ContentEquipmentDefinition definition) => TryFind(equipment, id, out definition);
+        public bool TryFindSkill(string id, out ContentSkillDefinition definition) => TryFind(skills, id, out definition);
+        public bool TryFindMonster(string id, out ContentMonsterDefinition definition) => TryFind(monsters, id, out definition);
+        public bool TryFindQuest(string id, out ContentQuestDefinition definition) => TryFind(quests, id, out definition);
+        public bool TryFindVendor(string id, out ContentVendorDefinition definition) => TryFind(vendors, id, out definition);
+        public bool TryFindNpc(string id, out ContentNpcDefinition definition) => TryFind(npcs, id, out definition);
+
         public bool ContainsAnyItemLikeId(string id)
         {
             return !string.IsNullOrWhiteSpace(id) && (items.ContainsKey(id) || equipment.ContainsKey(id));
@@ -75,6 +83,17 @@ namespace Conn.Core.Content
         private static T Find<T>(Dictionary<string, T> definitions, string id)
         {
             return !string.IsNullOrWhiteSpace(id) && definitions.TryGetValue(id, out var definition) ? definition : default;
+        }
+
+        private static bool TryFind<T>(Dictionary<string, T> definitions, string id, out T definition)
+        {
+            if (!string.IsNullOrWhiteSpace(id) && definitions.TryGetValue(id, out definition))
+            {
+                return true;
+            }
+
+            definition = default;
+            return false;
         }
 
         private static void Register<T>(Dictionary<string, T> target, IEnumerable<T> definitions, Func<T, string> getId, ContentIdKind kind)

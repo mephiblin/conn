@@ -3,6 +3,8 @@ using System.Collections.Generic;
 
 namespace Conn.Core.Maps
 {
+    using Conn.Core.Quests;
+
     public sealed class MapValidationReport
     {
         public readonly List<string> Errors = new List<string>();
@@ -34,6 +36,54 @@ namespace Conn.Core.Maps
             return report;
         }
 
+        public static MapValidationReport ValidateCompiled(MapProfile profile, CompiledMap compiled)
+        {
+            var report = new MapValidationReport();
+            if (profile == null)
+            {
+                report.Errors.Add("Map profile is missing.");
+                return report;
+            }
+
+            if (compiled == null)
+            {
+                report.Errors.Add("Compiled map is missing.");
+                return report;
+            }
+
+            ExpectCompiledHeader(profile, compiled, report);
+            ExpectCompiledPlacements(profile, compiled, report);
+            ExpectCompiledDoors(compiled, report);
+            return report;
+        }
+
+        public static MapValidationReport ValidateQuestMapContract(QuestDefinition quest, MapProfile profile, CompiledMap compiled)
+        {
+            var report = ValidateCompiled(profile, compiled);
+            if (quest == null)
+            {
+                report.Errors.Add("Quest definition is missing.");
+                return report;
+            }
+
+            if (profile == null || compiled == null)
+            {
+                return report;
+            }
+
+            if (!string.IsNullOrEmpty(quest.MapProfileId) && quest.MapProfileId != profile.ProfileId)
+            {
+                report.Errors.Add($"Quest {quest.QuestId} requires map profile {quest.MapProfileId}, but profile is {profile.ProfileId}.");
+            }
+
+            if (!HasPlacement(compiled, quest.RequiredMapPlacement))
+            {
+                report.Errors.Add($"Quest {quest.QuestId} requires compiled map placement {quest.RequiredMapPlacement}.");
+            }
+
+            return report;
+        }
+
         public static void ThrowIfFailed(MapValidationReport report)
         {
             if (report == null)
@@ -51,7 +101,12 @@ namespace Conn.Core.Maps
         {
             for (var i = 0; i < profile.RequiredAnchors.Count; i++)
             {
-                var expectedKind = (MapPlacementKind)(int)profile.RequiredAnchors[i];
+                if (!TryPlacementKind(profile.RequiredAnchors[i], out var expectedKind))
+                {
+                    report.Errors.Add($"Required anchor {profile.RequiredAnchors[i]} cannot become a runtime placement.");
+                    continue;
+                }
+
                 if (!HasPlacement(draft, expectedKind))
                 {
                     report.Errors.Add($"Missing required placement: {expectedKind}.");
@@ -70,6 +125,104 @@ namespace Conn.Core.Maps
             }
 
             return false;
+        }
+
+        private static bool HasPlacement(CompiledMap compiled, MapPlacementKind kind)
+        {
+            for (var i = 0; i < compiled.Placements.Count; i++)
+            {
+                if (compiled.Placements[i].Kind == kind)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool TryPlacementKind(MapAnchorKind anchor, out MapPlacementKind kind)
+        {
+            if ((int)anchor >= 0 && (int)anchor <= (int)MapPlacementKind.Exit)
+            {
+                kind = (MapPlacementKind)(int)anchor;
+                return true;
+            }
+
+            kind = MapPlacementKind.Start;
+            return false;
+        }
+
+        private static void ExpectCompiledHeader(MapProfile profile, CompiledMap compiled, MapValidationReport report)
+        {
+            if (string.IsNullOrEmpty(compiled.MapId))
+            {
+                report.Errors.Add("Compiled map id is missing.");
+            }
+
+            if (compiled.ProfileId != profile.ProfileId)
+            {
+                report.Errors.Add($"Compiled map profile mismatch: expected {profile.ProfileId}, got {compiled.ProfileId}.");
+            }
+
+            if (compiled.Width != profile.Width || compiled.Height != profile.Height)
+            {
+                report.Errors.Add("Compiled map dimensions do not match profile.");
+            }
+        }
+
+        private static void ExpectCompiledPlacements(MapProfile profile, CompiledMap compiled, MapValidationReport report)
+        {
+            for (var i = 0; i < profile.RequiredAnchors.Count; i++)
+            {
+                if (!TryPlacementKind(profile.RequiredAnchors[i], out var expectedKind))
+                {
+                    report.Errors.Add($"Required anchor {profile.RequiredAnchors[i]} cannot become a runtime placement.");
+                    continue;
+                }
+
+                if (!HasPlacement(compiled, expectedKind))
+                {
+                    report.Errors.Add($"Compiled map missing required placement: {expectedKind}.");
+                }
+            }
+
+            var ids = new HashSet<string>();
+            for (var i = 0; i < compiled.Placements.Count; i++)
+            {
+                var placement = compiled.Placements[i];
+                if (string.IsNullOrEmpty(placement.Id))
+                {
+                    report.Errors.Add("Compiled map contains a placement with no id.");
+                }
+                else if (!ids.Add(placement.Id))
+                {
+                    report.Errors.Add($"Compiled map contains duplicate placement id: {placement.Id}.");
+                }
+
+                if (FindNode(compiled.Rooms, placement.RoomId) == null)
+                {
+                    report.Errors.Add($"Compiled map placement {placement.Id} references missing room {placement.RoomId}.");
+                }
+
+                if (placement.X < 0 || placement.Y < 0 || placement.X >= compiled.Width || placement.Y >= compiled.Height)
+                {
+                    report.Errors.Add($"Compiled map placement {placement.Id} is outside map bounds.");
+                }
+            }
+        }
+
+        private static void ExpectCompiledDoors(CompiledMap compiled, MapValidationReport report)
+        {
+            for (var i = 0; i < compiled.Doors.Count; i++)
+            {
+                var edge = compiled.Doors[i];
+                var from = FindNode(compiled.Rooms, edge.FromNodeId);
+                var to = FindNode(compiled.Rooms, edge.ToNodeId);
+                if (from == null || to == null)
+                {
+                    report.Errors.Add($"Compiled map door {edge.FromNodeId}->{edge.ToNodeId} references a missing room.");
+                }
+            }
         }
 
         private static void ExpectReachability(GeneratedMapDraft draft, MapValidationReport report)
@@ -191,6 +344,19 @@ namespace Conn.Core.Maps
                 if (graph.Nodes[i].Id == id)
                 {
                     return graph.Nodes[i];
+                }
+            }
+
+            return null;
+        }
+
+        private static RoomGraphNode FindNode(List<RoomGraphNode> nodes, string id)
+        {
+            for (var i = 0; i < nodes.Count; i++)
+            {
+                if (nodes[i].Id == id)
+                {
+                    return nodes[i];
                 }
             }
 
