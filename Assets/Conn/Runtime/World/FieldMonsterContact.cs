@@ -7,6 +7,9 @@ namespace Conn.Runtime.World
 {
     public sealed class FieldMonsterContact : MonoBehaviour
     {
+        [SerializeField] private string stateKey = "field_monster_test_guard";
+        [SerializeField] private string placementId = "placement_test_guard";
+        [SerializeField] private string encounterId = "encounter_test_guard";
         [SerializeField] private string monsterId = "monster_test_guard";
 
         private bool consumed;
@@ -19,6 +22,8 @@ namespace Conn.Runtime.World
 
         private void Start()
         {
+            var session = GameSession.Instance.State;
+            FieldMonsterRuntimeService.Register(session, stateKey, placementId, encounterId, monsterId);
             ApplyDefeatedState();
         }
 
@@ -37,6 +42,8 @@ namespace Conn.Runtime.World
             }
 
             QuestRuntimeService.CapturePreEncounter(session, other.transform);
+            FieldMonsterRuntimeService.MarkCombatHandoff(session, stateKey);
+            GameSession.Instance.SaveGame();
 
             consumed = true;
             Debug.Log($"Field monster contact: {monsterId}");
@@ -46,7 +53,7 @@ namespace Conn.Runtime.World
         private void ApplyDefeatedState()
         {
             var session = GameSession.Instance.State;
-            if (!session.Quest.TargetDefeated)
+            if (!FieldMonsterRuntimeService.IsDefeated(session, stateKey))
             {
                 return;
             }

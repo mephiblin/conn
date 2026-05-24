@@ -2,6 +2,7 @@ using Conn.Core.Combat;
 using Conn.Core.Equipment;
 using Conn.Core.Inventory;
 using Conn.Core.Skills;
+using Conn.Core.World;
 
 namespace Conn.Core.Session
 {
@@ -17,6 +18,7 @@ namespace Conn.Core.Session
         public InventoryState Inventory = new InventoryState();
         public SkillInventoryState Skills = new SkillInventoryState();
         public CombatSessionState Combat = new CombatSessionState();
+        public WorldRuntimeState World = new WorldRuntimeState();
 
         public void StartNewGame()
         {
@@ -33,6 +35,7 @@ namespace Conn.Core.Session
             Skills.AddSkill(SkillCatalog.SlashId);
             Skills.EquipFirstOpenFace(SkillCatalog.SlashId, Equipment.DiceCount);
             Combat.Clear();
+            World.Clear();
         }
     }
 }

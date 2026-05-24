@@ -1,6 +1,7 @@
 using Conn.Core.Scenes;
 using Conn.Core.Session;
 using Conn.Runtime.Scenes;
+using Conn.Runtime.World;
 using UnityEngine;
 
 namespace Conn.Runtime.Session
@@ -21,6 +22,7 @@ namespace Conn.Runtime.Session
             session.Quest.ReturnAvailable = false;
             session.Quest.ReturnPromptSeen = false;
             session.PreEncounterSnapshot.Clear();
+            FieldMonsterRuntimeService.ClearForNewQuest(session);
             GameSession.Instance.SaveGame();
         }
 
@@ -29,6 +31,7 @@ namespace Conn.Runtime.Session
             session.Quest.TargetDefeated = true;
             session.Quest.ReturnAvailable = true;
             session.Quest.ReturnPromptSeen = false;
+            FieldMonsterRuntimeService.MarkDefeated(session, "field_monster_test_guard");
             GameSession.Instance.SaveGame();
         }
 
