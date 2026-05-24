@@ -27,6 +27,7 @@ namespace Conn.Editor.Tools
             VerifyQuestBoardFlow();
             VerifyQuestReturnRewardSummary();
             VerifyKeepExploringReturnPrompt();
+            VerifyTownServices();
             VerifyEquipmentAndSkillDisplayData();
             VerifyConsumables();
             VerifySkillSaleProtection();
@@ -239,6 +240,19 @@ namespace Conn.Editor.Tools
 
             Expect(session.Quest.ReturnPromptSeen, "Keeping exploration must persist return prompt dismissal.");
             Expect(session.Quest.ReturnAvailable, "Keeping exploration must keep return available.");
+        }
+
+        private static void VerifyTownServices()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+            var goldBefore = session.Gold;
+
+            Expect(TownServiceRuntimeService.Train(session, 5), "Trainer service must spend gold and train player.");
+            Expect(session.Gold == goldBefore - 5, "Trainer service must spend configured gold.");
+            Expect(session.Player.MaxHp == 22, "Trainer service must increase max HP.");
+            Expect(session.Player.Hp == session.Player.MaxHp, "Trainer service must heal to trained max HP.");
+            Expect(TownServiceRuntimeService.ScholarHint(session).Contains("board offer"), "Scholar must provide current board information without an active quest.");
         }
 
         private static void Expect(bool condition, string message)

@@ -18,7 +18,9 @@ namespace Conn.Runtime.World
                 return serviceKind switch
                 {
                     TownServiceKind.Inn => cost > 0 ? $"{serviceName}: Rest ({cost}g)" : $"{serviceName}: Rest",
+                    TownServiceKind.Trainer => cost > 0 ? $"{serviceName}: Train Max HP ({cost}g)" : $"{serviceName}: Train Max HP",
                     TownServiceKind.Apothecary => $"{serviceName}: Buy {ConsumableCatalog.Find(ConsumableCatalog.MinorPotionId)?.DisplayName} ({cost}g)",
+                    TownServiceKind.Scholar => $"{serviceName}: Ask about quest",
                     _ => $"{serviceName}: Talk"
                 };
             }
@@ -49,11 +51,13 @@ namespace Conn.Runtime.World
             var session = GameSession.Instance.State;
             if (serviceKind == TownServiceKind.Inn)
             {
-                if (PayForService(session, "Rested at the inn."))
-                {
-                    session.Player.HealToFull();
-                    GameSession.Instance.SaveGame();
-                }
+                TownServiceRuntimeService.Rest(session, cost);
+                return;
+            }
+
+            if (serviceKind == TownServiceKind.Trainer)
+            {
+                TownServiceRuntimeService.Train(session, cost);
                 return;
             }
 
@@ -63,21 +67,13 @@ namespace Conn.Runtime.World
                 return;
             }
 
-            Debug.Log($"{serviceName}: service is not implemented yet.");
-        }
-
-        private bool PayForService(Core.Session.GameSessionState session, string successMessage)
-        {
-            if (cost > 0 && session.Gold < cost)
+            if (serviceKind == TownServiceKind.Scholar)
             {
-                Debug.Log($"{serviceName}: not enough gold.");
-                return false;
+                Debug.Log(TownServiceRuntimeService.ScholarHint(session));
+                return;
             }
 
-            session.Gold -= cost;
-            GameSession.Instance.SaveGame();
-            Debug.Log($"{serviceName}: {successMessage}");
-            return true;
+            Debug.Log($"{serviceName}: service is not implemented yet.");
         }
     }
 }

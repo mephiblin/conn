@@ -220,5 +220,19 @@ namespace Conn.Tests.EditMode
             Assert.That(session.Quest.ReturnPromptSeen, Is.True);
             Assert.That(session.Quest.ReturnAvailable, Is.True);
         }
+
+        [Test]
+        public void TrainerAndScholarProvideTownServices()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+            var goldBefore = session.Gold;
+
+            Assert.That(TownServiceRuntimeService.Train(session, 5), Is.True);
+            Assert.That(session.Gold, Is.EqualTo(goldBefore - 5));
+            Assert.That(session.Player.MaxHp, Is.EqualTo(22));
+            Assert.That(session.Player.Hp, Is.EqualTo(session.Player.MaxHp));
+            Assert.That(TownServiceRuntimeService.ScholarHint(session), Does.Contain("board offer"));
+        }
     }
 }
