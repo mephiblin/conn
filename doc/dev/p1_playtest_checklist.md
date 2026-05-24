@@ -22,6 +22,7 @@
 2. Town
    - 퀘스트 게시판을 바라보고 `E`
    - Quest Board 패널이 열리는지 확인
+   - 첫 제안이 ContentDatabase quest(`quest_twisted_temple_clear`) 기반 target/encounter/map profile을 표시하는지 확인
    - `Reroll Board`가 현재 제안을 바꾸는지 확인
    - `Accept Quest` 클릭
    - HUD에 활성 퀘스트가 표시되는지 확인
@@ -33,7 +34,8 @@
 
 4. Dungeon
    - HUD에 활성 퀘스트, 목표, 필드 몬스터 상태가 표시되는지 확인
-   - 몬스터 오브젝트가 보이는지 확인
+   - compiledMap start/quest target/exit placement 기반 marker가 등록되는지 확인
+   - 몬스터 오브젝트가 quest target placement 기준으로 보이는지 확인
    - 몬스터와 접촉하면 Combat으로 이동하는지 확인
    - 접촉 로그가 중복으로 여러 번 찍히지 않는지 확인
 
@@ -81,7 +83,7 @@ Town에서 아래 NPC를 바라보고 `E`로 상호작용한다.
 | Inn | HP 회복 |
 | Trainer | XP 5 소모, Max HP 증가 |
 | Blacksmith | 장비 구매/판매, 방어구 구매, 장착 중 장비 판매 방지 |
-| Apothecary | 포션 구매 |
+| Apothecary | ContentDatabase item lookup으로 포션 구매 |
 | Skill Merchant | 제한 stock 표시, 스킬 구매/판매 |
 | Scholar | 현재 퀘스트 또는 게시판 힌트 |
 | Quest Board | 리롤, 수주, 활성 퀘스트 1개 제한 |
@@ -118,6 +120,8 @@ Town에서 아래 NPC를 바라보고 `E`로 상호작용한다.
 - 장비/소모품/스킬 구분 표시 문자열
 - 대장장이/기술 상인/약재상/여관/훈련소/게이트 notice
 - 기술 상인 stock refresh notice
+- ContentDatabase quest board offer, encounter lookup, NPC/vendor service cost
+- compiledMap asset 우선 로드와 field monster state 등록
 
 ## 실패 기록 방식
 

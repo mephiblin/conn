@@ -35,6 +35,14 @@ namespace Conn.Editor.Maps
                     seed = Random.Range(1, int.MaxValue);
                     Generate();
                 }
+
+                GUI.enabled = compiled != null;
+                if (GUILayout.Button("Save Compiled Map"))
+                {
+                    SaveCompiledMap();
+                }
+
+                GUI.enabled = true;
             }
 
             scroll = EditorGUILayout.BeginScrollView(scroll);
@@ -89,6 +97,29 @@ namespace Conn.Editor.Maps
             draft = MapGenerationService.Generate(profile, chunks, seed);
             report = MapValidationService.Validate(profile, draft);
             compiled = MapGenerationService.Compile(profile, draft);
+        }
+
+        private void SaveCompiledMap()
+        {
+            if (compiled == null)
+            {
+                return;
+            }
+
+            var assetPath = $"Assets/Conn/Core/Maps/{compiled.ProfileId}_{seed}_CompiledMap.asset";
+            var asset = AssetDatabase.LoadAssetAtPath<CompiledMapAsset>(assetPath);
+            if (asset == null)
+            {
+                asset = CreateInstance<CompiledMapAsset>();
+                AssetDatabase.CreateAsset(asset, assetPath);
+            }
+
+            asset.ProfileId = compiled.ProfileId;
+            asset.Seed = seed;
+            asset.Json = JsonUtility.ToJson(compiled, true);
+            EditorUtility.SetDirty(asset);
+            AssetDatabase.SaveAssets();
+            Debug.Log($"Saved compiled map asset: {assetPath}");
         }
     }
 }

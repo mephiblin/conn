@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Conn.Core.Combat;
-
 namespace Conn.Core.Content
 {
     public static class ContentDatabaseValidator
@@ -34,6 +32,7 @@ namespace Conn.Core.Content
             ValidateEquipment(database, report);
             ValidateSkills(database, report);
             ValidateMonsters(database, report);
+            ValidateEncounters(database, registry, report);
             ValidateQuests(database, registry, report);
             ValidateVendors(database, registry, report);
             ValidateNpcs(database, registry, report);
@@ -103,19 +102,48 @@ namespace Conn.Core.Content
             }
         }
 
+        private static void ValidateEncounters(ContentDatabaseDefinition database, ContentIdRegistry registry, ContentValidationReport report)
+        {
+            foreach (var encounter in database.Encounters ?? Array.Empty<ContentEncounterDefinition>())
+            {
+                RequireName(encounter.Id, encounter.DisplayName, "encounter", report);
+                if (string.IsNullOrWhiteSpace(encounter.MonsterId))
+                {
+                    report.Error($"Encounter {encounter.Id} monster id must not be empty.");
+                }
+                else if (registry.FindMonster(encounter.MonsterId) == null)
+                {
+                    report.Error($"Encounter {encounter.Id} monster is missing: {encounter.MonsterId}");
+                }
+
+                if (encounter.XpReward < 0)
+                {
+                    report.Error($"Encounter {encounter.Id} XP reward must not be negative.");
+                }
+            }
+        }
+
         private static void ValidateQuests(ContentDatabaseDefinition database, ContentIdRegistry registry, ContentValidationReport report)
         {
             foreach (var quest in database.Quests)
             {
                 RequireName(quest.Id, quest.DisplayName, "quest", report);
-                if (!string.IsNullOrWhiteSpace(quest.TargetMonsterId) && registry.FindMonster(quest.TargetMonsterId) == null)
+                if (string.IsNullOrWhiteSpace(quest.TargetMonsterId))
+                {
+                    report.Error($"Quest {quest.Id} target monster must not be empty.");
+                }
+                else if (registry.FindMonster(quest.TargetMonsterId) == null)
                 {
                     report.Error($"Quest {quest.Id} target monster is missing: {quest.TargetMonsterId}");
                 }
 
-                if (!string.IsNullOrWhiteSpace(quest.TargetEncounterId))
+                if (string.IsNullOrWhiteSpace(quest.TargetEncounterId))
                 {
-                    var encounter = EncounterCatalog.Find(quest.TargetEncounterId);
+                    report.Error($"Quest {quest.Id} target encounter must not be empty.");
+                }
+                else
+                {
+                    var encounter = registry.FindEncounter(quest.TargetEncounterId);
                     if (encounter == null)
                     {
                         report.Error($"Quest {quest.Id} target encounter is missing: {quest.TargetEncounterId}");
@@ -128,7 +156,12 @@ namespace Conn.Core.Content
 
                 if (string.IsNullOrWhiteSpace(quest.MapKind) && string.IsNullOrWhiteSpace(quest.MapProfileId))
                 {
-                    report.Warning($"Quest {quest.Id} has no map kind or map profile id yet.");
+                    report.Error($"Quest {quest.Id} has no map kind or map profile id.");
+                }
+
+                if (string.IsNullOrWhiteSpace(quest.MapProfileId))
+                {
+                    report.Error($"Quest {quest.Id} map profile id must not be empty.");
                 }
 
                 if (quest.GoldReward < 0 || quest.XpReward < 0)

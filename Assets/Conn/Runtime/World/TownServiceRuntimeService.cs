@@ -1,5 +1,6 @@
 using Conn.Core.Quests;
 using Conn.Core.Session;
+using Conn.Runtime.Content;
 using Conn.Runtime.Session;
 using UnityEngine;
 
@@ -46,6 +47,30 @@ namespace Conn.Runtime.World
             return offer != null
                 ? $"Scholar: board offer is {offer.DisplayName}."
                 : "Scholar: no quest offer is available.";
+        }
+
+        public static int CostFor(TownServiceKind serviceKind, int fallbackCost, int floor = 1, int bossesDefeated = 0)
+        {
+            var vendorId = VendorIdFor(serviceKind);
+            var rotation = RuntimeContentDatabase.SelectVendorRotation(vendorId, floor, bossesDefeated);
+            if (rotation != null && rotation.GoldCost > 0)
+            {
+                return rotation.GoldCost;
+            }
+
+            var vendor = RuntimeContentDatabase.FindVendor(vendorId);
+            return vendor != null && vendor.GoldCost > 0 ? vendor.GoldCost : fallbackCost;
+        }
+
+        public static string VendorIdFor(TownServiceKind serviceKind)
+        {
+            return serviceKind switch
+            {
+                TownServiceKind.Inn => "vendor_inn",
+                TownServiceKind.Trainer => "vendor_trainer",
+                TownServiceKind.Apothecary => "vendor_apothecary",
+                _ => string.Empty
+            };
         }
 
         private static bool Pay(GameSessionState session, int cost, string serviceName)

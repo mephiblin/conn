@@ -1,5 +1,6 @@
 using Conn.Core.Items;
 using Conn.Core.Session;
+using Conn.Runtime.Content;
 using Conn.Runtime.Session;
 using UnityEngine;
 
@@ -23,7 +24,7 @@ namespace Conn.Runtime.Inventory
 
         public static bool Buy(GameSessionState session, string itemId)
         {
-            var item = ConsumableCatalog.Find(itemId);
+            var item = RuntimeContentDatabase.FindConsumable(itemId);
             if (item == null)
             {
                 return false;
@@ -44,7 +45,7 @@ namespace Conn.Runtime.Inventory
 
         public static bool Use(GameSessionState session, string itemId)
         {
-            var item = ConsumableCatalog.Find(itemId);
+            var item = RuntimeContentDatabase.FindConsumable(itemId);
             if (item == null || !session.Inventory.RemoveItem(itemId))
             {
                 return false;

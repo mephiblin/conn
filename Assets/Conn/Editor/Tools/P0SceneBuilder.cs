@@ -1,4 +1,5 @@
 using Conn.Core.Scenes;
+using Conn.Editor.Maps;
 using Conn.Editor.Content;
 using Conn.Rendering.Interaction;
 using Conn.Rendering.Player;
@@ -55,6 +56,10 @@ namespace Conn.Editor.Tools
             var bootstrap = bootstrapObject.AddComponent<SceneBootstrap>();
             bootstrap.SceneId = sceneId;
             bootstrap.ContentDatabase = AssetDatabase.LoadAssetAtPath<Conn.Core.Content.ContentDatabaseDefinition>(LegacyContentJsonImporter.DefaultDatabaseAssetPath);
+            bootstrap.CompiledMaps = new[]
+            {
+                AssetDatabase.LoadAssetAtPath<Conn.Core.Maps.CompiledMapAsset>(ChapterTwoBuildValidator.DefaultCompiledMapAssetPath)
+            };
 
             var overlay = bootstrapObject.AddComponent<P0SceneOverlay>();
             overlay.SceneId = sceneId;

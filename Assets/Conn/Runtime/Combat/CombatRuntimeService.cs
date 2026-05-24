@@ -340,7 +340,7 @@ namespace Conn.Runtime.Combat
 
         private static EncounterDefinition ResolveEncounter(GameSessionState session, Conn.Core.World.FieldMonsterState handoff)
         {
-            var encounter = handoff != null ? EncounterCatalog.Find(handoff.EncounterId) : null;
+            var encounter = handoff != null ? RuntimeContentDatabase.FindEncounter(handoff.EncounterId) : null;
             if (encounter != null)
             {
                 return encounter;
@@ -348,10 +348,10 @@ namespace Conn.Runtime.Combat
 
             if (!string.IsNullOrWhiteSpace(session.Quest.TargetEncounterId))
             {
-                encounter = EncounterCatalog.Find(session.Quest.TargetEncounterId);
+                encounter = RuntimeContentDatabase.FindEncounter(session.Quest.TargetEncounterId);
             }
 
-            return encounter ?? EncounterCatalog.FindForMonster(ResolveMonsterId(session, handoff));
+            return encounter ?? RuntimeContentDatabase.FindEncounterForMonster(ResolveMonsterId(session, handoff));
         }
 
         private static string ResolveMonsterId(GameSessionState session, Conn.Core.World.FieldMonsterState handoff)

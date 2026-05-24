@@ -14,8 +14,8 @@
 | P2 전투/스킬/주사위 | 75-85% | 상태 이상/특수 효과/로그/HUD 가독성 1차 완료 |
 | P3 장비/인벤토리/상점 | 75-85% | 장비/소모품/스킬 구분과 구매/판매 상태 표시 1차 완료 |
 | P4 마을 NPC 확장 | 70-80% | 8종 NPC와 최소 서비스/notice는 동작, 깊이 확장은 후속 |
-| P5 Editor Tool 1차 | 60-70% | Content DB import/검증, equipment seed, vendor rotation 계약과 Runtime 소비 1차 완료 |
-| P6 맵 생성 | 45-55% | compiledMap Runtime loader와 quest target/exit anchor Runtime 연결 1차 완료 |
+| P5 Editor Tool 1차 | 70-80% | Content DB import/검증, encounter/quest/vendor/NPC Runtime 소비 1차 확대 |
+| P6 맵 생성 | 55-65% | compiledMap asset 저장/Runtime 우선 로드와 quest target/exit anchor 연결 1차 완료 |
 
 Chapter 1 전체는 약 70-80% 진행으로 본다. 자동 검증 가능한 Runtime Core는
 통과했고, 남은 위험은 Play Mode 체감, UI 배치, 콘텐츠 다양성 쪽이다.
@@ -62,8 +62,13 @@ Chapter 1 전체는 약 70-80% 진행으로 본다. 자동 검증 가능한 Runt
 - `Conn > Map > Generator Workbench`
 - `Conn > Build & Validate Chapter 2`
 - ContentDatabase 기반 장비 장착/주사위/방어 계산
-- ContentDatabase 기반 퀘스트 수주와 quest -> encounter -> monster -> map profile Runtime 연결
-- vendor rotation 기반 기술 상인 stock Runtime 적용
+- ContentDatabase 기반 퀘스트 게시판 수주와 quest -> encounter -> monster -> map profile Runtime 연결
+- ContentDatabase 기반 encounter lookup과 CombatRuntimeService 우선 소비
+- vendor rotation 기반 기술 상인/대장장이 stock Runtime 적용
+- NPC vendor/service definition 기반 여관/약재상 최소 Runtime 서비스 연결
+- ContentDatabase 기반 소모품 구매 lookup
+- Generator Workbench compiledMap asset 저장 버튼
+- SceneBootstrap compiledMap asset 등록과 Runtime 우선 로드
 - compiledMap quest target placement -> field monster state 등록
 
 ## P1에 남은 작업
@@ -107,7 +112,9 @@ P1은 자동 검증 기준으로 닫혔다. 실제 플레이 기준으로 아래
    - `MonsterDefinition`: 1차 완료
    - enemy HP/공격력/보상 데이터: 1차 완료
    - 퀘스트 target monster와 encounter 연결: 1차 검증 완료
-   - 남은 작업: 하드코딩 catalog를 ScriptableObject/JSON import 가능한 데이터로 이전
+   - ContentDatabase encounter import/lookup: 1차 완료
+   - CombatRuntimeService DB encounter 우선 소비: 1차 완료
+   - 남은 작업: 다중 적 encounter pattern과 reward table Runtime 처리
 
 2. 전투 룰 확장
    - 적 행동명/행동 power: 1차 완료
@@ -148,10 +155,10 @@ P1은 자동 검증 기준으로 닫혔다. 실제 플레이 기준으로 아래
    - 장착 중/판매 가능/구매 가능 상태 표시: 1차 완료
 
 3. 상점 재고 규칙
-   - 현재 기술 상인은 deterministic limited stock 기반이다.
+   - 현재 기술 상인은 deterministic limited stock 기반이고, 대장장이는 DB vendor stock/rotation을 읽는다.
    - 남은 Diablo II식 요소:
-     - 진행도 기반 rotation
-     - stock refresh: 1차 완료
+     - 진행도 기반 rotation: 기술 상인/대장장이 1차 완료
+     - stock refresh: 기술 상인 1차 완료
      - skill stock size: 1차 완료
      - rarity/affix/generated offer 계약
 
@@ -190,7 +197,7 @@ P1은 자동 검증 기준으로 닫혔다. 실제 플레이 기준으로 아래
    - equipment seed data: 1차 완료
    - ID registry와 definition lookup: 1차 완료
    - `ContentDatabase.asset` 생성: 1차 완료
-   - Runtime lookup path: monster/equipment/skill/quest 1차 연결, 기존 C# catalog fallback 유지
+   - Runtime lookup path: monster/encounter/equipment/skill/quest/item 1차 연결, 기존 C# catalog fallback 유지
    - 장비 장착/주사위/방어 계산의 ContentDatabase 소비: 1차 완료
    - 남은 작업: UI 표시와 모든 catalog 호출을 점진적으로 database source로 전환
 
@@ -198,17 +205,17 @@ P1은 자동 검증 기준으로 닫혔다. 실제 플레이 기준으로 아래
    - ID registry 검증: 1차 완료
    - quest -> monster 참조 검증: 1차 완료
    - quest -> map profile/anchor 검증: 1차 완료
-   - quest -> encounter 검증: 1차 완료
+   - quest -> encounter -> monster 검증: 1차 강화 완료
    - vendor stock 참조 검증: 1차 완료
    - vendor rotation 계약 검증: 1차 완료
-   - vendor rotation Runtime stock 적용: 기술 상인 기준 1차 완료
+   - vendor rotation Runtime stock 적용: 기술 상인/대장장이 기준 1차 완료
    - skill/equipment 가격 검증: 1차 완료
    - 저장 계약 검증
    - `Conn > Build & Validate Chapter 2`: 1차 완료
 
 3. NPC/Quest Editor
    - NPC service type import: 1차 완료
-   - 게시판 퀘스트 후보
+   - 게시판 퀘스트 후보: ContentDatabase 우선 순환 1차 완료
    - 퀘스트 보상
    - target monster/encounter 연결: 1차 완료
 
@@ -218,7 +225,8 @@ P1은 자동 검증 기준으로 닫혔다. 실제 플레이 기준으로 아래
    - gate/exit anchor
    - loot/quest anchor
    - Generator Workbench preview: 1차 완료
-   - compiledMap Runtime loader: 1차 완료
+   - compiledMap asset 저장/export: 1차 완료
+   - compiledMap Runtime loader: 저장 asset 우선 로드 1차 완료
    - compiledMap quest target placement의 field monster state 등록: 1차 완료
 
 ## P6에 남은 작업: 던전/맵 생성
@@ -234,7 +242,7 @@ P1은 자동 검증 기준으로 닫혔다. 실제 플레이 기준으로 아래
 6. monster/loot placement pass: 아직 후속
 7. validation: 1차 완료
 8. compiledMap 생성: 1차 완료
-9. Runtime에서 compiledMap 로드: 1차 완료
+9. Runtime에서 compiledMap 로드: 저장 asset 우선, generator fallback 유지 1차 완료
 10. compiledMap quest target/exit anchor Runtime 연결: 1차 완료
 11. 자동 지도/fog 해제
 

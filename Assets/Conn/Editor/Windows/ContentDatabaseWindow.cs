@@ -51,12 +51,14 @@ namespace Conn.Editor.Windows
             EditorGUILayout.LabelField("Equipment", database.Equipment.Length.ToString());
             EditorGUILayout.LabelField("Skills", database.Skills.Length.ToString());
             EditorGUILayout.LabelField("Monsters", database.Monsters.Length.ToString());
+            EditorGUILayout.LabelField("Encounters", (database.Encounters?.Length ?? 0).ToString());
             EditorGUILayout.LabelField("Quests", database.Quests.Length.ToString());
             EditorGUILayout.LabelField("Vendors", database.Vendors.Length.ToString());
             EditorGUILayout.LabelField("NPCs", database.Npcs.Length.ToString());
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Vendor Rotation Entries", CountVendorRotations(database).ToString());
             EditorGUILayout.LabelField("Vendor Catalog References", CountVendorCatalogReferences(database).ToString());
+            EditorGUILayout.LabelField("Quest -> Encounter -> Monster Links", CountQuestEncounterMonsterLinks(database).ToString());
             EditorGUILayout.EndScrollView();
         }
 
@@ -80,6 +82,22 @@ namespace Conn.Editor.Windows
                 foreach (var rotation in vendor.Rotations ?? System.Array.Empty<ContentVendorRotationDefinition>())
                 {
                     count += rotation.CatalogIds?.Length ?? 0;
+                }
+            }
+
+            return count;
+        }
+
+        private static int CountQuestEncounterMonsterLinks(ContentDatabaseDefinition database)
+        {
+            var registry = database.BuildRegistry();
+            var count = 0;
+            foreach (var quest in database.Quests)
+            {
+                var encounter = registry.FindEncounter(quest.TargetEncounterId);
+                if (encounter != null && encounter.MonsterId == quest.TargetMonsterId && registry.FindMonster(quest.TargetMonsterId) != null)
+                {
+                    count++;
                 }
             }
 

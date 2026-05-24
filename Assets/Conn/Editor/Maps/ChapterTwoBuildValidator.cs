@@ -9,6 +9,8 @@ namespace Conn.Editor.Maps
 {
     public static class ChapterTwoBuildValidator
     {
+        public const string DefaultCompiledMapAssetPath = "Assets/Conn/Core/Maps/ch2_first_slice_ruins_2001_CompiledMap.asset";
+
         [MenuItem("Conn/Build & Validate Chapter 2")]
         public static void BuildAndValidateChapterTwo()
         {
@@ -30,7 +32,7 @@ namespace Conn.Editor.Maps
                 throw new System.InvalidOperationException(string.Join("\n", report.Errors));
             }
 
-            Debug.Log($"Conn Chapter 2 content slice validation passed. items={database.Items.Length} skills={database.Skills.Length} monsters={database.Monsters.Length} quests={database.Quests.Length} vendors={database.Vendors.Length} npcs={database.Npcs.Length}");
+            Debug.Log($"Conn Chapter 2 content slice validation passed. items={database.Items.Length} skills={database.Skills.Length} monsters={database.Monsters.Length} encounters={database.Encounters.Length} quests={database.Quests.Length} vendors={database.Vendors.Length} npcs={database.Npcs.Length}");
         }
 
         [MenuItem("Conn/Build & Validate Chapter 2/Map Slice")]
@@ -44,6 +46,7 @@ namespace Conn.Editor.Maps
             var compiled = MapGenerationService.Compile(profile, draft);
             MapValidationService.ThrowIfFailed(MapValidationService.ValidateCompiled(profile, compiled));
             MapValidationService.ThrowIfFailed(MapValidationService.ValidateQuestMapContract(QuestCatalog.Find(QuestCatalog.TestHuntId), profile, compiled));
+            SaveCompiledMapAsset(compiled, 2001);
 
             if (compiled.Placements.Count < profile.RequiredAnchors.Count)
             {
@@ -51,6 +54,23 @@ namespace Conn.Editor.Maps
             }
 
             Debug.Log($"Conn Chapter 2 map slice validation passed. compiledMap={compiled.MapId} rooms={compiled.Rooms.Count} placements={compiled.Placements.Count}");
+        }
+
+        public static CompiledMapAsset SaveCompiledMapAsset(CompiledMap compiled, int seed)
+        {
+            var asset = AssetDatabase.LoadAssetAtPath<CompiledMapAsset>(DefaultCompiledMapAssetPath);
+            if (asset == null)
+            {
+                asset = ScriptableObject.CreateInstance<CompiledMapAsset>();
+                AssetDatabase.CreateAsset(asset, DefaultCompiledMapAssetPath);
+            }
+
+            asset.ProfileId = compiled.ProfileId;
+            asset.Seed = seed;
+            asset.Json = JsonUtility.ToJson(compiled, true);
+            EditorUtility.SetDirty(asset);
+            AssetDatabase.SaveAssets();
+            return asset;
         }
     }
 }

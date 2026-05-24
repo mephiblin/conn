@@ -12,6 +12,7 @@ namespace Conn.Runtime.Scenes
     {
         [SerializeField] private GameSceneId sceneId;
         [SerializeField] private ContentDatabaseDefinition contentDatabase;
+        [SerializeField] private CompiledMapAsset[] compiledMaps = System.Array.Empty<CompiledMapAsset>();
 
         public GameSceneId SceneId
         {
@@ -25,9 +26,16 @@ namespace Conn.Runtime.Scenes
             set => contentDatabase = value;
         }
 
+        public CompiledMapAsset[] CompiledMaps
+        {
+            get => compiledMaps;
+            set => compiledMaps = value;
+        }
+
         private void Awake()
         {
             RuntimeContentDatabase.SetActive(contentDatabase);
+            CompiledMapDungeonRuntimeService.SetCompiledMapAssets(compiledMaps);
             var session = GameSession.Instance;
             session.State.Mode = SceneFlowService.ToMode(sceneId);
             if (sceneId == GameSceneId.Combat)

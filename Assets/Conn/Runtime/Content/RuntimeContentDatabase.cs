@@ -1,6 +1,7 @@
 using Conn.Core.Combat;
 using Conn.Core.Content;
 using Conn.Core.Equipment;
+using Conn.Core.Items;
 using Conn.Core.Maps;
 using Conn.Core.Quests;
 using Conn.Core.Skills;
@@ -62,6 +63,22 @@ namespace Conn.Runtime.Content
                 contentItem.ArmorValue);
         }
 
+        public static ConsumableItemDefinition FindConsumable(string itemId)
+        {
+            var contentItem = activeRegistry?.FindItem(itemId);
+            if (contentItem == null)
+            {
+                return ConsumableCatalog.Find(itemId);
+            }
+
+            return new ConsumableItemDefinition(
+                contentItem.Id,
+                contentItem.DisplayName,
+                contentItem.BuyPrice,
+                contentItem.SellPrice,
+                contentItem.HealAmount);
+        }
+
         public static SkillDefinition FindSkill(string skillId)
         {
             var contentSkill = activeRegistry?.FindSkill(skillId);
@@ -97,9 +114,85 @@ namespace Conn.Runtime.Content
                 contentQuest.TargetEncounterId);
         }
 
+        public static EncounterDefinition FindEncounter(string encounterId)
+        {
+            var contentEncounter = activeRegistry?.FindEncounter(encounterId);
+            if (contentEncounter == null)
+            {
+                return EncounterCatalog.Find(encounterId);
+            }
+
+            return new EncounterDefinition(
+                contentEncounter.Id,
+                contentEncounter.DisplayName,
+                contentEncounter.MonsterId,
+                contentEncounter.XpReward,
+                contentEncounter.RewardId,
+                contentEncounter.Pattern);
+        }
+
+        public static EncounterDefinition FindEncounterForMonster(string monsterId)
+        {
+            if (!string.IsNullOrWhiteSpace(monsterId) && activeDatabase != null && activeDatabase.Encounters != null)
+            {
+                for (var i = 0; i < activeDatabase.Encounters.Length; i++)
+                {
+                    var encounter = activeDatabase.Encounters[i];
+                    if (encounter.MonsterId == monsterId)
+                    {
+                        return FindEncounter(encounter.Id);
+                    }
+                }
+            }
+
+            return EncounterCatalog.FindForMonster(monsterId);
+        }
+
+        public static QuestDefinition BoardQuestAt(int offerIndex)
+        {
+            if (activeDatabase != null && activeDatabase.Quests != null && activeDatabase.Quests.Length > 0)
+            {
+                var candidateCount = 0;
+                for (var i = 0; i < activeDatabase.Quests.Length; i++)
+                {
+                    if (IsValidBoardQuest(activeDatabase.Quests[i]))
+                    {
+                        candidateCount++;
+                    }
+                }
+
+                if (candidateCount > 0)
+                {
+                    var targetIndex = PositiveModulo(offerIndex, candidateCount);
+                    var current = 0;
+                    for (var i = 0; i < activeDatabase.Quests.Length; i++)
+                    {
+                        if (!IsValidBoardQuest(activeDatabase.Quests[i]))
+                        {
+                            continue;
+                        }
+
+                        if (current == targetIndex)
+                        {
+                            return FindQuest(activeDatabase.Quests[i].Id);
+                        }
+
+                        current++;
+                    }
+                }
+            }
+
+            return QuestCatalog.BoardOffer(offerIndex);
+        }
+
         public static ContentVendorDefinition FindVendor(string vendorId)
         {
             return activeRegistry?.FindVendor(vendorId);
+        }
+
+        public static ContentNpcDefinition FindNpc(string npcId)
+        {
+            return activeRegistry?.FindNpc(npcId);
         }
 
         public static ContentVendorRotationDefinition SelectVendorRotation(string vendorId, int floor, int bossesDefeated)
@@ -217,6 +310,23 @@ namespace Conn.Runtime.Content
             }
 
             return false;
+        }
+
+        private static bool IsValidBoardQuest(ContentQuestDefinition quest)
+        {
+            return quest != null
+                && !string.IsNullOrWhiteSpace(quest.TargetMonsterId)
+                && !string.IsNullOrWhiteSpace(quest.TargetEncounterId)
+                && !string.IsNullOrWhiteSpace(quest.MapProfileId)
+                && quest.GoldReward > 0
+                && FindEncounter(quest.TargetEncounterId) != null
+                && FindMonster(quest.TargetMonsterId) != null;
+        }
+
+        private static int PositiveModulo(int value, int divisor)
+        {
+            var result = value % divisor;
+            return result < 0 ? result + divisor : result;
         }
 
         private static EquipmentKind EquipmentKindFor(string kind)

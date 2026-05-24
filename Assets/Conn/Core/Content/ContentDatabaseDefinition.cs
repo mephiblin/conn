@@ -10,6 +10,7 @@ namespace Conn.Core.Content
         public ContentEquipmentDefinition[] Equipment = Array.Empty<ContentEquipmentDefinition>();
         public ContentSkillDefinition[] Skills = Array.Empty<ContentSkillDefinition>();
         public ContentMonsterDefinition[] Monsters = Array.Empty<ContentMonsterDefinition>();
+        public ContentEncounterDefinition[] Encounters = Array.Empty<ContentEncounterDefinition>();
         public ContentQuestDefinition[] Quests = Array.Empty<ContentQuestDefinition>();
         public ContentVendorDefinition[] Vendors = Array.Empty<ContentVendorDefinition>();
         public ContentNpcDefinition[] Npcs = Array.Empty<ContentNpcDefinition>();
@@ -21,6 +22,7 @@ namespace Conn.Core.Content
             registry.RegisterEquipment(Equipment);
             registry.RegisterSkills(Skills);
             registry.RegisterMonsters(Monsters);
+            registry.RegisterEncounters(Encounters);
             registry.RegisterQuests(Quests);
             registry.RegisterVendors(Vendors);
             registry.RegisterNpcs(Npcs);
@@ -75,6 +77,17 @@ namespace Conn.Core.Content
         public int XpReward;
         public bool Boss;
         public string Ai;
+    }
+
+    [Serializable]
+    public sealed class ContentEncounterDefinition
+    {
+        public string Id;
+        public string DisplayName;
+        public string MonsterId;
+        public int XpReward;
+        public string RewardId;
+        public string Pattern;
     }
 
     [Serializable]

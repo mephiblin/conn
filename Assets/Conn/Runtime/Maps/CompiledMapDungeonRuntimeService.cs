@@ -8,10 +8,22 @@ namespace Conn.Runtime.Maps
     public static class CompiledMapDungeonRuntimeService
     {
         public const int DefaultDungeonSeed = 2001;
+        private static CompiledMapAsset[] compiledMapAssets = System.Array.Empty<CompiledMapAsset>();
+
+        public static void SetCompiledMapAssets(CompiledMapAsset[] assets)
+        {
+            compiledMapAssets = assets ?? System.Array.Empty<CompiledMapAsset>();
+        }
 
         public static CompiledMap BuildQuestCompiledMap(GameSessionState session)
         {
             var profile = ResolveProfile(session);
+            var compiledAsset = FindCompiledMapAsset(profile.ProfileId);
+            if (compiledAsset != null)
+            {
+                return CompiledMapRuntimeLoader.LoadAndValidateFromJson(compiledAsset.Json, profile);
+            }
+
             var chunks = MapGenerationCatalog.ChapterTwoFirstSliceChunks();
             var draft = MapGenerationService.Generate(profile, chunks, DefaultDungeonSeed);
             return MapGenerationService.Compile(profile, draft);
@@ -65,6 +77,20 @@ namespace Conn.Runtime.Maps
             }
 
             return MapGenerationCatalog.ChapterTwoFirstSliceProfile();
+        }
+
+        private static CompiledMapAsset FindCompiledMapAsset(string profileId)
+        {
+            for (var i = 0; i < compiledMapAssets.Length; i++)
+            {
+                var asset = compiledMapAssets[i];
+                if (asset != null && asset.ProfileId == profileId && !string.IsNullOrWhiteSpace(asset.Json))
+                {
+                    return asset;
+                }
+            }
+
+            return null;
         }
     }
 }

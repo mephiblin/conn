@@ -15,7 +15,8 @@ namespace Conn.Tests.EditMode
             database.Equipment = new[] { new ContentEquipmentDefinition { Id = "rusty_sword", DisplayName = "Rusty Sword", Kind = "one_hand_weapon" } };
             database.Skills = new[] { new ContentSkillDefinition { Id = "skill_slash", DisplayName = "Slash", EffectKind = "attack", CatalogIds = new[] { "starter_catalog" } } };
             database.Monsters = new[] { new ContentMonsterDefinition { Id = "monster_guard", DisplayName = "Guard", MaxHp = 10, AttackPower = 3 } };
-            database.Quests = new[] { new ContentQuestDefinition { Id = "quest_guard", DisplayName = "Guard Quest", TargetMonsterId = "monster_guard" } };
+            database.Encounters = new[] { new ContentEncounterDefinition { Id = "encounter_guard", DisplayName = "Guard Encounter", MonsterId = "monster_guard", XpReward = 4 } };
+            database.Quests = new[] { new ContentQuestDefinition { Id = "quest_guard", DisplayName = "Guard Quest", TargetMonsterId = "monster_guard", TargetEncounterId = "encounter_guard", MapProfileId = "profile_test", GoldReward = 1 } };
             database.Vendors = new[]
             {
                 new ContentVendorDefinition
@@ -45,6 +46,7 @@ namespace Conn.Tests.EditMode
             Assert.That(registry.FindEquipment("rusty_sword"), Is.Not.Null);
             Assert.That(registry.FindSkill("skill_slash"), Is.Not.Null);
             Assert.That(registry.FindMonster("monster_guard"), Is.Not.Null);
+            Assert.That(registry.FindEncounter("encounter_guard"), Is.Not.Null);
             Assert.That(registry.FindQuest("quest_guard"), Is.Not.Null);
             Assert.That(registry.FindVendor("vendor_apothecary"), Is.Not.Null);
             Assert.That(registry.FindNpc("npc_apothecary"), Is.Not.Null);
@@ -64,6 +66,8 @@ namespace Conn.Tests.EditMode
                     Id = "quest_bad",
                     DisplayName = "Bad Quest",
                     TargetMonsterId = "missing_monster",
+                    TargetEncounterId = "missing_encounter",
+                    MapProfileId = "profile_test",
                     RewardItems = new[] { new ContentItemStack { ItemId = "missing_item", Quantity = 1 } }
                 }
             };
@@ -73,6 +77,7 @@ namespace Conn.Tests.EditMode
 
             Assert.That(report.Passed, Is.False);
             Assert.That(report.Errors, Has.Some.Contains("missing_monster"));
+            Assert.That(report.Errors, Has.Some.Contains("missing_encounter"));
             Assert.That(report.Errors, Has.Some.Contains("missing_item"));
             Assert.That(report.Errors, Has.Some.Contains("missing_stock"));
         }

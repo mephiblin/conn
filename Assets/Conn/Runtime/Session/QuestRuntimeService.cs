@@ -17,7 +17,7 @@ namespace Conn.Runtime.Session
 
         public static QuestDefinition CurrentBoardOffer(GameSessionState session)
         {
-            return QuestCatalog.BoardOffer(session.Quest.BoardOfferIndex);
+            return RuntimeContentDatabase.BoardQuestAt(session.Quest.BoardOfferIndex);
         }
 
         public static void AcceptCurrentBoardOffer(GameSessionState session)
