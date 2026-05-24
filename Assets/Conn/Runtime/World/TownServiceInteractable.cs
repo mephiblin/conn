@@ -69,11 +69,11 @@ namespace Conn.Runtime.World
 
             if (serviceKind == TownServiceKind.Scholar)
             {
-                Debug.Log(TownServiceRuntimeService.ScholarHint(session));
+                RuntimeNoticeService.Set(session, TownServiceRuntimeService.ScholarHint(session));
                 return;
             }
 
-            Debug.Log($"{serviceName}: service is not implemented yet.");
+            RuntimeNoticeService.Set(session, $"{serviceName}: service is not implemented yet.");
         }
     }
 }

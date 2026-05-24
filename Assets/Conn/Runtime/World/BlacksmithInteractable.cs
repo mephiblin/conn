@@ -73,7 +73,7 @@ namespace Conn.Runtime.World
 
             if (session.Gold < item.BuyPrice)
             {
-                Debug.Log($"Not enough gold for {item.DisplayName}.");
+                RuntimeNoticeService.Set(session, $"Not enough gold for {item.DisplayName}.");
                 return;
             }
 
@@ -81,7 +81,7 @@ namespace Conn.Runtime.World
             session.Inventory.AddItem(itemId);
             session.Equipment.Equip(itemId);
             GameSession.Instance.SaveGame();
-            Debug.Log($"Bought and equipped {item.DisplayName}.");
+            RuntimeNoticeService.Set(session, $"Bought and equipped {item.DisplayName}.");
         }
 
         private static string FindFirstSellableItemId()
@@ -115,7 +115,7 @@ namespace Conn.Runtime.World
 
             session.Gold += item.SellPrice;
             GameSession.Instance.SaveGame();
-            Debug.Log($"Sold {item.DisplayName}.");
+            RuntimeNoticeService.Set(session, $"Sold {item.DisplayName}.");
         }
     }
 }

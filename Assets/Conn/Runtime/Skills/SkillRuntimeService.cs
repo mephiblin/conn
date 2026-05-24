@@ -33,7 +33,7 @@ namespace Conn.Runtime.Skills
 
                 session.Skills.EquippedSkillIds[faceIndex] = nextSkillId;
                 SaveIfPlaying();
-                Debug.Log($"Equipped face {faceIndex + 1}: {SkillCatalog.Find(nextSkillId).DisplayName}.");
+                RuntimeNoticeService.Set(session, $"Equipped face {faceIndex + 1}: {SkillCatalog.Find(nextSkillId).DisplayName}.");
                 return true;
             }
 

@@ -17,7 +17,7 @@ namespace Conn.Runtime.World
         {
             if (!CanInteract)
             {
-                Debug.Log("The gate is closed. Accept a quest first.");
+                RuntimeNoticeService.Set(GameSession.Instance.State, "The gate is closed. Accept a quest first.");
                 return;
             }
 

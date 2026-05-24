@@ -78,7 +78,7 @@ namespace Conn.Runtime.World
 
             if (session.Gold < skill.BuyPrice)
             {
-                Debug.Log($"Not enough gold for {skill.DisplayName}.");
+                RuntimeNoticeService.Set(session, $"Not enough gold for {skill.DisplayName}.");
                 return;
             }
 
@@ -86,7 +86,7 @@ namespace Conn.Runtime.World
             session.Skills.AddSkill(skillId);
             session.Skills.EquipFirstOpenFace(skillId, session.Equipment.DiceCount);
             GameSession.Instance.SaveGame();
-            Debug.Log($"Bought and equipped {skill.DisplayName}.");
+            RuntimeNoticeService.Set(session, $"Bought and equipped {skill.DisplayName}.");
         }
 
         private static void EquipBestKnownSkill()
@@ -125,13 +125,13 @@ namespace Conn.Runtime.World
             var skill = SkillCatalog.Find(skillId);
             if (skill == null || !session.Skills.RemoveLooseSkill(skillId))
             {
-                Debug.Log("Cannot sell equipped skill.");
+                RuntimeNoticeService.Set(session, "Cannot sell equipped skill.");
                 return;
             }
 
             session.Gold += skill.SellPrice;
             GameSession.Instance.SaveGame();
-            Debug.Log($"Sold {skill.DisplayName}.");
+            RuntimeNoticeService.Set(session, $"Sold {skill.DisplayName}.");
         }
     }
 }

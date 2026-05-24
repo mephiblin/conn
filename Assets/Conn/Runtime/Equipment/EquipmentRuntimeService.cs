@@ -30,7 +30,7 @@ namespace Conn.Runtime.Equipment
                 }
 
                 SaveIfPlaying();
-                Debug.Log("Switched to one-hand loadout.");
+                RuntimeNoticeService.Set(session, "Switched to one-hand loadout.");
                 return true;
             }
 
@@ -38,7 +38,7 @@ namespace Conn.Runtime.Equipment
             {
                 session.Equipment.Equip(EquipmentCatalog.GreatAxeId);
                 SaveIfPlaying();
-                Debug.Log("Switched to two-hand loadout.");
+                RuntimeNoticeService.Set(session, "Switched to two-hand loadout.");
                 return true;
             }
 
@@ -46,7 +46,7 @@ namespace Conn.Runtime.Equipment
             {
                 session.Equipment.Equip(EquipmentCatalog.IronShieldId);
                 SaveIfPlaying();
-                Debug.Log("Equipped shield loadout.");
+                RuntimeNoticeService.Set(session, "Equipped shield loadout.");
                 return true;
             }
 

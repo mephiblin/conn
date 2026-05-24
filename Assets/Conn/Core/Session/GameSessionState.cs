@@ -11,6 +11,7 @@ namespace Conn.Core.Session
     {
         public GameMode Mode = GameMode.Title;
         public int Gold;
+        public string LastNotice = string.Empty;
         public PlayerRuntimeState Player = new PlayerRuntimeState();
         public QuestRuntimeState Quest = new QuestRuntimeState();
         public PlayerPoseSnapshot PreEncounterSnapshot = new PlayerPoseSnapshot();
@@ -24,6 +25,7 @@ namespace Conn.Core.Session
         {
             Mode = GameMode.Town;
             Gold = 25;
+            LastNotice = string.Empty;
             Player.Reset();
             Quest.Clear();
             Quest.ClearLastReward();

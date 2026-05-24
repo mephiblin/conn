@@ -31,14 +31,14 @@ namespace Conn.Runtime.Inventory
 
             if (session.Gold < item.BuyPrice)
             {
-                Debug.Log($"Not enough gold for {item.DisplayName}.");
+                RuntimeNoticeService.Set(session, $"Not enough gold for {item.DisplayName}.");
                 return false;
             }
 
             session.Gold -= item.BuyPrice;
             session.Inventory.AddItem(item.ItemId);
             SaveIfPlaying();
-            Debug.Log($"Bought {item.DisplayName}.");
+            RuntimeNoticeService.Set(session, $"Bought {item.DisplayName}.");
             return true;
         }
 
@@ -57,7 +57,7 @@ namespace Conn.Runtime.Inventory
             }
 
             SaveIfPlaying();
-            Debug.Log($"Used {item.DisplayName}.");
+            RuntimeNoticeService.Set(session, $"Used {item.DisplayName}.");
             return true;
         }
 

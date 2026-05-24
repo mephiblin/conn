@@ -28,6 +28,11 @@ namespace Conn.UI.Runtime
             GUILayout.Label($"Scene: {sceneId}");
             var session = GameSession.Instance.State;
             GUILayout.Label($"Mode: {session.Mode}");
+            if (!string.IsNullOrWhiteSpace(session.LastNotice))
+            {
+                GUILayout.Label($"Notice: {session.LastNotice}");
+            }
+
             GUILayout.Label($"Gold: {session.Gold}");
             GUILayout.Label($"HP: {session.Player.Hp}/{session.Player.MaxHp}");
             GUILayout.Label("Trainer: +2 Max HP / 5g");

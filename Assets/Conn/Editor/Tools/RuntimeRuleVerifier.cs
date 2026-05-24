@@ -28,6 +28,7 @@ namespace Conn.Editor.Tools
             VerifyQuestReturnRewardSummary();
             VerifyKeepExploringReturnPrompt();
             VerifyTownServices();
+            VerifyRuntimeNotice();
             VerifyEquipmentAndSkillDisplayData();
             VerifyConsumables();
             VerifySkillSaleProtection();
@@ -253,6 +254,16 @@ namespace Conn.Editor.Tools
             Expect(session.Player.MaxHp == 22, "Trainer service must increase max HP.");
             Expect(session.Player.Hp == session.Player.MaxHp, "Trainer service must heal to trained max HP.");
             Expect(TownServiceRuntimeService.ScholarHint(session).Contains("board offer"), "Scholar must provide current board information without an active quest.");
+        }
+
+        private static void VerifyRuntimeNotice()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+
+            RuntimeNoticeService.Set(session, "notice check");
+
+            Expect(session.LastNotice == "notice check", "Runtime notices must be stored on the session for HUD display.");
         }
 
         private static void Expect(bool condition, string message)

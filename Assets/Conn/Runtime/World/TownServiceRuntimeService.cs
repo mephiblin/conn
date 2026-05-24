@@ -16,7 +16,7 @@ namespace Conn.Runtime.World
 
             session.Player.HealToFull();
             SaveIfPlaying();
-            Debug.Log("Inn: Rested at the inn.");
+            RuntimeNoticeService.Set(session, "Inn: Rested at the inn.");
             return true;
         }
 
@@ -30,7 +30,7 @@ namespace Conn.Runtime.World
             session.Player.MaxHp += 2;
             session.Player.HealToFull();
             SaveIfPlaying();
-            Debug.Log("Trainer: Max HP increased.");
+            RuntimeNoticeService.Set(session, "Trainer: Max HP increased.");
             return true;
         }
 
@@ -51,7 +51,7 @@ namespace Conn.Runtime.World
         {
             if (cost > 0 && session.Gold < cost)
             {
-                Debug.Log($"{serviceName}: not enough gold.");
+                RuntimeNoticeService.Set(session, $"{serviceName}: not enough gold.");
                 return false;
             }
 

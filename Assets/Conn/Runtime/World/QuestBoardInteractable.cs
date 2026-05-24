@@ -30,13 +30,13 @@ namespace Conn.Runtime.World
             var quest = GameSession.Instance.State.Quest;
             if (quest.HasActiveQuest)
             {
-                Debug.Log("A quest is already active.");
+                RuntimeNoticeService.Set(GameSession.Instance.State, "A quest is already active.");
                 return;
             }
 
             var offer = QuestRuntimeService.CurrentBoardOffer(GameSession.Instance.State);
             QuestRuntimeService.AcceptCurrentBoardOffer(GameSession.Instance.State);
-            Debug.Log($"Accepted quest: {offer?.QuestId}");
+            RuntimeNoticeService.Set(GameSession.Instance.State, $"Accepted quest: {offer?.QuestId}");
         }
     }
 }

@@ -234,5 +234,16 @@ namespace Conn.Tests.EditMode
             Assert.That(session.Player.Hp, Is.EqualTo(session.Player.MaxHp));
             Assert.That(TownServiceRuntimeService.ScholarHint(session), Does.Contain("board offer"));
         }
+
+        [Test]
+        public void RuntimeNoticeStoresLastMessageOnSession()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+
+            RuntimeNoticeService.Set(session, "notice check");
+
+            Assert.That(session.LastNotice, Is.EqualTo("notice check"));
+        }
     }
 }
