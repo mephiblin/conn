@@ -1,0 +1,36 @@
+* text=auto
+
+# Unity text assets
+*.cs text diff=csharp
+*.asmdef text
+*.asmref text
+*.shader text
+*.hlsl text
+*.cginc text
+*.compute text
+*.mat text eol=lf merge=unityyamlmerge
+*.anim text eol=lf merge=unityyamlmerge
+*.controller text eol=lf merge=unityyamlmerge
+*.overrideController text eol=lf merge=unityyamlmerge
+*.prefab text eol=lf merge=unityyamlmerge
+*.unity text eol=lf merge=unityyamlmerge
+*.asset text eol=lf merge=unityyamlmerge
+*.meta text eol=lf merge=unityyamlmerge
+*.inputactions text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+
+# Binary assets. Install Git LFS before enabling filter rules for large assets.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.tga binary
+*.psd binary
+*.exr binary
+*.fbx binary
+*.blend binary
+*.wav binary
+*.mp3 binary
+*.ogg binary
+*.mp4 binary
+*.mov binary

@@ -1,0 +1,13 @@
+{
+  "encounter_desert_rat": { "name": "사막 짐승 조우", "enemies": [{ "monsterId": "desert_rat" }, { "monsterId": "desert_rat" }] },
+  "encounter_grave_robber": { "name": "도굴꾼 조우", "enemies": [{ "monsterId": "grave_robber" }, { "monsterId": "grave_robber" }] },
+  "encounter_serpent_guard": { "name": "뱀 사원 경비 조우", "enemies": [{ "monsterId": "serpent_guard" }, { "monsterId": "serpent_guard" }] },
+  "encounter_poisoned_raider": { "name": "독광 약탈자 조우", "enemies": [{ "monsterId": "poisoned_raider" }, { "monsterId": "desert_rat" }] },
+  "encounter_cursed_gladiator": { "name": "저주 검투사 조우", "enemies": [{ "monsterId": "cursed_gladiator" }] },
+  "encounter_black_water_beast": { "name": "검은 물의 파충수 조우", "enemies": [{ "monsterId": "black_water_beast" }] },
+  "encounter_serpent_priest": { "name": "뱀 사제 조우", "enemies": [{ "monsterId": "serpent_guard" }, { "monsterId": "serpent_priest" }] },
+  "encounter_blind_priest": { "name": "눈먼 사제 조우", "enemies": [{ "monsterId": "blind_priest" }] },
+  "encounter_crawling_fish": { "name": "기어다니는 물고기 조우", "enemies": [{ "monsterId": "crawling_fish" }, { "monsterId": "crawling_fish" }] },
+  "encounter_reef_cultist": { "name": "산호 광신도 조우", "enemies": [{ "monsterId": "reef_cultist" }, { "monsterId": "crawling_fish" }] },
+  "encounter_ruin_husk": { "name": "폐허의 빈 껍질 조우", "enemies": [{ "monsterId": "ruin_husk" }] }
+}

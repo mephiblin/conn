@@ -1,0 +1,145 @@
+{
+  "floor_sandstone_01": {
+    "baseColor": "#7b654a",
+    "fallbackColor": "#7b654a",
+    "roughness": 0.94,
+    "metalness": 0.02,
+    "normalMap": null,
+    "emissive": "#000000",
+    "emissiveIntensity": 0,
+    "lightingHint": "ambient",
+    "lod": "default"
+  },
+  "floor_obsidian_01": {
+    "baseColor": "#45414a",
+    "fallbackColor": "#45414a",
+    "roughness": 0.72,
+    "metalness": 0.12,
+    "normalMap": "generated://obsidian_tiles",
+    "emissive": "#000000",
+    "emissiveIntensity": 0,
+    "lightingHint": "ambient",
+    "lod": "default"
+  },
+  "floor_moss_01": {
+    "baseColor": "#596a4d",
+    "fallbackColor": "#596a4d",
+    "roughness": 0.98,
+    "metalness": 0.01,
+    "normalMap": null,
+    "emissive": "#000000",
+    "emissiveIntensity": 0,
+    "lightingHint": "ambient",
+    "lod": "default"
+  },
+  "floor_bloodstone_01": {
+    "baseColor": "#7b4d43",
+    "fallbackColor": "#7b4d43",
+    "roughness": 0.88,
+    "metalness": 0.04,
+    "normalMap": null,
+    "emissive": "#000000",
+    "emissiveIntensity": 0,
+    "lightingHint": "ambient",
+    "lod": "default"
+  },
+  "ceiling_stone_01": {
+    "baseColor": "#42382d",
+    "fallbackColor": "#42382d",
+    "roughness": 0.94,
+    "metalness": 0.02,
+    "normalMap": null,
+    "emissive": "#000000",
+    "emissiveIntensity": 0,
+    "lightingHint": "ambient",
+    "lod": "default"
+  },
+  "ceiling_vault_01": {
+    "baseColor": "#5d4f45",
+    "fallbackColor": "#5d4f45",
+    "roughness": 0.9,
+    "metalness": 0.03,
+    "normalMap": null,
+    "emissive": "#000000",
+    "emissiveIntensity": 0,
+    "lightingHint": "ambient",
+    "lod": "default"
+  },
+  "ceiling_soot_01": {
+    "baseColor": "#332f2b",
+    "fallbackColor": "#332f2b",
+    "roughness": 0.98,
+    "metalness": 0.01,
+    "normalMap": null,
+    "emissive": "#000000",
+    "emissiveIntensity": 0,
+    "lightingHint": "ambient",
+    "lod": "default"
+  },
+  "ceiling_gold_01": {
+    "baseColor": "#75613b",
+    "fallbackColor": "#75613b",
+    "roughness": 0.72,
+    "metalness": 0.12,
+    "normalMap": "generated://hammered_gold",
+    "emissive": "#000000",
+    "emissiveIntensity": 0,
+    "lightingHint": "ambient",
+    "lod": "hero"
+  },
+  "wall_buried_temple_01": {
+    "baseColor": "#5a4937",
+    "fallbackColor": "#5a4937",
+    "roughness": 0.94,
+    "metalness": 0.04,
+    "normalMap": null,
+    "emissive": "#000000",
+    "emissiveIntensity": 0,
+    "lightingHint": "ambient",
+    "lod": "default"
+  },
+  "wall_black_brick_01": {
+    "baseColor": "#3b373d",
+    "fallbackColor": "#3b373d",
+    "roughness": 0.84,
+    "metalness": 0.08,
+    "normalMap": null,
+    "emissive": "#000000",
+    "emissiveIntensity": 0,
+    "lightingHint": "ambient",
+    "lod": "default"
+  },
+  "wall_mossy_01": {
+    "baseColor": "#516447",
+    "fallbackColor": "#516447",
+    "roughness": 0.97,
+    "metalness": 0.02,
+    "normalMap": null,
+    "emissive": "#000000",
+    "emissiveIntensity": 0,
+    "lightingHint": "ambient",
+    "lod": "default"
+  },
+  "wall_sacred_relief_01": {
+    "baseColor": "#756147",
+    "fallbackColor": "#756147",
+    "roughness": 0.78,
+    "metalness": 0.08,
+    "normalMap": "generated://sacred_relief",
+    "emissive": "#000000",
+    "emissiveIntensity": 0,
+    "lightingHint": "guiding",
+    "lod": "hero"
+  },
+  "door_bronze_01": {
+    "baseColor": "#b58b4f",
+    "fallbackColor": "#b58b4f",
+    "roughness": 0.62,
+    "metalness": 0.2,
+    "normalMap": "generated://bronze_door",
+    "emissive": "#000000",
+    "emissiveIntensity": 0,
+    "lightingHint": "interactive",
+    "lod": "default"
+  }
+}

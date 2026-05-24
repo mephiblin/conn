@@ -1,0 +1,10 @@
+{
+  "bandage": { "name": "붕대", "kind": "consumable", "heal": 10 },
+  "antivenom": { "name": "해독제", "kind": "consumable", "cure": "독" },
+  "throwing_knife": { "name": "투척 단검", "kind": "consumable", "throwDamage": 4, "targetMode": "enemy" },
+  "firebomb": { "name": "화염병", "kind": "consumable", "throwDamage": 5, "targetMode": "all_enemies" },
+  "bronze_key": { "name": "청동 뱀 열쇠", "kind": "key" },
+  "obsidian_key": { "name": "흑요석 문장 열쇠", "kind": "key" },
+  "black_dagger": { "name": "검은 사제의 단검", "kind": "artifact", "attack": 2, "curse": 1 },
+  "priest_mask": { "name": "뱀 사제의 가면", "kind": "quest" }
+}

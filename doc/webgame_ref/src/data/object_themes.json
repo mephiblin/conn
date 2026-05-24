@@ -1,0 +1,16 @@
+[
+  {
+    "id": "buried_temple_props",
+    "theme": "buried_temple",
+    "decor": [
+      { "kind": "torch", "tileRoles": ["corridor", "end_cap"], "weight": 3, "maxPerMap": 8, "color": "#d69a52" },
+      { "kind": "barrel", "tileRoles": ["room", "corner"], "weight": 2, "maxPerMap": 6, "color": "#8a6747" },
+      { "kind": "crate", "tileRoles": ["room", "junction"], "weight": 2, "maxPerMap": 6, "color": "#7a5b3d" },
+      { "kind": "bones", "tileRoles": ["end_cap", "corner"], "weight": 2, "maxPerMap": 5, "color": "#d8d0c2" },
+      { "kind": "altar", "tileRoles": ["intersection", "room"], "weight": 1, "maxPerMap": 3, "color": "#b79a61" },
+      { "kind": "sealed_urn", "tileRoles": ["end_cap", "room"], "weight": 2, "maxPerMap": 5, "color": "#a98d68" },
+      { "kind": "broken_pillar", "tileRoles": ["junction", "intersection"], "weight": 1, "maxPerMap": 4, "color": "#9d9789" },
+      { "kind": "ritual_bowl", "tileRoles": ["corner", "room"], "weight": 1, "maxPerMap": 3, "color": "#744b45" }
+    ]
+  }
+]

@@ -1,0 +1,109 @@
+{
+  "combatRewardProfiles": {
+    "default": [
+      { "when": { "boss": true }, "tableId": "loot_combat_boss" },
+      { "when": { "minXp": 30 }, "tableId": "loot_combat_elite" },
+      { "tableId": "loot_combat_bandage" }
+    ]
+  },
+  "loot_combat_bandage": {
+    "rolls": 1,
+    "tierEntries": [
+      {
+        "weight": 5,
+        "entries": [
+          { "itemId": "bandage", "weight": 5 },
+          { "itemId": "antivenom", "weight": 1 }
+        ]
+      },
+      {
+        "weight": 2,
+        "when": { "floorAtLeast": 2 },
+        "entries": [
+          { "itemId": "bandage", "quantity": 2, "weight": 2 },
+          { "itemId": "antivenom", "weight": 3 }
+        ]
+      }
+    ],
+    "bonusRolls": [
+      {
+        "chance": 0.2,
+        "entries": [
+          { "itemId": "bandage", "weight": 1 }
+        ]
+      }
+    ]
+  },
+  "loot_combat_elite": {
+    "rolls": 1,
+    "guaranteed": [
+      { "itemId": "bandage", "quantity": 1 }
+    ],
+    "tierEntries": [
+      {
+        "weight": 4,
+        "entries": [
+          { "itemId": "bandage", "quantity": 2, "weight": 3 },
+          { "itemId": "antivenom", "quantity": 1, "weight": 2 }
+        ]
+      },
+      {
+        "weight": 2,
+        "when": { "ai": "caster" },
+        "entries": [
+          { "itemId": "antivenom", "quantity": 2, "weight": 3 },
+          { "itemId": "bandage", "quantity": 1, "weight": 1 }
+        ]
+      }
+    ],
+    "bonusRolls": [
+      {
+        "chance": 0.45,
+        "entries": [
+          { "itemId": "bandage", "weight": 2 },
+          { "itemId": "antivenom", "weight": 1 }
+        ]
+      }
+    ]
+  },
+  "loot_combat_boss": {
+    "rolls": 1,
+    "guaranteed": [
+      { "itemId": "bandage", "quantity": 2 },
+      { "itemId": "antivenom", "quantity": 1 }
+    ],
+    "tierEntries": [
+      {
+        "weight": 3,
+        "entries": [
+          { "itemId": "bandage", "quantity": 2, "weight": 3 },
+          { "itemId": "antivenom", "quantity": 2, "weight": 2 }
+        ]
+      },
+      {
+        "weight": 1,
+        "when": { "ai": "caster" },
+        "entries": [
+          { "itemId": "priest_mask", "weight": 1 }
+        ]
+      },
+      {
+        "weight": 1,
+        "when": { "enemyId": "black_water_beast" },
+        "entries": [
+          { "itemId": "black_dagger", "weight": 1 }
+        ]
+      }
+    ],
+    "bonusRolls": [
+      {
+        "chance": 0.75,
+        "entries": [
+          { "itemId": "bandage", "quantity": 2, "weight": 2 },
+          { "itemId": "antivenom", "quantity": 1, "weight": 2 },
+          { "itemId": "black_dagger", "weight": 1 }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,233 @@
+[
+  {
+    "id": "rect_hall_ns",
+    "presetId": "rect_hall",
+    "theme": "buried_temple",
+    "size": { "width": 7, "height": 7 },
+    "openSides": ["north", "south"],
+    "doorSockets": ["north", "south"],
+    "anchors": [{ "id": "center", "kind": "generic", "x": 2, "y": 1 }],
+    "variantGroup": "rect_hall",
+    "roleTags": ["start", "key", "boss", "combat", "guard", "side", "side_reward"]
+  },
+  {
+    "id": "rect_hall_ew",
+    "presetId": "rect_hall",
+    "theme": "buried_temple",
+    "size": { "width": 7, "height": 7 },
+    "openSides": ["east", "west"],
+    "doorSockets": ["east", "west"],
+    "anchors": [{ "id": "center", "kind": "generic", "x": 2, "y": 1 }],
+    "variantGroup": "rect_hall",
+    "roleTags": ["start", "key", "boss", "combat", "guard", "side", "side_reward"]
+  },
+  {
+    "id": "long_hall_ns",
+    "presetId": "long_hall",
+    "theme": "buried_temple",
+    "size": { "width": 7, "height": 7 },
+    "openSides": ["north", "south"],
+    "doorSockets": ["north", "south"],
+    "anchors": [{ "id": "spine", "kind": "corridor", "x": 1, "y": 2 }],
+    "variantGroup": "long_hall",
+    "roleTags": ["start", "key", "boss", "combat", "guard", "side", "side_reward"]
+  },
+  {
+    "id": "long_hall_ew",
+    "presetId": "long_hall",
+    "theme": "buried_temple",
+    "size": { "width": 7, "height": 7 },
+    "openSides": ["east", "west"],
+    "doorSockets": ["east", "west"],
+    "anchors": [{ "id": "spine", "kind": "corridor", "x": 3, "y": 1 }],
+    "variantGroup": "long_hall",
+    "roleTags": ["start", "key", "boss", "combat", "guard", "side", "side_reward"]
+  },
+  {
+    "id": "cross_block_junction",
+    "presetId": "cross_block",
+    "theme": "buried_temple",
+    "size": { "width": 7, "height": 7 },
+    "openSides": ["north", "east", "south", "west"],
+    "doorSockets": ["north", "east", "south", "west"],
+    "anchors": [{ "id": "center", "kind": "junction", "x": 1, "y": 1 }],
+    "variantGroup": "cross_block",
+    "roleTags": ["start", "key", "side", "combat"]
+  },
+  {
+    "id": "cross_block_t_nes",
+    "presetId": "cross_block",
+    "theme": "buried_temple",
+    "size": { "width": 7, "height": 7 },
+    "openSides": ["north", "east", "south"],
+    "doorSockets": ["north", "east", "south"],
+    "anchors": [{ "id": "center", "kind": "junction", "x": 1, "y": 1 }],
+    "variantGroup": "cross_block_t",
+    "roleTags": ["start", "key", "locked_gate", "boss", "combat", "guard", "side", "side_reward"]
+  },
+  {
+    "id": "cross_block_t_new",
+    "presetId": "cross_block",
+    "theme": "buried_temple",
+    "size": { "width": 7, "height": 7 },
+    "openSides": ["north", "east", "west"],
+    "doorSockets": ["north", "east", "west"],
+    "anchors": [{ "id": "center", "kind": "junction", "x": 1, "y": 1 }],
+    "variantGroup": "cross_block_t",
+    "roleTags": ["start", "key", "locked_gate", "boss", "combat", "guard", "side", "side_reward"]
+  },
+  {
+    "id": "cross_block_t_nsw",
+    "presetId": "cross_block",
+    "theme": "buried_temple",
+    "size": { "width": 7, "height": 7 },
+    "openSides": ["north", "south", "west"],
+    "doorSockets": ["north", "south", "west"],
+    "anchors": [{ "id": "center", "kind": "junction", "x": 1, "y": 1 }],
+    "variantGroup": "cross_block_t",
+    "roleTags": ["start", "key", "locked_gate", "boss", "combat", "guard", "side", "side_reward"]
+  },
+  {
+    "id": "cross_block_t_esw",
+    "presetId": "cross_block",
+    "theme": "buried_temple",
+    "size": { "width": 7, "height": 7 },
+    "openSides": ["east", "south", "west"],
+    "doorSockets": ["east", "south", "west"],
+    "anchors": [{ "id": "center", "kind": "junction", "x": 1, "y": 1 }],
+    "variantGroup": "cross_block_t",
+    "roleTags": ["start", "key", "locked_gate", "boss", "combat", "guard", "side", "side_reward"]
+  },
+  {
+    "id": "l_block_turn_ne",
+    "presetId": "l_block",
+    "theme": "buried_temple",
+    "size": { "width": 7, "height": 7 },
+    "openSides": ["north", "east"],
+    "doorSockets": ["north", "east"],
+    "anchors": [{ "id": "turn", "kind": "junction", "x": 1, "y": 1 }],
+    "variantGroup": "l_block",
+    "roleTags": ["start", "key", "locked_gate", "boss", "combat", "guard", "side", "side_reward"]
+  },
+  {
+    "id": "l_block_turn_nw",
+    "presetId": "l_block",
+    "theme": "buried_temple",
+    "size": { "width": 7, "height": 7 },
+    "openSides": ["north", "west"],
+    "doorSockets": ["north", "west"],
+    "anchors": [{ "id": "turn", "kind": "junction", "x": 1, "y": 1 }],
+    "variantGroup": "l_block",
+    "roleTags": ["start", "key", "locked_gate", "boss", "combat", "guard", "side", "side_reward"]
+  },
+  {
+    "id": "l_block_turn_sw",
+    "presetId": "l_block",
+    "theme": "buried_temple",
+    "size": { "width": 7, "height": 7 },
+    "openSides": ["south", "west"],
+    "doorSockets": ["south", "west"],
+    "anchors": [{ "id": "turn", "kind": "junction", "x": 1, "y": 1 }],
+    "variantGroup": "l_block",
+    "roleTags": ["start", "key", "locked_gate", "boss", "combat", "guard", "side", "side_reward"]
+  },
+  {
+    "id": "l_block_turn_es",
+    "presetId": "l_block",
+    "theme": "buried_temple",
+    "size": { "width": 7, "height": 7 },
+    "openSides": ["east", "south"],
+    "doorSockets": ["east", "south"],
+    "anchors": [{ "id": "turn", "kind": "junction", "x": 1, "y": 1 }],
+    "variantGroup": "l_block",
+    "roleTags": ["start", "key", "locked_gate", "boss", "combat", "guard", "side", "side_reward"]
+  },
+  {
+    "id": "shrine_boss_anchor",
+    "presetId": "shrine",
+    "theme": "buried_temple",
+    "size": { "width": 7, "height": 7 },
+    "openSides": ["south"],
+    "doorSockets": ["south"],
+    "anchors": [{ "id": "altar", "kind": "boss_spawn", "x": 2, "y": 4 }],
+    "variantGroup": "shrine",
+    "roleTags": ["start", "boss", "reward", "side_reward"]
+  },
+  {
+    "id": "treasure_deadend_s",
+    "presetId": "shrine",
+    "theme": "buried_temple",
+    "size": { "width": 7, "height": 7 },
+    "openSides": ["south"],
+    "doorSockets": ["south"],
+    "anchors": [{ "id": "treasure_cache", "kind": "loot", "x": 2, "y": 4 }],
+    "variantGroup": "treasure_deadend",
+    "roleTags": ["key", "reward", "side", "side_reward"]
+  },
+  {
+    "id": "guard_deadend_s",
+    "presetId": "shrine",
+    "theme": "buried_temple",
+    "size": { "width": 7, "height": 7 },
+    "openSides": ["south"],
+    "doorSockets": ["south"],
+    "anchors": [{ "id": "guard_post", "kind": "encounter", "x": 2, "y": 4 }],
+    "variantGroup": "guard_deadend",
+    "roleTags": ["guard", "combat", "locked_gate"]
+  },
+  {
+    "id": "quest_deadend_s",
+    "presetId": "shrine",
+    "theme": "buried_temple",
+    "size": { "width": 7, "height": 7 },
+    "openSides": ["south"],
+    "doorSockets": ["south"],
+    "anchors": [{ "id": "ritual_focus", "kind": "event", "x": 2, "y": 4 }],
+    "variantGroup": "quest_deadend",
+    "roleTags": ["boss", "side_reward", "reward"]
+  },
+  {
+    "id": "crypt_cluster_loot",
+    "presetId": "crypt_cluster",
+    "theme": "buried_temple",
+    "size": { "width": 7, "height": 7 },
+    "openSides": ["west", "south"],
+    "doorSockets": ["west", "south"],
+    "anchors": [{ "id": "treasure", "kind": "loot", "x": 2, "y": 2 }],
+    "variantGroup": "crypt_cluster",
+    "roleTags": ["key", "reward", "side", "side_reward"]
+  },
+  {
+    "id": "crypt_cluster_loot_ne",
+    "presetId": "crypt_cluster",
+    "theme": "buried_temple",
+    "size": { "width": 7, "height": 7 },
+    "openSides": ["north", "east"],
+    "doorSockets": ["north", "east"],
+    "anchors": [{ "id": "treasure", "kind": "loot", "x": 2, "y": 2 }],
+    "variantGroup": "crypt_cluster",
+    "roleTags": ["key", "reward", "side", "side_reward"]
+  },
+  {
+    "id": "crypt_cluster_loot_nw",
+    "presetId": "crypt_cluster",
+    "theme": "buried_temple",
+    "size": { "width": 7, "height": 7 },
+    "openSides": ["north", "west"],
+    "doorSockets": ["north", "west"],
+    "anchors": [{ "id": "treasure", "kind": "loot", "x": 2, "y": 2 }],
+    "variantGroup": "crypt_cluster",
+    "roleTags": ["key", "reward", "side", "side_reward"]
+  },
+  {
+    "id": "crypt_cluster_loot_es",
+    "presetId": "crypt_cluster",
+    "theme": "buried_temple",
+    "size": { "width": 7, "height": 7 },
+    "openSides": ["east", "south"],
+    "doorSockets": ["east", "south"],
+    "anchors": [{ "id": "treasure", "kind": "loot", "x": 2, "y": 2 }],
+    "variantGroup": "crypt_cluster",
+    "roleTags": ["key", "reward", "side", "side_reward"]
+  }
+]

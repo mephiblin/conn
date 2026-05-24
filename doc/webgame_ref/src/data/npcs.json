@@ -1,0 +1,231 @@
+{
+  "npc_innkeeper": {
+    "name": "여관",
+    "description": "금화 5개로 전열과 후열의 HP를 회복한다.",
+    "log": "여관에서 피와 모래를 씻어냈다."
+  },
+  "npc_trainer": {
+    "name": "훈련소",
+    "description": "XP 30 이상인 캐릭터가 능력치를 올린다.",
+    "log": "훈련소에서 전투 감각을 갈고닦았다.",
+    "services": [
+      {
+        "type": "talk",
+        "label": "기술 상점을 연다",
+        "note": "훈련소 뒤편 천막에서 기술 기록과 주사위 개조를 다루는 상인을 부른다.",
+        "opensService": {
+          "kind": "skill_shop",
+          "serviceId": "town_trainer_skill_shop",
+          "title": "기술 상점",
+          "note": "훈련 계약으로 파티의 기술 주사위와 전투 기술을 정비한다.",
+          "catalogId": "trainer_skill_rotation",
+          "currency": "gold"
+        }
+      }
+    ],
+    "progressionHooks": {
+      "focusClassIndices": [0, 1, 2, 4],
+      "note": "초기 조합의 전열과 주술 계열을 우선 훈련시킨다."
+    }
+  },
+  "npc_smith": {
+    "name": "대장간",
+    "description": "금화 12개로 전열의 공격력을 보강한다.",
+    "log": "청동 날을 새로 세웠다."
+  },
+  "npc_apothecary": {
+    "name": "약재상",
+    "description": "금화 8개로 붕대와 해독제를 산다.",
+    "log": "약재와 붕대를 챙겼다."
+  },
+  "npc_skill_merchant": {
+    "name": "기술 상인",
+    "description": "주사위 면에 꽂을 기술 카드를 사고판다.",
+    "log": "기술 상인이 오래된 카드 상자를 펼쳐 보였다.",
+    "services": [
+      {
+        "type": "skill_shop",
+        "label": "스킬 카드를 거래한다",
+        "note": "장착되지 않은 카드만 판매할 수 있다.",
+        "catalogId": "merchant_basic",
+        "stockSize": 6,
+        "refreshSeconds": 45,
+        "skillIds": [
+          "skill_berserk",
+          "skill_guard_stance",
+          "skill_vital_stab",
+          "skill_piercing_shot",
+          "skill_serpent_phantasm",
+          "skill_purify",
+          "skill_weakness_read",
+          "skill_blood_cleave",
+          "skill_bastion_vow",
+          "skill_chain_lightning",
+          "skill_mending_wave",
+          "skill_venom_mark",
+          "skill_storm_bolt",
+          "skill_thunder_clap",
+          "skill_holy_light",
+          "skill_death_coil",
+          "skill_avatar_vow",
+          "skill_mana_burn",
+          "skill_divide_guard",
+          "skill_summon_serpent_egg"
+        ]
+      },
+      {
+        "type": "talk",
+        "label": "기술 카드의 유래를 묻는다",
+        "note": "상인은 사원 깊은 곳의 청동 문양을 베껴 만든 카드가 주사위에 스며든다고 속삭인다."
+      }
+    ]
+  },
+  "npc_bulletin_board": {
+    "name": "게시판",
+    "description": "촌장이 남긴 원정 공고와 보상 전표를 확인한다.",
+    "log": "게시판에서 원정 의뢰서를 확인했다."
+  },
+  "npc_scholar": {
+    "name": "학자의 방",
+    "description": "제단과 비밀문에 대한 단서를 듣는다.",
+    "log": "학자: 뱀 문양의 초록 돌은 숨은 통로를 가리키네.",
+    "services": [
+      { "type": "quest", "label": "의뢰를 확인한다" },
+      {
+        "type": "talk",
+        "label": "기록을 묻는다",
+        "note": "제단과 벽화, 검은 물의 단서를 나눠 준다.",
+        "dialogue": {
+          "entryStepId": "scholar_intro",
+          "steps": [
+            {
+              "id": "scholar_intro",
+              "title": "학자의 기록",
+              "text": "학자는 닳아버린 탁본을 펼치며 뱀 문양과 검은 물 자국이 같은 층에서 이어질 때 숨은 길이 드러난다고 설명한다.",
+              "choices": [
+                { "label": "벽화에 대해 더 묻는다", "nextStepId": "scholar_mural" },
+                { "label": "검은 물 자국을 묻는다", "nextStepId": "scholar_water" }
+              ]
+            },
+            {
+              "id": "scholar_mural",
+              "title": "검은 벽화",
+              "text": "벽화의 초록 돌은 방향이 아니라 순서를 가리킨다. 검은 자국을 먼저 보고 돌아오면 숨은 문장이 완성된다고 학자가 덧붙인다.",
+              "choices": [
+                { "label": "기록을 접고 돌아선다", "note": "학자가 벽화의 순서를 잊지 말라고 경고했다." }
+              ]
+            },
+            {
+              "id": "scholar_water",
+              "title": "검은 물 자국",
+              "text": "검은 물은 단순한 누수가 아니라 제단 사이를 잇는 표시다. 자국이 굳어 있는 방향으로 한 칸씩 더 살피라고 학자가 말한다.",
+              "choices": [
+                { "label": "단서를 기억해 둔다", "note": "학자가 검은 물 자국의 방향을 따라가 보라고 했다." }
+              ]
+            }
+          ]
+        }
+      },
+      { "type": "identify", "label": "유물을 감정한다", "cost": { "gold": 6 } }
+    ],
+    "questHooks": [
+      { "bossesDefeatedAtLeast": 0, "note": "피의 제단과 숨은 통로 기록을 먼저 확인하라." },
+      { "bossesDefeatedAtLeast": 1, "note": "검은 물의 흔적을 따라가면 마지막 제단에 가까워진다." }
+    ],
+    "questSeeds": [
+      {
+        "id": "quest_seed_black_mural",
+        "title": "검은 벽화 기록",
+        "note": "첫 층의 피의 제단과 검은 벽화를 함께 기록하면 아래층 봉인을 푸는 단서가 완성된다.",
+        "objectives": [
+          "던전 안의 학자와 대화해 검은 벽화 기록을 수락한다.",
+          "피의 제단에서 검은 벽화 기록을 완성한다."
+        ],
+        "rewards": {
+          "gold": 12,
+          "xp": 6,
+          "items": [{ "itemId": "bandage", "quantity": 1 }],
+          "flag": "quest_seed_black_mural_rewarded"
+        },
+        "failureFlag": "quest_seed_black_mural_failed",
+        "bossesDefeatedAtLeast": 0,
+        "grantFlag": "quest_seed_black_mural",
+        "completeEventId": "event_blood_altar_unlock"
+      }
+    ]
+  },
+  "npc_gatekeeper": {
+    "name": "문",
+    "description": "수주한 의뢰 전표가 있을 때만 던전으로 이어지는 문이 열린다.",
+    "log": "청동 문이 낮게 울리며 사원 입구를 드러냈다."
+  },
+  "npc_exile_scout": {
+    "name": "추방된 정찰병",
+    "description": "함정과 숨은 통로를 아는 정찰병이 벽에 기대어 숨을 고른다.",
+    "log": "정찰병: 살아서 나가고 싶다면 내 눈과 손을 빌려라.",
+    "services": [
+      { "type": "talk", "label": "경로를 묻는다" },
+      { "type": "recruit", "label": "동행을 제안한다", "companionProfile": { "name": "마샤", "classIndex": 2, "note": "함정과 비밀문에 익숙한 정찰병이다." } }
+    ],
+    "questHooks": [
+      { "bossesDefeatedAtLeast": 0, "note": "정찰병은 첫 층의 함정대와 숨은 벽을 경계하라고 경고한다." }
+    ]
+  },
+  "npc_wounded_mystic": {
+    "name": "상처 입은 신비가",
+    "description": "검은 물에 젖은 신비가가 저주와 독의 흔적을 살핀다.",
+    "log": "신비가: 검은 물에 손을 담그지 마라. 독과 저주가 함께 흐른다.",
+    "services": [
+      { "type": "quest", "label": "검은 물의 맹세를 듣는다" },
+      { "type": "talk", "label": "검은 물을 묻는다" },
+      { "type": "trade", "label": "약재를 산다", "vendorId": "vendor_apothecary" },
+      { "type": "heal", "label": "상처를 돌본다", "cost": { "gold": 7 }, "heal": 8, "cureStatus": "출혈" },
+      { "type": "identify", "label": "저주를 살핀다", "cost": { "gold": 4 } }
+    ],
+    "questHooks": [
+      { "bossesDefeatedAtLeast": 1, "note": "신비가는 마지막 층의 검은 물 제단이 저주와 문을 함께 묶는다고 말한다." }
+    ],
+    "questSeeds": [
+      {
+        "id": "quest_seed_black_water_vow",
+        "title": "검은 물의 맹세",
+        "note": "상처 입은 신비가가 마지막 층 검은 물 제단의 의식을 마쳐 달라고 부탁한다.",
+        "objectives": [
+          "도굴꾼의 야영지에서 상처 입은 신비가의 의뢰를 받는다.",
+          "마지막 층의 검은 물 제단에서 의식을 마친다."
+        ],
+        "rewards": {
+          "gold": 18,
+          "xp": 10,
+          "items": [
+            { "itemId": "antivenom", "quantity": 1 },
+            { "itemId": "firebomb", "quantity": 1 }
+          ],
+          "flag": "quest_seed_black_water_vow_rewarded"
+        },
+        "failureFlag": "quest_seed_black_water_vow_failed",
+        "bossesDefeatedAtLeast": 0,
+        "requiredFlag": "quest_seed_black_mural_rewarded",
+        "grantFlag": "quest_seed_black_water_vow",
+        "completeEventId": "event_black_water_rite"
+      }
+    ]
+  },
+  "npc_deserter_captain": {
+    "name": "도망친 경비대장",
+    "description": "청동 사슬을 두른 경비대장이 길을 막고 금을 요구한다.",
+    "log": "경비대장: 금을 내고 지나가든지, 칼로 내 길을 뚫든지.",
+    "services": [
+      { "type": "talk", "label": "통행 조건을 묻는다" },
+      {
+        "type": "fight",
+        "label": "칼을 뽑는다",
+        "encounterId": "encounter_serpent_guard",
+        "avoidLabel": "금화를 내고 지나간다",
+        "avoidCost": { "gold": 9 },
+        "avoidFlag": "npc_deserter_captain_bribed",
+        "avoidLog": "경비대장이 금화를 세어 본 뒤 비켜섰다. 청동 사슬이 벽에 부딪히며 길이 열린다."
+      }
+    ]
+  }
+}

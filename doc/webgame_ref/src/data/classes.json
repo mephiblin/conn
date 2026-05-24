@@ -1,0 +1,100 @@
+[
+  {
+    "cls": "야만전사",
+    "hp": 34,
+    "atk": 9,
+    "def": 3,
+    "skillId": "skill_berserk",
+    "category": "two_handed",
+    "progression": {
+      "milestones": [
+        { "label": "광전사의 호흡", "xpCost": 18, "hpGain": 4, "atkGain": 1, "profGain": 1 },
+        { "label": "피의 각성", "xpCost": 32, "hpGain": 5, "atkGain": 2, "profGain": 1, "passiveUnlock": true }
+      ]
+    }
+  },
+  {
+    "cls": "용병검사",
+    "hp": 30,
+    "atk": 7,
+    "def": 5,
+    "skillId": "skill_guard_stance",
+    "category": "shield",
+    "progression": {
+      "milestones": [
+        { "label": "성벽 자세", "xpCost": 18, "hpGain": 3, "defGain": 1, "profGain": 1 },
+        { "label": "보루의 발걸음", "xpCost": 34, "hpGain": 4, "atkGain": 1, "defGain": 1, "profGain": 1, "passiveUnlock": true }
+      ]
+    }
+  },
+  {
+    "cls": "도적",
+    "hp": 22,
+    "atk": 6,
+    "def": 3,
+    "skillId": "skill_vital_stab",
+    "category": "traps",
+    "progression": {
+      "milestones": [
+        { "label": "자물쇠 감각", "xpCost": 16, "atkGain": 1, "defGain": 1, "profGain": 1 },
+        { "label": "독침 역이용", "xpCost": 28, "hpGain": 3, "atkGain": 2, "profGain": 1, "passiveUnlock": true }
+      ]
+    }
+  },
+  {
+    "cls": "궁수",
+    "hp": 24,
+    "atk": 7,
+    "def": 2,
+    "skillId": "skill_piercing_shot",
+    "category": "bow",
+    "progression": {
+      "milestones": [
+        { "label": "사막 시야", "xpCost": 16, "atkGain": 1, "profGain": 1 },
+        { "label": "관통 연사", "xpCost": 30, "hpGain": 2, "atkGain": 2, "profGain": 1, "passiveUnlock": true }
+      ]
+    }
+  },
+  {
+    "cls": "주술사",
+    "hp": 20,
+    "atk": 8,
+    "def": 1,
+    "skillId": "skill_serpent_phantasm",
+    "category": "sorcery",
+    "progression": {
+      "milestones": [
+        { "label": "비늘 주문식", "xpCost": 18, "atkGain": 1, "defGain": 1, "profGain": 1 },
+        { "label": "환영 증폭", "xpCost": 30, "hpGain": 2, "atkGain": 2, "profGain": 1, "passiveUnlock": true }
+      ]
+    }
+  },
+  {
+    "cls": "사제",
+    "hp": 24,
+    "atk": 5,
+    "def": 3,
+    "skillId": "skill_purify",
+    "category": "ritual",
+    "progression": {
+      "milestones": [
+        { "label": "정화 의식", "xpCost": 16, "hpGain": 3, "defGain": 1, "profGain": 1 },
+        { "label": "성수의 맹세", "xpCost": 28, "hpGain": 3, "atkGain": 1, "profGain": 1, "passiveUnlock": true }
+      ]
+    }
+  },
+  {
+    "cls": "학자",
+    "hp": 18,
+    "atk": 4,
+    "def": 2,
+    "skillId": "skill_weakness_read",
+    "category": "lore",
+    "progression": {
+      "milestones": [
+        { "label": "금석문 독해", "xpCost": 14, "defGain": 1, "profGain": 1 },
+        { "label": "금단 약식", "xpCost": 26, "hpGain": 2, "atkGain": 1, "profGain": 2, "passiveUnlock": true }
+      ]
+    }
+  }
+]

@@ -1,0 +1,24 @@
+[
+  {
+    "id": "buried_temple_floor_variation",
+    "theme": "buried_temple",
+    "target": "floor",
+    "whenTileRoles": ["room", "junction", "intersection", "corner"],
+    "variants": [
+      { "materialId": "floor_sandstone_01", "weight": 6, "tag": "tile_base" },
+      { "materialId": "floor_moss_01", "weight": 2, "tag": "tile_moss" },
+      { "materialId": "floor_obsidian_01", "weight": 1, "tag": "tile_obsidian" },
+      { "materialId": "floor_bloodstone_01", "weight": 1, "tag": "tile_ritual_stain" }
+    ]
+  },
+  {
+    "id": "buried_temple_corridor_variation",
+    "theme": "buried_temple",
+    "target": "floor",
+    "whenTileRoles": ["corridor", "end_cap"],
+    "variants": [
+      { "materialId": "floor_sandstone_01", "weight": 5, "tag": "tile_corridor" },
+      { "materialId": "floor_bloodstone_01", "weight": 1, "tag": "tile_blood_trace" }
+    ]
+  }
+]

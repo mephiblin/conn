@@ -1,0 +1,225 @@
+{
+  "event_blood_altar_unlock": {
+    "name": "피의 제단",
+    "type": "blood_altar_unlock",
+    "interaction": "interact",
+    "entryStepId": "altar_start",
+    "steps": [
+      {
+        "id": "altar_start",
+        "title": "피의 제단",
+        "text": "검은 돌 제단의 홈에 오래된 피가 말라붙어 있다.",
+        "choices": [
+          {
+            "label": "학자의 기록대로 피를 바치고 문양을 완성한다",
+            "requiredQuestSeedId": "quest_seed_black_mural",
+            "requiredQuestSeedStatus": "active",
+            "effects": [
+              { "kind": "set_flag", "flag": "altar_blood_paid", "value": true },
+              { "kind": "damage_front", "amount": 4, "minHp": 1 },
+              { "kind": "set_quest_seed_state", "questSeedId": "quest_seed_black_mural", "status": "completed" },
+              { "kind": "mark_done" },
+              { "kind": "log", "message": "학자의 기록과 제단의 피가 맞물리자 검은 벽화 문장이 완성되고, 아래층으로 이어지는 봉인이 풀렸다." }
+            ],
+            "nextStepId": "altar_end"
+          },
+          {
+            "label": "피를 바친다",
+            "effects": [
+              { "kind": "set_flag", "flag": "altar_blood_paid", "value": true },
+              { "kind": "damage_front", "amount": 4, "minHp": 1 },
+              { "kind": "mark_done" },
+              { "kind": "log", "message": "피의 제단에 피를 바치자 멀리서 청동 문쇠가 풀리는 소리가 났다." }
+            ],
+            "nextStepId": "altar_end"
+          },
+          {
+            "label": "물러난다",
+            "effects": [
+              { "kind": "log", "message": "제단의 검은 홈에서 손을 거두고 뒤로 물러섰다." }
+            ],
+            "nextStepId": "altar_end"
+          }
+        ]
+      },
+      {
+        "id": "altar_end",
+        "title": "침묵",
+        "text": "제단은 다시 차갑게 식어 간다."
+      }
+    ],
+    "usage": { "mode": "uses", "usesRemaining": 1 },
+    "effects": [
+      { "kind": "set_flag", "flag": "altar_blood_paid", "value": true },
+      { "kind": "damage_front", "amount": 4, "minHp": 1 },
+      { "kind": "mark_done" },
+      { "kind": "log", "message": "피의 제단에 피를 바치자 멀리서 청동 문쇠가 풀리는 소리가 났다." }
+    ]
+  },
+  "event_trap_poison_dart": {
+    "name": "독침 함정",
+    "type": "trap_poison_dart",
+    "interaction": "onEnter",
+    "detection": { "check": "trap_sense", "difficulty": 12, "onSuccess": "warn", "onFailure": "hidden" },
+    "disarm": { "check": "lock_and_trap", "difficulty": 14, "onFailure": "trigger" },
+    "usage": { "mode": "repeat" },
+    "effects": [
+      { "kind": "damage_front", "amount": 6, "minHp": 1 },
+      { "kind": "add_status_front", "status": "독" },
+      { "kind": "mark_done" },
+      { "kind": "log", "message": "선두가 독침 함정에 당했다." }
+    ]
+  },
+  "event_trap_bleed_blade": {
+    "name": "칼날 함정",
+    "type": "trap_bleed_blade",
+    "interaction": "onEnter",
+    "detection": { "check": "trap_sense", "difficulty": 11, "onSuccess": "warn", "onFailure": "hidden" },
+    "disarm": { "check": "lock_and_trap", "difficulty": 13, "onFailure": "trigger" },
+    "usage": { "mode": "repeat" },
+    "effects": [
+      { "kind": "damage_front", "amount": 6, "minHp": 1 },
+      { "kind": "add_status_front", "status": "출혈" },
+      { "kind": "mark_done" },
+      { "kind": "log", "message": "선두가 숨겨진 칼날 함정에 베였다." }
+    ]
+  },
+  "event_trap_curse_rune": {
+    "name": "저주 룬 함정",
+    "type": "trap_curse_rune",
+    "interaction": "onEnter",
+    "detection": { "check": "lore", "difficulty": 14, "onSuccess": "warn", "onFailure": "hidden" },
+    "disarm": { "check": "ritual", "difficulty": 15, "onFailure": "trigger" },
+    "usage": { "mode": "repeat" },
+    "effects": [
+      { "kind": "damage_front", "amount": 6, "minHp": 1 },
+      { "kind": "add_status_front", "status": "저주" },
+      { "kind": "mark_done" },
+      { "kind": "log", "message": "선두가 저주 룬의 검은 불꽃에 휩싸였다." }
+    ]
+  },
+  "event_shrine_healing_spring": {
+    "name": "정화 성소",
+    "type": "shrine_healing_spring",
+    "interaction": "interact",
+    "usage": { "mode": "uses", "usesRemaining": 1 },
+    "effects": [
+      { "kind": "heal_party", "amount": 8 },
+      { "kind": "cure_status_party", "status": "독" },
+      { "kind": "log", "message": "성소의 검은 물이 상처를 덮고 독기를 씻어냈다." }
+    ]
+  },
+  "event_rest_guard_post": {
+    "name": "폐쇄된 감시초소",
+    "type": "rest_guard_post",
+    "interaction": "onRest",
+    "usage": { "mode": "cooldown", "cooldownSteps": 2 },
+    "effects": [
+      { "kind": "consume_resource", "resource": "food", "amount": 1 },
+      { "kind": "consume_resource", "resource": "water", "amount": 1 },
+      { "kind": "heal_party", "amount": 6 },
+      { "kind": "log", "message": "폐쇄된 감시초소에서 짧게 쉬며 상처를 추슬렀다." }
+    ]
+  },
+  "event_black_water_rite": {
+    "name": "검은 물의 의식",
+    "type": "black_water_rite",
+    "interaction": "interact",
+    "entryStepId": "rite_start",
+    "steps": [
+      {
+        "id": "rite_start",
+        "title": "검은 물 제단",
+        "text": "검은 물이 얕게 고인 제단이 미세한 진동과 함께 숨을 쉰다.",
+        "choices": [
+          {
+            "label": "신비가의 맹세대로 검은 물을 가라앉힌다",
+            "requiredQuestSeedId": "quest_seed_black_water_vow",
+            "requiredQuestSeedStatus": "active",
+            "effects": [
+              { "kind": "set_flag", "flag": "black_water_rite_cleansed", "value": true },
+              { "kind": "set_quest_seed_state", "questSeedId": "quest_seed_black_water_vow", "status": "completed" },
+              { "kind": "heal_party", "amount": 5 },
+              { "kind": "mark_done" },
+              { "kind": "log", "message": "검은 물의 진동이 잦아들고 마지막 계단을 붙잡던 봉인이 느슨해졌다." }
+            ],
+            "nextStepId": "rite_end"
+          },
+          {
+            "label": "차가운 물로 상처를 씻는다",
+            "effects": [
+              { "kind": "heal_party", "amount": 4 },
+              { "kind": "log", "message": "차가운 검은 물이 상처의 열기를 잠시 식혀 주었다." }
+            ],
+            "nextStepId": "rite_end"
+          },
+          {
+            "label": "물러난다",
+            "effects": [
+              { "kind": "log", "message": "검은 물의 울림을 뒤로하고 제단에서 한 걸음 물러섰다." }
+            ],
+            "nextStepId": "rite_end"
+          }
+        ]
+      },
+      {
+        "id": "rite_end",
+        "title": "잠잠해진 수면",
+        "text": "검은 물의 표면이 서서히 거울처럼 잠잠해진다."
+      }
+    ],
+    "usage": { "mode": "uses", "usesRemaining": 1 }
+  },
+  "event_camp_guard_post": {
+    "name": "버려진 야영지",
+    "type": "camp_guard_post",
+    "interaction": "onCamp",
+    "usage": { "mode": "cooldown", "cooldownSteps": 3 },
+    "effects": [
+      { "kind": "consume_resource", "resource": "food", "amount": 1 },
+      { "kind": "consume_resource", "resource": "water", "amount": 1 },
+      { "kind": "heal_party", "amount": 10 },
+      { "kind": "log", "message": "낡은 야영지에서 모닥불을 살려 깊게 쉬었다." }
+    ]
+  },
+  "event_scholar_cache_reward": {
+    "name": "학자의 숨은 보급함",
+    "type": "scholar_cache_reward",
+    "interaction": "onExit",
+    "usage": { "mode": "uses", "usesRemaining": 1 },
+    "entryStepId": "check_cache",
+    "steps": [
+      {
+        "id": "check_cache",
+        "title": "보급함 확인",
+        "branches": [
+          {
+            "requiredQuestSeedId": "quest_seed_black_mural",
+            "requiredQuestSeedStatus": "active",
+            "nextStepId": "opened_cache",
+            "label": "학자 의뢰 진행 중"
+          },
+          { "requiredFlag": "altar_blood_paid", "nextStepId": "opened_cache", "label": "제단 혈흔 확인" },
+          { "nextStepId": "opened_cache", "label": "기본 개방" }
+        ]
+      },
+      {
+        "id": "opened_cache",
+        "title": "보급함 회수",
+        "effects": [
+          { "kind": "set_quest_seed_state", "questSeedId": "quest_seed_black_mural", "status": "completed" },
+          { "kind": "grant_item", "itemId": "bandage", "quantity": 1 },
+          { "kind": "grant_xp_party", "amount": 4 },
+          { "kind": "restore_resource", "resource": "torch", "amount": 5 },
+          { "kind": "log", "message": "떠나는 발뒤꿈치 아래에서 학자의 숨은 보급함이 열렸고, 검은 벽화 기록이 완성됐다." }
+        ]
+      }
+    ],
+    "effects": [
+      { "kind": "grant_item", "itemId": "bandage", "quantity": 1 },
+      { "kind": "grant_xp_party", "amount": 4 },
+      { "kind": "restore_resource", "resource": "torch", "amount": 5 },
+      { "kind": "log", "message": "떠나는 발뒤꿈치 아래에서 학자의 숨은 보급함이 열렸다." }
+    ]
+  }
+}

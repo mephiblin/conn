@@ -1,0 +1,61 @@
+{
+  "vendor_inn": {
+    "serviceType": "heal_party",
+    "cost": { "gold": 5 },
+    "summary": "금화 5개로 전열과 후열의 HP를 회복한다."
+  },
+  "vendor_trainer": {
+    "serviceType": "train_party",
+    "summary": "클래스별 다음 훈련 단계가 있으면 XP를 써서 성장시킨다.",
+    "rotation": [
+      {
+        "when": { "maxFloor": 1 },
+        "summary": "초기 단계에서는 기본 훈련 위주로 XP를 소모한다."
+      },
+      {
+        "when": { "minFloor": 2 },
+        "summary": "깊은 층에 도달하면 상급 훈련 단계가 열린다."
+      }
+    ]
+  },
+  "vendor_smith": {
+    "serviceType": "buff_frontline",
+    "cost": { "gold": 12 },
+    "rewards": { "frontlineAtkGain": 1 },
+    "summary": "금화 12개로 전열의 공격력을 1 올린다.",
+    "rotation": [
+      {
+        "when": { "minFloor": 2 },
+        "cost": { "gold": 16 },
+        "rewards": { "frontlineAtkGain": 2 },
+        "summary": "2층 이후에는 강화 연마로 전열 공격력을 2 올린다."
+      },
+      {
+        "when": { "minFloor": 3, "bossesDefeatedAtLeast": 1 },
+        "cost": { "gold": 20 },
+        "rewards": { "frontlineAtkGain": 3 },
+        "summary": "후반에는 사원 강철 연마로 전열 공격력을 3 올린다."
+      }
+    ]
+  },
+  "vendor_apothecary": {
+    "serviceType": "sell_bundle",
+    "cost": { "gold": 8 },
+    "inventory": ["bandage", "antivenom"],
+    "summary": "금화 8개로 붕대와 해독제를 산다.",
+    "rotation": [
+      {
+        "when": { "minFloor": 2 },
+        "cost": { "gold": 10 },
+        "inventory": ["bandage", "bandage", "antivenom"],
+        "summary": "2층 이후에는 붕대 2개와 해독제 1개 묶음을 판다."
+      },
+      {
+        "when": { "minFloor": 3, "bossesDefeatedAtLeast": 1 },
+        "cost": { "gold": 14 },
+        "inventory": ["bandage", "bandage", "antivenom", "antivenom"],
+        "summary": "후반에는 붕대 2개와 해독제 2개 묶음을 판다."
+      }
+    ]
+  }
+}

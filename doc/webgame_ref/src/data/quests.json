@@ -1,0 +1,24 @@
+{
+  "quest_twisted_temple_clear": {
+    "name": "뒤틀린 사원 정찰",
+    "description": "게시판의 첫 원정 의뢰다. 뒤틀린 사원 1층의 위협을 정리하고 귀환한다.",
+    "mapKind": "twisted_temple",
+    "startFloor": 1,
+    "conditions": {
+      "kind": "bosses_defeated",
+      "bossesDefeatedAtLeast": 1,
+      "summary": "던전에서 보스급 적 1체를 쓰러뜨린다."
+    },
+    "rewards": {
+      "gold": 18,
+      "xp": 10,
+      "items": [{ "itemId": "bandage", "quantity": 1 }],
+      "flag": "quest_twisted_temple_clear_rewarded",
+      "value": true
+    },
+    "return": {
+      "label": "귀환",
+      "rewardOnReturn": true
+    }
+  }
+}
