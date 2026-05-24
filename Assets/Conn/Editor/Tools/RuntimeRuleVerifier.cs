@@ -19,6 +19,7 @@ namespace Conn.Editor.Tools
         public static void VerifyChapterOneCoreRules()
         {
             ContentDatabaseVerifier.VerifyContentDatabase();
+            VerifyP1VerticalSliceFlow();
             VerifyEquipmentDiceRules();
             VerifyEquipmentLoadoutToggle();
             VerifyNewGameState();
@@ -34,6 +35,48 @@ namespace Conn.Editor.Tools
             VerifyConsumables();
             VerifySkillSaleProtection();
             Debug.Log("Conn runtime core rule verification passed.");
+        }
+
+        private static void VerifyP1VerticalSliceFlow()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+            Expect(session.Mode == GameMode.Town, "P1 flow must start in Town after new game.");
+            Expect(!session.Quest.HasActiveQuest, "P1 flow must start without active quest.");
+
+            var boardOffer = QuestRuntimeService.CurrentBoardOffer(session);
+            Expect(boardOffer != null, "P1 flow requires a quest board offer.");
+            QuestRuntimeService.AcceptCurrentBoardOffer(session);
+            Expect(session.Quest.HasActiveQuest, "P1 flow quest board must create an active quest.");
+            Expect(session.Quest.TargetMonsterId == boardOffer.TargetMonsterId, "P1 flow quest target must match board offer.");
+
+            session.Mode = GameMode.Dungeon;
+            FieldMonsterRuntimeService.Register(session, "field_monster_test_guard", "placement_test_guard", "encounter_test_guard", session.Quest.TargetMonsterId);
+            FieldMonsterRuntimeService.MarkCombatHandoff(session, "field_monster_test_guard");
+            Expect(FieldMonsterRuntimeService.FindCombatHandoff(session) != null, "P1 flow monster contact must create combat handoff state.");
+
+            session.Mode = GameMode.Combat;
+            CombatRuntimeService.StartTestCombat(session);
+            Expect(session.Combat.Active, "P1 flow combat scene must start combat session.");
+            Expect(session.Combat.FieldMonsterStateKey == "field_monster_test_guard", "P1 flow combat must remember source monster state.");
+
+            QuestRuntimeService.CompleteTarget(session, session.Combat.FieldMonsterStateKey);
+            session.Combat.Active = false;
+            session.Mode = GameMode.Dungeon;
+            Expect(session.Quest.TargetDefeated, "P1 flow combat win must mark quest target defeated.");
+            Expect(session.Quest.ReturnAvailable, "P1 flow combat win must enable return.");
+            Expect(FieldMonsterRuntimeService.IsDefeated(session, "field_monster_test_guard"), "P1 flow combat win must clear field monster.");
+
+            QuestRuntimeService.KeepExploring(session);
+            Expect(session.Quest.ReturnPromptSeen, "P1 flow keep exploring must dismiss prompt.");
+
+            var goldBeforeReturn = session.Gold;
+            var reward = session.Quest.GoldReward;
+            QuestRuntimeService.CompleteReturn(session);
+            session.Mode = GameMode.Town;
+            Expect(!session.Quest.HasActiveQuest, "P1 flow return must clear quest.");
+            Expect(session.Gold == goldBeforeReturn + reward, "P1 flow return must grant reward.");
+            Expect(session.Quest.LastGoldReward == reward, "P1 flow return must store reward summary.");
         }
 
         private static void VerifyEquipmentDiceRules()

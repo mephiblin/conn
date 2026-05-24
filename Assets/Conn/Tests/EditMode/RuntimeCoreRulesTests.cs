@@ -39,6 +39,41 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void P1VerticalSliceRuntimeStateFlowCloses()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+            var boardOffer = QuestRuntimeService.CurrentBoardOffer(session);
+
+            QuestRuntimeService.AcceptCurrentBoardOffer(session);
+            session.Mode = GameMode.Dungeon;
+            FieldMonsterRuntimeService.Register(session, "field_monster_test_guard", "placement_test_guard", "encounter_test_guard", session.Quest.TargetMonsterId);
+            FieldMonsterRuntimeService.MarkCombatHandoff(session, "field_monster_test_guard");
+            session.Mode = GameMode.Combat;
+            CombatRuntimeService.StartTestCombat(session);
+
+            Assert.That(session.Combat.Active, Is.True);
+            Assert.That(session.Combat.FieldMonsterStateKey, Is.EqualTo("field_monster_test_guard"));
+            Assert.That(session.Quest.TargetMonsterId, Is.EqualTo(boardOffer.TargetMonsterId));
+
+            QuestRuntimeService.CompleteTarget(session, session.Combat.FieldMonsterStateKey);
+            session.Combat.Active = false;
+            session.Mode = GameMode.Dungeon;
+
+            Assert.That(session.Quest.ReturnAvailable, Is.True);
+            Assert.That(FieldMonsterRuntimeService.IsDefeated(session, "field_monster_test_guard"), Is.True);
+
+            var goldBeforeReturn = session.Gold;
+            var reward = session.Quest.GoldReward;
+            QuestRuntimeService.CompleteReturn(session);
+            session.Mode = GameMode.Town;
+
+            Assert.That(session.Quest.HasActiveQuest, Is.False);
+            Assert.That(session.Gold, Is.EqualTo(goldBeforeReturn + reward));
+            Assert.That(session.Quest.LastGoldReward, Is.EqualTo(reward));
+        }
+
+        [Test]
         public void NewGameStartsWithQuestReadyTownLoadout()
         {
             var session = new GameSessionState();
