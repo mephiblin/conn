@@ -1,3 +1,6 @@
+using Conn.Core.Combat;
+using Conn.Core.Equipment;
+
 namespace Conn.Core.Session
 {
     [System.Serializable]
@@ -7,6 +10,8 @@ namespace Conn.Core.Session
         public int Gold;
         public QuestRuntimeState Quest = new QuestRuntimeState();
         public PlayerPoseSnapshot PreEncounterSnapshot = new PlayerPoseSnapshot();
+        public PlayerEquipmentState Equipment = new PlayerEquipmentState();
+        public CombatSessionState Combat = new CombatSessionState();
 
         public void StartNewGame()
         {
@@ -14,6 +19,8 @@ namespace Conn.Core.Session
             Gold = 25;
             Quest.Clear();
             PreEncounterSnapshot.Clear();
+            Equipment.WeaponGrip = WeaponGrip.OneHand;
+            Combat.Clear();
         }
     }
 }

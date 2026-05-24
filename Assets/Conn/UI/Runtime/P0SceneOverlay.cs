@@ -1,5 +1,7 @@
 using Conn.Core.Scenes;
+using Conn.Core.Equipment;
 using Conn.Core.Session;
+using Conn.Runtime.Combat;
 using Conn.Runtime.Scenes;
 using Conn.Runtime.Session;
 using UnityEngine;
@@ -19,11 +21,12 @@ namespace Conn.UI.Runtime
         private void OnGUI()
         {
             const int width = 260;
-            GUILayout.BeginArea(new Rect(16, 16, width, 360), GUI.skin.box);
+            GUILayout.BeginArea(new Rect(16, 16, width, 520), GUI.skin.box);
             GUILayout.Label($"Scene: {sceneId}");
             var session = GameSession.Instance.State;
             GUILayout.Label($"Mode: {session.Mode}");
             GUILayout.Label($"Gold: {session.Gold}");
+            GUILayout.Label($"Weapon: {session.Equipment.WeaponGrip} ({session.Equipment.DiceCount} dice)");
             GUILayout.Space(8);
 
             if (sceneId == GameSceneId.Title)
@@ -71,6 +74,11 @@ namespace Conn.UI.Runtime
             if (GUILayout.Button("Accept Test Hunt"))
             {
                 QuestRuntimeService.AcceptTestHunt(session);
+            }
+
+            if (GUILayout.Button("Cycle Weapon"))
+            {
+                CycleWeapon(session);
             }
 
             GUI.enabled = session.Quest.HasActiveQuest;
@@ -122,16 +130,36 @@ namespace Conn.UI.Runtime
 
         private static void CombatControls(GameSessionState session)
         {
-            if (GUILayout.Button("Win Combat"))
+            if (!session.Combat.Active)
             {
-                QuestRuntimeService.CompleteTarget(session);
-                SceneFlowService.Load(GameSceneId.Dungeon);
+                CombatRuntimeService.StartTestCombat(session);
+            }
+
+            GUILayout.Label($"Round: {session.Combat.Round}");
+            GUILayout.Label($"Player HP: {session.Combat.Player.Hp}/{session.Combat.Player.MaxHp}");
+            GUILayout.Label($"Enemy HP: {session.Combat.Enemy.Hp}/{session.Combat.Enemy.MaxHp}");
+            GUILayout.Label(session.Combat.LastMessage);
+
+            if (GUILayout.Button("Attack With Dice"))
+            {
+                CombatRuntimeService.PlayerAttack(session);
             }
 
             if (GUILayout.Button("Die"))
             {
-                SceneFlowService.Load(GameSceneId.Ending);
+                CombatRuntimeService.Die(session);
             }
+        }
+
+        private static void CycleWeapon(GameSessionState session)
+        {
+            session.Equipment.WeaponGrip = session.Equipment.WeaponGrip switch
+            {
+                WeaponGrip.OneHand => WeaponGrip.OneHandAndShield,
+                WeaponGrip.OneHandAndShield => WeaponGrip.TwoHand,
+                WeaponGrip.TwoHand => WeaponGrip.None,
+                _ => WeaponGrip.OneHand
+            };
         }
 
         private static void ReturnToTown(GameSessionState session)

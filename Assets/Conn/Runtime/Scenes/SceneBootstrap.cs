@@ -1,4 +1,5 @@
 using Conn.Core.Scenes;
+using Conn.Runtime.Combat;
 using Conn.Runtime.Session;
 using UnityEngine;
 
@@ -18,6 +19,10 @@ namespace Conn.Runtime.Scenes
         {
             var session = GameSession.Instance;
             session.State.Mode = SceneFlowService.ToMode(sceneId);
+            if (sceneId == GameSceneId.Combat)
+            {
+                CombatRuntimeService.StartTestCombat(session.State);
+            }
         }
     }
 }
