@@ -4,7 +4,9 @@ using Conn.Core.Equipment;
 using Conn.Core.Items;
 using Conn.Core.Maps;
 using Conn.Core.Quests;
+using Conn.Core.Session;
 using Conn.Core.Skills;
+using Conn.Core.World;
 using System;
 using System.Collections.Generic;
 
@@ -24,6 +26,36 @@ namespace Conn.Runtime.Content
             activeRegistry = database != null ? database.BuildRegistry() : null;
             PlayerEquipmentState.EquipmentResolver = database != null ? FindEquipment : EquipmentCatalog.Find;
             SkillInventoryState.SkillResolver = database != null ? FindSkill : SkillCatalog.Find;
+            GameSessionState.StarterEquipmentIdResolver = database != null
+                ? StarterEquipmentId
+                : DefaultStarterEquipmentId;
+            GameSessionState.StarterSkillIdResolver = database != null
+                ? StarterSkillId
+                : DefaultStarterSkillId;
+        }
+
+        private static string DefaultStarterEquipmentId() => EquipmentCatalog.RustySwordId;
+
+        private static string DefaultStarterSkillId() => SkillCatalog.SlashId;
+
+        private static string StarterEquipmentId()
+        {
+            var starterEquipmentId = string.IsNullOrWhiteSpace(activeDatabase?.StarterEquipmentId)
+                ? EquipmentCatalog.RustySwordId
+                : activeDatabase.StarterEquipmentId;
+            return activeRegistry?.FindEquipment(starterEquipmentId) != null
+                ? starterEquipmentId
+                : EquipmentCatalog.RustySwordId;
+        }
+
+        private static string StarterSkillId()
+        {
+            var starterSkillId = string.IsNullOrWhiteSpace(activeDatabase?.StarterSkillId)
+                ? SkillCatalog.SlashId
+                : activeDatabase.StarterSkillId;
+            return activeRegistry?.FindSkill(starterSkillId) != null
+                ? starterSkillId
+                : SkillCatalog.SlashId;
         }
 
         public static MonsterDefinition FindMonster(string monsterId)
@@ -45,6 +77,12 @@ namespace Conn.Runtime.Content
                 contentMonster.XpReward,
                 actionName,
                 contentMonster.AttackPower);
+        }
+
+        public static FieldMonsterAiProfile FindFieldMonsterAiProfile(string monsterId)
+        {
+            var profile = activeRegistry?.FindMonster(monsterId)?.FieldAiProfile;
+            return profile != null ? profile.Clone() : FieldMonsterAiProfile.Default();
         }
 
         public static EquipmentItemDefinition FindEquipment(string itemId)
@@ -94,7 +132,8 @@ namespace Conn.Runtime.Content
                 SkillEffectKindFor(contentSkill.EffectKind),
                 contentSkill.BuyPrice,
                 contentSkill.SellPrice,
-                contentSkill.Power);
+                contentSkill.Power,
+                contentSkill.SpecialEffectId);
         }
 
         public static QuestDefinition FindQuest(string questId)

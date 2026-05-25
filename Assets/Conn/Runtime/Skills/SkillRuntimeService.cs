@@ -61,6 +61,57 @@ namespace Conn.Runtime.Skills
             return changed;
         }
 
+        public static bool EquipSkillToFace(GameSessionState session, string skillId, int faceIndex)
+        {
+            var diceCount = session.Equipment.DiceCount;
+            if (faceIndex < 0 || faceIndex >= diceCount || string.IsNullOrWhiteSpace(skillId))
+            {
+                return false;
+            }
+
+            if (!session.Skills.HasSkill(skillId))
+            {
+                return false;
+            }
+
+            var skill = RuntimeContentDatabase.FindSkill(skillId);
+            if (skill == null)
+            {
+                return false;
+            }
+
+            while (session.Skills.EquippedSkillIds.Count < diceCount)
+            {
+                session.Skills.EquippedSkillIds.Add(string.Empty);
+            }
+
+            if (EquippedCountExcludingFace(session, skillId, faceIndex) >= session.Skills.CountOwned(skillId))
+            {
+                RuntimeNoticeService.Set(session, $"No loose copy to equip: {skill.DisplayName}.");
+                return false;
+            }
+
+            session.Skills.EquippedSkillIds[faceIndex] = skillId;
+            session.Skills.NextEditFaceIndex = faceIndex;
+            SaveIfPlaying();
+            RuntimeNoticeService.Set(session, $"Equipped face {faceIndex + 1}: {skill.DisplayName}.");
+            return true;
+        }
+
+        private static int EquippedCountExcludingFace(GameSessionState session, string skillId, int excludedFaceIndex)
+        {
+            var count = 0;
+            for (var i = 0; i < session.Skills.EquippedSkillIds.Count; i++)
+            {
+                if (i != excludedFaceIndex && session.Skills.EquippedSkillIds[i] == skillId)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
         private static int FindOwnedIndexAfter(GameSessionState session, string skillId)
         {
             for (var i = 0; i < session.Skills.OwnedSkillIds.Count; i++)

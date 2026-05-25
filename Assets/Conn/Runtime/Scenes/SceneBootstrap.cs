@@ -5,6 +5,7 @@ using Conn.Core.Maps;
 using Conn.Runtime.Content;
 using Conn.Runtime.Maps;
 using Conn.Runtime.Session;
+using Conn.Runtime.World;
 using UnityEngine;
 
 namespace Conn.Runtime.Scenes
@@ -55,6 +56,7 @@ namespace Conn.Runtime.Scenes
             {
                 var compiledMap = CompiledMapDungeonRuntimeService.BuildQuestCompiledMap(session.State);
                 CompiledMapDungeonRuntimeService.RegisterQuestTargetFieldMonster(session.State, compiledMap);
+                FieldMonsterActorSpawner.SpawnFromCompiledMap(session.State, compiledMap);
             }
         }
     }

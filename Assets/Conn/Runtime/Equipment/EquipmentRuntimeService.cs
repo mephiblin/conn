@@ -19,12 +19,13 @@ namespace Conn.Runtime.Equipment
 
             if (item.Kind == EquipmentKind.Shield && session.Equipment.WeaponGrip == WeaponGrip.TwoHand)
             {
-                if (!session.Inventory.HasItem(EquipmentCatalog.RustySwordId))
+                var oneHandWeaponId = FirstOwnedOneHandWeaponId(session);
+                if (string.IsNullOrWhiteSpace(oneHandWeaponId))
                 {
                     return false;
                 }
 
-                session.Equipment.Equip(EquipmentCatalog.RustySwordId);
+                session.Equipment.Equip(oneHandWeaponId);
             }
 
             session.Equipment.Equip(itemId);
@@ -36,12 +37,14 @@ namespace Conn.Runtime.Equipment
 
         public static bool ToggleOwnedLoadout(GameSessionState session)
         {
-            if (session.Equipment.WeaponGrip == WeaponGrip.TwoHand && session.Inventory.HasItem(EquipmentCatalog.RustySwordId))
+            var oneHandWeaponId = FirstOwnedOneHandWeaponId(session);
+            if (session.Equipment.WeaponGrip == WeaponGrip.TwoHand && !string.IsNullOrWhiteSpace(oneHandWeaponId))
             {
-                session.Equipment.Equip(EquipmentCatalog.RustySwordId);
-                if (session.Inventory.HasItem(EquipmentCatalog.IronShieldId))
+                session.Equipment.Equip(oneHandWeaponId);
+                var shieldId = FirstOwnedEquipmentIdByKind(session, EquipmentKind.Shield);
+                if (!string.IsNullOrWhiteSpace(shieldId))
                 {
-                    session.Equipment.Equip(EquipmentCatalog.IronShieldId);
+                    session.Equipment.Equip(shieldId);
                 }
 
                 session.Skills.ResizeEquippedFaces(session.Equipment.DiceCount);
@@ -50,18 +53,20 @@ namespace Conn.Runtime.Equipment
                 return true;
             }
 
-            if (session.Inventory.HasItem(EquipmentCatalog.GreatAxeId))
+            var twoHandWeaponId = FirstOwnedEquipmentIdByKind(session, EquipmentKind.TwoHandWeapon);
+            if (!string.IsNullOrWhiteSpace(twoHandWeaponId))
             {
-                session.Equipment.Equip(EquipmentCatalog.GreatAxeId);
+                session.Equipment.Equip(twoHandWeaponId);
                 session.Skills.ResizeEquippedFaces(session.Equipment.DiceCount);
                 SaveIfPlaying();
                 RuntimeNoticeService.Set(session, "Switched to two-hand loadout.");
                 return true;
             }
 
-            if (session.Inventory.HasItem(EquipmentCatalog.IronShieldId) && session.Equipment.WeaponGrip == WeaponGrip.OneHand)
+            var ownedShieldId = FirstOwnedEquipmentIdByKind(session, EquipmentKind.Shield);
+            if (!string.IsNullOrWhiteSpace(ownedShieldId) && session.Equipment.WeaponGrip == WeaponGrip.OneHand)
             {
-                session.Equipment.Equip(EquipmentCatalog.IronShieldId);
+                session.Equipment.Equip(ownedShieldId);
                 session.Skills.ResizeEquippedFaces(session.Equipment.DiceCount);
                 SaveIfPlaying();
                 RuntimeNoticeService.Set(session, "Equipped shield loadout.");
@@ -69,6 +74,33 @@ namespace Conn.Runtime.Equipment
             }
 
             return false;
+        }
+
+        private static string FirstOwnedOneHandWeaponId(GameSessionState session)
+        {
+            var starterId = GameSessionState.StarterEquipmentIdResolver();
+            var starter = RuntimeContentDatabase.FindEquipment(starterId);
+            if (starter != null && starter.Kind == EquipmentKind.OneHandWeapon && session.Inventory.HasItem(starterId))
+            {
+                return starterId;
+            }
+
+            return FirstOwnedEquipmentIdByKind(session, EquipmentKind.OneHandWeapon);
+        }
+
+        private static string FirstOwnedEquipmentIdByKind(GameSessionState session, EquipmentKind kind)
+        {
+            for (var i = 0; i < session.Inventory.ItemIds.Count; i++)
+            {
+                var itemId = session.Inventory.ItemIds[i];
+                var item = RuntimeContentDatabase.FindEquipment(itemId);
+                if (item != null && item.Kind == kind)
+                {
+                    return itemId;
+                }
+            }
+
+            return string.Empty;
         }
 
         private static void SaveIfPlaying()

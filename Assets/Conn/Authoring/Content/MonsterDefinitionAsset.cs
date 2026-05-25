@@ -1,4 +1,5 @@
 using Conn.Core.Content;
+using Conn.Core.World;
 using System;
 using UnityEngine;
 
@@ -18,6 +19,9 @@ namespace Conn.Authoring.Content
         public int XpReward;
         public bool Boss;
         public string Ai = string.Empty;
+
+        [Header("Field AI")]
+        public FieldMonsterAiProfile FieldAiProfile = FieldMonsterAiProfile.Default();
 
         [Header("Authoring References")]
         public GameObject Prefab;
@@ -44,6 +48,7 @@ namespace Conn.Authoring.Content
                 XpReward = XpReward,
                 Boss = Boss,
                 Ai = Ai,
+                FieldAiProfile = FieldAiProfile != null ? FieldAiProfile.Clone() : FieldMonsterAiProfile.Default(),
                 ThemeTags = ThemeTags ?? Array.Empty<string>(),
                 BiomeTags = BiomeTags ?? Array.Empty<string>(),
                 SpawnRoleTags = SpawnRoleTags ?? Array.Empty<string>(),

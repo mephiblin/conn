@@ -3,7 +3,8 @@
   "rootNamespace": "Conn.UI",
   "references": [
     "Conn.Core",
-    "Conn.Runtime"
+    "Conn.Runtime",
+    "Unity.InputSystem"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

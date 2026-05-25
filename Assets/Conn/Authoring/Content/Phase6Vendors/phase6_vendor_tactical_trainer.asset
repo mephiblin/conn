@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 02ce594150529eb228c7d9f522cbfd18, type: 3}
+  m_Name: phase6_vendor_tactical_trainer
+  m_EditorClassIdentifier:
+  Id: phase6_vendor_tactical_trainer
+  ServiceType: skill_shop
+  GoldCost: 0
+  Summary: Phase 6 basic and support skill stock.
+  StockItemIds: []
+  StockSkillIds:
+  - phase6_skill_quick_cut
+  - phase6_skill_guard_step
+  - phase6_skill_field_mend
+  CatalogIds:
+  - phase6_basic
+  - phase6_support
+  Rotations:
+  - MinFloor: 2
+    BossesDefeated: 0
+    GoldCost: 0
+    Summary: Adds advanced tactical options.
+    StockItemIds: []
+    StockSkillIds:
+    - phase6_skill_smoke_feint
+    - phase6_skill_battle_focus
+    CatalogIds:
+    - phase6_support

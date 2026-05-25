@@ -72,7 +72,7 @@ namespace Conn.Runtime.Equipment
         {
             var item = RuntimeContentDatabase.FindEquipment(itemId);
             return item != null
-                && itemId != EquipmentCatalog.RustySwordId
+                && itemId != GameSessionState.StarterEquipmentIdResolver()
                 && session.Inventory.HasItem(itemId)
                 && !session.Equipment.IsEquipped(itemId);
         }

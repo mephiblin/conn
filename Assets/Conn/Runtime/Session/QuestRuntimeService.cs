@@ -12,6 +12,18 @@ namespace Conn.Runtime.Session
     {
         public static void AcceptTestHunt(GameSessionState session)
         {
+            AcceptDefaultQuest(session);
+        }
+
+        public static void AcceptDefaultQuest(GameSessionState session)
+        {
+            var offer = CurrentBoardOffer(session);
+            if (offer != null)
+            {
+                AcceptQuest(session, offer);
+                return;
+            }
+
             AcceptQuest(session, QuestCatalog.TestHuntId);
         }
 

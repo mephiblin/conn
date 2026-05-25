@@ -6,7 +6,8 @@
     "Conn.Core",
     "Conn.Runtime",
     "Conn.Rendering",
-    "Conn.UI"
+    "Conn.UI",
+    "Unity.InputSystem"
   ],
   "includePlatforms": [
     "Editor"

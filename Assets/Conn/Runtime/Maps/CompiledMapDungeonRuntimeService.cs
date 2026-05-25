@@ -60,12 +60,14 @@ namespace Conn.Runtime.Maps
                 : string.IsNullOrWhiteSpace(session.Quest.TargetMonsterId)
                 ? MonsterCatalog.TestGuardId
                 : session.Quest.TargetMonsterId;
-            FieldMonsterRuntimeService.Register(
+            FieldMonsterRuntimeService.RegisterAt(
                 session,
                 StateKeyFor(compiledMap, placement),
                 placement.Id,
                 encounterId,
-                monsterId);
+                monsterId,
+                placement.X,
+                placement.Y);
             RegisterMonsterPlacements(session, compiledMap, encounterId, monsterId);
             return true;
         }
@@ -87,12 +89,14 @@ namespace Conn.Runtime.Maps
                 }
 
                 var encounterPlacement = CompiledMapRuntimeLoader.FindEncounterPlacement(compiledMap, placement.Id);
-                FieldMonsterRuntimeService.Register(
+                FieldMonsterRuntimeService.RegisterAt(
                     session,
                     StateKeyFor(compiledMap, placement),
                     placement.Id,
                     encounterPlacement != null && !string.IsNullOrWhiteSpace(encounterPlacement.EncounterId) ? encounterPlacement.EncounterId : encounterId,
-                    encounterPlacement != null && !string.IsNullOrWhiteSpace(encounterPlacement.PrimaryMonsterId) ? encounterPlacement.PrimaryMonsterId : monsterId);
+                    encounterPlacement != null && !string.IsNullOrWhiteSpace(encounterPlacement.PrimaryMonsterId) ? encounterPlacement.PrimaryMonsterId : monsterId,
+                    placement.X,
+                    placement.Y);
                 registered++;
             }
 

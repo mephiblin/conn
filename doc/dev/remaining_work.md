@@ -15,15 +15,195 @@ Editor Tool과 제작 파이프라인의 세부 진행 순서와 체크리스트
 
 | 범위 | 진행률 | 상태 |
 | --- | ---: | --- |
-| P1 Runtime Vertical Slice | 97% | 자동 검증 기준 루프와 uGUI Canvas panel 계약은 통과했고, Play Mode 체감 확인만 남음 |
+| P1 Runtime Vertical Slice | 98% | 자동 검증 기준 루프, Phase 8 preflight, uGUI Canvas panel 계약은 통과했고, Play Mode 체감 확인만 남음 |
 | P2 전투/스킬/주사위 | 84-89% | 상태 이상/특수 효과/로그/HUD 가독성 1차 완료, encounter pattern/reward id/enemy slot Runtime uGUI 표시 계약 연결 |
 | P3 장비/인벤토리/상점 | 78-86% | 장비/소모품/스킬 구분과 구매/판매 상태 표시 1차 완료, generated item 계약 필드 추가 |
 | P4 마을 NPC 확장 | 72-82% | 8종 NPC와 최소 서비스/notice는 동작, NPC quest seed 네임스페이스 검증 정리 |
-| P5 Editor Tool 1차 | 80-88% | Content DB shell과 Monster/Encounter/Quest bootstrap UI 완료, Inspector-first authoring asset foundation 착수 |
-| P6 맵 생성 | 62-70% | compiledMap asset 저장/Runtime 우선 로드, start/quest target/boss/exit/monster/loot placement 계약 1차 완료 |
+| P5 Editor Tool 1차 | 86-92% | Content DB bridge, authoring asset foundation, validation/bake/browser 경로 1차 완료 |
+| P6 맵 생성 | 70-78% | compiledMap 2종 저장/검증, RuntimeMapGenerationBundle 경로, placement/field actor spawn 계약 1차 완료 |
+
+Phase 6 test content production has started. The first authored content batch
+adds 8 `MonsterDefinitionAsset` records under
+`Assets/Conn/Authoring/Content/Phase6Monsters`, and batch validation now proves
+that these authored monsters are discoverable and pass authoring validation.
+The second batch adds 12 `SkillDefinitionAsset` records under
+`Assets/Conn/Authoring/Content/Phase6Skills`, including supported attack, guard,
+heal, support, buff, debuff, lifesteal, summon, and Bleed special-effect metadata
+coverage.
+The third batch adds 6 `EncounterDefinitionAsset` records under
+`Assets/Conn/Authoring/Content/Phase6Encounters`, wired to the authored Phase 6
+monsters through runtime-safe monster ids and validated enemy slots.
+The fourth batch adds `QuestDefinitionAsset` support plus 5 authored quest assets
+under `Assets/Conn/Authoring/Content/Phase6Quests`, each linked to authored
+Phase 6 encounters, target monsters, and the Chapter 2 first-slice map profile.
+The fifth batch adds 4 `VendorDefinitionAsset` records under
+`Assets/Conn/Authoring/Content/Phase6Vendors`, covering equipment, skill,
+advanced skill, and consumable stock with validated item/skill/catalog references
+and rotation data.
+The sixth batch verifies the existing ContentDatabase NPC set for Phase 6:
+at least 8 NPC definitions are present, and the same database validation proves
+their vendor and NPC quest seed references remain valid.
+The map production checkpoint now saves and validates 2 compiled maps for the
+Chapter 2 first-slice profile, using seeds `2001` and `2112`.
+Phase 6 quest link validation now proves authored quests point to existing
+Phase 6 encounters, matching target monsters, and the Chapter 2 first-slice map
+profile.
+Full automated content validation for this Phase 6 batch passes through
+`git diff --check`, forbidden runtime Editor-reference scan, Chapter 1 runtime
+rules, and Chapter 2 build/data/map validation.
+Phase 7 field monster work has started with a runtime-safe AI profile data
+contract. Monster authoring assets bake `FieldMonsterAiProfile` data into
+`ContentMonsterDefinition`, and field monster runtime state now preserves the
+profile id plus detection, patrol, move speed, and contact cooldown values.
+Content and authoring validation now reject missing field AI profile data,
+empty profile ids, and negative detection, patrol, move speed, or contact
+cooldown values.
+Dungeon bootstrap now spawns runtime `FieldMonsterContact` actors from compiled
+map quest, boss, and monster placements. The spawner supports runtime bundle
+encounter placements and saved compiledMap placement-only fallback maps.
+Field monster runtime state now stores each actor's compiled map anchor
+coordinates so follow-up Idle, patrol, chase, and return-to-anchor behavior can
+use stable map placement data.
+Spawned field monster actors now include a minimal runtime controller that
+implements Idle by holding the actor at its spawn anchor while the field monster
+state remains `Idle`.
+Field monster actors now support a deterministic `Patrol` state that moves
+between the anchor and an AI-profile-radius waypoint using the profile move
+speed.
+Field monster actor controllers now evaluate player detection against the
+AI-profile detection radius, with validation covering inside/outside radius
+cases.
+Detection now transitions field monsters from Patrol to `Chase`, and the actor
+controller moves toward the detected player using the profile move speed.
+Chase now falls back to `ReturnToAnchor` when the player leaves detection
+radius, then returns the actor to its anchor and resumes Patrol.
+Field monster contact now records `LastContactTime` on runtime state and blocks
+duplicate handoffs until the AI-profile contact cooldown has elapsed.
+Combat handoff state is now explicitly verified through combat start and
+save/load: the combat field monster key and world `CombatHandoff` status both
+survive serialization.
+Flee now clears combat, returns to Dungeon mode, and restores the source field
+monster to `ReturnToAnchor` without marking it defeated.
+Victory now explicitly verifies that the source field monster is marked
+`Defeated` and that defeated field monster state survives save/load.
+Field monster contact now routes through a single `TryBeginCombatHandoff` path
+that rejects duplicate combat handoffs while one is active and still honors
+contact cooldown.
+Phase 8 automated preflight now covers the data/scene/runtime side of manual
+Game view verification: DB quest board offer, target encounter/map profile,
+compiledMap placement, field actor spawn, DB encounter combat, victory XP,
+quest return reward, board reroll, Ending continue routing, and save/load
+reward state.
+Final pre-manual batch validation for this pass also ran the full Chapter 1
+build validator and Chapter 2 build validator:
+`/tmp/conn_ch1_build_validate_final_pre_manual.log` and
+`/tmp/conn_ch2_build_validate_final_pre_manual.log`.
+The latest continuation validation reran the same full Chapter 1 and Chapter 2
+batch validators after checklist sync:
+`/tmp/conn_ch1_build_validate_goal_continue.log` and
+`/tmp/conn_ch2_build_validate_goal_continue.log`.
+The Phase 6 repeated-play preflight now simulates 3 consecutive board quest
+loops through compiledMap target handoff, DB encounter combat, victory XP,
+return reward, active quest clearing, and board reroll before manual Play Mode:
+`/tmp/conn_ch1_validate_phase6_three_quest_preflight.log` and
+`/tmp/conn_ch2_build_validate_phase6_three_quest_preflight.log`.
+The `Conn > Play Mode Verification` editor window now gathers the manual
+Phase 6/8 checklist, Chapter 1/2 validation buttons, Title scene opening, and
+links to the playtest/pipeline checklist docs for final Game view verification.
+The same window now persists manual checklist toggles with a completion count
+and reset button, so Play Mode verification progress can be tracked inside the
+Unity Editor session.
+The manual verification window now mirrors the exact Phase 6 and Phase 8
+checklist items from `editor_tool_content_pipeline_plan.md` and
+`p1_playtest_checklist.md`, avoiding bundled checks that could hide a missed
+Game view observation.
+Batch validation after this exact-checklist window update also passed:
+`/tmp/conn_ch1_build_validate_playmode_exact_checklist.log` and
+`/tmp/conn_ch2_build_validate_playmode_exact_checklist.log`.
+The playtest checklist now directs the tester through `Conn > Play Mode
+Verification`, and the window shows final guidance to update the matching docs
+only after every checked item was observed in the actual Game view.
+Batch validation after this completion-guidance update also passed:
+`/tmp/conn_ch1_build_validate_playmode_completion_guidance.log` and
+`/tmp/conn_ch2_build_validate_playmode_completion_guidance.log`.
+Assembly boundary audit confirms `Conn.Editor` is Editor-only and references
+runtime assemblies one-way, while `Conn.Core`, `Conn.Runtime`, `Conn.UI`, and
+`Conn.Authoring` do not reference `Conn.Editor` or `UnityEditor`.
+Chapter 1 core runtime rules now include an Editor-side guard that fails if the
+`Conn > Play Mode Verification` manual checklist drifts from the tracked Phase
+6/8 checklist items.
+The same guard also reads `editor_tool_content_pipeline_plan.md` and
+`p1_playtest_checklist.md`, so the verification window, pipeline checklist, and
+playtest checklist cannot silently drift apart.
+Batch validation after extending the guard to read the tracked docs passed:
+`/tmp/conn_ch1_build_validate_playmode_doc_guard.log` and
+`/tmp/conn_ch2_build_validate_playmode_doc_guard.log`.
+Batch validation after adding that checklist drift guard passed:
+`/tmp/conn_ch1_build_validate_playmode_checklist_guard.log` and
+`/tmp/conn_ch2_build_validate_playmode_checklist_guard.log`.
+The legacy fixed Dungeon `Visible Monster Contact` marker has been removed from
+P0 scene generation after compiled placement actor spawn and contact handoff
+preflight passed, preventing duplicate contact sources during manual Game view
+verification.
 
 Chapter 1 전체는 약 70-80% 진행으로 본다. 자동 검증 가능한 Runtime Core는
 통과했고, 남은 위험은 Play Mode 체감, 실제 Game view 가독성, 콘텐츠 다양성 쪽이다.
+
+## 현재 완료 감사
+
+| 항목 | 현재 증거 | 상태 |
+| --- | --- | --- |
+| Inspector-first authoring asset foundation | `Conn.Authoring` asset types, authoring bake path, Chapter 1/2 validation logs | 자동 검증 통과 |
+| `ContentDatabaseWindow` role reduction | Authoring browser/build/validation bridge plus preserved bootstrap DB tabs | 자동 검증 통과 |
+| Spawn/monster metadata and spawn table path | authored Phase 6 monsters/encounters/quests/vendors, spawn table validation, generated single-primary fallback | 자동 검증 통과 |
+| Map authoring and Generator Workbench | `MapProfileAsset` selection, resource/weight/spawn summaries, seed/floor/difficulty generation, compiled map export | 자동 검증 통과 |
+| `RuntimeMapGenerationBundle + profileId + seed` | runtime-safe bundle contract scan and Chapter 2 runtime generation validation | 자동 검증 통과 |
+| Runtime/Core/UI Runtime forbidden Editor references | code scan plus asmdef boundary audit | 자동 검증 통과 |
+| Phase 6 repeated quest sequence | automated 3-loop preflight exists, but Game view sequence not personally observed | 수동 확인 필요 |
+| Phase 8 full Game view loop | automated data/scene/runtime preflight exists, but UI readability and actual scene-flow observation remain | 수동 확인 필요 |
+
+## 최종 컴파일/스모크/리뷰 결과
+
+- 컴파일/스모크: Chapter 1 build validator 통과
+  (`/tmp/conn_ch1_compile_smoke_review_debug.log`).
+- 컴파일/스모크: Chapter 2 build validator 통과
+  (`/tmp/conn_ch2_compile_smoke_review_debug.log`).
+- 코드리뷰/디버깅: spawned field monster actor가 실제 런타임 경로에서
+  `Player` target을 자동 연결하지 않아 detection/Chase가 Play Mode에서
+  비활성화될 수 있는 문제를 발견했다.
+- 수정: `FieldMonsterActorSpawner`가 `Player` 태그 Transform을 찾아
+  `FieldMonsterActorController.SetPlayerTarget`에 연결한다.
+- 회귀 검증: `RuntimeRuleVerifier`가 spawned actor의 player auto-bind
+  detection을 검증하도록 보강했고 Chapter 1/2 validation으로 통과했다.
+
+## 앞으로 남은 작업
+
+수동 작업은 사용자가 수행한다. Codex 쪽 자동 구현/검증 작업은 현재 추가로
+남기지 않는다.
+
+사용자 수동 확인 대상:
+
+- Phase 6: 같은 Play Mode 세션에서 3개 퀘스트를 연속 수주, 던전 진입,
+  전투 승리, 마을 보상 수령까지 확인한다.
+- Phase 8: `editor_tool_content_pipeline_plan.md`의 Game view 체크리스트
+  12개 항목을 실제 Unity Game view에서 확인한다.
+- 확인 후 `Conn > Play Mode Verification` 창의 토글을 완료하고,
+  `editor_tool_content_pipeline_plan.md` 및 `p1_playtest_checklist.md`의
+  대응 `[!]` 항목을 `[x]`로 변경한다.
+
+## 커밋 전 범위 노트
+
+이번 목표와 직접 연결되는 변경은 Inspector-first authoring, ContentDatabase
+bridge, spawn/map validation, runtime generation bundle, field monster placement
+handoff, Play Mode verification support, and related docs/assets이다.
+
+커밋 전에는 다음 변경을 별도 UX/reference 작업으로 분리할지 확인한다:
+
+- `Assets/Conn/Rendering/Player/FpsPlayerController.cs`
+- `Assets/Conn/Runtime/Session/RuntimeCursorService.cs`
+- `Assets/Conn/Runtime/Session/RuntimeCursorService.cs.meta`
+- `doc/ref/`
+- `Assets/Conn/UI/Runtime/RuntimeCanvasUi.cs`의 cursor 관련 hunk
 
 ## 이미 구현된 핵심
 
@@ -256,16 +436,24 @@ generation은 기본 `RuntimeMapGenerationBundle.asset`을 생성하고 Dungeon
 equipped skill power 계산을 batch validation이 검증한다. Scholar hint도
 `RuntimeContentDatabase.BoardQuestAt`을 쓰도록 바뀌어 DB-authored board offer를
 catalog fallback보다 먼저 표시하며, DB-only scholar quest hint를 batch validation이
-검증한다. Apothecary service prompt/action도 DB-first consumable vendor stock을
+검증한다. `GameSessionState.StartNewGame`도 DB-configured starter equipment/skill
+id resolver를 먼저 쓰고 catalog starter ids는 no-DB/no-invalid-starter fallback으로
+남긴다. Content Database bootstrap/browser bridge에서 starter id를 편집할 수 있으며,
+equipment sale/loadout restore logic도 configured starter equipment id를 사용한다.
+typed loadout authoring asset은 후속 source-of-truth 단계로 남긴다.
+`QuestRuntimeService.AcceptDefaultQuest`도 현재 DB board offer를 먼저 수주하고 hardcoded
+test quest는 no-offer fallback으로 남긴다. Apothecary service prompt/action도 DB-first consumable vendor stock을
 사용하도록 바뀌었고, DB-only apothecary consumable 구매를 batch validation이
 검증한다. Skill merchant stock도 DB-active runtime에서는 비어 있는 DB stock을
 catalog stock으로 조용히 대체하지 않고, `SkillCatalog.All` stock generation은
 no-DB emergency fallback으로 제한되었다. Blacksmith UI stock도 DB-active
 runtime에서는 비어 있는 DB stock을 `EquipmentCatalog.All` 표시로 대체하지 않고,
-catalog stock display는 no-DB emergency fallback으로 제한되었다. Consumable UX
-text도 `RuntimeContentDatabase.FindConsumable`을 사용해 DB-authored consumable을
-표시한다. 아직 broader Runtime data bundle 전환과 분류된 fallback의 추가 제거는
-남아 있다.
+catalog stock display는 no-DB emergency fallback으로 제한되었다. Combat Bleed
+special effect도 skill `SpecialEffectId` metadata로 이동해 DB-authored skill이
+hardcoded Focus Strike id 없이 Bleed를 적용할 수 있다. Consumable UX
+text와 Runtime UI use controls도 `RuntimeContentDatabase.FindConsumable` 및
+보유 inventory consumable id를 사용해 DB-authored consumable을 표시/사용한다.
+아직 broader Runtime data bundle 전환과 분류된 fallback의 추가 제거는 남아 있다.
 
 우선순위:
 
@@ -280,11 +468,16 @@ text도 `RuntimeContentDatabase.FindConsumable`을 사용해 DB-authored consuma
    - Monster/Encounter/Quest editor: 1차 완료
    - fallback 경로 required/debug-only/removable 분류: 1차 완료
    - `SkillInventoryState.EquippedPower` DB-installed skill resolver 전환: 1차 완료
+   - `GameSessionState.StartNewGame` DB-configured starter loadout resolver 전환: 1차 완료
+   - Content Database bridge starter loadout id editing: 1차 완료
+   - Equipment service starter sale/loadout restore DB-configured starter id 전환: 1차 완료
+   - `QuestRuntimeService.AcceptDefaultQuest` DB board offer 우선 수주 전환: 1차 완료
    - `TownServiceRuntimeService.ScholarHint` DB-first board offer 전환: 1차 완료
+   - Combat Bleed special effect skill metadata 전환: 1차 완료
    - Apothecary service DB-first consumable vendor stock 전환: 1차 완료
    - Skill merchant catalog stock generation no-DB fallback 제한: 1차 완료
    - Blacksmith UI catalog stock display no-DB fallback 제한: 1차 완료
-   - Consumable UX text DB-first consumable lookup 전환: 1차 완료
+   - Consumable UX text/use controls DB-first owned consumable lookup 전환: 1차 완료
    - 남은 작업: 실제 테스트 콘텐츠를 authored database로 채운 뒤 분류된 catalog 호출을 하나씩 database source로 전환
 
 2. Build & Validation 확장

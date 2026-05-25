@@ -6,6 +6,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem.UI;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
@@ -101,6 +102,16 @@ namespace Conn.Editor.Tools
             if (UnityEngine.Object.FindAnyObjectByType<EventSystem>() == null)
             {
                 throw new InvalidOperationException($"{sceneId} scene is missing EventSystem.");
+            }
+
+            if (UnityEngine.Object.FindAnyObjectByType<InputSystemUIInputModule>() == null)
+            {
+                throw new InvalidOperationException($"{sceneId} scene is missing InputSystemUIInputModule.");
+            }
+
+            if (UnityEngine.Object.FindAnyObjectByType<StandaloneInputModule>() != null)
+            {
+                throw new InvalidOperationException($"{sceneId} scene still uses StandaloneInputModule, which breaks when active input handling is set to Input System.");
             }
 
             var bootstrap = UnityEngine.Object.FindAnyObjectByType<SceneBootstrap>();

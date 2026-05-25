@@ -1,7 +1,7 @@
 # Inspector-First Editor Architecture
 
 Date: 2026-05-25
-Status: proposed correction for the Unity editor roadmap.
+Status: first-pass Inspector-first authoring assets, ContentDatabase bridge reduction, spawn/map authoring, Generator Workbench, RuntimeMapGenerationBundle, and automated validation are implemented; manual Play Mode verification remains.
 
 ## Core Claim
 
@@ -514,16 +514,31 @@ Build validation:
 - Never make runtime depend on editor-only assets.
 - Preserve Undo/Redo for editor operations.
 
+## Current Implementation Checkpoints
+
+- [x] `editor_tool_content_pipeline_plan.md` marks current DB tabs as bootstrap
+  editors and browser/build/validation bridges, not final editors.
+- [x] Authoring asset schema exists for monsters, encounters, spawn tables,
+  skills, NPCs, vendors, quests, map profiles, resource sets, room chunks,
+  landmark rooms, and generation weight profiles.
+- [x] `ContentDatabaseWindow` has an authoring asset discovery, validation,
+  usage preview, and build/export bridge while preserving bootstrap DB tabs.
+- [x] `GeneratorWorkbenchWindow` can select `MapProfileAsset`, pass seed/floor/
+  difficulty, preview generated graph and placements, validate authoring assets,
+  save `CompiledMapAsset`, and build `RuntimeMapGenerationBundle`.
+- [x] Runtime/Core/UI Runtime forbidden Editor-reference scan is part of the
+  validation gate.
+- [x] Chapter 1 and Chapter 2 batch validators pass for the automated pipeline.
+
 ## Immediate Next Work
 
-1. Update `editor_tool_content_pipeline_plan.md` to mark current DB tabs as
-   bootstrap editors, not final editors.
-2. Add Phase E-0: authoring asset schema.
-3. Add Phase E-1: MonsterDefinitionAsset + custom inspector.
-4. Add Phase E-2: EncounterDefinitionAsset + custom inspector.
-5. Add Phase E-3: MapProfileAsset / RoomChunkAsset / ResourceSetAsset.
-6. Add Phase E-4: ContentDatabase build from authoring assets.
-7. Keep current DB-first runtime path as validation target.
+1. Complete manual Unity Play Mode verification for the Phase 6 three-quest
+   sequence.
+2. Complete the Phase 8 Game view checklist.
+3. Only after manual verification, update the related `[!]` items in
+   `editor_tool_content_pipeline_plan.md` and `p1_playtest_checklist.md`.
+4. Keep the DB-first runtime path and emergency fallbacks until replacement is
+   proven by both automated validation and manual Play Mode checks.
 
 ## Non-Goals
 

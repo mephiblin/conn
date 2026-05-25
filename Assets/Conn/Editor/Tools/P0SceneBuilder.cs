@@ -1,6 +1,7 @@
 using Conn.Core.Scenes;
 using Conn.Editor.Maps;
 using Conn.Editor.Content;
+using Conn.Editor.UI;
 using Conn.Rendering.Interaction;
 using Conn.Rendering.Player;
 using Conn.Runtime.Scenes;
@@ -32,6 +33,7 @@ namespace Conn.Editor.Tools
                 EnsureFolder(SceneFolder);
                 EnsureCompiledMapAsset();
                 EnsureRuntimeMapGenerationBundleAsset();
+                RuntimeUiPrefabBuilder.EnsureRuntimeCanvasPrefab();
 
                 CreateScene(GameSceneId.Title, false);
                 CreateScene(GameSceneId.Town, true, SceneContent.Town);
@@ -109,6 +111,7 @@ namespace Conn.Editor.Tools
 
             var overlay = bootstrapObject.AddComponent<P0SceneOverlay>();
             overlay.SceneId = sceneId;
+            RuntimeUiPrefabBuilder.InstantiateRuntimeCanvasPrefab(sceneId);
             RuntimeCanvasUiBuilder.EnsureRuntimeCanvas(bootstrapObject, sceneId);
 
             CreateLight();
@@ -129,7 +132,6 @@ namespace Conn.Editor.Tools
             else if (content == SceneContent.Dungeon)
             {
                 bootstrapObject.AddComponent<DungeonPlayerSpawnRestorer>();
-                CreateMonsterMarker();
             }
 
             if (!EditorSceneManager.SaveScene(scene, $"{SceneFolder}/{sceneId}.unity"))
@@ -173,19 +175,6 @@ namespace Conn.Editor.Tools
             var ground = GameObject.CreatePrimitive(PrimitiveType.Plane);
             ground.name = $"{sceneId} Ground";
             ground.transform.localScale = new Vector3(4f, 1f, 4f);
-        }
-
-        private static void CreateMonsterMarker()
-        {
-            var monster = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-            monster.name = "Visible Monster Contact";
-            monster.transform.position = new Vector3(0f, 1f, 4f);
-            monster.transform.localScale = new Vector3(1f, 1.2f, 1f);
-            var collider = monster.GetComponent<CapsuleCollider>();
-            collider.isTrigger = true;
-            var body = monster.AddComponent<Rigidbody>();
-            body.isKinematic = true;
-            monster.AddComponent<FieldMonsterContact>();
         }
 
         private static void CreateTownInteractables()

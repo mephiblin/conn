@@ -119,7 +119,7 @@ namespace Conn.Runtime.World
 
         private static string EquipmentSellStatus(GameSessionState session, string itemId)
         {
-            if (itemId == EquipmentCatalog.RustySwordId)
+            if (itemId == GameSessionState.StarterEquipmentIdResolver())
             {
                 return "Sell locked: starter weapon";
             }

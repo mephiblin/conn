@@ -407,13 +407,19 @@ Checklist:
 
 - [x] Mark fallback paths as required, debug-only, or removable.
 - [x] Replace `SkillInventoryState.EquippedPower` direct `SkillCatalog.Find` lookup with DB-installed skill resolver.
+- [x] Replace `GameSessionState.StartNewGame` fixed starter loadout with DB-configured starter ids before fallback.
+- [x] Expose DB-configured starter loadout ids in the bootstrap/browser Content Database bridge.
+- [x] Replace equipment service starter sword sale/restore checks with DB-configured starter equipment lookup before fallback.
+- [x] Replace `QuestRuntimeService.AcceptDefaultQuest` hardcoded test quest with DB board offer lookup before fallback.
 - [x] Replace `TownServiceRuntimeService.ScholarHint` direct `QuestCatalog.BoardOffer` lookup with DB-first board offer lookup.
+- [x] Replace combat Focus Strike hardcoded Bleed check with skill `SpecialEffectId` metadata before fallback.
 - [x] Replace Apothecary fixed `minor_potion` service lookup with DB-first consumable vendor stock lookup.
 - [x] Restrict `SkillShopRuntimeService` `SkillCatalog.All` stock generation to no-DB emergency fallback.
 - [x] Restrict Blacksmith UI `EquipmentCatalog.All` stock display to no-DB emergency fallback.
 - [x] Replace consumable UX direct `ConsumableCatalog.Find` lookup with DB-first consumable lookup.
+- [x] Replace consumable UI fixed `minor_potion` display/use controls with owned DB-first consumable lookup.
 - [x] Add validation before removing each fallback.
-- [ ] Keep emergency fallback for batch validation until replacement is proven.
+- [x] Keep emergency fallback for batch validation until replacement is proven.
 - [x] Document every removed fallback in `remaining_work.md`.
 
 Completion gate:
@@ -440,16 +446,20 @@ Reward IDs / Tables: 5
 
 Checklist:
 
-- [ ] Author 8 monsters through the editor.
-- [ ] Author 12 skills through the editor.
-- [ ] Author 6 encounters through the editor.
-- [ ] Author 5 quests through the editor.
-- [ ] Author 4 vendors through the editor.
-- [ ] Author or verify 8 NPC definitions.
-- [ ] Generate 2 compiled maps.
-- [ ] Link quests to encounters and map profiles.
-- [ ] Validate all content.
-- [ ] Play through at least 3 quests in sequence.
+- [x] Author 8 monsters through the editor.
+- [x] Author 12 skills through the editor.
+- [x] Author 6 encounters through the editor.
+- [x] Author 5 quests through the editor.
+- [x] Author 4 vendors through the editor.
+- [x] Author or verify 8 NPC definitions.
+- [x] Generate 2 compiled maps.
+- [x] Link quests to encounters and map profiles.
+- [x] Validate all content.
+- [!] Play through at least 3 quests in sequence.
+
+Automated preflight:
+
+- [x] Verify 3 quest accept/combat/return loops before manual Play Mode.
 
 Completion gate:
 
@@ -493,20 +503,21 @@ MonsterFieldAiProfile
 
 Checklist:
 
-- [ ] Add field monster AI profile data contract.
-- [ ] Add validator for field AI profile references.
-- [ ] Spawn field monster actors from compiledMap monster placements.
-- [ ] Store anchor position per actor.
-- [ ] Implement Idle.
-- [ ] Implement Patrol or Wander.
-- [ ] Implement player detection.
-- [ ] Implement Chase.
-- [ ] Implement ReturnToAnchor.
-- [ ] Implement contact cooldown.
-- [ ] Preserve combat handoff state.
-- [ ] Restore state correctly after Flee.
-- [ ] Mark defeated after Victory.
-- [ ] Prevent duplicate contact triggers.
+- [x] Add field monster AI profile data contract.
+- [x] Add validator for field AI profile references.
+- [x] Spawn field monster actors from compiledMap monster placements.
+- [x] Store anchor position per actor.
+- [x] Implement Idle.
+- [x] Implement Patrol or Wander.
+- [x] Implement player detection.
+- [x] Implement Chase.
+- [x] Implement ReturnToAnchor.
+- [x] Implement contact cooldown.
+- [x] Preserve combat handoff state.
+- [x] Restore state correctly after Flee.
+- [x] Mark defeated after Victory.
+- [x] Prevent duplicate contact triggers.
+- [x] Bind spawned field monster actors to the runtime Player target for detection.
 
 Completion gate:
 
@@ -518,18 +529,29 @@ Purpose: verify the full authored pipeline in the actual Game view.
 
 Checklist:
 
-- [ ] New Game starts from Title.
-- [ ] DB quest appears on Quest Board.
-- [ ] Quest acceptance sets target encounter and map profile.
-- [ ] Gate enters the correct dungeon.
-- [ ] compiledMap start/exit/monster placement is used.
-- [ ] Monster contact starts DB encounter combat.
-- [ ] Combat victory grants encounter reward.
-- [ ] Quest return grants quest reward.
-- [ ] Board rerolls after quest completion.
-- [ ] Ending/Continue policy still works.
-- [ ] uGUI HUD remains readable in Game view.
-- [ ] Save/load preserves relevant state.
+- [!] New Game starts from Title.
+- [!] DB quest appears on Quest Board.
+- [!] Quest acceptance sets target encounter and map profile.
+- [!] Gate enters the correct dungeon.
+- [!] compiledMap start/exit/monster placement is used.
+- [!] Monster contact starts DB encounter combat.
+- [!] Combat victory grants encounter reward.
+- [!] Quest return grants quest reward.
+- [!] Board rerolls after quest completion.
+- [!] Ending/Continue policy still works.
+- [!] uGUI HUD remains readable in Game view.
+- [!] Save/load preserves relevant state.
+
+Automated preflight:
+
+- [x] Verify Phase 8 data/scene/runtime contracts before manual Game view play.
+- [x] Add Editor Play Mode verification checklist support window.
+- [x] Add persistent manual checklist toggles to the verification window.
+- [x] Remove legacy fixed Dungeon monster marker after compiled placement actor spawn preflight.
+- [x] Align Play Mode verification window items with the exact Phase 6/8 manual checklist.
+- [x] Add final manual completion guidance to the Play Mode verification workflow.
+- [x] Add automated guard for Play Mode verification checklist drift.
+- [x] Validate tracked Play Mode verification docs in the automated checklist drift guard.
 
 Completion gate:
 
@@ -645,19 +667,84 @@ Completion gate:
 - Map profiles reference authored map resources and spawn sources, not copied
   monster data.
 
+### M-2: Generator Workbench Expansion
+
+Checklist:
+
+- [x] Add `MapProfileAsset` selection to `GeneratorWorkbenchWindow`.
+- [x] Show selected resource set and generation weight profile.
+- [x] Show chunk, landmark, spawn table, tag filter, and direct override summary.
+- [x] Add seed input and regenerate/random seed actions.
+- [x] Add floor and difficulty generation context.
+- [x] Show room graph, critical path, placement, and encounter placement preview.
+- [x] Show authoring validation result panel.
+- [x] Keep saved `CompiledMapAsset` export path.
+- [x] Keep catalog fallback generation when no `MapProfileAsset` is selected.
+
+Completion gate:
+
+- The map workbench can generate and inspect maps from authoring assets while
+  preserving the existing seed-based compiled map path.
+
+### M-3: RuntimeMapGenerationBundle
+
+Checklist:
+
+- [x] Build `RuntimeMapGenerationBundle` from validated map authoring assets.
+- [x] Save the default `RuntimeMapGenerationBundle.asset`.
+- [x] Verify the bundle contract contains no Editor or authoring object references.
+- [x] Generate a compiled runtime map from `RuntimeMapGenerationBundle + profileId + seed`.
+- [x] Bind `RuntimeMapGenerationBundleAsset` to Dungeon runtime bootstrap after saved compiledMap lookup.
+- [x] Keep `CompiledMapAsset` support for fixed maps, debug reproduction, and fixtures.
+
+Completion gate:
+
+- Runtime can create a generated compiled map from a validated bundle and seed
+  without depending on Editor-only objects.
+
+### M-4: Map/Spawn Validation
+
+Checklist:
+
+- [x] Validate `MapProfileAsset.ResourceSet` exists.
+- [x] Validate resource set Unity object references are not broken.
+- [x] Validate required landmark roles and landmark count ranges.
+- [x] Validate room chunk socket, anchor, role, and size coverage.
+- [x] Validate `populationAllowed=false` prevents monster placement.
+- [x] Validate referenced spawn tables exist.
+- [x] Validate spawn tables resolve to at least one valid encounter or monster.
+- [x] Validate encounter theme, biome, role, and map compatibility.
+- [x] Validate boss and quest target placement resolve to valid runtime encounters.
+- [x] Confirm Runtime/Core/UI Runtime forbidden Editor reference scan passes.
+
+Completion gate:
+
+- Map generation inputs fail validation before export when map resources,
+  spawn sources, or runtime bundle contracts are unsafe.
+
 ## Current Recommended Next Step
 
-Continue with fallback reduction and production content authoring only after the
-checked Inspector-first, spawn table, map authoring, runtime bundle, and
-validation paths remain green in batch validation:
+Automated editor, authoring, spawn/map, field monster FSM, and Phase 8 preflight
+validation are green. The next required work is manual Unity Play Mode
+verification before marking Phase 6/8 Game view items complete:
 
-1. Phase 5 Fallback Reduction
-2. Phase 6 Test Content Production
-3. Phase 8 Play Mode Verification
-4. Phase 7 Monster Field FSM after editor/map/encounter contracts stay stable
+1. Run `Conn > Build & Validate Chapter 1` and `Conn > Build & Validate Chapter 2`.
+2. Open `Assets/Conn/Scenes/Title.unity`.
+3. Complete the Phase 6 three-quest sequence in Play Mode.
+4. Complete the Phase 8 Game view checklist.
+5. Only after manual verification, change the related `[!]` items to `[x]`.
 
-Do not start Monster Field FSM until the editor, validation, map, encounter, and placement contracts are stable.
+Do not mark Phase 6/8 manual Play Mode checks complete from batch validation
+alone.
 
 ## Deferred Notes
 
-Add notes here when a checklist item is intentionally postponed.
+- Phase 6 `Play through at least 3 quests in sequence` remains a manual Play Mode
+  verification item. Automated Chapter 1/2 validation passes, but the actual
+  three-quest sequence should be checked in Game view before marking `[x]`.
+  Automated preflight now verifies three repeated board quest, compiledMap,
+  combat, return reward, and board reroll loops before manual Play Mode.
+- Phase 8 Game view checklist items are marked `[!]` because they require manual
+  Unity Play Mode observation. Automated preflight now validates the data,
+  scene, runtime, combat, reward, board reroll, Ending continue, and save/load
+  contracts before manual play.

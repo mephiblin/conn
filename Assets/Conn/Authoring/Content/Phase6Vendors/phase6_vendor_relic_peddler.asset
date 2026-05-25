@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 02ce594150529eb228c7d9f522cbfd18, type: 3}
+  m_Name: phase6_vendor_relic_peddler
+  m_EditorClassIdentifier:
+  Id: phase6_vendor_relic_peddler
+  ServiceType: skill_shop
+  GoldCost: 0
+  Summary: Phase 6 advanced skill stock.
+  StockItemIds: []
+  StockSkillIds:
+  - phase6_skill_bleeding_edge
+  - phase6_skill_soul_siphon
+  - phase6_skill_stonebreaker
+  CatalogIds:
+  - phase6_advanced
+  Rotations:
+  - MinFloor: 4
+    BossesDefeated: 1
+    GoldCost: 0
+    Summary: Adds rare control and recovery skills.
+    StockItemIds: []
+    StockSkillIds:
+    - phase6_skill_guardian_echo
+    - phase6_skill_last_light
+    CatalogIds:
+    - phase6_advanced
+    - phase6_support

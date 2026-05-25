@@ -9,6 +9,7 @@ namespace Conn.Core.Combat
         public string SkillId = string.Empty;
         public string DisplayName = string.Empty;
         public SkillEffectKind EffectKind;
+        public string SpecialEffectId = string.Empty;
         public int Power;
         public bool Selected;
         public int Cooldown;

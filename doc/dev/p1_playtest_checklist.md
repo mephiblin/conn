@@ -8,8 +8,12 @@
 
 1. Unity Editor에서 `Conn > Build P0 Scenes`를 실행한다.
 2. Console에 컴파일 에러가 없는지 확인한다.
-3. `Assets/Conn/Scenes/Title.unity`를 연다.
-4. Play Mode를 시작한다.
+3. `Conn > Play Mode Verification` 창을 열어 Chapter 1/2 validation 버튼을 실행한다.
+4. 같은 창에서 `Open Title Scene`을 누르거나 `Assets/Conn/Scenes/Title.unity`를 연다.
+5. Play Mode를 시작한다.
+6. 실제 Game view에서 확인한 항목만 verification 창에서 체크한다.
+7. 모든 수동 항목 확인 후에만 이 문서와 `editor_tool_content_pipeline_plan.md`의
+   대응 `[!]` 항목을 `[x]`로 바꾼다.
 
 ## 2026-05-25 Codex 확인 상태
 
@@ -67,6 +71,19 @@
    - 골드 보상이 지급되는지 확인
    - Last reward가 표시되는지 확인
    - 퀘스트 게시판 제안이 리롤되었는지 확인
+
+## Phase 6 연속 퀘스트 확인
+
+- [!] 같은 Play Mode 세션에서 퀘스트 3개를 순서대로 수주, 던전 진입, 전투 승리,
+  마을 보상 수령까지 반복한다.
+- [!] 각 퀘스트가 ContentDatabase/authoring 기반 target encounter, target monster,
+  map profile 표시를 유지하는지 확인한다.
+- [!] 3회 반복 중 Quest Board, Gate, Dungeon, Combat, Return reward 상태가 이전
+  퀘스트의 완료 상태 때문에 막히지 않는지 확인한다.
+
+자동 preflight는 3회 board quest 수주, compiledMap target handoff, DB encounter
+combat, victory XP, return reward, active quest clearing, board reroll 계약을
+검증한다. 위 항목은 실제 Game view 조작감과 표시 상태 확인 전까지 `[!]`로 둔다.
 
 ## 전투 실패 루프
 

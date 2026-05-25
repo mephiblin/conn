@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b68dd7764e74dd783d494e928012001, type: 3}
+  m_Name: phase6_quest_ossuary_oath
+  m_EditorClassIdentifier:
+  Id: phase6_quest_ossuary_oath
+  DisplayName: Break the Ossuary Oath
+  Description: Defeat the knight binding the crypt halls.
+  MapKind: dungeon
+  MapProfileId: ch2_first_slice_ruins
+  TargetEncounter: {fileID: 0}
+  TargetEncounterId: phase6_encounter_ossuary_oath
+  TargetMonster: {fileID: 0}
+  TargetMonsterId: phase6_monster_ossuary_knight
+  GoldReward: 35
+  XpReward: 12
+  RewardItems: []

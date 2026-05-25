@@ -161,6 +161,19 @@ namespace Conn.Editor.Windows
             EditorGUILayout.LabelField("Vendor Catalog References", CountVendorCatalogReferences(database).ToString());
             EditorGUILayout.LabelField("Quest -> Encounter -> Monster Links", CountQuestEncounterMonsterLinks(database).ToString());
             EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Runtime Bootstrap", EditorStyles.boldLabel);
+            EditorGUI.BeginChangeCheck();
+            database.StarterEquipmentId = DrawEquipmentIdField("Starter Equipment", database.StarterEquipmentId);
+            database.StarterSkillId = DrawSkillIdField("Starter Skill", database.StarterSkillId);
+            if (EditorGUI.EndChangeCheck())
+            {
+                MarkDatabaseDirty();
+            }
+
+            EditorGUILayout.HelpBox(
+                "Empty starter ids keep the no-DB catalog fallback. Set these ids once starter loadout content is authored and validated.",
+                MessageType.Info);
+            EditorGUILayout.Space();
             EditorGUILayout.HelpBox(
                 "Direct database editing remains available as a bootstrap bridge. Production source-of-truth work should move to typed authoring assets and use this window for browsing, validation, and build/export.",
                 MessageType.Info);
@@ -524,6 +537,7 @@ namespace Conn.Editor.Windows
             EditorGUILayout.Space();
             DrawAuthoringAssetList("MonsterDefinitionAsset", authoringSnapshot.Monsters);
             DrawAuthoringAssetList("EncounterDefinitionAsset", authoringSnapshot.Encounters);
+            DrawAuthoringAssetList("QuestDefinitionAsset", authoringSnapshot.Quests);
             DrawAuthoringAssetList("SkillDefinitionAsset", authoringSnapshot.Skills);
             DrawAuthoringAssetList("NpcDefinitionAsset", authoringSnapshot.Npcs);
             DrawAuthoringAssetList("VendorDefinitionAsset", authoringSnapshot.Vendors);
@@ -540,6 +554,7 @@ namespace Conn.Editor.Windows
         {
             EditorGUILayout.LabelField("Monsters", Count(snapshot.Monsters).ToString());
             EditorGUILayout.LabelField("Encounters", Count(snapshot.Encounters).ToString());
+            EditorGUILayout.LabelField("Quests", Count(snapshot.Quests).ToString());
             EditorGUILayout.LabelField("Skills", Count(snapshot.Skills).ToString());
             EditorGUILayout.LabelField("NPCs", Count(snapshot.Npcs).ToString());
             EditorGUILayout.LabelField("Vendors", Count(snapshot.Vendors).ToString());
@@ -1179,6 +1194,77 @@ namespace Conn.Editor.Windows
                 if (!string.IsNullOrWhiteSpace(encounter.Id))
                 {
                     ids.Add(encounter.Id);
+                }
+            }
+
+            return ids.ToArray();
+        }
+
+        private string DrawEquipmentIdField(string label, string current)
+        {
+            var ids = EquipmentIds();
+            if (ids.Length == 0)
+            {
+                return EditorGUILayout.TextField(label, current);
+            }
+
+            return DrawIdPopup(label, current, ids);
+        }
+
+        private string DrawSkillIdField(string label, string current)
+        {
+            var ids = SkillIds();
+            if (ids.Length == 0)
+            {
+                return EditorGUILayout.TextField(label, current);
+            }
+
+            return DrawIdPopup(label, current, ids);
+        }
+
+        private static string DrawIdPopup(string label, string current, string[] ids)
+        {
+            var selected = 0;
+            for (var i = 0; i < ids.Length; i++)
+            {
+                if (ids[i] == current)
+                {
+                    selected = i + 1;
+                    break;
+                }
+            }
+
+            var options = new string[ids.Length + 1];
+            options[0] = string.IsNullOrWhiteSpace(current) ? "(Fallback)" : $"Custom: {current}";
+            Array.Copy(ids, 0, options, 1, ids.Length);
+            var next = EditorGUILayout.Popup(label, selected, options);
+            return next == 0 ? current : ids[next - 1];
+        }
+
+        private string[] EquipmentIds()
+        {
+            var equipment = database.Equipment ?? Array.Empty<ContentEquipmentDefinition>();
+            var ids = new System.Collections.Generic.List<string>();
+            foreach (var item in equipment)
+            {
+                if (!string.IsNullOrWhiteSpace(item.Id))
+                {
+                    ids.Add(item.Id);
+                }
+            }
+
+            return ids.ToArray();
+        }
+
+        private string[] SkillIds()
+        {
+            var skills = database.Skills ?? Array.Empty<ContentSkillDefinition>();
+            var ids = new System.Collections.Generic.List<string>();
+            foreach (var skill in skills)
+            {
+                if (!string.IsNullOrWhiteSpace(skill.Id))
+                {
+                    ids.Add(skill.Id);
                 }
             }
 

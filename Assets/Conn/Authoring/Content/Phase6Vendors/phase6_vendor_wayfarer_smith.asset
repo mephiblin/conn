@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 02ce594150529eb228c7d9f522cbfd18, type: 3}
+  m_Name: phase6_vendor_wayfarer_smith
+  m_EditorClassIdentifier:
+  Id: phase6_vendor_wayfarer_smith
+  ServiceType: equipment_shop
+  GoldCost: 0
+  Summary: Phase 6 equipment stock for early ruins runs.
+  StockItemIds:
+  - iron_shield
+  - leather_cap
+  - padded_vest
+  StockSkillIds: []
+  CatalogIds: []
+  Rotations:
+  - MinFloor: 3
+    BossesDefeated: 0
+    GoldCost: 0
+    Summary: Adds two-hand option after early floors.
+    StockItemIds:
+    - great_axe
+    - reinforced_pants
+    StockSkillIds: []
+    CatalogIds: []

@@ -11,7 +11,7 @@ namespace Conn.Core.Skills
         {
             new SkillDefinition(SlashId, "Slash", SkillEffectKind.Attack, 0, 1, 1),
             new SkillDefinition(GuardId, "Guard", SkillEffectKind.Guard, 5, 2, 2),
-            new SkillDefinition(FocusStrikeId, "Focus Strike", SkillEffectKind.Attack, 8, 4, 2),
+            new SkillDefinition(FocusStrikeId, "Focus Strike", SkillEffectKind.Attack, 8, 4, 2, "bleed"),
             new SkillDefinition(MendId, "Mend", SkillEffectKind.Heal, 7, 3, 3)
         };
 

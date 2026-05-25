@@ -12,6 +12,7 @@ namespace Conn.Authoring.Content
         public string EffectKind = "attack";
         public string TargetMode = string.Empty;
         public string Formula = string.Empty;
+        public string SpecialEffectId = string.Empty;
         public int BuyPrice;
         public int SellPrice;
         public int Power = 1;
@@ -26,6 +27,7 @@ namespace Conn.Authoring.Content
                 EffectKind = EffectKind,
                 TargetMode = TargetMode,
                 Formula = Formula,
+                SpecialEffectId = SpecialEffectId,
                 BuyPrice = BuyPrice,
                 SellPrice = SellPrice,
                 Power = Power,

@@ -69,8 +69,8 @@ MonoBehaviour:
     SellPrice: 2
     ArmorValue: 0
     Generated: 0
-    RarityId:
-    AffixPoolId:
+    RarityId: 
+    AffixPoolId: 
   - Id: iron_shield
     DisplayName: Iron Shield
     Kind: shield
@@ -78,8 +78,8 @@ MonoBehaviour:
     SellPrice: 3
     ArmorValue: 0
     Generated: 0
-    RarityId:
-    AffixPoolId:
+    RarityId: 
+    AffixPoolId: 
   - Id: great_axe
     DisplayName: Great Axe
     Kind: two_hand_weapon
@@ -87,8 +87,8 @@ MonoBehaviour:
     SellPrice: 6
     ArmorValue: 0
     Generated: 0
-    RarityId:
-    AffixPoolId:
+    RarityId: 
+    AffixPoolId: 
   - Id: leather_cap
     DisplayName: Leather Cap
     Kind: head_armor
@@ -96,8 +96,8 @@ MonoBehaviour:
     SellPrice: 2
     ArmorValue: 1
     Generated: 0
-    RarityId:
-    AffixPoolId:
+    RarityId: 
+    AffixPoolId: 
   - Id: padded_vest
     DisplayName: Padded Vest
     Kind: chest_armor
@@ -105,8 +105,8 @@ MonoBehaviour:
     SellPrice: 4
     ArmorValue: 2
     Generated: 0
-    RarityId:
-    AffixPoolId:
+    RarityId: 
+    AffixPoolId: 
   - Id: traveler_gloves
     DisplayName: Traveler Gloves
     Kind: arms_armor
@@ -114,8 +114,8 @@ MonoBehaviour:
     SellPrice: 2
     ArmorValue: 1
     Generated: 0
-    RarityId:
-    AffixPoolId:
+    RarityId: 
+    AffixPoolId: 
   - Id: reinforced_pants
     DisplayName: Reinforced Pants
     Kind: legs_armor
@@ -123,8 +123,8 @@ MonoBehaviour:
     SellPrice: 3
     ArmorValue: 1
     Generated: 0
-    RarityId:
-    AffixPoolId:
+    RarityId: 
+    AffixPoolId: 
   - Id: worn_boots
     DisplayName: Worn Boots
     Kind: feet_armor
@@ -132,14 +132,15 @@ MonoBehaviour:
     SellPrice: 2
     ArmorValue: 1
     Generated: 0
-    RarityId:
-    AffixPoolId:
+    RarityId: 
+    AffixPoolId: 
   Skills:
   - Id: skill_berserk
     DisplayName: "\uAD11\uBD84"
     EffectKind: attack
     TargetMode: enemy
     Formula: die_times_effect
+    SpecialEffectId: 
     BuyPrice: 12
     SellPrice: 6
     Power: 3
@@ -150,6 +151,7 @@ MonoBehaviour:
     EffectKind: guard
     TargetMode: self
     Formula: die_plus_effect
+    SpecialEffectId: 
     BuyPrice: 10
     SellPrice: 5
     Power: 2
@@ -160,6 +162,7 @@ MonoBehaviour:
     EffectKind: attack
     TargetMode: enemy
     Formula: die_plus_effect
+    SpecialEffectId: 
     BuyPrice: 14
     SellPrice: 7
     Power: 4
@@ -170,6 +173,7 @@ MonoBehaviour:
     EffectKind: attack
     TargetMode: enemy
     Formula: die_times_effect
+    SpecialEffectId: 
     BuyPrice: 13
     SellPrice: 6
     Power: 2
@@ -180,6 +184,7 @@ MonoBehaviour:
     EffectKind: attack
     TargetMode: enemy
     Formula: die_equals_effect
+    SpecialEffectId: 
     BuyPrice: 22
     SellPrice: 11
     Power: 6
@@ -190,6 +195,7 @@ MonoBehaviour:
     EffectKind: support
     TargetMode: ally
     Formula: die_plus_effect
+    SpecialEffectId: 
     BuyPrice: 11
     SellPrice: 5
     Power: 2
@@ -200,6 +206,7 @@ MonoBehaviour:
     EffectKind: support
     TargetMode: enemy
     Formula: die_as_effect
+    SpecialEffectId: 
     BuyPrice: 9
     SellPrice: 4
     Power: 0
@@ -210,6 +217,7 @@ MonoBehaviour:
     EffectKind: attack
     TargetMode: enemy
     Formula: die_plus_effect
+    SpecialEffectId: 
     BuyPrice: 18
     SellPrice: 9
     Power: 6
@@ -220,6 +228,7 @@ MonoBehaviour:
     EffectKind: guard
     TargetMode: self
     Formula: die_times_effect
+    SpecialEffectId: 
     BuyPrice: 17
     SellPrice: 8
     Power: 2
@@ -230,6 +239,7 @@ MonoBehaviour:
     EffectKind: attack
     TargetMode: enemy
     Formula: die_plus_effect
+    SpecialEffectId: 
     BuyPrice: 20
     SellPrice: 10
     Power: 5
@@ -240,6 +250,7 @@ MonoBehaviour:
     EffectKind: heal
     TargetMode: ally
     Formula: die_times_effect
+    SpecialEffectId: 
     BuyPrice: 16
     SellPrice: 8
     Power: 2
@@ -250,6 +261,7 @@ MonoBehaviour:
     EffectKind: support
     TargetMode: enemy
     Formula: die_plus_effect
+    SpecialEffectId: 
     BuyPrice: 12
     SellPrice: 6
     Power: 1
@@ -260,6 +272,7 @@ MonoBehaviour:
     EffectKind: debuff
     TargetMode: enemy
     Formula: die_plus_effect
+    SpecialEffectId: 
     BuyPrice: 24
     SellPrice: 12
     Power: 1
@@ -271,6 +284,7 @@ MonoBehaviour:
     EffectKind: debuff
     TargetMode: enemy
     Formula: die_minus_effect
+    SpecialEffectId: 
     BuyPrice: 21
     SellPrice: 10
     Power: 2
@@ -281,6 +295,7 @@ MonoBehaviour:
     EffectKind: heal
     TargetMode: ally
     Formula: die_plus_effect
+    SpecialEffectId: 
     BuyPrice: 19
     SellPrice: 9
     Power: 5
@@ -292,6 +307,7 @@ MonoBehaviour:
     EffectKind: lifesteal
     TargetMode: enemy
     Formula: die_times_effect
+    SpecialEffectId: 
     BuyPrice: 23
     SellPrice: 11
     Power: 2
@@ -302,6 +318,7 @@ MonoBehaviour:
     EffectKind: buff
     TargetMode: self
     Formula: die_as_effect
+    SpecialEffectId: 
     BuyPrice: 26
     SellPrice: 13
     Power: 0
@@ -312,6 +329,7 @@ MonoBehaviour:
     EffectKind: debuff
     TargetMode: enemy
     Formula: die_as_effect
+    SpecialEffectId: 
     BuyPrice: 18
     SellPrice: 9
     Power: 0
@@ -323,6 +341,7 @@ MonoBehaviour:
     EffectKind: guard
     TargetMode: self
     Formula: die_divide_effect
+    SpecialEffectId: 
     BuyPrice: 8
     SellPrice: 4
     Power: 2
@@ -333,6 +352,7 @@ MonoBehaviour:
     EffectKind: summon
     TargetMode: self
     Formula: die_equals_effect
+    SpecialEffectId: 
     BuyPrice: 30
     SellPrice: 15
     Power: 1
@@ -347,6 +367,12 @@ MonoBehaviour:
     XpReward: 8
     Boss: 0
     Ai: aggressive
+    FieldAiProfile:
+      ProfileId: field_ai_static_contact
+      DetectionRadius: 6
+      PatrolRadius: 3
+      MoveSpeed: 2.5
+      ContactCooldownSeconds: 1
     ThemeTags: []
     BiomeTags: []
     SpawnRoleTags: []
@@ -359,6 +385,12 @@ MonoBehaviour:
     XpReward: 14
     Boss: 0
     Ai: coward
+    FieldAiProfile:
+      ProfileId: field_ai_static_contact
+      DetectionRadius: 6
+      PatrolRadius: 3
+      MoveSpeed: 2.5
+      ContactCooldownSeconds: 1
     ThemeTags: []
     BiomeTags: []
     SpawnRoleTags: []
@@ -371,6 +403,12 @@ MonoBehaviour:
     XpReward: 20
     Boss: 0
     Ai: guardian
+    FieldAiProfile:
+      ProfileId: field_ai_static_contact
+      DetectionRadius: 6
+      PatrolRadius: 3
+      MoveSpeed: 2.5
+      ContactCooldownSeconds: 1
     ThemeTags: []
     BiomeTags: []
     SpawnRoleTags: []
@@ -383,6 +421,12 @@ MonoBehaviour:
     XpReward: 24
     Boss: 0
     Ai: ambusher
+    FieldAiProfile:
+      ProfileId: field_ai_static_contact
+      DetectionRadius: 6
+      PatrolRadius: 3
+      MoveSpeed: 2.5
+      ContactCooldownSeconds: 1
     ThemeTags: []
     BiomeTags: []
     SpawnRoleTags: []
@@ -395,6 +439,12 @@ MonoBehaviour:
     XpReward: 34
     Boss: 0
     Ai: defensive
+    FieldAiProfile:
+      ProfileId: field_ai_static_contact
+      DetectionRadius: 6
+      PatrolRadius: 3
+      MoveSpeed: 2.5
+      ContactCooldownSeconds: 1
     ThemeTags: []
     BiomeTags: []
     SpawnRoleTags: []
@@ -407,6 +457,12 @@ MonoBehaviour:
     XpReward: 70
     Boss: 1
     Ai: aggressive
+    FieldAiProfile:
+      ProfileId: field_ai_static_contact
+      DetectionRadius: 6
+      PatrolRadius: 3
+      MoveSpeed: 2.5
+      ContactCooldownSeconds: 1
     ThemeTags: []
     BiomeTags: []
     SpawnRoleTags: []
@@ -419,6 +475,12 @@ MonoBehaviour:
     XpReward: 32
     Boss: 0
     Ai: caster
+    FieldAiProfile:
+      ProfileId: field_ai_static_contact
+      DetectionRadius: 6
+      PatrolRadius: 3
+      MoveSpeed: 2.5
+      ContactCooldownSeconds: 1
     ThemeTags: []
     BiomeTags: []
     SpawnRoleTags: []
@@ -431,6 +493,12 @@ MonoBehaviour:
     XpReward: 90
     Boss: 1
     Ai: caster
+    FieldAiProfile:
+      ProfileId: field_ai_static_contact
+      DetectionRadius: 6
+      PatrolRadius: 3
+      MoveSpeed: 2.5
+      ContactCooldownSeconds: 1
     ThemeTags: []
     BiomeTags: []
     SpawnRoleTags: []
@@ -443,6 +511,12 @@ MonoBehaviour:
     XpReward: 10
     Boss: 0
     Ai: aggressive
+    FieldAiProfile:
+      ProfileId: field_ai_static_contact
+      DetectionRadius: 6
+      PatrolRadius: 3
+      MoveSpeed: 2.5
+      ContactCooldownSeconds: 1
     ThemeTags: []
     BiomeTags: []
     SpawnRoleTags: []
@@ -455,6 +529,12 @@ MonoBehaviour:
     XpReward: 18
     Boss: 0
     Ai: caster
+    FieldAiProfile:
+      ProfileId: field_ai_static_contact
+      DetectionRadius: 6
+      PatrolRadius: 3
+      MoveSpeed: 2.5
+      ContactCooldownSeconds: 1
     ThemeTags: []
     BiomeTags: []
     SpawnRoleTags: []
@@ -467,6 +547,12 @@ MonoBehaviour:
     XpReward: 18
     Boss: 0
     Ai: defensive
+    FieldAiProfile:
+      ProfileId: field_ai_static_contact
+      DetectionRadius: 6
+      PatrolRadius: 3
+      MoveSpeed: 2.5
+      ContactCooldownSeconds: 1
     ThemeTags: []
     BiomeTags: []
     SpawnRoleTags: []
@@ -476,7 +562,7 @@ MonoBehaviour:
     DisplayName: "\uC0AC\uB9C9 \uC9D0\uC2B9 \uC870\uC6B0"
     MonsterId: desert_rat
     XpReward: 8
-    RewardId:
+    RewardId: 
     Pattern: single_primary
     EnemySlots:
     - SlotId: primary
@@ -493,7 +579,7 @@ MonoBehaviour:
     DisplayName: "\uB3C4\uAD74\uAFBC \uC870\uC6B0"
     MonsterId: grave_robber
     XpReward: 14
-    RewardId:
+    RewardId: 
     Pattern: single_primary
     EnemySlots:
     - SlotId: primary
@@ -510,7 +596,7 @@ MonoBehaviour:
     DisplayName: "\uBC40 \uC0AC\uC6D0 \uACBD\uBE44 \uC870\uC6B0"
     MonsterId: serpent_guard
     XpReward: 20
-    RewardId:
+    RewardId: 
     Pattern: single_primary
     EnemySlots:
     - SlotId: primary
@@ -527,7 +613,7 @@ MonoBehaviour:
     DisplayName: "\uB3C5\uAD11 \uC57D\uD0C8\uC790 \uC870\uC6B0"
     MonsterId: poisoned_raider
     XpReward: 24
-    RewardId:
+    RewardId: 
     Pattern: single_primary
     EnemySlots:
     - SlotId: primary
@@ -544,7 +630,7 @@ MonoBehaviour:
     DisplayName: "\uC800\uC8FC \uAC80\uD22C\uC0AC \uC870\uC6B0"
     MonsterId: cursed_gladiator
     XpReward: 34
-    RewardId:
+    RewardId: 
     Pattern: single_primary
     EnemySlots:
     - SlotId: primary
@@ -561,7 +647,7 @@ MonoBehaviour:
     DisplayName: "\uAC80\uC740 \uBB3C\uC758 \uD30C\uCDA9\uC218 \uC870\uC6B0"
     MonsterId: black_water_beast
     XpReward: 70
-    RewardId:
+    RewardId: 
     Pattern: single_primary
     EnemySlots:
     - SlotId: primary
@@ -578,7 +664,7 @@ MonoBehaviour:
     DisplayName: "\uBC40 \uC0AC\uC81C \uC870\uC6B0"
     MonsterId: serpent_guard
     XpReward: 20
-    RewardId:
+    RewardId: 
     Pattern: single_primary
     EnemySlots:
     - SlotId: primary
@@ -595,7 +681,7 @@ MonoBehaviour:
     DisplayName: "\uB208\uBA3C \uC0AC\uC81C \uC870\uC6B0"
     MonsterId: blind_priest
     XpReward: 90
-    RewardId:
+    RewardId: 
     Pattern: single_primary
     EnemySlots:
     - SlotId: primary
@@ -612,7 +698,7 @@ MonoBehaviour:
     DisplayName: "\uAE30\uC5B4\uB2E4\uB2C8\uB294 \uBB3C\uACE0\uAE30 \uC870\uC6B0"
     MonsterId: crawling_fish
     XpReward: 10
-    RewardId:
+    RewardId: 
     Pattern: single_primary
     EnemySlots:
     - SlotId: primary
@@ -629,7 +715,7 @@ MonoBehaviour:
     DisplayName: "\uC0B0\uD638 \uAD11\uC2E0\uB3C4 \uC870\uC6B0"
     MonsterId: reef_cultist
     XpReward: 18
-    RewardId:
+    RewardId: 
     Pattern: single_primary
     EnemySlots:
     - SlotId: primary
@@ -646,7 +732,7 @@ MonoBehaviour:
     DisplayName: "\uD3D0\uD5C8\uC758 \uBE48 \uAECD\uC9C8 \uC870\uC6B0"
     MonsterId: ruin_husk
     XpReward: 18
-    RewardId:
+    RewardId: 
     Pattern: single_primary
     EnemySlots:
     - SlotId: primary
@@ -815,7 +901,7 @@ MonoBehaviour:
     DisplayName: "\uC5EC\uAD00"
     Description: "\uAE08\uD654 5\uAC1C\uB85C \uC804\uC5F4\uACFC \uD6C4\uC5F4\uC758
       HP\uB97C \uD68C\uBCF5\uD55C\uB2E4."
-    ServiceType:
+    ServiceType: 
     VendorId: vendor_inn
     QuestIds: []
   - Id: npc_trainer
@@ -829,14 +915,14 @@ MonoBehaviour:
     DisplayName: "\uB300\uC7A5\uAC04"
     Description: "\uAE08\uD654 12\uAC1C\uB85C \uC804\uC5F4\uC758 \uACF5\uACA9\uB825\uC744
       \uBCF4\uAC15\uD55C\uB2E4."
-    ServiceType:
+    ServiceType: 
     VendorId: vendor_smith
     QuestIds: []
   - Id: npc_apothecary
     DisplayName: "\uC57D\uC7AC\uC0C1"
     Description: "\uAE08\uD654 8\uAC1C\uB85C \uBD95\uB300\uC640 \uD574\uB3C5\uC81C\uB97C
       \uC0B0\uB2E4."
-    ServiceType:
+    ServiceType: 
     VendorId: vendor_apothecary
     QuestIds: []
   - Id: npc_skill_merchant
@@ -844,21 +930,21 @@ MonoBehaviour:
     Description: "\uC8FC\uC0AC\uC704 \uBA74\uC5D0 \uAF42\uC744 \uAE30\uC220 \uCE74\uB4DC\uB97C
       \uC0AC\uACE0\uD310\uB2E4."
     ServiceType: skill_shop,talk
-    VendorId:
+    VendorId: 
     QuestIds: []
   - Id: npc_bulletin_board
     DisplayName: "\uAC8C\uC2DC\uD310"
     Description: "\uCD0C\uC7A5\uC774 \uB0A8\uAE34 \uC6D0\uC815 \uACF5\uACE0\uC640
       \uBCF4\uC0C1 \uC804\uD45C\uB97C \uD655\uC778\uD55C\uB2E4."
-    ServiceType:
-    VendorId:
+    ServiceType: 
+    VendorId: 
     QuestIds: []
   - Id: npc_scholar
     DisplayName: "\uD559\uC790\uC758 \uBC29"
     Description: "\uC81C\uB2E8\uACFC \uBE44\uBC00\uBB38\uC5D0 \uB300\uD55C \uB2E8\uC11C\uB97C
       \uB4E3\uB294\uB2E4."
     ServiceType: quest,talk,identify
-    VendorId:
+    VendorId: 
     QuestIds:
     - quest_seed_black_mural
   - Id: npc_gatekeeper
@@ -866,22 +952,22 @@ MonoBehaviour:
     Description: "\uC218\uC8FC\uD55C \uC758\uB8B0 \uC804\uD45C\uAC00 \uC788\uC744
       \uB54C\uB9CC \uB358\uC804\uC73C\uB85C \uC774\uC5B4\uC9C0\uB294 \uBB38\uC774
       \uC5F4\uB9B0\uB2E4."
-    ServiceType:
-    VendorId:
+    ServiceType: 
+    VendorId: 
     QuestIds: []
   - Id: npc_exile_scout
     DisplayName: "\uCD94\uBC29\uB41C \uC815\uCC30\uBCD1"
     Description: "\uD568\uC815\uACFC \uC228\uC740 \uD1B5\uB85C\uB97C \uC544\uB294
       \uC815\uCC30\uBCD1\uC774 \uBCBD\uC5D0 \uAE30\uB300\uC5B4 \uC228\uC744 \uACE0\uB978\uB2E4."
     ServiceType: talk,recruit
-    VendorId:
+    VendorId: 
     QuestIds: []
   - Id: npc_wounded_mystic
     DisplayName: "\uC0C1\uCC98 \uC785\uC740 \uC2E0\uBE44\uAC00"
     Description: "\uAC80\uC740 \uBB3C\uC5D0 \uC816\uC740 \uC2E0\uBE44\uAC00\uAC00
       \uC800\uC8FC\uC640 \uB3C5\uC758 \uD754\uC801\uC744 \uC0B4\uD540\uB2E4."
     ServiceType: quest,talk,trade,heal,identify
-    VendorId:
+    VendorId: 
     QuestIds:
     - quest_seed_black_water_vow
   - Id: npc_deserter_captain
@@ -889,5 +975,7 @@ MonoBehaviour:
     Description: "\uCCAD\uB3D9 \uC0AC\uC2AC\uC744 \uB450\uB978 \uACBD\uBE44\uB300\uC7A5\uC774
       \uAE38\uC744 \uB9C9\uACE0 \uAE08\uC744 \uC694\uAD6C\uD55C\uB2E4."
     ServiceType: talk,fight
-    VendorId:
+    VendorId: 
     QuestIds: []
+  StarterEquipmentId: 
+  StarterSkillId: 

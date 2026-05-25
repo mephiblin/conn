@@ -1,7 +1,7 @@
 # Unity Editor Direction
 
 Date: 2026-05-25
-Status: editor architecture correction note.
+Status: Inspector-first foundation and bridge implementation are in place; manual Play Mode verification remains before final Phase 6/8 closure.
 
 ## Problem Statement
 
@@ -113,13 +113,20 @@ Authoring assets
   - Warcraft III benchmark adaptation
   - migration plan from DB editor to Unity editor
 
-## Immediate Decision
+## Current Decision
 
 Treat the current DB editor as a temporary bridge.
 
 Do not continue expanding it as the final content authoring UX. Future editor
 work should create typed authoring assets and custom inspectors, then compile
 those assets into runtime databases.
+
+## Current Next Gate
+
+Automated editor, content, spawn/map, and runtime bundle validation is green in
+the tracked checklist. The remaining closure gate is manual Unity Play Mode
+verification for the Phase 6 three-quest sequence and Phase 8 Game view
+checklist before changing the related `[!]` items to `[x]`.
 
 ## Current Implementation Note
 

@@ -44,3 +44,7 @@ Thumbs.db
 *.aab
 *.unitypackage
 *.app
+
+# Local/generated image scratch outside committed Unity assets
+generated_images/
+tmp/

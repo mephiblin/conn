@@ -1,7 +1,7 @@
 # Map Editor and Monster Editor Cooperation Design
 
 Date: 2026-05-25
-Status: proposed design for Phase 3+ editor pipeline work.
+Status: first-pass implementation tracked through Inspector-first editor, spawn table, map authoring, Generator Workbench, RuntimeMapGenerationBundle, and validation checkpoints.
 
 ## Design Goal
 
@@ -653,13 +653,13 @@ Error: encounter_desert_rat does not match coast_first_slice spawn tables, tag f
 
 ### Phase MG-0: Schema Planning
 
-- Add `MapResourceSetDefinition` design.
-- Add `LandmarkRoomDefinition` design.
-- Add `SpawnTableDefinition` design.
-- Add `EncounterPlacementRule` design.
-- Add `GenerationWeightProfile` design.
-- Add `RuntimeMapGenerationBundle` design.
-- Decide whether these live inside `ContentDatabaseDefinition` or separate map
+- [x] Add `MapResourceSetDefinition` design.
+- [x] Add `LandmarkRoomDefinition` design.
+- [x] Add `SpawnTableDefinition` design.
+- [x] Add `EncounterPlacementRule` design.
+- [x] Add `GenerationWeightProfile` design.
+- [x] Add `RuntimeMapGenerationBundle` design.
+- [x] Decide whether these live inside `ContentDatabaseDefinition` or separate map
   database assets.
 
 Recommended decision:
@@ -672,51 +672,51 @@ Recommended decision:
 
 ### Phase MG-1: Map Profile / Resource Editor
 
-- Profile selector.
-- Theme/resource set selector.
-- Resource missing reference validation.
-- Seed generation remains available.
-- Current hardcoded `ChapterTwoFirstSliceProfile()` becomes import/sample data,
+- [x] Profile selector.
+- [x] Theme/resource set selector.
+- [x] Resource missing reference validation.
+- [x] Seed generation remains available.
+- [x] Current hardcoded `ChapterTwoFirstSliceProfile()` becomes import/sample data,
   not the only source.
 
 ### Phase MG-2: Landmark / Chunk Editor
 
-- Landmark room list.
-- Socket editor.
-- Anchor editor.
-- Population allowed toggle.
-- Preview generated room graph and selected chunks.
+- [x] Landmark room list.
+- [x] Socket editor.
+- [x] Anchor editor.
+- [x] Population allowed toggle.
+- [x] Preview generated room graph and selected chunks.
 
 ### Phase MG-3: Spawn Source Integration
 
-- Add theme/spawn-role metadata to monster editor.
-- Add spawn table list/editor.
-- Add map profile spawn table selector.
-- Add map profile tag-filter and direct-override selectors.
-- Add encounter pool preview per profile.
+- [x] Add theme/spawn-role metadata to monster editor.
+- [x] Add spawn table list/editor.
+- [x] Add map profile spawn table selector.
+- [x] Add map profile tag-filter and direct-override selectors.
+- [x] Add encounter pool preview per profile.
 
 ### Phase MG-4: Encounter Placement Pass
 
-- Generate `CompiledEncounterPlacement`.
-- Link map anchors to encounter definitions.
-- Preserve current `single_primary` fallback.
-- Add validator proving DB encounter survives into `CombatRuntimeService`.
+- [x] Generate `CompiledEncounterPlacement`.
+- [x] Link map anchors to encounter definitions.
+- [x] Preserve current `single_primary` fallback.
+- [x] Add validator proving DB encounter survives into `CombatRuntimeService`.
 
 ### Phase MG-5: Runtime Weighted Generation
 
-- Build runtime generation bundle from editor-authored profiles, chunks, weights,
+- [x] Build runtime generation bundle from editor-authored profiles, chunks, weights,
   resources, and spawn sources.
-- At expedition start, roll or accept a seed and generate the compiled map in
+- [x] At expedition start, roll or accept a seed and generate the compiled map in
   runtime code.
-- Keep deterministic regeneration from profile id + bundle version + seed.
-- Keep saved `CompiledMapAsset` support for fixed test maps and debug repro.
+- [x] Keep deterministic regeneration from profile id + bundle version + seed.
+- [x] Keep saved `CompiledMapAsset` support for fixed test maps and debug repro.
 
 ### Phase MG-6: Runtime Consumption
 
-- Field monster actors spawn from compiled encounter placements.
-- `FieldMonsterState` stores placement state key.
-- Combat handoff uses compiled encounter id.
-- Quest target placement remains compatible with current quest flow.
+- [x] Field monster actors spawn from compiled encounter placements.
+- [x] `FieldMonsterState` stores placement state key.
+- [x] Combat handoff uses compiled encounter id.
+- [x] Quest target placement remains compatible with current quest flow.
 
 ## Open Decisions
 
@@ -749,14 +749,14 @@ Recommended decision:
 
 ## Immediate Next Work
 
-1. Extend `editor_tool_content_pipeline_plan.md` Phase 3 with map/monster
-   cooperation tasks.
-2. Add schema stubs for monster/encounter tags and spawn tables.
-3. Add map profile resource-set, spawn table, tag-filter, and direct override fields.
-4. Add generator validation for `profile.theme -> spawn source -> encounter`.
-5. Add generation weight profile authoring.
-6. Add runtime generation bundle build/export design.
-7. Expand `GeneratorWorkbenchWindow` to show profile/resource/spawn source/weight selection.
+1. Complete manual Unity Play Mode verification for the Phase 6 three-quest
+   sequence and Phase 8 Game view checklist.
+2. Keep `editor_tool_content_pipeline_plan.md`, this design doc, and
+   `remaining_work.md` synchronized before marking manual `[!]` items complete.
+3. After manual verification, decide the next production pass: deeper map
+   resource realization UX, richer landmark/chunk editing, or broader authored
+   content coverage.
 
-Do not start Monster Field FSM before this map/monster placement contract is
-stable. FSM needs compiled placement state keys and encounter ids to be reliable.
+Monster Field FSM work now depends on preserving this map/monster placement
+contract. Future FSM changes must keep compiled placement state keys and
+encounter ids reliable.

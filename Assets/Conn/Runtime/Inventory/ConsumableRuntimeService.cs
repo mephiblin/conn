@@ -1,7 +1,7 @@
-using Conn.Core.Items;
 using Conn.Core.Session;
 using Conn.Runtime.Content;
 using Conn.Runtime.Session;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Conn.Runtime.Inventory
@@ -20,6 +20,29 @@ namespace Conn.Runtime.Inventory
             }
 
             return count;
+        }
+
+        public static string[] OwnedConsumableIds(GameSessionState session)
+        {
+            var ids = new List<string>();
+            for (var i = 0; i < session.Inventory.ItemIds.Count; i++)
+            {
+                var itemId = session.Inventory.ItemIds[i];
+                if (ids.Contains(itemId) || RuntimeContentDatabase.FindConsumable(itemId) == null)
+                {
+                    continue;
+                }
+
+                ids.Add(itemId);
+            }
+
+            return ids.ToArray();
+        }
+
+        public static string FirstOwnedConsumableId(GameSessionState session)
+        {
+            var ids = OwnedConsumableIds(session);
+            return ids.Length > 0 ? ids[0] : string.Empty;
         }
 
         public static bool Buy(GameSessionState session, string itemId)

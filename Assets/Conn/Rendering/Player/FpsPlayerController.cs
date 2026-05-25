@@ -48,6 +48,11 @@ namespace Conn.Rendering.Player
                 return;
             }
 
+            if (Cursor.lockState != CursorLockMode.Locked)
+            {
+                return;
+            }
+
             var lookInput = ReadLookInput() * lookSensitivity;
             var mouseX = lookInput.x;
             var mouseY = lookInput.y;

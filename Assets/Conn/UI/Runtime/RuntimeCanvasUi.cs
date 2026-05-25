@@ -1,5 +1,4 @@
 using Conn.Core.Equipment;
-using Conn.Core.Items;
 using Conn.Core.Scenes;
 using Conn.Core.Session;
 using Conn.Runtime.Combat;
@@ -10,7 +9,10 @@ using Conn.Runtime.Scenes;
 using Conn.Runtime.Session;
 using Conn.Runtime.Skills;
 using Conn.Runtime.World;
+using System.Text;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 namespace Conn.UI.Runtime
@@ -19,8 +21,11 @@ namespace Conn.UI.Runtime
     {
         [SerializeField] private GameSceneId sceneId;
         [SerializeField] private Canvas canvas;
+        private const float RefreshIntervalSeconds = 0.15f;
         private bool characterOpen;
         private float nextRefreshTime;
+        private string lastRenderKey = string.Empty;
+        private string selectedSkillId = string.Empty;
 
         public GameSceneId SceneId
         {
@@ -49,6 +54,7 @@ namespace Conn.UI.Runtime
                     canvas.enabled = false;
                 }
 
+                RuntimeCursorService.Apply(sceneId, GameSession.Instance != null ? GameSession.Instance.State : null, characterOpen);
                 return;
             }
 
@@ -57,11 +63,18 @@ namespace Conn.UI.Runtime
                 canvas.enabled = true;
             }
 
-            if (Time.unscaledTime >= nextRefreshTime)
+            if (Time.unscaledTime >= nextRefreshTime && !IsPointerPressActive())
             {
                 Refresh();
-                nextRefreshTime = Time.unscaledTime + 0.15f;
+                nextRefreshTime = Time.unscaledTime + RefreshIntervalSeconds;
             }
+
+            RuntimeCursorService.Apply(sceneId, GameSession.Instance != null ? GameSession.Instance.State : null, characterOpen);
+        }
+
+        private void OnDisable()
+        {
+            RuntimeCursorService.Release();
         }
 
         public void Bind(Canvas runtimeCanvas)
@@ -76,9 +89,19 @@ namespace Conn.UI.Runtime
                 return;
             }
 
-            HideScenePanels();
             var session = GameSession.Instance.State;
-            DrawCommon(session);
+            var renderKey = BuildRenderKey(session);
+            if (renderKey == lastRenderKey)
+            {
+                return;
+            }
+
+            lastRenderKey = renderKey;
+            HideScenePanels();
+            if (sceneId != GameSceneId.Title && sceneId != GameSceneId.Combat)
+            {
+                DrawCommon(session);
+            }
 
             if (sceneId == GameSceneId.Title)
             {
@@ -99,6 +122,53 @@ namespace Conn.UI.Runtime
             else if (sceneId == GameSceneId.Ending)
             {
                 DrawEnding(session);
+            }
+        }
+
+        private string BuildRenderKey(GameSessionState session)
+        {
+            var key = new StringBuilder(256);
+            key.Append(sceneId)
+                .Append('|').Append(session.Mode)
+                .Append('|').Append(session.Gold)
+                .Append('|').Append(session.Player.Xp)
+                .Append('|').Append(session.Player.Hp)
+                .Append('/').Append(session.Player.MaxHp)
+                .Append('|').Append(session.LastNotice)
+                .Append('|').Append(characterOpen)
+                .Append('|').Append(TownQuestBoardPanelState.IsOpen)
+                .Append('|').Append(TownShopPanelState.Current)
+                .Append('|').Append(selectedSkillId)
+                .Append('|').Append(session.Quest.HasActiveQuest)
+                .Append('|').Append(session.Quest.ActiveQuestId)
+                .Append('|').Append(session.Quest.BoardRerollCount)
+                .Append('|').Append(session.Shop != null ? session.Shop.SkillMerchantRefreshIndex : 0);
+
+            AppendList(key, session.Inventory.ItemIds);
+            AppendList(key, session.Skills.OwnedSkillIds);
+            AppendList(key, session.Skills.EquippedSkillIds);
+            if (session.Combat != null)
+            {
+                key.Append('|').Append(session.Combat.Active)
+                    .Append('|').Append(session.Combat.Enemy.Hp)
+                    .Append('|').Append(session.Combat.LastMessage)
+                    .Append('|').Append(session.Combat.SelectedDiceCount);
+            }
+
+            return key.ToString();
+        }
+
+        private static void AppendList(StringBuilder key, System.Collections.Generic.IEnumerable<string> values)
+        {
+            key.Append('|');
+            if (values == null)
+            {
+                return;
+            }
+
+            foreach (var value in values)
+            {
+                key.Append(value).Append(',');
             }
         }
 
@@ -146,13 +216,12 @@ namespace Conn.UI.Runtime
         {
             var root = Panel("TitleRoot");
             BuildPanel(root, "Conn", false);
-            AddText(root, "New expedition runtime UI");
-            AddButton(root, "New Game", () =>
+            var newGameButton = AddTitleButton(root, "New Game", () =>
             {
                 GameSession.Instance.StartNewGame();
                 SceneFlowService.Load(GameSceneId.Town);
             });
-            AddButton(root, "Continue", () =>
+            AddTitleButton(root, "Continue", () =>
             {
                 var gameSession = GameSession.Instance;
                 if (!gameSession.TryContinue())
@@ -164,6 +233,7 @@ namespace Conn.UI.Runtime
             });
 
             HidePanel("TitleButtons");
+            SelectDefaultTitleButton(root, newGameButton.gameObject);
         }
 
         private void DrawTown(GameSessionState session)
@@ -343,15 +413,79 @@ namespace Conn.UI.Runtime
                 AddButton(panel, $"Equip: {item.DisplayName}", () => EquipmentRuntimeService.TryEquip(session, itemId), !session.Equipment.IsEquipped(itemId));
             }
 
-            AddText(panel, ChapterOneUxText.ConsumableStatus(session, ConsumableCatalog.MinorPotionId));
-            AddButton(panel, "Use Potion", () => ConsumableRuntimeService.Use(session, ConsumableCatalog.MinorPotionId), ConsumableRuntimeService.Count(session, ConsumableCatalog.MinorPotionId) > 0);
-            AddText(panel, "Skill Faces");
+            AddText(panel, "Consumables");
+            var consumableIds = ConsumableRuntimeService.OwnedConsumableIds(session);
+            if (consumableIds.Length == 0)
+            {
+                AddText(panel, "No consumables");
+            }
+
+            for (var i = 0; i < consumableIds.Length; i++)
+            {
+                var itemId = consumableIds[i];
+                var item = RuntimeContentDatabase.FindConsumable(itemId);
+                if (item == null)
+                {
+                    continue;
+                }
+
+                AddText(panel, ChapterOneUxText.ConsumableStatus(session, itemId));
+                AddButton(panel, $"Use: {item.DisplayName}", () => ConsumableRuntimeService.Use(session, itemId), session.Player.Hp < session.Player.MaxHp);
+            }
+
+            AddText(panel, "Skill Inventory");
+            if (session.Skills.OwnedSkillIds.Count == 0)
+            {
+                AddText(panel, "No owned skills.");
+            }
+
+            var renderedSkillIds = new System.Collections.Generic.HashSet<string>();
+            for (var i = 0; i < session.Skills.OwnedSkillIds.Count; i++)
+            {
+                var skillId = session.Skills.OwnedSkillIds[i];
+                if (!renderedSkillIds.Add(skillId))
+                {
+                    continue;
+                }
+
+                var skill = RuntimeContentDatabase.FindSkill(skillId);
+                if (skill == null)
+                {
+                    continue;
+                }
+
+                var selected = skillId == selectedSkillId ? "Selected | " : string.Empty;
+                var owned = session.Skills.CountOwned(skillId);
+                var equipped = session.Skills.CountEquipped(skillId);
+                var skillButton = AddButton(
+                    panel,
+                    $"{selected}{skill.DisplayName} | {skill.EffectKind} +{skill.Power} | 보유 {owned} 장착 {equipped}",
+                    () => selectedSkillId = skillId);
+                skillButton.gameObject.AddComponent<SkillFaceDragDrop>().ConfigureDragSource(skillId);
+            }
+
+            AddText(panel, string.IsNullOrWhiteSpace(selectedSkillId) ? "Selected skill: none" : $"Selected skill: {SkillName(selectedSkillId)}");
+            AddText(panel, "Dice Faces");
             for (var i = 0; i < session.Equipment.DiceCount; i++)
             {
                 var faceIndex = i;
                 var skillId = i < session.Skills.EquippedSkillIds.Count ? session.Skills.EquippedSkillIds[i] : string.Empty;
                 var skill = RuntimeContentDatabase.FindSkill(skillId);
-                AddButton(panel, $"Cycle Face {i + 1}: {(skill != null ? skill.DisplayName : "Strike")}", () => SkillRuntimeService.CycleEquippedFace(session, faceIndex));
+                var faceButton = AddButton(
+                    panel,
+                    $"Face {i + 1}: {(skill != null ? skill.DisplayName : "기본공격")}",
+                    () =>
+                    {
+                        if (string.IsNullOrWhiteSpace(selectedSkillId))
+                        {
+                            SkillRuntimeService.CycleEquippedFace(session, faceIndex);
+                        }
+                        else
+                        {
+                            SkillRuntimeService.EquipSkillToFace(session, selectedSkillId, faceIndex);
+                        }
+                    });
+                faceButton.gameObject.AddComponent<SkillFaceDragDrop>().ConfigureDropTarget(faceIndex);
             }
         }
 
@@ -407,19 +541,22 @@ namespace Conn.UI.Runtime
             }
 
             var enemy = Panel("CombatEnemyStagePanel");
-            BuildPanel(enemy, "Encounter", true);
+            BuildPanel(enemy, session.Combat.Enemy.DisplayName, true);
             AddText(enemy, $"Enemy: {session.Combat.Enemy.DisplayName}");
             AddText(enemy, $"HP {session.Combat.Enemy.Hp}/{session.Combat.Enemy.MaxHp}");
-            AddText(enemy, $"Pattern: {session.Combat.EncounterPattern}");
-            AddText(enemy, $"Reward: {session.Combat.EncounterRewardId}");
-            AddText(enemy, CombatRuntimeService.DescribeEnemySlots(session.Combat));
+            AddText(enemy, $"Will attack for: {session.Combat.EnemyAttackPower} dmg");
+            AddText(enemy, CombatRuntimeService.DescribeCombatantStatuses(session.Combat.Enemy));
 
             var command = Panel("CombatCommandPanel");
-            BuildPanel(command, "Command", true);
-            AddText(command, $"Round: {session.Combat.Round}");
-            AddText(command, $"Player HP: {session.Combat.Player.Hp}/{session.Combat.Player.MaxHp}");
-            AddText(command, $"Defense bonus: {session.Combat.PlayerDefenseBonus}");
+            BuildPanel(command, $"Round {session.Combat.Round}", true);
+            AddText(command, session.Combat.LastMessage);
             AddButton(command, "Flee", () => CombatRuntimeService.Flee(session));
+
+            var status = Panel("CombatStatusPanel");
+            BuildPanel(status, "Player", true);
+            AddText(status, $"HP {session.Combat.Player.Hp}/{session.Combat.Player.MaxHp}");
+            AddText(status, $"Defense {session.Combat.PlayerDefenseBonus}");
+            AddText(status, CombatRuntimeService.DescribeCombatantStatuses(session.Combat.Player));
 
             var dice = Panel("CombatDicePanel");
             BuildPanel(dice, $"Dice {session.Combat.SelectedDiceCount}/3", true);
@@ -429,16 +566,9 @@ namespace Conn.UI.Runtime
                 AddButton(dice, CombatRuntimeService.DescribeDiceFace(session.Combat.DiceFaces[i]), () => CombatRuntimeService.ToggleDieSelection(session, faceIndex), !session.Combat.DiceFaces[i].IsCoolingDown);
             }
 
-            AddButton(dice, "Resolve Selected Dice", () => CombatRuntimeService.ResolveSelectedDice(session));
+            AddButton(dice, "Attack", () => CombatRuntimeService.ResolveSelectedDice(session));
 
-            var log = Panel("CombatLogPanel");
-            BuildPanel(log, "Combat Log", true);
-            AddText(log, session.Combat.LastMessage);
-
-            var status = Panel("CombatStatusPanel");
-            BuildPanel(status, "Status", true);
-            AddText(status, $"Player {CombatRuntimeService.DescribeCombatantStatuses(session.Combat.Player)}");
-            AddText(status, $"Enemy {CombatRuntimeService.DescribeCombatantStatuses(session.Combat.Enemy)}");
+            HidePanel("CombatLogPanel");
         }
 
         private void DrawEnding(GameSessionState session)
@@ -509,7 +639,10 @@ namespace Conn.UI.Runtime
                 image = panel.gameObject.AddComponent<Image>();
             }
 
-            image.color = new Color(0.04f, 0.05f, 0.07f, 0.84f);
+            image.color = panel.name == "TitleRoot"
+                ? new Color(0f, 0f, 0f, 0f)
+                : new Color(0.04f, 0.05f, 0.07f, 0.84f);
+            image.raycastTarget = panel.name != "TitleRoot";
             var layout = panel.GetComponent<VerticalLayoutGroup>();
             if (layout == null)
             {
@@ -525,19 +658,12 @@ namespace Conn.UI.Runtime
             var scrollRect = panel.GetComponent<ScrollRect>();
             if (scrollRect != null)
             {
-                scrollRect.enabled = scroll;
-                if (!scroll)
-                {
-                    scrollRect.viewport = null;
-                    scrollRect.content = null;
-                }
+                scrollRect.enabled = false;
+                scrollRect.viewport = null;
+                scrollRect.content = null;
             }
 
-            AddTextRaw(panel, title, 20, FontStyle.Bold);
-            if (scroll)
-            {
-                CreateScrollContent(panel);
-            }
+            AddTextRaw(panel, title, panel.name == "TitleRoot" ? 44 : 20, FontStyle.Bold);
         }
 
         private void AddText(Transform parent, string text, int size = 15, FontStyle style = FontStyle.Normal)
@@ -562,7 +688,7 @@ namespace Conn.UI.Runtime
             layout.minHeight = Mathf.Max(22f, size + 8f);
         }
 
-        private void AddButton(Transform parent, string label, UnityEngine.Events.UnityAction action, bool interactable = true)
+        private Button AddButton(Transform parent, string label, UnityEngine.Events.UnityAction action, bool interactable = true)
         {
             var obj = new GameObject("Button");
             obj.transform.SetParent(ContentParent(parent), false);
@@ -589,6 +715,98 @@ namespace Conn.UI.Runtime
             text.alignment = TextAnchor.MiddleCenter;
             text.horizontalOverflow = HorizontalWrapMode.Wrap;
             text.raycastTarget = false;
+            return button;
+        }
+
+        private Button AddTitleButton(Transform parent, string label, UnityEngine.Events.UnityAction action)
+        {
+            var obj = new GameObject("TitleButton");
+            obj.transform.SetParent(ContentParent(parent), false);
+            var image = obj.AddComponent<Image>();
+            image.color = new Color(0f, 0f, 0f, 0f);
+            image.raycastTarget = true;
+
+            var button = obj.AddComponent<Button>();
+            button.transition = Selectable.Transition.ColorTint;
+            button.targetGraphic = image;
+            var colors = button.colors;
+            colors.normalColor = new Color(1f, 1f, 1f, 0f);
+            colors.highlightedColor = new Color(1f, 0.08f, 0.18f, 0.18f);
+            colors.pressedColor = new Color(1f, 0.08f, 0.18f, 0.28f);
+            colors.selectedColor = colors.highlightedColor;
+            button.colors = colors;
+            button.onClick.AddListener(action);
+
+            var layout = obj.AddComponent<LayoutElement>();
+            layout.minHeight = 54f;
+
+            var markerObj = new GameObject("Marker");
+            markerObj.transform.SetParent(obj.transform, false);
+            var markerRect = markerObj.AddComponent<RectTransform>();
+            markerRect.anchorMin = new Vector2(0f, 0f);
+            markerRect.anchorMax = new Vector2(0f, 1f);
+            markerRect.pivot = new Vector2(0f, 0.5f);
+            markerRect.sizeDelta = new Vector2(36f, 0f);
+            markerRect.anchoredPosition = Vector2.zero;
+
+            var marker = markerObj.AddComponent<Text>();
+            marker.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            marker.fontSize = 30;
+            marker.fontStyle = FontStyle.Bold;
+            marker.alignment = TextAnchor.MiddleLeft;
+            marker.raycastTarget = false;
+
+            var textObj = new GameObject("Text");
+            textObj.transform.SetParent(obj.transform, false);
+            var rect = textObj.AddComponent<RectTransform>();
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = new Vector2(42f, 0f);
+            rect.offsetMax = Vector2.zero;
+
+            var text = textObj.AddComponent<Text>();
+            text.text = label;
+            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            text.fontSize = 34;
+            text.fontStyle = FontStyle.Bold;
+            text.color = Color.white;
+            text.alignment = TextAnchor.MiddleLeft;
+            text.horizontalOverflow = HorizontalWrapMode.Wrap;
+            text.raycastTarget = false;
+            obj.AddComponent<TitleMenuButtonVisual>().Bind(text, marker);
+            return button;
+        }
+
+        private static void SelectDefaultTitleButton(Transform root, GameObject fallback)
+        {
+            var eventSystem = EventSystem.current;
+            if (eventSystem == null || fallback == null)
+            {
+                return;
+            }
+
+            var selected = eventSystem.currentSelectedGameObject;
+            if (selected != null && selected.transform.IsChildOf(root))
+            {
+                return;
+            }
+
+            eventSystem.SetSelectedGameObject(fallback);
+        }
+
+        private static bool IsPointerPressActive()
+        {
+            if (Mouse.current != null && Mouse.current.leftButton.isPressed)
+            {
+                return true;
+            }
+
+            if (Touchscreen.current != null && Touchscreen.current.primaryTouch.press.isPressed)
+            {
+                return true;
+            }
+
+            return false;
         }
 
         private static Transform ContentParent(Transform parent)
@@ -673,8 +891,9 @@ namespace Conn.UI.Runtime
             }
 
             group.alpha = visible ? 1f : 0f;
-            group.interactable = visible;
-            group.blocksRaycasts = visible;
+            var passivePanel = name == "TownNoticePanel";
+            group.interactable = visible && !passivePanel;
+            group.blocksRaycasts = visible && !passivePanel;
         }
 
         private static void Clear(Transform parent)
@@ -698,6 +917,12 @@ namespace Conn.UI.Runtime
         {
             var item = RuntimeContentDatabase.FindEquipment(itemId);
             return item != null ? item.DisplayName : "None";
+        }
+
+        private static string SkillName(string skillId)
+        {
+            var skill = RuntimeContentDatabase.FindSkill(skillId);
+            return skill != null ? skill.DisplayName : "Unknown";
         }
     }
 }

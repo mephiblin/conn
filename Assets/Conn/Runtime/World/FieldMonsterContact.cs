@@ -15,6 +15,14 @@ namespace Conn.Runtime.World
         private bool consumed;
         private Collider contactCollider;
 
+        public void Configure(string stateKey, string placementId, string encounterId, string monsterId)
+        {
+            this.stateKey = string.IsNullOrWhiteSpace(stateKey) ? this.stateKey : stateKey;
+            this.placementId = string.IsNullOrWhiteSpace(placementId) ? this.placementId : placementId;
+            this.encounterId = string.IsNullOrWhiteSpace(encounterId) ? this.encounterId : encounterId;
+            this.monsterId = string.IsNullOrWhiteSpace(monsterId) ? this.monsterId : monsterId;
+        }
+
         private void Awake()
         {
             contactCollider = GetComponent<Collider>();
@@ -41,19 +49,12 @@ namespace Conn.Runtime.World
                 return;
             }
 
-            if (FieldMonsterRuntimeService.FindCombatHandoff(session) != null)
+            if (!FieldMonsterRuntimeService.TryBeginCombatHandoff(session, stateKey, Time.time))
             {
-                consumed = true;
-                if (contactCollider != null)
-                {
-                    contactCollider.enabled = false;
-                }
-
                 return;
             }
 
             QuestRuntimeService.CapturePreEncounter(session, other.transform);
-            FieldMonsterRuntimeService.MarkCombatHandoff(session, stateKey);
             GameSession.Instance.SaveGame();
 
             consumed = true;

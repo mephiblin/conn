@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 74ea8e2b13f304f7cb9ad43c069fc1ac, type: 3}
+  m_Name: phase6_encounter_ash_ambush
+  m_EditorClassIdentifier:
+  Id: phase6_encounter_ash_ambush
+  DisplayName: Ash Ambush
+  PrimaryMonster: {fileID: 0}
+  PrimaryMonsterId: phase6_monster_ash_wisp
+  XpReward: 14
+  RewardId: reward_phase6_basic
+  Pattern: multi_slot
+  EnemySlots:
+  - SlotId: primary
+    Monster: {fileID: 0}
+    MonsterId: phase6_monster_ash_wisp
+    Count: 1
+    Primary: 1
+  - SlotId: guard
+    Monster: {fileID: 0}
+    MonsterId: phase6_monster_ruin_guard
+    Count: 1
+    Primary: 0
+  MinDifficulty: 1
+  MaxDifficulty: 3
+  ThemeTags:
+  - ruins
+  - fire
+  SpawnRoleTags:
+  - ambush
+  AllowedMapTags:
+  - ruins
+  CompatibilityTags:
+  - chapter1
+  - dungeon

@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 74ea8e2b13f304f7cb9ad43c069fc1ac, type: 3}
+  m_Name: phase6_encounter_cult_rite
+  m_EditorClassIdentifier:
+  Id: phase6_encounter_cult_rite
+  DisplayName: Cult Rite
+  PrimaryMonster: {fileID: 0}
+  PrimaryMonsterId: phase6_monster_cult_acolyte
+  XpReward: 18
+  RewardId: reward_phase6_cult
+  Pattern: multi_slot
+  EnemySlots:
+  - SlotId: primary
+    Monster: {fileID: 0}
+    MonsterId: phase6_monster_cult_acolyte
+    Count: 2
+    Primary: 1
+  - SlotId: horror
+    Monster: {fileID: 0}
+    MonsterId: phase6_monster_lantern_horror
+    Count: 1
+    Primary: 0
+  MinDifficulty: 3
+  MaxDifficulty: 5
+  ThemeTags:
+  - cult
+  SpawnRoleTags:
+  - support
+  AllowedMapTags:
+  - ruins
+  - crypt
+  CompatibilityTags:
+  - chapter1
+  - dungeon

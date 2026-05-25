@@ -1,6 +1,7 @@
 using Conn.Core.Scenes;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
 
 namespace Conn.UI.Runtime
@@ -78,9 +79,49 @@ namespace Conn.UI.Runtime
 
         public static Rect NormalizedSafeRectForPanel(string panelName)
         {
+            if (panelName == "TitleRoot")
+            {
+                return new Rect(0.6f, 0.22f, 0.28f, 0.5f);
+            }
+
+            if (panelName == "TitleButtons")
+            {
+                return new Rect(0.62f, 0.26f, 0.24f, 0.34f);
+            }
+
+            if (panelName == "CombatEnemyStagePanel")
+            {
+                return new Rect(0.64f, 0.62f, 0.32f, 0.22f);
+            }
+
+            if (panelName == "CombatCommandPanel")
+            {
+                return new Rect(0.36f, 0.22f, 0.28f, 0.1f);
+            }
+
+            if (panelName == "CombatStatusPanel")
+            {
+                return new Rect(0.04f, 0.42f, 0.24f, 0.18f);
+            }
+
+            if (panelName == "CombatDicePanel")
+            {
+                return new Rect(0.32f, 0.03f, 0.36f, 0.18f);
+            }
+
+            if (panelName == "CombatLogPanel")
+            {
+                return new Rect(0.02f, 0.02f, 0.24f, 0.16f);
+            }
+
             if (panelName.Contains("Hud") || panelName.Contains("Title") || panelName.Contains("Ending"))
             {
                 return new Rect(0.02f, 0.78f, 0.96f, 0.2f);
+            }
+
+            if (panelName.Contains("Notice"))
+            {
+                return new Rect(0.68f, 0.08f, 0.3f, 0.12f);
             }
 
             if (panelName.Contains("Prompt"))
@@ -141,14 +182,43 @@ namespace Conn.UI.Runtime
 
         private static void EnsureEventSystem()
         {
-            if (Object.FindFirstObjectByType<EventSystem>() != null)
+            var existing = Object.FindFirstObjectByType<EventSystem>();
+            if (existing != null)
             {
+                EnsureInputSystemModule(existing.gameObject);
                 return;
             }
 
             var eventSystem = new GameObject(EventSystemName);
             eventSystem.AddComponent<EventSystem>();
-            eventSystem.AddComponent<StandaloneInputModule>();
+            EnsureInputSystemModule(eventSystem);
+        }
+
+        private static void EnsureInputSystemModule(GameObject eventSystem)
+        {
+            var legacyModule = eventSystem.GetComponent<StandaloneInputModule>();
+            if (legacyModule != null)
+            {
+                legacyModule.enabled = false;
+                DestroyComponent(legacyModule);
+            }
+
+            if (eventSystem.GetComponent<InputSystemUIInputModule>() == null)
+            {
+                eventSystem.AddComponent<InputSystemUIInputModule>();
+            }
+        }
+
+        private static void DestroyComponent(Component component)
+        {
+            if (Application.isPlaying)
+            {
+                Object.Destroy(component);
+            }
+            else
+            {
+                Object.DestroyImmediate(component);
+            }
         }
 
         private static void EnsurePanelRoots(Transform canvasTransform, GameSceneId sceneId)

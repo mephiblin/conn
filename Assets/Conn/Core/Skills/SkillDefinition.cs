@@ -2,7 +2,14 @@ namespace Conn.Core.Skills
 {
     public sealed class SkillDefinition
     {
-        public SkillDefinition(string skillId, string displayName, SkillEffectKind effectKind, int buyPrice, int sellPrice, int power)
+        public SkillDefinition(
+            string skillId,
+            string displayName,
+            SkillEffectKind effectKind,
+            int buyPrice,
+            int sellPrice,
+            int power,
+            string specialEffectId = "")
         {
             SkillId = skillId;
             DisplayName = displayName;
@@ -10,6 +17,7 @@ namespace Conn.Core.Skills
             BuyPrice = buyPrice;
             SellPrice = sellPrice;
             Power = power;
+            SpecialEffectId = specialEffectId;
         }
 
         public string SkillId { get; }
@@ -18,5 +26,6 @@ namespace Conn.Core.Skills
         public int BuyPrice { get; }
         public int SellPrice { get; }
         public int Power { get; }
+        public string SpecialEffectId { get; }
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using Conn.Core.World;
 using UnityEngine;
 
 namespace Conn.Core.Content
@@ -14,6 +15,8 @@ namespace Conn.Core.Content
         public ContentQuestDefinition[] Quests = Array.Empty<ContentQuestDefinition>();
         public ContentVendorDefinition[] Vendors = Array.Empty<ContentVendorDefinition>();
         public ContentNpcDefinition[] Npcs = Array.Empty<ContentNpcDefinition>();
+        public string StarterEquipmentId = string.Empty;
+        public string StarterSkillId = string.Empty;
 
         public ContentIdRegistry BuildRegistry()
         {
@@ -63,6 +66,7 @@ namespace Conn.Core.Content
         public string EffectKind;
         public string TargetMode;
         public string Formula;
+        public string SpecialEffectId;
         public int BuyPrice;
         public int SellPrice;
         public int Power;
@@ -80,6 +84,7 @@ namespace Conn.Core.Content
         public int XpReward;
         public bool Boss;
         public string Ai;
+        public FieldMonsterAiProfile FieldAiProfile = FieldMonsterAiProfile.Default();
         public string[] ThemeTags = Array.Empty<string>();
         public string[] BiomeTags = Array.Empty<string>();
         public string[] SpawnRoleTags = Array.Empty<string>();

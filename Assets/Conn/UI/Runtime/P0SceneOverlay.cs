@@ -1,5 +1,4 @@
 using Conn.Core.Equipment;
-using Conn.Core.Items;
 using Conn.Core.Scenes;
 using Conn.Core.Session;
 using Conn.Core.Skills;
@@ -69,9 +68,9 @@ namespace Conn.UI.Runtime
             GUILayout.Label($"Shield: {EquipmentName(session.Equipment.EquippedShieldId)}");
             GUILayout.Label($"Armor: H {EquipmentName(session.Equipment.EquippedHeadId)} / C {EquipmentName(session.Equipment.EquippedChestId)}");
             GUILayout.Label($"Armor: A {EquipmentName(session.Equipment.EquippedArmsId)} / L {EquipmentName(session.Equipment.EquippedLegsId)} / F {EquipmentName(session.Equipment.EquippedFeetId)}");
-            GUILayout.Label($"Q potion / R loadout / T face {session.Skills.NextEditFaceIndex + 1}");
+            GUILayout.Label($"Q consumable / R loadout / T face {session.Skills.NextEditFaceIndex + 1}");
             GUILayout.Label($"Items: {session.Inventory.ItemIds.Count}");
-            GUILayout.Label($"Potions: {ConsumableRuntimeService.Count(session, ConsumableCatalog.MinorPotionId)}");
+            GUILayout.Label($"Consumables: {ConsumableRuntimeService.OwnedConsumableIds(session).Length}");
             GUILayout.Label($"Skills: {session.Skills.OwnedCount}/{session.Skills.EquippedCount}");
             DrawEquippedSkillFaces(session);
             GUILayout.Space(8);
@@ -205,7 +204,17 @@ namespace Conn.UI.Runtime
             }
 
             GUILayout.Label("Consumables");
-            GUILayout.Label(ChapterOneUxText.ConsumableStatus(session, ConsumableCatalog.MinorPotionId));
+            var consumableIds = ConsumableRuntimeService.OwnedConsumableIds(session);
+            if (consumableIds.Length == 0)
+            {
+                GUILayout.Label("No consumables");
+            }
+
+            for (var i = 0; i < consumableIds.Length; i++)
+            {
+                GUILayout.Label(ChapterOneUxText.ConsumableStatus(session, consumableIds[i]));
+            }
+
             DrawConsumableControls(session);
 
             GUILayout.Label("Skill Faces");
@@ -216,7 +225,7 @@ namespace Conn.UI.Runtime
                     ? session.Skills.EquippedSkillIds[i]
                     : string.Empty;
                 var skill = RuntimeContentDatabase.FindSkill(skillId);
-                var label = skill != null ? skill.DisplayName : "Strike";
+                var label = skill != null ? skill.DisplayName : "기본공격";
                 if (GUILayout.Button($"Cycle Face {i + 1}: {label}"))
                 {
                     SkillRuntimeService.CycleEquippedFace(session, i);
@@ -238,11 +247,12 @@ namespace Conn.UI.Runtime
 
         private static void DrawConsumableControls(GameSessionState session)
         {
-            var potionCount = ConsumableRuntimeService.Count(session, ConsumableCatalog.MinorPotionId);
-            GUI.enabled = potionCount > 0 && session.Player.Hp < session.Player.MaxHp;
-            if (GUILayout.Button("Use Potion"))
+            var consumableId = ConsumableRuntimeService.FirstOwnedConsumableId(session);
+            var consumable = RuntimeContentDatabase.FindConsumable(consumableId);
+            GUI.enabled = consumable != null && session.Player.Hp < session.Player.MaxHp;
+            if (GUILayout.Button(consumable != null ? $"Use {consumable.DisplayName}" : "Use Consumable"))
             {
-                ConsumableRuntimeService.Use(session, ConsumableCatalog.MinorPotionId);
+                ConsumableRuntimeService.Use(session, consumableId);
             }
 
             GUI.enabled = true;
@@ -260,7 +270,7 @@ namespace Conn.UI.Runtime
                 var skill = RuntimeContentDatabase.FindSkill(skillId);
                 GUILayout.Label(skill != null
                     ? $"Face {i + 1}: {skill.DisplayName} / {skill.EffectKind} +{skill.Power}"
-                    : $"Face {i + 1}: Strike / Attack +0");
+                    : $"Face {i + 1}: 기본공격 / Attack +0");
             }
         }
 

@@ -31,16 +31,16 @@ MonoBehaviour:
         LoopMin: 1
         LoopMax: 2
         MergeChancePer1000: 250
-        LockedDoorKeyId:
+        LockedDoorKeyId: 
         RequiredAnchors: 000000000100000002000000030000000400000005000000
-        ResourceSetId:
+        ResourceSetId: 
         RequiredLandmarkRoomIds: []
         OptionalChunkIds: []
         OptionalLandmarkRoomIds: []
         SpawnTableIds: []
         SpawnTagFilters: []
         DirectEncounterOverrideIds: []
-        GenerationWeightProfileId:
+        GenerationWeightProfileId: 
       Floor: 1
       Difficulty: 0
       Chunks:
@@ -145,8 +145,8 @@ MonoBehaviour:
       EncounterPlacementRules:
       - Id: catalog_quest_target
         PlacementKind: 1
-        RoomRole:
-        SpawnSourceId:
+        RoomRole: 
+        SpawnSourceId: 
         EncounterId: encounter_test_guard
         PrimaryMonsterId: monster_test_guard
         SpawnRole: quest_target
@@ -154,8 +154,8 @@ MonoBehaviour:
         SpawnEntries: []
       - Id: catalog_monster
         PlacementKind: 4
-        RoomRole:
-        SpawnSourceId:
+        RoomRole: 
+        SpawnSourceId: 
         EncounterId: encounter_test_guard
         PrimaryMonsterId: monster_test_guard
         SpawnRole: trash
@@ -163,7 +163,7 @@ MonoBehaviour:
         SpawnEntries:
         - EncounterId: encounter_test_guard
           PrimaryMonsterId: monster_test_guard
-          SpawnSourceId:
+          SpawnSourceId: 
           SpawnRole: trash
           Weight: 1
           MinFloor: 1
@@ -180,8 +180,8 @@ MonoBehaviour:
           RoomRoleConstraints: []
       - Id: catalog_boss
         PlacementKind: 2
-        RoomRole:
-        SpawnSourceId:
+        RoomRole: 
+        SpawnSourceId: 
         EncounterId: encounter_test_guard
         PrimaryMonsterId: monster_test_guard
         SpawnRole: boss

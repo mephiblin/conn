@@ -1,7 +1,7 @@
 # Map Generator and Monster Editor Cooperation Plan
 
 Date: 2026-05-25
-Status: planning document for the next editor pipeline phase.
+Status: first-pass authoring, validation, workbench, and runtime bundle bridge implemented; manual Game view verification remains.
 
 ## Purpose
 

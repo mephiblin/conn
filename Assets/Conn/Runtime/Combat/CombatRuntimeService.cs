@@ -72,7 +72,7 @@ namespace Conn.Runtime.Combat
             var selected = session.Combat.SelectedDiceCount;
             if (selected == 0)
             {
-                session.Combat.LastMessage = "Select at least 1 die.";
+                ResolveEmptySelectionTurn(session);
                 return;
             }
 
@@ -117,7 +117,7 @@ namespace Conn.Runtime.Combat
                     else
                     {
                         attack += 1 + face.Power;
-                        if (face.SkillId == SkillCatalog.FocusStrikeId)
+                        if (HasSpecialEffect(face, "bleed"))
                         {
                             attack += 1;
                             appliedBleed = true;
@@ -165,6 +165,27 @@ namespace Conn.Runtime.Combat
             TickCooldowns(session);
         }
 
+        public static void ResolveEmptySelectionTurn(GameSessionState session)
+        {
+            EnsureCombat(session);
+            ClearDiceSelection(session);
+            session.Combat.LastMessage = "No dice selected. Advanced turn.";
+            EnemyAttack(session, 0);
+            if (!session.Combat.Active)
+            {
+                return;
+            }
+
+            TickStatuses(session);
+            if (!session.Combat.Active)
+            {
+                return;
+            }
+
+            session.Combat.Round++;
+            TickCooldowns(session);
+        }
+
         public static void PlayerAttack(GameSessionState session)
         {
             ResolveSelectedDice(session);
@@ -192,7 +213,7 @@ namespace Conn.Runtime.Combat
             var state = face.IsCoolingDown
                 ? $"cooldown {face.Cooldown}"
                 : face.Selected ? "selected" : "ready";
-            var special = face.SkillId == SkillCatalog.FocusStrikeId ? " / effect Bleed" : string.Empty;
+            var special = HasSpecialEffect(face, "bleed") ? " / effect Bleed" : string.Empty;
             return $"Die {face.Index + 1}: {face.DisplayName} / {face.EffectKind} +{face.Power} / {state}{special}";
         }
 
@@ -244,7 +265,7 @@ namespace Conn.Runtime.Combat
             var stateKey = session.Combat.FieldMonsterStateKey;
             if (!string.IsNullOrWhiteSpace(stateKey))
             {
-                FieldMonsterRuntimeService.MarkIdle(session, stateKey);
+                FieldMonsterRuntimeService.MarkReturnToAnchor(session, stateKey);
             }
 
             session.Combat.Clear();
@@ -475,18 +496,24 @@ namespace Conn.Runtime.Combat
                     ? session.Skills.EquippedSkillIds[i]
                     : string.Empty;
                 var skill = RuntimeContentDatabase.FindSkill(skillId);
-                var displayName = skill != null ? skill.DisplayName : "Strike";
+                var displayName = skill != null ? skill.DisplayName : "기본공격";
                 session.Combat.DiceFaces.Add(new DiceFaceState
                 {
                     Index = i,
                     SkillId = skillId,
                     DisplayName = displayName,
                     EffectKind = skill != null ? skill.EffectKind : SkillEffectKind.Attack,
+                    SpecialEffectId = skill != null ? skill.SpecialEffectId : string.Empty,
                     Power = skill != null ? skill.Power : 0,
                     Selected = false,
                     Cooldown = 0
                 });
             }
+        }
+
+        private static bool HasSpecialEffect(DiceFaceState face, string effectId)
+        {
+            return face != null && string.Equals(face.SpecialEffectId, effectId, System.StringComparison.OrdinalIgnoreCase);
         }
 
         private static void TickCooldowns(GameSessionState session)
@@ -498,6 +525,14 @@ namespace Conn.Runtime.Combat
                 {
                     face.Cooldown--;
                 }
+            }
+        }
+
+        private static void ClearDiceSelection(GameSessionState session)
+        {
+            for (var i = 0; i < session.Combat.DiceFaces.Count; i++)
+            {
+                session.Combat.DiceFaces[i].Selected = false;
             }
         }
     }

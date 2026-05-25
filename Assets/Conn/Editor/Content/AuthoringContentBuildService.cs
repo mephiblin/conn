@@ -18,6 +18,7 @@ namespace Conn.Editor.Content
                 Monsters = FindAssets<MonsterDefinitionAsset>(),
                 Encounters = FindAssets<EncounterDefinitionAsset>(),
                 SpawnTables = FindAssets<SpawnTableAsset>(),
+                Quests = FindAssets<QuestDefinitionAsset>(),
                 Npcs = FindAssets<NpcDefinitionAsset>(),
                 Skills = FindAssets<SkillDefinitionAsset>(),
                 Vendors = FindAssets<VendorDefinitionAsset>()
@@ -31,6 +32,7 @@ namespace Conn.Editor.Content
             ValidateMonsters(snapshot.Monsters, report);
             ValidateEncounters(snapshot, report);
             ValidateSpawnTables(snapshot, report);
+            ValidateQuests(snapshot, report);
             ValidateNpcs(snapshot, report);
             ValidateSkills(snapshot.Skills, report);
             ValidateVendors(snapshot.Vendors, report);
@@ -65,6 +67,13 @@ namespace Conn.Editor.Content
 
             database.Monsters = monsters.ToArray();
             database.Encounters = encounters.ToArray();
+            var quests = new List<ContentQuestDefinition>(database.Quests ?? Array.Empty<ContentQuestDefinition>());
+            foreach (var asset in snapshot.Quests ?? Array.Empty<QuestDefinitionAsset>())
+            {
+                UpsertQuest(quests, asset.ToContentDefinition());
+            }
+
+            database.Quests = quests.ToArray();
             var skills = new List<ContentSkillDefinition>(database.Skills ?? Array.Empty<ContentSkillDefinition>());
             foreach (var asset in snapshot.Skills ?? Array.Empty<SkillDefinitionAsset>())
             {
@@ -182,6 +191,7 @@ namespace Conn.Editor.Content
                     Monsters = new[] { monster },
                     Encounters = new[] { encounter },
                     SpawnTables = Array.Empty<SpawnTableAsset>(),
+                    Quests = Array.Empty<QuestDefinitionAsset>(),
                     Npcs = new[] { npc },
                     Skills = new[] { skill },
                     Vendors = new[] { vendor }
@@ -301,6 +311,26 @@ namespace Conn.Editor.Content
                 if (monster.XpReward < 0)
                 {
                     report.Error($"Monster authoring {monster.Id} XP reward must not be negative.");
+                }
+
+                if (monster.FieldAiProfile == null)
+                {
+                    report.Error($"Monster authoring {monster.Id} field AI profile must not be null.");
+                }
+                else
+                {
+                    if (string.IsNullOrWhiteSpace(monster.FieldAiProfile.ProfileId))
+                    {
+                        report.Error($"Monster authoring {monster.Id} field AI profile id must not be empty.");
+                    }
+
+                    if (monster.FieldAiProfile.DetectionRadius < 0f
+                        || monster.FieldAiProfile.PatrolRadius < 0f
+                        || monster.FieldAiProfile.MoveSpeed < 0f
+                        || monster.FieldAiProfile.ContactCooldownSeconds < 0f)
+                    {
+                        report.Error($"Monster authoring {monster.Id} field AI profile numeric values must not be negative.");
+                    }
                 }
             }
         }
@@ -456,6 +486,53 @@ namespace Conn.Editor.Content
             }
         }
 
+        private static void ValidateQuests(AuthoringContentSnapshot snapshot, ContentValidationReport report)
+        {
+            var monsterIds = MonsterIds(snapshot.Monsters);
+            var encounterIds = EncounterIds(snapshot.Encounters);
+            var ids = new HashSet<string>();
+            foreach (var quest in snapshot.Quests ?? Array.Empty<QuestDefinitionAsset>())
+            {
+                if (quest == null)
+                {
+                    continue;
+                }
+
+                RequireId(quest.Id, "Quest authoring asset", report);
+                if (!string.IsNullOrWhiteSpace(quest.Id) && !ids.Add(quest.Id))
+                {
+                    report.Error($"Quest authoring id is duplicated: {quest.Id}");
+                }
+
+                if (string.IsNullOrWhiteSpace(quest.DisplayName))
+                {
+                    report.Error($"Quest authoring {quest.Id} display name must not be empty.");
+                }
+
+                var encounterId = ResolveEncounterId(quest.TargetEncounter, quest.TargetEncounterId);
+                if (string.IsNullOrWhiteSpace(encounterId) || !encounterIds.Contains(encounterId))
+                {
+                    report.Error($"Quest authoring {quest.Id} target encounter is missing: {encounterId}");
+                }
+
+                var monsterId = ResolveMonsterId(quest.TargetMonster, quest.TargetMonsterId);
+                if (string.IsNullOrWhiteSpace(monsterId) || !monsterIds.Contains(monsterId))
+                {
+                    report.Error($"Quest authoring {quest.Id} target monster is missing: {monsterId}");
+                }
+
+                if (string.IsNullOrWhiteSpace(quest.MapProfileId))
+                {
+                    report.Error($"Quest authoring {quest.Id} map profile id must not be empty.");
+                }
+
+                if (quest.GoldReward < 0 || quest.XpReward < 0)
+                {
+                    report.Error($"Quest authoring {quest.Id} rewards must not be negative.");
+                }
+            }
+        }
+
         private static void UpsertMonster(List<ContentMonsterDefinition> monsters, ContentMonsterDefinition definition)
         {
             for (var i = 0; i < monsters.Count; i++)
@@ -482,6 +559,20 @@ namespace Conn.Editor.Content
             }
 
             encounters.Add(definition);
+        }
+
+        private static void UpsertQuest(List<ContentQuestDefinition> quests, ContentQuestDefinition definition)
+        {
+            for (var i = 0; i < quests.Count; i++)
+            {
+                if (quests[i].Id == definition.Id)
+                {
+                    quests[i] = definition;
+                    return;
+                }
+            }
+
+            quests.Add(definition);
         }
 
         private static void UpsertSkill(List<ContentSkillDefinition> skills, ContentSkillDefinition definition)
@@ -629,6 +720,11 @@ namespace Conn.Editor.Content
                 {
                     report.Error($"Skill authoring {skill.Id} prices must not be negative.");
                 }
+
+                if (!string.IsNullOrWhiteSpace(skill.SpecialEffectId) && !string.Equals(skill.SpecialEffectId, "bleed", StringComparison.OrdinalIgnoreCase))
+                {
+                    report.Error($"Skill authoring {skill.Id} special effect id is not runtime-supported: {skill.SpecialEffectId}");
+                }
             }
         }
 
@@ -697,6 +793,7 @@ namespace Conn.Editor.Content
         public MonsterDefinitionAsset[] Monsters = Array.Empty<MonsterDefinitionAsset>();
         public EncounterDefinitionAsset[] Encounters = Array.Empty<EncounterDefinitionAsset>();
         public SpawnTableAsset[] SpawnTables = Array.Empty<SpawnTableAsset>();
+        public QuestDefinitionAsset[] Quests = Array.Empty<QuestDefinitionAsset>();
         public NpcDefinitionAsset[] Npcs = Array.Empty<NpcDefinitionAsset>();
         public SkillDefinitionAsset[] Skills = Array.Empty<SkillDefinitionAsset>();
         public VendorDefinitionAsset[] Vendors = Array.Empty<VendorDefinitionAsset>();

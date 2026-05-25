@@ -3,7 +3,10 @@ namespace Conn.Core.World
     public enum FieldMonsterStatus
     {
         Idle = 0,
-        CombatHandoff = 1,
-        Defeated = 2
+        Patrol = 1,
+        Chase = 2,
+        ReturnToAnchor = 3,
+        CombatHandoff = 4,
+        Defeated = 5
     }
 }

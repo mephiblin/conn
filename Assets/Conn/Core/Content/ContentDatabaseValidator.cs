@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+
 namespace Conn.Core.Content
 {
     public static class ContentDatabaseValidator
@@ -26,6 +27,11 @@ namespace Conn.Core.Content
             "debuff",
             "lifesteal",
             "summon"
+        };
+
+        private static readonly HashSet<string> SupportedSkillSpecialEffectIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "bleed"
         };
 
         public static ContentValidationReport Validate(ContentDatabaseDefinition database)
@@ -60,7 +66,29 @@ namespace Conn.Core.Content
             ValidateQuests(database, registry, report);
             ValidateVendors(database, registry, report);
             ValidateNpcs(database, registry, report);
+            ValidateStarterLoadout(database, registry, report);
             return report;
+        }
+
+        private static void ValidateStarterLoadout(ContentDatabaseDefinition database, ContentIdRegistry registry, ContentValidationReport report)
+        {
+            if (!string.IsNullOrWhiteSpace(database.StarterEquipmentId))
+            {
+                var starterEquipment = registry.FindEquipment(database.StarterEquipmentId);
+                if (starterEquipment == null)
+                {
+                    report.Error($"Starter equipment is missing: {database.StarterEquipmentId}");
+                }
+                else if (starterEquipment.Kind != "one_hand_weapon" && starterEquipment.Kind != "two_hand_weapon")
+                {
+                    report.Error($"Starter equipment must be a weapon: {database.StarterEquipmentId}");
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(database.StarterSkillId) && registry.FindSkill(database.StarterSkillId) == null)
+            {
+                report.Error($"Starter skill is missing: {database.StarterSkillId}");
+            }
         }
 
         private static void ValidateItems(ContentDatabaseDefinition database, ContentValidationReport report)
@@ -129,6 +157,11 @@ namespace Conn.Core.Content
                 {
                     report.Error($"Skill {skill.Id} prices must not be negative.");
                 }
+
+                if (!string.IsNullOrWhiteSpace(skill.SpecialEffectId) && !SupportedSkillSpecialEffectIds.Contains(skill.SpecialEffectId))
+                {
+                    report.Error($"Skill {skill.Id} special effect id is not runtime-supported: {skill.SpecialEffectId}");
+                }
             }
         }
 
@@ -150,6 +183,37 @@ namespace Conn.Core.Content
                 if (monster.XpReward < 0)
                 {
                     report.Error($"Monster {monster.Id} XP reward must not be negative.");
+                }
+
+                if (monster.FieldAiProfile == null)
+                {
+                    report.Error($"Monster {monster.Id} field AI profile must not be null.");
+                    continue;
+                }
+
+                if (string.IsNullOrWhiteSpace(monster.FieldAiProfile.ProfileId))
+                {
+                    report.Error($"Monster {monster.Id} field AI profile id must not be empty.");
+                }
+
+                if (monster.FieldAiProfile.DetectionRadius < 0f)
+                {
+                    report.Error($"Monster {monster.Id} field AI detection radius must not be negative.");
+                }
+
+                if (monster.FieldAiProfile.PatrolRadius < 0f)
+                {
+                    report.Error($"Monster {monster.Id} field AI patrol radius must not be negative.");
+                }
+
+                if (monster.FieldAiProfile.MoveSpeed < 0f)
+                {
+                    report.Error($"Monster {monster.Id} field AI move speed must not be negative.");
+                }
+
+                if (monster.FieldAiProfile.ContactCooldownSeconds < 0f)
+                {
+                    report.Error($"Monster {monster.Id} field AI contact cooldown must not be negative.");
                 }
             }
         }
