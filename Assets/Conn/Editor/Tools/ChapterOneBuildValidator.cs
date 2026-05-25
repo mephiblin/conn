@@ -1,5 +1,6 @@
 using System;
 using Conn.Core.Scenes;
+using Conn.Runtime.Scenes;
 using Conn.UI.Runtime;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -16,8 +17,8 @@ namespace Conn.Editor.Tools
         public static void BuildAndValidateChapterOne()
         {
             ContentDatabaseVerifier.VerifyContentDatabase();
-            RuntimeRuleVerifier.VerifyChapterOneCoreRules();
             P0SceneBuilder.BuildP0Scenes();
+            RuntimeRuleVerifier.VerifyChapterOneCoreRules();
             VerifyBuildSettingsScenes();
             VerifyRuntimeCanvasScenes();
             Debug.Log("Conn Chapter 1 build and validation passed.");
@@ -49,16 +50,32 @@ namespace Conn.Editor.Tools
 
         private static void VerifyRuntimeCanvasScenes()
         {
-            ExpectRuntimeCanvasScene(GameSceneId.Title);
-            ExpectRuntimeCanvasScene(GameSceneId.Town);
-            ExpectRuntimeCanvasScene(GameSceneId.Dungeon);
-            ExpectRuntimeCanvasScene(GameSceneId.Combat);
-            ExpectRuntimeCanvasScene(GameSceneId.Ending);
+            var restorePath = SceneManager.GetActiveScene().path;
+            try
+            {
+                ExpectRuntimeCanvasScene(GameSceneId.Title);
+                ExpectRuntimeCanvasScene(GameSceneId.Town);
+                ExpectRuntimeCanvasScene(GameSceneId.Dungeon);
+                ExpectRuntimeCanvasScene(GameSceneId.Combat);
+                ExpectRuntimeCanvasScene(GameSceneId.Ending);
+            }
+            finally
+            {
+                if (!string.IsNullOrEmpty(restorePath))
+                {
+                    EditorSceneManager.OpenScene(restorePath, OpenSceneMode.Single);
+                }
+            }
         }
 
         private static void ExpectRuntimeCanvasScene(GameSceneId sceneId)
         {
             var scene = EditorSceneManager.OpenScene($"Assets/Conn/Scenes/{sceneId}.unity", OpenSceneMode.Single);
+            if (!scene.isLoaded)
+            {
+                throw new InvalidOperationException($"{sceneId} scene failed to load for UI validation.");
+            }
+
             var canvasObject = GameObject.Find(RuntimeCanvasUiBuilder.CanvasName);
             if (canvasObject == null)
             {
@@ -81,17 +98,25 @@ namespace Conn.Editor.Tools
                 throw new InvalidOperationException($"{sceneId} scene runtime canvas scaler contract is invalid.");
             }
 
-            if (UnityEngine.Object.FindFirstObjectByType<EventSystem>() == null)
+            if (UnityEngine.Object.FindAnyObjectByType<EventSystem>() == null)
             {
                 throw new InvalidOperationException($"{sceneId} scene is missing EventSystem.");
             }
 
+            var bootstrap = UnityEngine.Object.FindAnyObjectByType<SceneBootstrap>();
+            if (bootstrap == null)
+            {
+                throw new InvalidOperationException($"{sceneId} scene is missing SceneBootstrap.");
+            }
+
+            var runtimeUi = bootstrap.GetComponent<RuntimeCanvasUi>();
+            if (runtimeUi == null || runtimeUi.SceneId != sceneId || runtimeUi.Canvas != canvas)
+            {
+                throw new InvalidOperationException($"{sceneId} scene bootstrap is not bound to the runtime canvas UI.");
+            }
+
             ExpectPanelRoots(canvasObject.transform, RuntimeCanvasUiBuilder.CommonPanelNames, sceneId);
             ExpectPanelRoots(canvasObject.transform, RuntimeCanvasUiBuilder.PanelsFor(sceneId), sceneId);
-            if (!scene.isLoaded)
-            {
-                throw new InvalidOperationException($"{sceneId} scene failed to load for UI validation.");
-            }
         }
 
         private static void ExpectPanelRoots(Transform canvasTransform, string[] names, GameSceneId sceneId)

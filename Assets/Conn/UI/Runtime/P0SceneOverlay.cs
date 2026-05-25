@@ -39,6 +39,10 @@ namespace Conn.UI.Runtime
             }
 
             ResetTransientUiOnSceneChange();
+            if (GameSession.Instance == null)
+            {
+                return;
+            }
 
             var overlayRect = OverlayAreaRect(Screen.width, Screen.height);
             GUILayout.BeginArea(overlayRect, GUI.skin.box);

@@ -4,7 +4,6 @@
   "references": [
     "Conn.Core",
     "Conn.Runtime",
-    "Conn.UI",
     "Unity.InputSystem"
   ],
   "includePlatforms": [],

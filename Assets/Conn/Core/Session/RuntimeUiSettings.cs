@@ -1,4 +1,4 @@
-namespace Conn.UI.Runtime
+namespace Conn.Core.Session
 {
     public static class RuntimeUiSettings
     {

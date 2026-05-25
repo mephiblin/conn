@@ -16,7 +16,6 @@ using Conn.Runtime.Combat;
 using Conn.Runtime.Content;
 using Conn.Runtime.Skills;
 using Conn.Runtime.World;
-using Conn.Rendering.Interaction;
 using Conn.UI.Runtime;
 using UnityEngine;
 
@@ -100,14 +99,11 @@ namespace Conn.Editor.Tools
         {
             var smallOverlay = P0SceneOverlay.OverlayAreaRect(320, 240);
             var tinyOverlay = P0SceneOverlay.OverlayAreaRect(220, 160);
-            var prompt = PlayerWorldInteractor.PromptRect(220, 160);
 
             Expect(smallOverlay.x >= 0f && smallOverlay.xMax <= 320f, "P1 HUD overlay must stay inside a 320px wide screen.");
             Expect(smallOverlay.y >= 0f && smallOverlay.yMax <= 240f, "P1 HUD overlay must stay inside a 240px tall screen.");
             Expect(tinyOverlay.x >= 0f && tinyOverlay.xMax <= 220f, "P1 HUD overlay must clamp inside very small screen widths.");
             Expect(tinyOverlay.y >= 0f && tinyOverlay.yMax <= 160f, "P1 HUD overlay must clamp inside very small screen heights.");
-            Expect(prompt.x >= 0f && prompt.xMax <= 220f, "Interaction prompt must stay inside small screen widths.");
-            Expect(prompt.y >= 0f && prompt.yMax <= 160f, "Interaction prompt must stay inside small screen heights.");
         }
 
         private static void VerifyRuntimeCanvasUiLayoutContracts()

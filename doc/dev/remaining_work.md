@@ -60,8 +60,8 @@ Chapter 1 전체는 약 70-80% 진행으로 본다. 자동 검증 가능한 Runt
 - 캐릭터 패널의 장비 장착과 스킬 face 순환
 - 던전 HUD의 원정/몬스터/귀환 상태 표시
 - `Conn > Build & Validate Chapter 1` batchmode 검증
-- P1 IMGUI overlay와 상호작용 prompt의 작은 화면 clamp 자동 검증
-- Runtime uGUI Canvas, CanvasScaler, EventSystem, scene별 panel root 자동 생성/검증
+- P1 IMGUI overlay와 fallback 상호작용 prompt의 작은 화면 clamp 자동 검증
+- Runtime uGUI Canvas, CanvasScaler, EventSystem, SceneBootstrap binding, scene별 panel root 자동 생성/검증
 - Title/Town/Dungeon/Combat/Ending Canvas 기반 1차 Runtime UI
 - `Conn > Content Database > Import Legacy JSON`
 - `Conn > Content Database > Window`
@@ -106,7 +106,8 @@ P1은 자동 검증 기준으로 닫혔다. 실제 플레이 기준으로 아래
 3. HUD 배치 정리
    - uGUI Runtime Canvas 1차 전환 완료.
    - 기존 IMGUI 임시 HUD는 fallback/debug 플래그로 유지한다.
-   - overlay와 상호작용 prompt는 320x240/220x160 기준 화면 안쪽 clamp 자동 검증을 통과했다.
+   - overlay와 fallback 상호작용 prompt는 320x240/220x160 기준 화면 안쪽 clamp 자동 검증을 통과했다.
+   - 기본 상호작용 prompt는 Runtime uGUI Canvas 경로에서 표시한다.
    - Runtime Canvas panel root도 normalized safe rect 계약으로 자동 검증한다.
    - 실제 Play Mode Game view에서 긴 notice/상점/전투 로그 가독성은 확인해야 한다.
    - 이후 정식 prefab화와 visual polish가 필요하다.

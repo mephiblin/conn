@@ -203,7 +203,10 @@ namespace Conn.UI.Runtime
             var group = panelObject.GetComponent<CanvasGroup>();
             if (group == null)
             {
-                panelObject.AddComponent<CanvasGroup>();
+                group = panelObject.AddComponent<CanvasGroup>();
+                group.alpha = 0f;
+                group.interactable = false;
+                group.blocksRaycasts = false;
             }
 
             return rect;

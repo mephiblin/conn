@@ -163,7 +163,7 @@ namespace Conn.UI.Runtime
                 SceneFlowService.Load(SaveRuntimeService.SceneForLoadedState(gameSession.State));
             });
 
-            BuildPanel(Panel("TitleButtons"), "Title Buttons", true);
+            HidePanel("TitleButtons");
         }
 
         private void DrawTown(GameSessionState session)
@@ -184,14 +184,14 @@ namespace Conn.UI.Runtime
 
         private void DrawTownQuestBoard(GameSessionState session)
         {
-            var panel = Panel("TownQuestBoardPanel");
-            BuildPanel(panel, "Quest Board", true);
             if (!TownQuestBoardPanelState.IsOpen)
             {
-                AddText(panel, "Face the Quest Board and press E.");
+                HidePanel("TownQuestBoardPanel");
                 return;
             }
 
+            var panel = Panel("TownQuestBoardPanel");
+            BuildPanel(panel, "Quest Board", true);
             if (session.Quest.HasActiveQuest)
             {
                 AddText(panel, $"Active: {session.Quest.ActiveQuestTitle}");
@@ -215,10 +215,11 @@ namespace Conn.UI.Runtime
                     AddText(panel, $"Map: {offer.MapProfileId}");
                     AddText(panel, $"Reward: {offer.GoldReward}g");
                     AddText(panel, $"Board rolls: {session.Quest.BoardRerollCount}");
+                    var acceptedQuestId = offer.QuestId;
                     AddButton(panel, "Accept Quest", () =>
                     {
                         QuestRuntimeService.AcceptCurrentBoardOffer(session);
-                        RuntimeNoticeService.Set(session, $"Accepted quest: {offer.QuestId}");
+                        RuntimeNoticeService.Set(session, $"Accepted quest: {acceptedQuestId}");
                         TownQuestBoardPanelState.Close();
                     });
                     AddButton(panel, "Reroll Board", () =>
@@ -234,6 +235,12 @@ namespace Conn.UI.Runtime
 
         private void DrawTownShop(GameSessionState session)
         {
+            if (TownShopPanelState.Current == TownShopPanelKind.None)
+            {
+                HidePanel("TownShopPanel");
+                return;
+            }
+
             var panel = Panel("TownShopPanel");
             BuildPanel(panel, "Town Shop", true);
             if (TownShopPanelState.Current == TownShopPanelKind.Blacksmith)
@@ -249,8 +256,9 @@ namespace Conn.UI.Runtime
                         continue;
                     }
 
-                    AddText(panel, ChapterOneUxText.EquipmentBuyStatus(session, item.ItemId));
-                    AddButton(panel, $"Buy & Equip: {item.DisplayName}", () => EquipmentShopRuntimeService.BuyAndEquip(session, item.ItemId), EquipmentShopRuntimeService.CanBuy(session, item.ItemId));
+                    var itemId = item.ItemId;
+                    AddText(panel, ChapterOneUxText.EquipmentBuyStatus(session, itemId));
+                    AddButton(panel, $"Buy & Equip: {item.DisplayName}", () => EquipmentShopRuntimeService.BuyAndEquip(session, itemId), EquipmentShopRuntimeService.CanBuy(session, itemId));
                 }
 
                 AddText(panel, "Sell");
@@ -282,8 +290,9 @@ namespace Conn.UI.Runtime
                         continue;
                     }
 
-                    AddText(panel, ChapterOneUxText.SkillBuyStatus(session, skill.SkillId));
-                    AddButton(panel, $"Buy & Equip: {skill.DisplayName}", () => SkillShopRuntimeService.BuyAndEquip(session, skill.SkillId), SkillShopRuntimeService.CanBuy(session, skill.SkillId));
+                    var skillId = skill.SkillId;
+                    AddText(panel, ChapterOneUxText.SkillBuyStatus(session, skillId));
+                    AddButton(panel, $"Buy & Equip: {skill.DisplayName}", () => SkillShopRuntimeService.BuyAndEquip(session, skillId), SkillShopRuntimeService.CanBuy(session, skillId));
                 }
 
                 AddButton(panel, "Refresh Skill Stock", () => SkillShopRuntimeService.RefreshSkillMerchantStock(session));
@@ -296,29 +305,25 @@ namespace Conn.UI.Runtime
                         continue;
                     }
 
-                    AddText(panel, ChapterOneUxText.SkillStatus(session, skill.SkillId));
-                    AddButton(panel, $"Sell Loose: {skill.DisplayName}", () => SkillShopRuntimeService.SellLoose(session, skill.SkillId), SkillShopRuntimeService.CanSellLoose(session, skill.SkillId));
+                    var skillId = skill.SkillId;
+                    AddText(panel, ChapterOneUxText.SkillStatus(session, skillId));
+                    AddButton(panel, $"Sell Loose: {skill.DisplayName}", () => SkillShopRuntimeService.SellLoose(session, skillId), SkillShopRuntimeService.CanSellLoose(session, skillId));
                 }
 
                 AddButton(panel, "Close Shop", TownShopPanelState.Close);
-            }
-            else
-            {
-                AddText(panel, "Blacksmith, Apothecary, and Skill Merchant stock uses runtime services.");
-                AddButton(panel, "Buy Potion", () => ConsumableRuntimeService.Buy(session, ConsumableCatalog.MinorPotionId));
             }
         }
 
         private void DrawCharacterInventory(GameSessionState session)
         {
-            var panel = Panel("TownCharacterInventoryPanel");
-            BuildPanel(panel, "Character / Inventory", true);
             if (!characterOpen)
             {
-                AddText(panel, "Open from the town HUD.");
+                HidePanel("TownCharacterInventoryPanel");
                 return;
             }
 
+            var panel = Panel("TownCharacterInventoryPanel");
+            BuildPanel(panel, "Character / Inventory", true);
             AddText(panel, $"Loadout: {session.Equipment.WeaponGrip}  Dice {session.Equipment.DiceCount}  Def {session.Equipment.DefenseBonus}");
             AddText(panel, $"Weapon: {EquipmentName(session.Equipment.EquippedWeaponId)}");
             AddText(panel, $"Shield: {EquipmentName(session.Equipment.EquippedShieldId)}");
@@ -450,7 +455,7 @@ namespace Conn.UI.Runtime
                 SceneFlowService.Load(GameSceneId.Town);
             });
 
-            BuildPanel(Panel("EndingButtons"), "Ending Buttons", true);
+            HidePanel("EndingButtons");
         }
 
         private void DrawInteractionPrompt(string panelName)
@@ -482,12 +487,22 @@ namespace Conn.UI.Runtime
                 panel = canvas.transform.Find(name) as RectTransform;
             }
 
+            if (panel == null)
+            {
+                return null;
+            }
+
             SetGroup(name, true);
             return panel;
         }
 
         private void BuildPanel(RectTransform panel, string title, bool scroll)
         {
+            if (panel == null)
+            {
+                return;
+            }
+
             Clear(panel);
             var image = panel.GetComponent<Image>();
             if (image == null)
@@ -508,6 +523,17 @@ namespace Conn.UI.Runtime
             layout.childControlWidth = true;
             layout.childForceExpandHeight = false;
             layout.childForceExpandWidth = true;
+            var scrollRect = panel.GetComponent<ScrollRect>();
+            if (scrollRect != null)
+            {
+                scrollRect.enabled = scroll;
+                if (!scroll)
+                {
+                    scrollRect.viewport = null;
+                    scrollRect.content = null;
+                }
+            }
+
             AddTextRaw(panel, title, 20, FontStyle.Bold);
             if (scroll)
             {
@@ -532,6 +558,7 @@ namespace Conn.UI.Runtime
             textComponent.color = Color.white;
             textComponent.horizontalOverflow = HorizontalWrapMode.Wrap;
             textComponent.verticalOverflow = VerticalWrapMode.Overflow;
+            textComponent.raycastTarget = false;
             var layout = obj.AddComponent<LayoutElement>();
             layout.minHeight = Mathf.Max(22f, size + 8f);
         }
@@ -562,6 +589,7 @@ namespace Conn.UI.Runtime
             text.color = interactable ? Color.white : new Color(0.72f, 0.72f, 0.72f, 1f);
             text.alignment = TextAnchor.MiddleCenter;
             text.horizontalOverflow = HorizontalWrapMode.Wrap;
+            text.raycastTarget = false;
         }
 
         private static Transform ContentParent(Transform parent)
@@ -582,6 +610,7 @@ namespace Conn.UI.Runtime
             viewportObject.AddComponent<RectMask2D>();
             var viewportImage = viewportObject.AddComponent<Image>();
             viewportImage.color = new Color(0f, 0f, 0f, 0.08f);
+            viewportImage.raycastTarget = false;
             var viewportLayout = viewportObject.AddComponent<LayoutElement>();
             viewportLayout.flexibleHeight = 1f;
             viewportLayout.minHeight = 64f;
@@ -602,6 +631,7 @@ namespace Conn.UI.Runtime
             contentLayout.childForceExpandHeight = false;
             contentLayout.childForceExpandWidth = true;
             var fitter = contentObject.AddComponent<ContentSizeFitter>();
+            fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
             fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
             var scroll = panel.GetComponent<ScrollRect>();
@@ -616,6 +646,12 @@ namespace Conn.UI.Runtime
             scroll.vertical = true;
             scroll.movementType = ScrollRect.MovementType.Clamped;
             scroll.scrollSensitivity = 24f;
+            scroll.enabled = true;
+        }
+
+        private void HidePanel(string name)
+        {
+            SetGroup(name, false);
         }
 
         private void SetGroup(string name, bool visible)
@@ -647,6 +683,7 @@ namespace Conn.UI.Runtime
             for (var i = parent.childCount - 1; i >= 0; i--)
             {
                 var child = parent.GetChild(i).gameObject;
+                child.SetActive(false);
                 if (Application.isPlaying)
                 {
                     Destroy(child);

@@ -20,27 +20,43 @@ namespace Conn.Editor.Tools
         [MenuItem("Conn/Build P0 Scenes")]
         public static void BuildP0Scenes()
         {
-            EnsureFolder("Assets/Conn");
-            EnsureFolder(SceneFolder);
-            EnsureCompiledMapAsset();
-
-            CreateScene(GameSceneId.Title, false);
-            CreateScene(GameSceneId.Town, true, SceneContent.Town);
-            CreateScene(GameSceneId.Dungeon, true, SceneContent.Dungeon);
-            CreateScene(GameSceneId.Combat, false);
-            CreateScene(GameSceneId.Ending, false);
-
-            EditorBuildSettings.scenes = new[]
+            if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
             {
-                BuildScene("Title"),
-                BuildScene("Town"),
-                BuildScene("Dungeon"),
-                BuildScene("Combat"),
-                BuildScene("Ending")
-            };
+                throw new System.OperationCanceledException("P0 scene build canceled because current scene changes were not saved.");
+            }
 
-            AssetDatabase.SaveAssets();
-            AssetDatabase.Refresh();
+            var restorePath = SceneManager.GetActiveScene().path;
+            try
+            {
+                EnsureFolder("Assets/Conn");
+                EnsureFolder(SceneFolder);
+                EnsureCompiledMapAsset();
+
+                CreateScene(GameSceneId.Title, false);
+                CreateScene(GameSceneId.Town, true, SceneContent.Town);
+                CreateScene(GameSceneId.Dungeon, true, SceneContent.Dungeon);
+                CreateScene(GameSceneId.Combat, false);
+                CreateScene(GameSceneId.Ending, false);
+
+                EditorBuildSettings.scenes = new[]
+                {
+                    BuildScene("Title"),
+                    BuildScene("Town"),
+                    BuildScene("Dungeon"),
+                    BuildScene("Combat"),
+                    BuildScene("Ending")
+                };
+
+                AssetDatabase.SaveAssets();
+                AssetDatabase.Refresh();
+            }
+            finally
+            {
+                if (!string.IsNullOrEmpty(restorePath))
+                {
+                    EditorSceneManager.OpenScene(restorePath, OpenSceneMode.Single);
+                }
+            }
         }
 
         private static EditorBuildSettingsScene BuildScene(string sceneName)
@@ -101,7 +117,10 @@ namespace Conn.Editor.Tools
                 CreateMonsterMarker();
             }
 
-            EditorSceneManager.SaveScene(scene, $"{SceneFolder}/{sceneId}.unity");
+            if (!EditorSceneManager.SaveScene(scene, $"{SceneFolder}/{sceneId}.unity"))
+            {
+                throw new System.InvalidOperationException($"Failed to save generated scene: {SceneFolder}/{sceneId}.unity");
+            }
         }
 
         private static void CreateCamera()

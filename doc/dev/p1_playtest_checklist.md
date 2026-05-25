@@ -16,7 +16,7 @@
 - 자동 검증: `/home/inri/Unity/Hub/Editor/6000.4.8f1/Editor/Unity` batchmode 기준 Chapter 1/2 통과.
 - 데이터 계약: encounter enemy slot/list, generated item 필드, NPC `quest_seed_` 네임스페이스, compiledMap monster/loot placement 추가 확인.
 - UI 계약: Title/Town/Dungeon/Combat/Ending에 Runtime uGUI Canvas, CanvasScaler, EventSystem, scene별 panel root 생성/검증 추가.
-- 기존 IMGUI overlay와 상호작용 prompt는 fallback/debug 플래그가 켜질 때만 보이도록 유지한다.
+- 기존 IMGUI overlay와 상호작용 prompt는 fallback/debug 플래그가 켜질 때만 보이도록 유지한다. 기본 표시는 Runtime uGUI Canvas가 담당한다.
 - 제한: 이 실행 환경에서는 실제 Unity Game view를 사람이 보는 Play Mode 수동 조작은 수행하지 못했다. 아래 항목은 Editor에서 직접 체크해야 하는 잔여 수동 확인으로 유지한다.
 
 ## 기본 루프
@@ -122,7 +122,7 @@ Town에서 아래 NPC를 바라보고 `E`로 상호작용한다.
 - NPC 상호작용 거리: 기본값 `4.0`. 2026-05-25 코드 기본값 재확인.
 - 몬스터 접촉 collider 크기
 - HUD 버튼이 화면 밖으로 밀리는지
-  - 2026-05-25 자동 검증: IMGUI overlay와 `E` 상호작용 prompt rect가 320x240/220x160 화면 안에 클램프되는지 확인.
+  - 2026-05-25 자동 검증: IMGUI overlay와 fallback 상호작용 prompt rect가 320x240/220x160 화면 안에 클램프되는지 확인.
   - 2026-05-25 자동 검증: Runtime uGUI panel root normalized safe rect와 CanvasScaler contract 확인.
   - 남은 수동 확인: 실제 Play Mode Game view에서 긴 notice/상점 목록 스크롤 가독성 확인.
 - Combat 버튼이 클릭하기 쉬운지
@@ -138,8 +138,8 @@ Town에서 아래 NPC를 바라보고 `E`로 상호작용한다.
 - 전투 승리 시 quest target 완료, field monster cleanup, XP 지급
 - 사망 시 Ending 저장, Continue 시 Ending 복귀, Ending New Game 초기화
 - 전투 HUD용 dice face/선택/cooldown/status 문자열
-- 작은 화면에서 P1 IMGUI overlay와 상호작용 prompt가 화면 밖으로 나가지 않는 layout contract
-- Runtime uGUI Canvas/CanvasScaler/EventSystem과 scene별 필수 panel root 존재
+- 작은 화면에서 P1 IMGUI overlay와 fallback 상호작용 prompt가 화면 밖으로 나가지 않는 layout contract
+- Runtime uGUI Canvas/CanvasScaler/EventSystem, SceneBootstrap RuntimeCanvasUi binding, scene별 필수 panel root 존재
 - Runtime uGUI panel root normalized safe rect contract
 - Focus Strike의 Bleed 적용과 상태 이상 tick 로그
 - 장비/소모품/스킬 구분 표시 문자열
