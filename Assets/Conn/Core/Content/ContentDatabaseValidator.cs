@@ -109,6 +109,11 @@ namespace Conn.Core.Content
                 {
                     report.Error($"Monster {monster.Id} attack power must be positive.");
                 }
+
+                if (monster.XpReward < 0)
+                {
+                    report.Error($"Monster {monster.Id} XP reward must not be negative.");
+                }
             }
         }
 
@@ -211,11 +216,6 @@ namespace Conn.Core.Content
                     {
                         report.Error($"Quest {quest.Id} target encounter monster mismatch: {quest.TargetEncounterId} -> {encounter.MonsterId}, expected {quest.TargetMonsterId}");
                     }
-                }
-
-                if (string.IsNullOrWhiteSpace(quest.MapKind) && string.IsNullOrWhiteSpace(quest.MapProfileId))
-                {
-                    report.Error($"Quest {quest.Id} has no map kind or map profile id.");
                 }
 
                 if (string.IsNullOrWhiteSpace(quest.MapProfileId))

@@ -65,14 +65,14 @@ Deliverables:
 
 Checklist:
 
-- [ ] Create `doc/dev/data_pipeline_status.md`.
-- [ ] List all Runtime DB-first paths.
-- [ ] List all remaining C# catalog fallback paths.
-- [ ] List hardcoded scene generation paths in `P0SceneBuilder`.
-- [ ] List hardcoded NPC/service interaction paths.
-- [ ] Confirm Chapter 1 batch validation passes.
-- [ ] Confirm Chapter 2 batch validation passes.
-- [ ] Confirm Runtime/Core/UI Runtime forbidden Editor reference scan passes.
+- [x] Create `doc/dev/data_pipeline_status.md`.
+- [x] List all Runtime DB-first paths.
+- [x] List all remaining C# catalog fallback paths.
+- [x] List hardcoded scene generation paths in `P0SceneBuilder`.
+- [x] List hardcoded NPC/service interaction paths.
+- [x] Confirm Chapter 1 batch validation passes.
+- [x] Confirm Chapter 2 batch validation passes.
+- [x] Confirm Runtime/Core/UI Runtime forbidden Editor reference scan passes.
 
 Completion gate:
 
@@ -100,13 +100,13 @@ Content Database Window
 
 Checklist:
 
-- [ ] Add stable tab navigation to `ContentDatabaseWindow`.
-- [ ] Add active `ContentDatabaseDefinition` selector.
-- [ ] Add create/save controls.
-- [ ] Add dirty-state handling.
-- [ ] Add validation run button.
-- [ ] Add validation result panel with errors and warnings.
-- [ ] Ensure Editor code stays inside `Conn.Editor`.
+- [x] Add stable tab navigation to `ContentDatabaseWindow`.
+- [x] Add active `ContentDatabaseDefinition` selector.
+- [x] Add create/save controls.
+- [x] Add dirty-state handling.
+- [x] Add validation run button.
+- [x] Add validation result panel with errors and warnings.
+- [x] Ensure Editor code stays inside `Conn.Editor`.
 
 Completion gate:
 
@@ -127,14 +127,14 @@ Fields:
 
 Checklist:
 
-- [ ] Add monster list view.
-- [ ] Add monster detail editor.
-- [ ] Add create/delete monster.
-- [ ] Validate id uniqueness.
-- [ ] Validate positive HP.
-- [ ] Validate positive attack power.
-- [ ] Validate non-negative XP reward.
-- [ ] Confirm RuntimeContentDatabase can read editor-authored monsters.
+- [x] Add monster list view.
+- [x] Add monster detail editor.
+- [x] Add create/delete monster.
+- [x] Validate id uniqueness.
+- [x] Validate positive HP.
+- [x] Validate positive attack power.
+- [x] Validate non-negative XP reward.
+- [x] Confirm RuntimeContentDatabase can read editor-authored monsters.
 
 Completion gate:
 
@@ -155,16 +155,16 @@ Fields:
 
 Checklist:
 
-- [ ] Add encounter list view.
-- [ ] Add encounter detail editor.
-- [ ] Add primary monster selector.
-- [ ] Add enemy slot list editor.
-- [ ] Add slot id/count/primary controls.
-- [ ] Validate primary monster exists.
-- [ ] Validate enemy slot monster references.
-- [ ] Validate duplicate slot ids.
-- [ ] Validate pattern is not empty.
-- [ ] Confirm CombatRuntimeService preserves pattern/reward/slots.
+- [x] Add encounter list view.
+- [x] Add encounter detail editor.
+- [x] Add primary monster selector.
+- [x] Add enemy slot list editor.
+- [x] Add slot id/count/primary controls.
+- [x] Validate primary monster exists.
+- [x] Validate enemy slot monster references.
+- [x] Validate duplicate slot ids.
+- [x] Validate pattern is not empty.
+- [x] Confirm CombatRuntimeService preserves pattern/reward/slots.
 
 Completion gate:
 
@@ -187,17 +187,17 @@ Fields:
 
 Checklist:
 
-- [ ] Add quest list view.
-- [ ] Add quest detail editor.
-- [ ] Add target monster selector.
-- [ ] Add target encounter selector.
-- [ ] Add map profile id field.
-- [ ] Add reward item list editor.
-- [ ] Validate quest target monster exists.
-- [ ] Validate quest target encounter exists.
-- [ ] Validate quest target monster matches encounter primary monster.
-- [ ] Validate map profile id is present.
-- [ ] Confirm Quest Board uses editor-authored quest.
+- [x] Add quest list view.
+- [x] Add quest detail editor.
+- [x] Add target monster selector.
+- [x] Add target encounter selector.
+- [x] Add map profile id field.
+- [x] Add reward item list editor.
+- [x] Validate quest target monster exists.
+- [x] Validate quest target encounter exists.
+- [x] Validate quest target monster matches encounter primary monster.
+- [x] Validate map profile id is present.
+- [x] Confirm Quest Board uses editor-authored quest.
 
 Completion gate:
 
@@ -504,14 +504,13 @@ Completion gate:
 
 ## Current Recommended Next Step
 
-Start with Phase 1.1 through Phase 1.4:
+Continue with Phase 1.5 through Phase 1.7:
 
-1. Content Database Window shell
-2. Monster Editor
-3. Encounter Editor
-4. Quest Editor
+1. NPC Editor
+2. Skill Editor
+3. Vendor Editor
 
-Do not start Monster Field FSM until these are complete and validated.
+Do not start Monster Field FSM until the editor, validation, map, encounter, and placement contracts are stable.
 
 ## Deferred Notes
 

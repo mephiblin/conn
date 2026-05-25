@@ -19,7 +19,7 @@ Editor Tool과 제작 파이프라인의 세부 진행 순서와 체크리스트
 | P2 전투/스킬/주사위 | 84-89% | 상태 이상/특수 효과/로그/HUD 가독성 1차 완료, encounter pattern/reward id/enemy slot Runtime uGUI 표시 계약 연결 |
 | P3 장비/인벤토리/상점 | 78-86% | 장비/소모품/스킬 구분과 구매/판매 상태 표시 1차 완료, generated item 계약 필드 추가 |
 | P4 마을 NPC 확장 | 72-82% | 8종 NPC와 최소 서비스/notice는 동작, NPC quest seed 네임스페이스 검증 정리 |
-| P5 Editor Tool 1차 | 70-80% | Content DB import/검증, encounter/quest/vendor/NPC Runtime 소비 1차 확대 |
+| P5 Editor Tool 1차 | 80-88% | Content DB shell과 Monster/Encounter/Quest authoring UI 완료, import/검증과 encounter/quest/vendor/NPC Runtime 소비 1차 확대 |
 | P6 맵 생성 | 62-70% | compiledMap asset 저장/Runtime 우선 로드, start/quest target/boss/exit/monster/loot placement 계약 1차 완료 |
 
 Chapter 1 전체는 약 70-80% 진행으로 본다. 자동 검증 가능한 Runtime Core는
@@ -215,8 +215,9 @@ P1은 자동 검증 기준으로 닫혔다. 실제 플레이 기준으로 아래
 
 ## P5에 남은 작업: Editor Tool 1차
 
-현재 Editor Tool은 Content Database와 Generator Workbench의 1차 골격이 생겼다.
-아직 본격 제작 UX와 Runtime data bundle 전환은 남아 있다.
+현재 Editor Tool은 Content Database와 Generator Workbench의 1차 골격이 생겼고,
+Content Database Window에서 Monster/Encounter/Quest를 작성, 저장, 검증할 수 있다.
+아직 NPC/Skill/Vendor 제작 UX와 Runtime data bundle 전환은 남아 있다.
 
 우선순위:
 
@@ -227,7 +228,9 @@ P1은 자동 검증 기준으로 닫혔다. 실제 플레이 기준으로 아래
    - `ContentDatabase.asset` 생성: 1차 완료
    - Runtime lookup path: monster/encounter/equipment/skill/quest/item 1차 연결, 기존 C# catalog fallback 유지
    - 장비 장착/주사위/방어 계산의 ContentDatabase 소비: 1차 완료
-   - 남은 작업: UI 표시와 모든 catalog 호출을 점진적으로 database source로 전환
+   - Content Database Window shared shell: 1차 완료
+   - Monster/Encounter/Quest editor: 1차 완료
+   - 남은 작업: NPC/Skill/Vendor editor, UI 표시와 모든 catalog 호출을 점진적으로 database source로 전환
 
 2. Build & Validation 확장
    - ID registry 검증: 1차 완료
