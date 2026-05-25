@@ -2,23 +2,34 @@ using UnityEngine;
 
 namespace Conn.Rendering.World
 {
-    [RequireComponent(typeof(SpriteRenderer))]
+    [RequireComponent(typeof(MeshFilter))]
+    [RequireComponent(typeof(MeshRenderer))]
     public sealed class NpcWorldBillboard : MonoBehaviour
     {
-        [SerializeField] private Sprite sprite;
+        [SerializeField] private Texture2D texture;
         [SerializeField] private Color fallbackColor = new Color(0.78f, 0.68f, 0.52f, 1f);
-        [SerializeField] private Vector2 size = new Vector2(1.25f, 1.8f);
+        [SerializeField] private float height = 1.7f;
+        [SerializeField] private bool faceCamera = true;
+        [SerializeField] private float maxYawDegrees = 55f;
+        [SerializeField] private float rotationSpeedDegrees = 180f;
+        [SerializeField] private float recoverySpeedDegrees = 120f;
 
-        private SpriteRenderer spriteRenderer;
-        private Sprite generatedFallbackSprite;
+        private static Mesh quadMesh;
+        private static Material sharedTransparentMaterial;
 
-        public Sprite Sprite
+        private MeshRenderer meshRenderer;
+        private MeshFilter meshFilter;
+        private Texture2D generatedFallbackTexture;
+        private MaterialPropertyBlock propertyBlock;
+        private Quaternion restLocalRotation;
+
+        public Texture2D Texture
         {
-            get => sprite;
+            get => texture;
             set
             {
-                sprite = value;
-                ApplySprite();
+                texture = value;
+                ApplyVisual();
             }
         }
 
@@ -28,88 +39,177 @@ namespace Conn.Rendering.World
             set
             {
                 fallbackColor = value;
-                generatedFallbackSprite = null;
-                ApplySprite();
+                generatedFallbackTexture = null;
+                ApplyVisual();
             }
         }
 
-        public Vector2 Size
+        public float Height
         {
-            get => size;
+            get => height;
             set
             {
-                size = value;
+                height = value;
                 ApplySize();
             }
         }
 
+        public bool FaceCamera
+        {
+            get => faceCamera;
+            set => faceCamera = value;
+        }
+
+        public float MaxYawDegrees
+        {
+            get => maxYawDegrees;
+            set => maxYawDegrees = Mathf.Max(0f, value);
+        }
+
+        public float RotationSpeedDegrees
+        {
+            get => rotationSpeedDegrees;
+            set => rotationSpeedDegrees = Mathf.Max(0f, value);
+        }
+
+        public float RecoverySpeedDegrees
+        {
+            get => recoverySpeedDegrees;
+            set => recoverySpeedDegrees = Mathf.Max(0f, value);
+        }
+
         private void Awake()
         {
-            EnsureRenderer();
-            ApplySprite();
+            restLocalRotation = transform.localRotation;
+            EnsureComponents();
+            ApplyVisual();
             ApplySize();
         }
 
         private void OnValidate()
         {
-            EnsureRenderer();
-            ApplySprite();
+            EnsureComponents();
+            ApplyVisual();
             ApplySize();
         }
 
         private void LateUpdate()
         {
+            if (!faceCamera)
+            {
+                RecoverToRestRotation();
+                return;
+            }
+
             var camera = Camera.main;
             if (camera == null)
             {
+                RecoverToRestRotation();
                 return;
             }
 
-            var toCamera = transform.position - camera.transform.position;
-            toCamera.y = 0f;
-            if (toCamera.sqrMagnitude <= 0.0001f)
+            var parent = transform.parent;
+            var localCamera = parent != null
+                ? parent.InverseTransformPoint(camera.transform.position)
+                : camera.transform.position;
+            localCamera.y = 0f;
+            if (localCamera.sqrMagnitude <= 0.0001f)
             {
+                RecoverToRestRotation();
                 return;
             }
 
-            transform.rotation = Quaternion.LookRotation(toCamera.normalized, Vector3.up);
+            var desiredYaw = Mathf.Atan2(-localCamera.x, -localCamera.z) * Mathf.Rad2Deg;
+            if (Mathf.Abs(Mathf.DeltaAngle(0f, desiredYaw)) > maxYawDegrees)
+            {
+                RecoverToRestRotation();
+                return;
+            }
+
+            var target = restLocalRotation * Quaternion.Euler(0f, desiredYaw, 0f);
+            transform.localRotation = Quaternion.RotateTowards(
+                transform.localRotation,
+                target,
+                Mathf.Max(0f, rotationSpeedDegrees) * Time.deltaTime);
         }
 
-        private void EnsureRenderer()
+        private void RecoverToRestRotation()
         {
-            if (spriteRenderer == null)
+            transform.localRotation = Quaternion.RotateTowards(
+                transform.localRotation,
+                restLocalRotation,
+                Mathf.Max(0f, recoverySpeedDegrees) * Time.deltaTime);
+        }
+
+        private void EnsureComponents()
+        {
+            if (meshFilter == null)
             {
-                spriteRenderer = GetComponent<SpriteRenderer>();
+                meshFilter = GetComponent<MeshFilter>();
+            }
+
+            if (meshRenderer == null)
+            {
+                meshRenderer = GetComponent<MeshRenderer>();
+            }
+
+            if (meshFilter != null && meshFilter.sharedMesh == null)
+            {
+                meshFilter.sharedMesh = QuadMesh();
+            }
+
+            if (meshRenderer != null)
+            {
+                if (meshRenderer.sharedMaterial == null)
+                {
+                    meshRenderer.sharedMaterial = TransparentMaterial();
+                }
+
+                meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                meshRenderer.receiveShadows = false;
             }
         }
 
-        private void ApplySprite()
+        private void ApplyVisual()
         {
-            EnsureRenderer();
-            if (spriteRenderer == null)
+            EnsureComponents();
+            if (meshRenderer == null)
             {
                 return;
             }
 
-            spriteRenderer.sprite = sprite != null ? sprite : FallbackSprite();
-            spriteRenderer.sortingOrder = 0;
+            propertyBlock ??= new MaterialPropertyBlock();
+            meshRenderer.GetPropertyBlock(propertyBlock);
+            propertyBlock.SetTexture("_MainTex", texture != null ? texture : FallbackTexture());
+            propertyBlock.SetColor("_Color", Color.white);
+            meshRenderer.SetPropertyBlock(propertyBlock);
+            ApplySize();
         }
 
         private void ApplySize()
         {
-            transform.localScale = new Vector3(Mathf.Max(0.01f, size.x), Mathf.Max(0.01f, size.y), 1f);
+            var source = texture != null ? texture : FallbackTexture();
+            var aspect = source != null && source.height > 0 ? (float)source.width / source.height : 1f;
+            var worldHeight = Mathf.Max(0.01f, height);
+            var worldWidth = worldHeight * aspect;
+            var parentScale = transform.parent != null ? transform.parent.lossyScale : Vector3.one;
+
+            transform.localScale = new Vector3(
+                worldWidth / Mathf.Max(0.01f, Mathf.Abs(parentScale.x)),
+                worldHeight / Mathf.Max(0.01f, Mathf.Abs(parentScale.y)),
+                1f / Mathf.Max(0.01f, Mathf.Abs(parentScale.z)));
         }
 
-        private Sprite FallbackSprite()
+        private Texture2D FallbackTexture()
         {
-            if (generatedFallbackSprite != null)
+            if (generatedFallbackTexture != null)
             {
-                return generatedFallbackSprite;
+                return generatedFallbackTexture;
             }
 
-            var texture = new Texture2D(16, 24, TextureFormat.RGBA32, false)
+            generatedFallbackTexture = new Texture2D(16, 24, TextureFormat.RGBA32, false)
             {
-                name = $"{name}_FallbackNpcSprite",
+                name = $"{name}_FallbackNpcTexture",
                 filterMode = FilterMode.Point,
                 wrapMode = TextureWrapMode.Clamp
             };
@@ -125,12 +225,54 @@ namespace Conn.Rendering.World
             FillRect(pixels, 16, 3, 8, 10, 12, fallbackColor);
             FillRect(pixels, 16, 1, 10, 14, 3, new Color(0.12f, 0.1f, 0.09f, 1f));
             FillRect(pixels, 16, 5, 20, 6, 3, new Color(0.08f, 0.06f, 0.05f, 1f));
-            texture.SetPixels(pixels);
-            texture.Apply();
+            generatedFallbackTexture.SetPixels(pixels);
+            generatedFallbackTexture.Apply();
+            return generatedFallbackTexture;
+        }
 
-            generatedFallbackSprite = Sprite.Create(texture, new Rect(0f, 0f, 16f, 24f), new Vector2(0.5f, 0f), 24f);
-            generatedFallbackSprite.name = $"{name}_FallbackNpcSprite";
-            return generatedFallbackSprite;
+        private static Mesh QuadMesh()
+        {
+            if (quadMesh != null)
+            {
+                return quadMesh;
+            }
+
+            quadMesh = new Mesh
+            {
+                name = "NpcWorldBillboardQuad",
+                vertices = new[]
+                {
+                    new Vector3(-0.5f, 0f, 0f),
+                    new Vector3(0.5f, 0f, 0f),
+                    new Vector3(-0.5f, 1f, 0f),
+                    new Vector3(0.5f, 1f, 0f)
+                },
+                uv = new[]
+                {
+                    new Vector2(0f, 0f),
+                    new Vector2(1f, 0f),
+                    new Vector2(0f, 1f),
+                    new Vector2(1f, 1f)
+                },
+                triangles = new[] { 0, 2, 1, 2, 3, 1 }
+            };
+            quadMesh.RecalculateBounds();
+            return quadMesh;
+        }
+
+        private static Material TransparentMaterial()
+        {
+            if (sharedTransparentMaterial != null)
+            {
+                return sharedTransparentMaterial;
+            }
+
+            var shader = Shader.Find("Sprites/Default") ?? Shader.Find("Unlit/Transparent");
+            sharedTransparentMaterial = new Material(shader)
+            {
+                name = "NpcWorldBillboardTransparent"
+            };
+            return sharedTransparentMaterial;
         }
 
         private static void FillRect(Color[] pixels, int width, int x, int y, int w, int h, Color color)

@@ -2,9 +2,9 @@ using Conn.Core.Scenes;
 using Conn.Editor.Maps;
 using Conn.Editor.Content;
 using Conn.Editor.UI;
+using Conn.Editor.World;
 using Conn.Rendering.Interaction;
 using Conn.Rendering.Player;
-using Conn.Rendering.World;
 using Conn.Runtime.Scenes;
 using Conn.Runtime.World;
 using Conn.UI.Runtime;
@@ -26,6 +26,102 @@ namespace Conn.Editor.Tools
         private const string ApothecarySpritePath = "Assets/Conn/2D/NPC_2D/약재상.png";
         private const string ScholarSpritePath = "Assets/Conn/2D/NPC_2D/학자.png";
 
+        private static readonly TownNpcDefinition[] TownNpcDefinitions =
+        {
+            new TownNpcDefinition(
+                "Quest Board",
+                typeof(QuestBoardInteractable),
+                new Vector3(-2f, 0f, 2f),
+                QuestBoardSpritePath,
+                new Color(0.55f, 0.44f, 0.28f, 1f),
+                1.4f,
+                false,
+                new Vector3(1.5f, 1.4f, 0.25f),
+                new Vector3(0f, 1f, 0f)),
+            new TownNpcDefinition(
+                "Dungeon Gate",
+                typeof(GateInteractable),
+                new Vector3(2f, 0f, 2f),
+                GateSpritePath,
+                new Color(0.35f, 0.36f, 0.42f, 1f),
+                3.8f,
+                false,
+                new Vector3(1.2f, 2.5f, 0.3f),
+                new Vector3(0f, 1.25f, 0f)),
+            new TownNpcDefinition(
+                "Blacksmith",
+                typeof(BlacksmithInteractable),
+                new Vector3(0f, 0f, 3.5f),
+                BlacksmithSpritePath,
+                new Color(0.7f, 0.36f, 0.26f, 1f),
+                1.75f,
+                true,
+                new Vector3(1.4f, 1.3f, 0.5f),
+                new Vector3(0f, 1f, 0f)),
+            new TownNpcDefinition(
+                "Skill Merchant",
+                typeof(SkillMerchantInteractable),
+                new Vector3(-3.5f, 0f, 0f),
+                SkillMerchantSpritePath,
+                new Color(0.35f, 0.48f, 0.78f, 1f),
+                1.75f,
+                true,
+                new Vector3(1f, 1.4f, 1f),
+                new Vector3(0f, 1f, 0f)),
+            new TownNpcDefinition(
+                "Inn",
+                typeof(TownServiceInteractable),
+                new Vector3(3.5f, 0f, 0f),
+                InnSpritePath,
+                new Color(0.66f, 0.48f, 0.3f, 1f),
+                1.75f,
+                true,
+                new Vector3(1f, 1.3f, 1f),
+                new Vector3(0f, 1f, 0f),
+                true,
+                TownServiceKind.Inn,
+                3),
+            new TownNpcDefinition(
+                "Trainer",
+                typeof(TownServiceInteractable),
+                new Vector3(3.5f, 0f, -2f),
+                string.Empty,
+                new Color(0.62f, 0.34f, 0.28f, 1f),
+                1.75f,
+                true,
+                new Vector3(1f, 1.3f, 1f),
+                new Vector3(0f, 1f, 0f),
+                true,
+                TownServiceKind.Trainer,
+                5),
+            new TownNpcDefinition(
+                "Apothecary",
+                typeof(TownServiceInteractable),
+                new Vector3(-3.5f, 0f, -2f),
+                ApothecarySpritePath,
+                new Color(0.28f, 0.62f, 0.38f, 1f),
+                1.75f,
+                true,
+                new Vector3(1f, 1.3f, 1f),
+                new Vector3(0f, 1f, 0f),
+                true,
+                TownServiceKind.Apothecary,
+                4),
+            new TownNpcDefinition(
+                "Scholar",
+                typeof(TownServiceInteractable),
+                new Vector3(0f, 0f, -3.5f),
+                ScholarSpritePath,
+                new Color(0.48f, 0.42f, 0.72f, 1f),
+                1.75f,
+                true,
+                new Vector3(1f, 1.3f, 1f),
+                new Vector3(0f, 1f, 0f),
+                true,
+                TownServiceKind.Scholar,
+                0)
+        };
+
         [MenuItem("Conn/Build P0 Scenes")]
         public static void BuildP0Scenes()
         {
@@ -42,6 +138,11 @@ namespace Conn.Editor.Tools
                 EnsureCompiledMapAsset();
                 EnsureRuntimeMapGenerationBundleAsset();
                 RuntimeUiPrefabBuilder.EnsureRuntimeCanvasPrefab();
+                var townEnvironmentResult = TownEnvironmentPrefabBuilder.EnsureDefaultTownEnvironmentAssets();
+                if (townEnvironmentResult.HasErrors)
+                {
+                    throw new System.InvalidOperationException(string.Join("\n", townEnvironmentResult.Errors));
+                }
 
                 CreateScene(GameSceneId.Title, false);
                 CreateScene(GameSceneId.Town, true, SceneContent.Town);
@@ -181,6 +282,22 @@ namespace Conn.Editor.Tools
 
         private static void CreateGround(GameSceneId sceneId)
         {
+            if (sceneId == GameSceneId.Town)
+            {
+                var environmentPrefab = TownEnvironmentPrefabBuilder.LoadEnvironmentPrefab()
+                    ?? TownEnvironmentPrefabBuilder.EnsureDefaultTownEnvironmentAssets().EnvironmentPrefab;
+                if (environmentPrefab == null)
+                {
+                    throw new System.InvalidOperationException("Town environment prefab is missing.");
+                }
+
+                var environment = (GameObject)PrefabUtility.InstantiatePrefab(environmentPrefab);
+                environment.name = "Town Environment";
+                environment.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+                environment.transform.localScale = Vector3.one;
+                return;
+            }
+
             var ground = GameObject.CreatePrimitive(PrimitiveType.Plane);
             ground.name = $"{sceneId} Ground";
             ground.transform.localScale = new Vector3(4f, 1f, 4f);
@@ -188,95 +305,63 @@ namespace Conn.Editor.Tools
 
         private static void CreateTownInteractables()
         {
-            var board = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            board.name = "Quest Board";
-            board.transform.position = new Vector3(-2f, 1f, 2f);
-            board.transform.localScale = new Vector3(1.5f, 1.4f, 0.25f);
-            board.AddComponent<QuestBoardInteractable>();
-            ConfigureTownNpcVisual(board, "Quest Board CG", QuestBoardSpritePath, new Color(0.55f, 0.44f, 0.28f, 1f), new Vector2(1.5f, 1.7f));
-
-            var gate = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            gate.name = "Dungeon Gate";
-            gate.transform.position = new Vector3(2f, 1.25f, 2f);
-            gate.transform.localScale = new Vector3(1.2f, 2.5f, 0.3f);
-            gate.AddComponent<GateInteractable>();
-            ConfigureTownNpcVisual(gate, "Dungeon Gate CG", GateSpritePath, new Color(0.35f, 0.36f, 0.42f, 1f), new Vector2(1.6f, 2.4f));
-
-            var smith = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            smith.name = "Blacksmith";
-            smith.transform.position = new Vector3(0f, 1f, 3.5f);
-            smith.transform.localScale = new Vector3(1.4f, 1.3f, 0.5f);
-            smith.AddComponent<BlacksmithInteractable>();
-            ConfigureTownNpcVisual(smith, "Blacksmith CG", BlacksmithSpritePath, new Color(0.7f, 0.36f, 0.26f, 1f), new Vector2(1.35f, 1.85f));
-
-            var skillMerchant = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            skillMerchant.name = "Skill Merchant";
-            skillMerchant.transform.position = new Vector3(-3.5f, 1f, 0f);
-            skillMerchant.transform.localScale = new Vector3(1f, 1.4f, 1f);
-            skillMerchant.AddComponent<SkillMerchantInteractable>();
-            ConfigureTownNpcVisual(skillMerchant, "Skill Merchant CG", SkillMerchantSpritePath, new Color(0.35f, 0.48f, 0.78f, 1f), new Vector2(1.25f, 1.85f));
-
-            CreateTownService("Inn", TownServiceKind.Inn, 3, new Vector3(3.5f, 1f, 0f));
-            CreateTownService("Trainer", TownServiceKind.Trainer, 5, new Vector3(3.5f, 1f, -2f));
-            CreateTownService("Apothecary", TownServiceKind.Apothecary, 4, new Vector3(-3.5f, 1f, -2f));
-            CreateTownService("Scholar", TownServiceKind.Scholar, 0, new Vector3(0f, 1f, -3.5f));
-        }
-
-        private static void CreateTownService(string name, TownServiceKind kind, int cost, Vector3 position)
-        {
-            var service = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            service.name = name;
-            service.transform.position = position;
-            service.transform.localScale = new Vector3(1f, 1.3f, 1f);
-            var interactable = service.AddComponent<TownServiceInteractable>();
-            interactable.ServiceName = name;
-            interactable.ServiceKind = kind;
-            interactable.Cost = cost;
-            ConfigureTownNpcVisual(service, $"{name} CG", SpritePathForTownService(kind), ColorForTownService(kind), new Vector2(1.2f, 1.8f));
-        }
-
-        private static void ConfigureTownNpcVisual(GameObject root, string visualName, string spritePath, Color color, Vector2 size)
-        {
-            var renderer = root.GetComponent<MeshRenderer>();
-            if (renderer != null)
+            for (var i = 0; i < TownNpcDefinitions.Length; i++)
             {
-                renderer.enabled = false;
+                var definition = TownNpcDefinitions[i];
+                var npc = CreateTownNpc(definition);
+                if (!definition.IsService)
+                {
+                    continue;
+                }
+
+                var interactable = RequireTownNpcComponent<TownServiceInteractable>(npc, definition.Name);
+                interactable.ServiceName = definition.Name;
+                interactable.ServiceKind = definition.ServiceKind;
+                interactable.Cost = definition.ServiceCost;
+            }
+        }
+
+        private static GameObject CreateTownNpc(TownNpcDefinition definition)
+        {
+            var root = NpcWorldPrefabBuilder.InstantiateTownNpcPrefab(
+                definition.Name,
+                definition.Position,
+                definition.TexturePath,
+                definition.FallbackColor,
+                definition.VisualHeight,
+                definition.FaceCamera,
+                definition.InteractableType,
+                definition.ColliderSize,
+                definition.ColliderCenter);
+            if (root == null)
+            {
+                throw new System.InvalidOperationException($"NpcWorldPrefabBuilder failed to instantiate town NPC prefab: {definition.Name}");
             }
 
-            var visual = new GameObject(visualName, typeof(SpriteRenderer), typeof(NpcWorldBillboard));
-            visual.transform.SetParent(root.transform, false);
-            visual.transform.localPosition = new Vector3(0f, -0.65f, 0f);
-            visual.transform.localRotation = Quaternion.identity;
-
-            var billboard = visual.GetComponent<NpcWorldBillboard>();
-            billboard.Sprite = RuntimeUiPrefabBuilder.LoadSprite(spritePath);
-            billboard.FallbackColor = color;
-            billboard.Size = new Vector2(
-                size.x / Mathf.Max(0.01f, root.transform.localScale.x),
-                size.y / Mathf.Max(0.01f, root.transform.localScale.y));
+            root.name = definition.Name;
+            root.transform.SetPositionAndRotation(definition.Position, Quaternion.identity);
+            root.transform.localScale = Vector3.one;
+            RequireTownNpcComponent(root, definition.InteractableType, definition.Name);
+            return root;
         }
 
-        private static string SpritePathForTownService(TownServiceKind kind)
+        private static T RequireTownNpcComponent<T>(GameObject root, string name) where T : Component
         {
-            return kind switch
+            var component = root.GetComponent<T>();
+            if (component == null)
             {
-                TownServiceKind.Inn => InnSpritePath,
-                TownServiceKind.Apothecary => ApothecarySpritePath,
-                TownServiceKind.Scholar => ScholarSpritePath,
-                _ => string.Empty
-            };
+                throw new System.InvalidOperationException($"NpcWorldPrefabBuilder did not attach {typeof(T).Name} to town NPC prefab: {name}");
+            }
+
+            return component;
         }
 
-        private static Color ColorForTownService(TownServiceKind kind)
+        private static void RequireTownNpcComponent(GameObject root, System.Type componentType, string name)
         {
-            return kind switch
+            if (root.GetComponent(componentType) == null)
             {
-                TownServiceKind.Inn => new Color(0.66f, 0.48f, 0.3f, 1f),
-                TownServiceKind.Trainer => new Color(0.62f, 0.34f, 0.28f, 1f),
-                TownServiceKind.Apothecary => new Color(0.28f, 0.62f, 0.38f, 1f),
-                TownServiceKind.Scholar => new Color(0.48f, 0.42f, 0.72f, 1f),
-                _ => new Color(0.78f, 0.68f, 0.52f, 1f)
-            };
+                throw new System.InvalidOperationException($"NpcWorldPrefabBuilder did not attach {componentType.Name} to town NPC prefab: {name}");
+            }
         }
 
         private static void CreateLight()
@@ -307,6 +392,50 @@ namespace Conn.Editor.Tools
             None,
             Town,
             Dungeon
+        }
+
+        private readonly struct TownNpcDefinition
+        {
+            public readonly string Name;
+            public readonly System.Type InteractableType;
+            public readonly Vector3 Position;
+            public readonly string TexturePath;
+            public readonly Color FallbackColor;
+            public readonly float VisualHeight;
+            public readonly bool FaceCamera;
+            public readonly Vector3 ColliderSize;
+            public readonly Vector3 ColliderCenter;
+            public readonly bool IsService;
+            public readonly TownServiceKind ServiceKind;
+            public readonly int ServiceCost;
+
+            public TownNpcDefinition(
+                string name,
+                System.Type interactableType,
+                Vector3 position,
+                string texturePath,
+                Color fallbackColor,
+                float visualHeight,
+                bool faceCamera,
+                Vector3 colliderSize,
+                Vector3 colliderCenter,
+                bool isService = false,
+                TownServiceKind serviceKind = TownServiceKind.Inn,
+                int serviceCost = 0)
+            {
+                Name = name;
+                InteractableType = interactableType;
+                Position = position;
+                TexturePath = texturePath;
+                FallbackColor = fallbackColor;
+                VisualHeight = visualHeight;
+                FaceCamera = faceCamera;
+                ColliderSize = colliderSize;
+                ColliderCenter = colliderCenter;
+                IsService = isService;
+                ServiceKind = serviceKind;
+                ServiceCost = serviceCost;
+            }
         }
     }
 }

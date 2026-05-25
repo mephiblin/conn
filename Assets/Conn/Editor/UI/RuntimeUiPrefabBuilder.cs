@@ -159,15 +159,82 @@ namespace Conn.Editor.UI
         public static Sprite LoadSprite(string spritePath)
         {
             var importer = AssetImporter.GetAtPath(spritePath) as TextureImporter;
-            if (importer != null && importer.textureType != TextureImporterType.Sprite)
+            if (importer != null)
             {
-                importer.textureType = TextureImporterType.Sprite;
-                importer.spriteImportMode = SpriteImportMode.Single;
-                importer.mipmapEnabled = false;
-                importer.SaveAndReimport();
+                var changed = false;
+                if (importer.textureType != TextureImporterType.Sprite)
+                {
+                    importer.textureType = TextureImporterType.Sprite;
+                    changed = true;
+                }
+
+                if (importer.spriteImportMode != SpriteImportMode.Single)
+                {
+                    importer.spriteImportMode = SpriteImportMode.Single;
+                    changed = true;
+                }
+
+                if (importer.mipmapEnabled)
+                {
+                    importer.mipmapEnabled = false;
+                    changed = true;
+                }
+
+                if (!importer.alphaIsTransparency)
+                {
+                    importer.alphaIsTransparency = true;
+                    changed = true;
+                }
+
+                var settings = new TextureImporterSettings();
+                importer.ReadTextureSettings(settings);
+                if (settings.spriteAlignment != (int)SpriteAlignment.BottomCenter)
+                {
+                    settings.spriteAlignment = (int)SpriteAlignment.BottomCenter;
+                    importer.SetTextureSettings(settings);
+                    changed = true;
+                }
+
+                if (changed)
+                {
+                    importer.SaveAndReimport();
+                }
             }
 
             return AssetDatabase.LoadAssetAtPath<Sprite>(spritePath);
+        }
+
+        public static Texture2D LoadTexture(string texturePath)
+        {
+            var importer = AssetImporter.GetAtPath(texturePath) as TextureImporter;
+            if (importer != null)
+            {
+                var changed = false;
+                if (importer.textureType != TextureImporterType.Default)
+                {
+                    importer.textureType = TextureImporterType.Default;
+                    changed = true;
+                }
+
+                if (importer.mipmapEnabled)
+                {
+                    importer.mipmapEnabled = false;
+                    changed = true;
+                }
+
+                if (!importer.alphaIsTransparency)
+                {
+                    importer.alphaIsTransparency = true;
+                    changed = true;
+                }
+
+                if (changed)
+                {
+                    importer.SaveAndReimport();
+                }
+            }
+
+            return AssetDatabase.LoadAssetAtPath<Texture2D>(texturePath);
         }
 
         private static Sprite LoadTitleBackgroundSprite()

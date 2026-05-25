@@ -224,6 +224,12 @@ namespace Conn.Runtime.Content
 
         public static QuestDefinition BoardQuestAt(int offerIndex)
         {
+            var catalogOffer = CatalogBoardOfferFromActiveDatabase(offerIndex);
+            if (catalogOffer != null)
+            {
+                return catalogOffer;
+            }
+
             if (activeDatabase != null && activeDatabase.Quests != null && activeDatabase.Quests.Length > 0)
             {
                 var candidateCount = 0;
@@ -257,6 +263,33 @@ namespace Conn.Runtime.Content
             }
 
             return QuestCatalog.BoardOffer(offerIndex);
+        }
+
+        private static QuestDefinition CatalogBoardOfferFromActiveDatabase(int offerIndex)
+        {
+            var catalogQuests = QuestCatalog.AllBoardQuests;
+            if (activeDatabase == null || activeDatabase.Quests == null || catalogQuests == null || catalogQuests.Length == 0)
+            {
+                return null;
+            }
+
+            var targetIndex = PositiveModulo(offerIndex, catalogQuests.Length);
+            var targetQuest = catalogQuests[targetIndex];
+            if (targetQuest == null)
+            {
+                return null;
+            }
+
+            for (var i = 0; i < activeDatabase.Quests.Length; i++)
+            {
+                var quest = activeDatabase.Quests[i];
+                if (quest != null && quest.Id == targetQuest.QuestId && IsValidBoardQuest(quest))
+                {
+                    return FindQuest(quest.Id);
+                }
+            }
+
+            return null;
         }
 
         public static ContentVendorDefinition FindVendor(string vendorId)

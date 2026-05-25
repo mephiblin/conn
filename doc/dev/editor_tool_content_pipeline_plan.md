@@ -653,6 +653,9 @@ Checklist:
 - [x] Add required landmarks, optional chunks/landmarks, allowed spawn tables, tag filters, direct encounter overrides.
 - [x] Add generation weight profile reference.
 - [x] Add resource set fields for tile/wall/door/decor/prefab/material registrations.
+- [x] Add town environment prefab/material builder API backed by `Assets/Conn/2D/Back_Env` and `Assets/Conn/2D/Mat`.
+- [x] Add town NPC world prefab/material builder API backed by `Assets/Conn/2D/NPC_2D`.
+- [x] Bind generated Town scenes to town environment and NPC prefab definitions instead of direct cube/prototype generation.
 - [x] Add room chunk/landmark socket, anchor, population, role tag, tilemap/prefab reference fields.
 - [x] Validate map profile/resource/spawn/chunk compatibility.
 - [x] Validate spawn table resolved pools and encounter/theme compatibility in map authoring validation.
@@ -748,3 +751,6 @@ alone.
   Unity Play Mode observation. Automated preflight now validates the data,
   scene, runtime, combat, reward, board reroll, Ending continue, and save/load
   contracts before manual play.
+- Town environment and NPC scene binding now goes through prefab/material
+  builder APIs. `P0SceneBuilder` keeps a single town NPC definition list and no
+  longer builds town interactables from direct cube/prototype visuals.
