@@ -4,6 +4,11 @@
 정리한다. `development_pipeline.md`가 최초 작업 순서라면, 이 문서는 현재 구현 이후의
 잔여 범위와 우선순위를 기록한다.
 
+Editor Tool과 제작 파이프라인의 세부 진행 순서와 체크리스트는
+[`editor_tool_content_pipeline_plan.md`](editor_tool_content_pipeline_plan.md)를
+기준으로 한다. 해당 파이프라인 관련 작업을 할 때는 반드시 그 문서의 체크리스트
+상태를 갱신해야 한다.
+
 ## 현재 진행률
 
 대략적인 진행률은 다음과 같이 본다.
