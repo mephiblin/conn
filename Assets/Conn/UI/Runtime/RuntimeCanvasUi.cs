@@ -21,6 +21,11 @@ namespace Conn.UI.Runtime
     {
         [SerializeField] private GameSceneId sceneId;
         [SerializeField] private Canvas canvas;
+        [SerializeField] private Sprite blacksmithBackgroundSprite;
+        [SerializeField] private Sprite skillMerchantBackgroundSprite;
+        [SerializeField] private Sprite innBackgroundSprite;
+        [SerializeField] private Sprite apothecaryBackgroundSprite;
+        [SerializeField] private Sprite scholarBackgroundSprite;
         private const float RefreshIntervalSeconds = 0.15f;
         private bool characterOpen;
         private float nextRefreshTime;
@@ -34,6 +39,20 @@ namespace Conn.UI.Runtime
         }
 
         public Canvas Canvas => canvas;
+
+        public void ConfigureNpcBackgroundSprites(
+            Sprite blacksmith,
+            Sprite skillMerchant,
+            Sprite inn,
+            Sprite apothecary,
+            Sprite scholar)
+        {
+            blacksmithBackgroundSprite = blacksmith;
+            skillMerchantBackgroundSprite = skillMerchant;
+            innBackgroundSprite = inn;
+            apothecaryBackgroundSprite = apothecary;
+            scholarBackgroundSprite = scholar;
+        }
 
         private void Awake()
         {
@@ -294,6 +313,39 @@ namespace Conn.UI.Runtime
         {
             var backdrop = Panel("TownNpcBackdropPanel");
             BuildPanel(backdrop, string.Empty, false);
+            ApplyNpcBackdropImage(backdrop, TownNpcInteractionState.Kind);
+        }
+
+        private void ApplyNpcBackdropImage(RectTransform backdrop, TownNpcInteractionKind kind)
+        {
+            if (backdrop == null)
+            {
+                return;
+            }
+
+            var image = backdrop.GetComponent<Image>();
+            if (image == null)
+            {
+                return;
+            }
+
+            image.sprite = NpcBackdropSpriteFor(kind);
+            image.color = image.sprite != null ? Color.white : PanelBackgroundColor(backdrop.name);
+            image.type = Image.Type.Simple;
+            image.preserveAspect = false;
+        }
+
+        private Sprite NpcBackdropSpriteFor(TownNpcInteractionKind kind)
+        {
+            return kind switch
+            {
+                TownNpcInteractionKind.Blacksmith => blacksmithBackgroundSprite,
+                TownNpcInteractionKind.SkillMerchant => skillMerchantBackgroundSprite,
+                TownNpcInteractionKind.Inn => innBackgroundSprite,
+                TownNpcInteractionKind.Apothecary => apothecaryBackgroundSprite,
+                TownNpcInteractionKind.Scholar => scholarBackgroundSprite,
+                _ => null
+            };
         }
 
         private void DrawTownNpcInteraction(GameSessionState session)

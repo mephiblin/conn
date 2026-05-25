@@ -18,6 +18,13 @@ namespace Conn.Editor.Tools
     public static class P0SceneBuilder
     {
         private const string SceneFolder = "Assets/Conn/Scenes";
+        private const string QuestBoardSpritePath = "Assets/Conn/2D/NPC_2D/게시판.png";
+        private const string GateSpritePath = "Assets/Conn/2D/NPC_2D/gate.png";
+        private const string BlacksmithSpritePath = "Assets/Conn/2D/NPC_2D/대장장이.png";
+        private const string SkillMerchantSpritePath = "Assets/Conn/2D/NPC_2D/스킬상인.png";
+        private const string InnSpritePath = "Assets/Conn/2D/NPC_2D/여관주인.png";
+        private const string ApothecarySpritePath = "Assets/Conn/2D/NPC_2D/약재상.png";
+        private const string ScholarSpritePath = "Assets/Conn/2D/NPC_2D/학자.png";
 
         [MenuItem("Conn/Build P0 Scenes")]
         public static void BuildP0Scenes()
@@ -113,7 +120,8 @@ namespace Conn.Editor.Tools
             var overlay = bootstrapObject.AddComponent<P0SceneOverlay>();
             overlay.SceneId = sceneId;
             RuntimeUiPrefabBuilder.InstantiateRuntimeCanvasPrefab(sceneId);
-            RuntimeCanvasUiBuilder.EnsureRuntimeCanvas(bootstrapObject, sceneId);
+            var runtimeCanvasUi = RuntimeCanvasUiBuilder.EnsureRuntimeCanvas(bootstrapObject, sceneId);
+            RuntimeUiPrefabBuilder.ConfigureRuntimeCanvasUiSprites(runtimeCanvasUi);
 
             CreateLight();
             if (includePlayer)
@@ -185,27 +193,28 @@ namespace Conn.Editor.Tools
             board.transform.position = new Vector3(-2f, 1f, 2f);
             board.transform.localScale = new Vector3(1.5f, 1.4f, 0.25f);
             board.AddComponent<QuestBoardInteractable>();
-            ConfigureTownNpcVisual(board, "Quest Board CG", new Color(0.55f, 0.44f, 0.28f, 1f), new Vector2(1.5f, 1.7f));
+            ConfigureTownNpcVisual(board, "Quest Board CG", QuestBoardSpritePath, new Color(0.55f, 0.44f, 0.28f, 1f), new Vector2(1.5f, 1.7f));
 
             var gate = GameObject.CreatePrimitive(PrimitiveType.Cube);
             gate.name = "Dungeon Gate";
             gate.transform.position = new Vector3(2f, 1.25f, 2f);
             gate.transform.localScale = new Vector3(1.2f, 2.5f, 0.3f);
             gate.AddComponent<GateInteractable>();
+            ConfigureTownNpcVisual(gate, "Dungeon Gate CG", GateSpritePath, new Color(0.35f, 0.36f, 0.42f, 1f), new Vector2(1.6f, 2.4f));
 
             var smith = GameObject.CreatePrimitive(PrimitiveType.Cube);
             smith.name = "Blacksmith";
             smith.transform.position = new Vector3(0f, 1f, 3.5f);
             smith.transform.localScale = new Vector3(1.4f, 1.3f, 0.5f);
             smith.AddComponent<BlacksmithInteractable>();
-            ConfigureTownNpcVisual(smith, "Blacksmith CG", new Color(0.7f, 0.36f, 0.26f, 1f), new Vector2(1.35f, 1.85f));
+            ConfigureTownNpcVisual(smith, "Blacksmith CG", BlacksmithSpritePath, new Color(0.7f, 0.36f, 0.26f, 1f), new Vector2(1.35f, 1.85f));
 
             var skillMerchant = GameObject.CreatePrimitive(PrimitiveType.Cube);
             skillMerchant.name = "Skill Merchant";
             skillMerchant.transform.position = new Vector3(-3.5f, 1f, 0f);
             skillMerchant.transform.localScale = new Vector3(1f, 1.4f, 1f);
             skillMerchant.AddComponent<SkillMerchantInteractable>();
-            ConfigureTownNpcVisual(skillMerchant, "Skill Merchant CG", new Color(0.35f, 0.48f, 0.78f, 1f), new Vector2(1.25f, 1.85f));
+            ConfigureTownNpcVisual(skillMerchant, "Skill Merchant CG", SkillMerchantSpritePath, new Color(0.35f, 0.48f, 0.78f, 1f), new Vector2(1.25f, 1.85f));
 
             CreateTownService("Inn", TownServiceKind.Inn, 3, new Vector3(3.5f, 1f, 0f));
             CreateTownService("Trainer", TownServiceKind.Trainer, 5, new Vector3(3.5f, 1f, -2f));
@@ -223,10 +232,10 @@ namespace Conn.Editor.Tools
             interactable.ServiceName = name;
             interactable.ServiceKind = kind;
             interactable.Cost = cost;
-            ConfigureTownNpcVisual(service, $"{name} CG", ColorForTownService(kind), new Vector2(1.2f, 1.8f));
+            ConfigureTownNpcVisual(service, $"{name} CG", SpritePathForTownService(kind), ColorForTownService(kind), new Vector2(1.2f, 1.8f));
         }
 
-        private static void ConfigureTownNpcVisual(GameObject root, string visualName, Color color, Vector2 size)
+        private static void ConfigureTownNpcVisual(GameObject root, string visualName, string spritePath, Color color, Vector2 size)
         {
             var renderer = root.GetComponent<MeshRenderer>();
             if (renderer != null)
@@ -240,10 +249,22 @@ namespace Conn.Editor.Tools
             visual.transform.localRotation = Quaternion.identity;
 
             var billboard = visual.GetComponent<NpcWorldBillboard>();
+            billboard.Sprite = RuntimeUiPrefabBuilder.LoadSprite(spritePath);
             billboard.FallbackColor = color;
             billboard.Size = new Vector2(
                 size.x / Mathf.Max(0.01f, root.transform.localScale.x),
                 size.y / Mathf.Max(0.01f, root.transform.localScale.y));
+        }
+
+        private static string SpritePathForTownService(TownServiceKind kind)
+        {
+            return kind switch
+            {
+                TownServiceKind.Inn => InnSpritePath,
+                TownServiceKind.Apothecary => ApothecarySpritePath,
+                TownServiceKind.Scholar => ScholarSpritePath,
+                _ => string.Empty
+            };
         }
 
         private static Color ColorForTownService(TownServiceKind kind)

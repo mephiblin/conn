@@ -11,6 +11,11 @@ namespace Conn.Editor.UI
         public const string PrefabFolder = "Assets/Conn/UI/Prefabs";
         public const string RuntimeCanvasPrefabPath = PrefabFolder + "/RuntimeCanvas.prefab";
         public const string TitleBackgroundSpritePath = "Assets/Conn/UI/Art/title_background_v1.png";
+        public const string NpcBackgroundBlacksmithPath = "Assets/Conn/2D/NPC_Background/대장간.png";
+        public const string NpcBackgroundSkillMerchantPath = "Assets/Conn/2D/NPC_Background/스킬마차.png";
+        public const string NpcBackgroundInnPath = "Assets/Conn/2D/NPC_Background/여관.png";
+        public const string NpcBackgroundApothecaryPath = "Assets/Conn/2D/NPC_Background/약초상점.png";
+        public const string NpcBackgroundScholarPath = "Assets/Conn/2D/NPC_Background/학자의방.png";
 
         public static GameObject InstantiateRuntimeCanvasPrefab(GameSceneId sceneId)
         {
@@ -136,9 +141,24 @@ namespace Conn.Editor.UI
             image.sprite = LoadTitleBackgroundSprite();
         }
 
-        private static Sprite LoadTitleBackgroundSprite()
+        public static void ConfigureRuntimeCanvasUiSprites(RuntimeCanvasUi ui)
         {
-            var importer = AssetImporter.GetAtPath(TitleBackgroundSpritePath) as TextureImporter;
+            if (ui == null)
+            {
+                return;
+            }
+
+            ui.ConfigureNpcBackgroundSprites(
+                LoadSprite(NpcBackgroundBlacksmithPath),
+                LoadSprite(NpcBackgroundSkillMerchantPath),
+                LoadSprite(NpcBackgroundInnPath),
+                LoadSprite(NpcBackgroundApothecaryPath),
+                LoadSprite(NpcBackgroundScholarPath));
+        }
+
+        public static Sprite LoadSprite(string spritePath)
+        {
+            var importer = AssetImporter.GetAtPath(spritePath) as TextureImporter;
             if (importer != null && importer.textureType != TextureImporterType.Sprite)
             {
                 importer.textureType = TextureImporterType.Sprite;
@@ -147,7 +167,12 @@ namespace Conn.Editor.UI
                 importer.SaveAndReimport();
             }
 
-            return AssetDatabase.LoadAssetAtPath<Sprite>(TitleBackgroundSpritePath);
+            return AssetDatabase.LoadAssetAtPath<Sprite>(spritePath);
+        }
+
+        private static Sprite LoadTitleBackgroundSprite()
+        {
+            return LoadSprite(TitleBackgroundSpritePath);
         }
 
         private static void ApplyScenePanelVisibility(Transform root, GameSceneId sceneId)
