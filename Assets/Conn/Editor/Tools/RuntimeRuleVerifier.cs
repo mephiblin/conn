@@ -56,6 +56,7 @@ namespace Conn.Editor.Tools
             VerifyRuntimeNotice();
             VerifyChapterOneUxDisplayStrings();
             VerifyP1HudLayoutContracts();
+            VerifyRuntimeCanvasUiLayoutContracts();
             VerifySaveContractRoundTrip();
             VerifyEquipmentAndSkillDisplayData();
             VerifyEquipmentComparisonDisplayData();
@@ -107,6 +108,27 @@ namespace Conn.Editor.Tools
             Expect(tinyOverlay.y >= 0f && tinyOverlay.yMax <= 160f, "P1 HUD overlay must clamp inside very small screen heights.");
             Expect(prompt.x >= 0f && prompt.xMax <= 220f, "Interaction prompt must stay inside small screen widths.");
             Expect(prompt.y >= 0f && prompt.yMax <= 160f, "Interaction prompt must stay inside small screen heights.");
+        }
+
+        private static void VerifyRuntimeCanvasUiLayoutContracts()
+        {
+            VerifyPanelSafeRects(RuntimeCanvasUiBuilder.CommonPanelNames);
+            VerifyPanelSafeRects(RuntimeCanvasUiBuilder.TitlePanelNames);
+            VerifyPanelSafeRects(RuntimeCanvasUiBuilder.TownPanelNames);
+            VerifyPanelSafeRects(RuntimeCanvasUiBuilder.DungeonPanelNames);
+            VerifyPanelSafeRects(RuntimeCanvasUiBuilder.CombatPanelNames);
+            VerifyPanelSafeRects(RuntimeCanvasUiBuilder.EndingPanelNames);
+        }
+
+        private static void VerifyPanelSafeRects(string[] panelNames)
+        {
+            for (var i = 0; i < panelNames.Length; i++)
+            {
+                var rect = RuntimeCanvasUiBuilder.NormalizedSafeRectForPanel(panelNames[i]);
+                Expect(rect.xMin >= 0f && rect.xMax <= 1f, $"Runtime uGUI panel {panelNames[i]} must clamp horizontally.");
+                Expect(rect.yMin >= 0f && rect.yMax <= 1f, $"Runtime uGUI panel {panelNames[i]} must clamp vertically.");
+                Expect(rect.width > 0f && rect.height > 0f, $"Runtime uGUI panel {panelNames[i]} must have positive normalized size.");
+            }
         }
 
         private static void VerifyRuntimeContentDatabaseMonsterLookup()

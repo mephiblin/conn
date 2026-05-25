@@ -33,6 +33,11 @@ namespace Conn.UI.Runtime
 
         private void OnGUI()
         {
+            if (RuntimeUiSettings.UseCanvasUi && !RuntimeUiSettings.UseLegacyImguiOverlay)
+            {
+                return;
+            }
+
             ResetTransientUiOnSceneChange();
 
             var overlayRect = OverlayAreaRect(Screen.width, Screen.height);

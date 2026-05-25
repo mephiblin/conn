@@ -1,4 +1,5 @@
 using Conn.Runtime.World;
+using Conn.UI.Runtime;
 using UnityEngine;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
@@ -32,6 +33,11 @@ namespace Conn.Rendering.Interaction
 
         private void OnGUI()
         {
+            if (RuntimeUiSettings.UseCanvasUi && !RuntimeUiSettings.UseLegacyImguiOverlay)
+            {
+                return;
+            }
+
             if (focused == null)
             {
                 return;

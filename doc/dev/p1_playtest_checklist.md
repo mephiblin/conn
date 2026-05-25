@@ -15,6 +15,8 @@
 
 - 자동 검증: `/home/inri/Unity/Hub/Editor/6000.4.8f1/Editor/Unity` batchmode 기준 Chapter 1/2 통과.
 - 데이터 계약: encounter enemy slot/list, generated item 필드, NPC `quest_seed_` 네임스페이스, compiledMap monster/loot placement 추가 확인.
+- UI 계약: Title/Town/Dungeon/Combat/Ending에 Runtime uGUI Canvas, CanvasScaler, EventSystem, scene별 panel root 생성/검증 추가.
+- 기존 IMGUI overlay와 상호작용 prompt는 fallback/debug 플래그가 켜질 때만 보이도록 유지한다.
 - 제한: 이 실행 환경에서는 실제 Unity Game view를 사람이 보는 Play Mode 수동 조작은 수행하지 못했다. 아래 항목은 Editor에서 직접 체크해야 하는 잔여 수동 확인으로 유지한다.
 
 ## 기본 루프
@@ -24,10 +26,12 @@
 1. Title
    - `New Game` 클릭
    - Town으로 이동하는지 확인
+   - uGUI Title 버튼이 보이고 IMGUI fallback이 기본으로 숨겨져 있는지 확인
 
 2. Town
    - 퀘스트 게시판을 바라보고 `E`
    - Quest Board 패널이 열리는지 확인
+   - uGUI Town HUD, Quest Board, Shop, Character/Inventory, Notice panel이 겹치지 않는지 확인
    - 첫 제안이 ContentDatabase quest(`quest_twisted_temple_clear`) 기반 target/encounter/map profile을 표시하는지 확인
    - `Reroll Board`가 현재 제안을 바꾸는지 확인
    - `Accept Quest` 클릭
@@ -40,13 +44,14 @@
 
 4. Dungeon
    - HUD에 활성 퀘스트, 목표, 필드 몬스터 상태가 표시되는지 확인
-- compiledMap start/quest target/exit placement 기반 marker가 등록되는지 확인
-- compiledMap monster/loot placement 목록이 생성되는지 확인
+   - compiledMap start/quest target/exit placement 기반 marker가 등록되는지 확인
+   - compiledMap monster/loot placement 목록이 생성되는지 확인
    - 몬스터 오브젝트가 quest target placement 기준으로 보이는지 확인
    - 몬스터와 접촉하면 Combat으로 이동하는지 확인
    - 접촉 로그가 중복으로 여러 번 찍히지 않는지 확인
 
 5. Combat
+   - uGUI Enemy Stage, Command, Dice, Combat Log, Status panel이 보이는지 확인
    - 주사위 face 버튼이 장비 주사위 수와 일치하는지 확인
    - 최대 3개까지 선택 가능한지 확인
    - `Resolve Selected Dice`로 공격/방어/회복 메시지가 갱신되는지 확인
@@ -77,6 +82,7 @@
 1. Combat에서 일부러 패배하거나 HP를 낮춘 상태로 전투를 진행한다.
 2. Ending으로 이동하는지 확인한다.
 3. Ending HUD가 `Result: death`를 표시하는지 확인한다.
+   - uGUI Ending Result panel과 Back To Title/New Game 버튼이 보이는지 확인한다.
 4. `Back To Title` 클릭 후 `Continue`를 누른다.
 5. Ending으로 돌아오는지 확인한다.
 6. Ending에서 `New Game`을 누르면 Town으로 새 게임이 시작되는지 확인한다.
@@ -117,6 +123,7 @@ Town에서 아래 NPC를 바라보고 `E`로 상호작용한다.
 - 몬스터 접촉 collider 크기
 - HUD 버튼이 화면 밖으로 밀리는지
   - 2026-05-25 자동 검증: IMGUI overlay와 `E` 상호작용 prompt rect가 320x240/220x160 화면 안에 클램프되는지 확인.
+  - 2026-05-25 자동 검증: Runtime uGUI panel root normalized safe rect와 CanvasScaler contract 확인.
   - 남은 수동 확인: 실제 Play Mode Game view에서 긴 notice/상점 목록 스크롤 가독성 확인.
 - Combat 버튼이 클릭하기 쉬운지
 
@@ -132,6 +139,8 @@ Town에서 아래 NPC를 바라보고 `E`로 상호작용한다.
 - 사망 시 Ending 저장, Continue 시 Ending 복귀, Ending New Game 초기화
 - 전투 HUD용 dice face/선택/cooldown/status 문자열
 - 작은 화면에서 P1 IMGUI overlay와 상호작용 prompt가 화면 밖으로 나가지 않는 layout contract
+- Runtime uGUI Canvas/CanvasScaler/EventSystem과 scene별 필수 panel root 존재
+- Runtime uGUI panel root normalized safe rect contract
 - Focus Strike의 Bleed 적용과 상태 이상 tick 로그
 - 장비/소모품/스킬 구분 표시 문자열
 - 대장장이/기술 상인/약재상/여관/훈련소/게이트 notice

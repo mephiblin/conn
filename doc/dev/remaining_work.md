@@ -10,8 +10,8 @@
 
 | 범위 | 진행률 | 상태 |
 | --- | ---: | --- |
-| P1 Runtime Vertical Slice | 96% | 자동 검증 기준 루프와 작은 화면 HUD 배치 계약은 통과했고, Play Mode 체감 확인만 남음 |
-| P2 전투/스킬/주사위 | 82-88% | 상태 이상/특수 효과/로그/HUD 가독성 1차 완료, encounter pattern/reward id/enemy slot Runtime 계약 연결 |
+| P1 Runtime Vertical Slice | 97% | 자동 검증 기준 루프와 uGUI Canvas panel 계약은 통과했고, Play Mode 체감 확인만 남음 |
+| P2 전투/스킬/주사위 | 84-89% | 상태 이상/특수 효과/로그/HUD 가독성 1차 완료, encounter pattern/reward id/enemy slot Runtime uGUI 표시 계약 연결 |
 | P3 장비/인벤토리/상점 | 78-86% | 장비/소모품/스킬 구분과 구매/판매 상태 표시 1차 완료, generated item 계약 필드 추가 |
 | P4 마을 NPC 확장 | 72-82% | 8종 NPC와 최소 서비스/notice는 동작, NPC quest seed 네임스페이스 검증 정리 |
 | P5 Editor Tool 1차 | 70-80% | Content DB import/검증, encounter/quest/vendor/NPC Runtime 소비 1차 확대 |
@@ -61,6 +61,8 @@ Chapter 1 전체는 약 70-80% 진행으로 본다. 자동 검증 가능한 Runt
 - 던전 HUD의 원정/몬스터/귀환 상태 표시
 - `Conn > Build & Validate Chapter 1` batchmode 검증
 - P1 IMGUI overlay와 상호작용 prompt의 작은 화면 clamp 자동 검증
+- Runtime uGUI Canvas, CanvasScaler, EventSystem, scene별 panel root 자동 생성/검증
+- Title/Town/Dungeon/Combat/Ending Canvas 기반 1차 Runtime UI
 - `Conn > Content Database > Import Legacy JSON`
 - `Conn > Content Database > Window`
 - `Conn > Map > Generator Workbench`
@@ -102,10 +104,12 @@ P1은 자동 검증 기준으로 닫혔다. 실제 플레이 기준으로 아래
    - 콜라이더 크기
 
 3. HUD 배치 정리
-   - 현재 IMGUI 임시 HUD는 scroll view로 보호한다.
+   - uGUI Runtime Canvas 1차 전환 완료.
+   - 기존 IMGUI 임시 HUD는 fallback/debug 플래그로 유지한다.
    - overlay와 상호작용 prompt는 320x240/220x160 기준 화면 안쪽 clamp 자동 검증을 통과했다.
+   - Runtime Canvas panel root도 normalized safe rect 계약으로 자동 검증한다.
    - 실제 Play Mode Game view에서 긴 notice/상점/전투 로그 가독성은 확인해야 한다.
-   - 이후 uGUI/UIToolkit으로 옮길지 결정해야 한다.
+   - 이후 정식 prefab화와 visual polish가 필요하다.
 
 4. Ending 흐름 보강
    - 사망 후 Ending 화면에서 사망 사유/결과 표시: 1차 완료
@@ -152,7 +156,8 @@ P1은 자동 검증 기준으로 닫혔다. 실제 플레이 기준으로 아래
    - Ending 저장/Continue 정책: 1차 구현/검증 완료
 
 5. Combat UI 개선
-   - 현재 버튼형 IMGUI를 임시 유지한다.
+   - 버튼형 IMGUI는 fallback/debug로 유지한다.
+   - uGUI Combat Canvas에 enemy stage, command, dice, log, status panel 1차 추가
    - 주사위 face, 쿨다운, 선택 상태의 가독성: 1차 개선 완료
 
 ## P3에 남은 작업: 장비/인벤토리/상점
@@ -166,7 +171,7 @@ P1은 자동 검증 기준으로 닫혔다. 실제 플레이 기준으로 아래
    - 남은 작업: 정식 장비 비교 UI와 스탯 밸런스
 
 2. 인벤토리 UI 정리
-   - 현재는 HUD 안의 임시 Character 패널이다.
+   - uGUI Town Character/Inventory panel 1차 전환 완료.
    - 장비, 소모품, 스킬 카드 구분: 1차 완료
    - 장착 중/판매 가능/구매 가능 상태 표시: 1차 완료
 
@@ -303,10 +308,10 @@ Codex가 자동으로 검증하기 어려운 항목은 아래다.
 - Unity Play Mode에서 전체 P1 루프가 실제로 끊기지 않는지
 - 마우스 감도와 이동감: 감도 기본값은 `0.14`로 낮춤
 - NPC/게이트/몬스터 collider 크기와 위치
-- HUD 버튼이 화면 밖으로 밀리지 않는지
+- uGUI HUD 버튼이 화면 밖으로 밀리지 않는지
 - 전투 UI가 클릭하기 불편하지 않은지
 - 사망 후 Ending/Title/Continue 흐름이 원하는 정책과 맞는지
-- 현재 IMGUI HUD를 언제까지 임시로 둘지
+- 기존 IMGUI fallback/debug 표시를 언제 제거할지
 
 ## 현재 완료의 의미
 

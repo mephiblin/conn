@@ -1,7 +1,12 @@
 using System;
 using Conn.Core.Scenes;
+using Conn.UI.Runtime;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 namespace Conn.Editor.Tools
 {
@@ -14,6 +19,7 @@ namespace Conn.Editor.Tools
             RuntimeRuleVerifier.VerifyChapterOneCoreRules();
             P0SceneBuilder.BuildP0Scenes();
             VerifyBuildSettingsScenes();
+            VerifyRuntimeCanvasScenes();
             Debug.Log("Conn Chapter 1 build and validation passed.");
         }
 
@@ -39,6 +45,65 @@ namespace Conn.Editor.Tools
             }
 
             throw new InvalidOperationException($"Build settings missing enabled scene: {expectedPath}");
+        }
+
+        private static void VerifyRuntimeCanvasScenes()
+        {
+            ExpectRuntimeCanvasScene(GameSceneId.Title);
+            ExpectRuntimeCanvasScene(GameSceneId.Town);
+            ExpectRuntimeCanvasScene(GameSceneId.Dungeon);
+            ExpectRuntimeCanvasScene(GameSceneId.Combat);
+            ExpectRuntimeCanvasScene(GameSceneId.Ending);
+        }
+
+        private static void ExpectRuntimeCanvasScene(GameSceneId sceneId)
+        {
+            var scene = EditorSceneManager.OpenScene($"Assets/Conn/Scenes/{sceneId}.unity", OpenSceneMode.Single);
+            var canvasObject = GameObject.Find(RuntimeCanvasUiBuilder.CanvasName);
+            if (canvasObject == null)
+            {
+                throw new InvalidOperationException($"{sceneId} scene is missing {RuntimeCanvasUiBuilder.CanvasName}.");
+            }
+
+            var canvas = canvasObject.GetComponent<Canvas>();
+            var scaler = canvasObject.GetComponent<CanvasScaler>();
+            var raycaster = canvasObject.GetComponent<GraphicRaycaster>();
+            if (canvas == null || scaler == null || raycaster == null)
+            {
+                throw new InvalidOperationException($"{sceneId} scene runtime canvas is missing Canvas/CanvasScaler/GraphicRaycaster.");
+            }
+
+            if (scaler.uiScaleMode != CanvasScaler.ScaleMode.ScaleWithScreenSize
+                || scaler.referenceResolution != RuntimeCanvasUiBuilder.ReferenceResolution
+                || scaler.screenMatchMode != CanvasScaler.ScreenMatchMode.MatchWidthOrHeight
+                || Math.Abs(scaler.matchWidthOrHeight - 0.5f) > 0.001f)
+            {
+                throw new InvalidOperationException($"{sceneId} scene runtime canvas scaler contract is invalid.");
+            }
+
+            if (UnityEngine.Object.FindFirstObjectByType<EventSystem>() == null)
+            {
+                throw new InvalidOperationException($"{sceneId} scene is missing EventSystem.");
+            }
+
+            ExpectPanelRoots(canvasObject.transform, RuntimeCanvasUiBuilder.CommonPanelNames, sceneId);
+            ExpectPanelRoots(canvasObject.transform, RuntimeCanvasUiBuilder.PanelsFor(sceneId), sceneId);
+            if (!scene.isLoaded)
+            {
+                throw new InvalidOperationException($"{sceneId} scene failed to load for UI validation.");
+            }
+        }
+
+        private static void ExpectPanelRoots(Transform canvasTransform, string[] names, GameSceneId sceneId)
+        {
+            for (var i = 0; i < names.Length; i++)
+            {
+                var panel = canvasTransform.Find(names[i]);
+                if (panel == null || panel.GetComponent<RectTransform>() == null)
+                {
+                    throw new InvalidOperationException($"{sceneId} scene is missing runtime UI panel root: {names[i]}");
+                }
+            }
         }
     }
 }

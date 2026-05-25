@@ -329,6 +329,8 @@ Unity에서는 이를 `SkillDefinition`, `SkillInventory`, `DiceLoadout`,
 - 장비 데이터는 generated item 확장을 위해 `generated`, `rarityId`, `affixPoolId` 필드를 가진다.
 - compiledMap placement는 start, quest target, boss, exit, monster, loot를 검증한다.
 - NPC의 `quest_seed_` 참조는 board quest가 아닌 NPC seed 네임스페이스로 유지한다.
+- Runtime 게임 UI는 웹게임 Runtime 배치를 참고한 uGUI Canvas로 1차 전환했다.
+- Editor/워크벤치 UI는 이식 대상에서 제외하고, 기존 IMGUI overlay는 fallback/debug로만 유지한다.
 
 초기 구현은 ScriptableObject와 JSON 직렬화 가능한 DTO를 함께 사용한다. 에디터는
 제작 친화적인 ScriptableObject를 다루고, 런타임 빌드는 검증된 DTO 또는 번들을

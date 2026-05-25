@@ -78,6 +78,7 @@ namespace Conn.Editor.Tools
 
             var overlay = bootstrapObject.AddComponent<P0SceneOverlay>();
             overlay.SceneId = sceneId;
+            RuntimeCanvasUiBuilder.EnsureRuntimeCanvas(bootstrapObject, sceneId);
 
             CreateLight();
             if (includePlayer)
