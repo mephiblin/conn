@@ -296,16 +296,16 @@ Purpose: prove editor-authored content cannot break Runtime contracts.
 
 Checklist:
 
-- [ ] Add shared validation result UI to Content Database Window.
-- [ ] Add quest -> encounter -> monster validation.
-- [ ] Add quest -> map profile validation.
-- [ ] Add encounter enemy slot validation.
+- [x] Add shared validation result UI to Content Database Window.
+- [x] Add quest -> encounter -> monster validation.
+- [x] Add quest -> map profile validation.
+- [x] Add encounter enemy slot validation.
 - [ ] Add NPC vendor/service/quest seed validation.
-- [ ] Add skill effect/target/formula validation.
+- [!] Add skill effect/target/formula validation.
 - [ ] Add vendor stock/rotation validation.
-- [ ] Add generated equipment contract validation.
-- [ ] Add reward item validation.
-- [ ] Run the same validation in Chapter 1 and Chapter 2 batch validators where relevant.
+- [x] Add generated equipment contract validation.
+- [x] Add reward item validation.
+- [x] Run the same validation in Chapter 1 and Chapter 2 batch validators where relevant.
 
 Completion gate:
 
@@ -355,17 +355,17 @@ Purpose: make editor-authored data actually drive the game loop.
 
 Checklist:
 
-- [ ] Quest Board uses DB quest candidates first.
-- [ ] Quest Board reroll policy supports DB candidates.
-- [ ] Combat resolves DB encounter first.
-- [ ] Combat preserves pattern/reward/slots.
-- [ ] Shops resolve DB vendor stock first.
-- [ ] Skill Merchant refresh uses DB/candidate catalogs.
-- [ ] Apothecary stock can come from DB vendor/item definitions.
-- [ ] Town NPC service/vendor/quest data is consumed directly where possible.
-- [ ] Dungeon uses saved compiledMap asset before generator fallback.
-- [ ] Field monsters are registered from compiledMap placements.
-- [ ] Fallback usage is tracked or documented.
+- [x] Quest Board uses DB quest candidates first.
+- [x] Quest Board reroll policy supports DB candidates.
+- [x] Combat resolves DB encounter first.
+- [x] Combat preserves pattern/reward/slots.
+- [x] Shops resolve DB vendor stock first.
+- [x] Skill Merchant refresh uses DB/candidate catalogs.
+- [x] Apothecary stock can come from DB vendor/item definitions.
+- [x] Town NPC service/vendor/quest data is consumed directly where possible.
+- [x] Dungeon uses saved compiledMap asset before generator fallback.
+- [x] Field monsters are registered from compiledMap placements.
+- [x] Fallback usage is tracked or documented.
 
 Completion gate:
 
@@ -516,4 +516,4 @@ Do not start Monster Field FSM until the editor, validation, map, encounter, and
 
 Add notes here when a checklist item is intentionally postponed.
 
-- No deferred items yet.
+- Skill target/formula validation is partially deferred until Skill Editor exposes the supported target modes and formula contract.

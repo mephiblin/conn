@@ -4,6 +4,30 @@ namespace Conn.Core.Content
 {
     public static class ContentDatabaseValidator
     {
+        private static readonly HashSet<string> SupportedEquipmentKinds = new HashSet<string>
+        {
+            "one_hand_weapon",
+            "two_hand_weapon",
+            "shield",
+            "head_armor",
+            "chest_armor",
+            "arms_armor",
+            "legs_armor",
+            "feet_armor"
+        };
+
+        private static readonly HashSet<string> SupportedSkillEffectKinds = new HashSet<string>
+        {
+            "attack",
+            "guard",
+            "heal",
+            "support",
+            "buff",
+            "debuff",
+            "lifesteal",
+            "summon"
+        };
+
         public static ContentValidationReport Validate(ContentDatabaseDefinition database)
         {
             var report = new ContentValidationReport();
@@ -41,7 +65,7 @@ namespace Conn.Core.Content
 
         private static void ValidateItems(ContentDatabaseDefinition database, ContentValidationReport report)
         {
-            foreach (var item in database.Items)
+            foreach (var item in database.Items ?? Array.Empty<ContentItemDefinition>())
             {
                 RequireName(item.Id, item.DisplayName, "item", report);
                 if (item.Kind == "consumable" && item.HealAmount < 0)
@@ -53,12 +77,16 @@ namespace Conn.Core.Content
 
         private static void ValidateEquipment(ContentDatabaseDefinition database, ContentValidationReport report)
         {
-            foreach (var item in database.Equipment)
+            foreach (var item in database.Equipment ?? Array.Empty<ContentEquipmentDefinition>())
             {
                 RequireName(item.Id, item.DisplayName, "equipment", report);
                 if (string.IsNullOrWhiteSpace(item.Kind))
                 {
                     report.Error($"Equipment {item.Id} kind must not be empty.");
+                }
+                else if (!SupportedEquipmentKinds.Contains(item.Kind))
+                {
+                    report.Error($"Equipment {item.Id} kind is not supported by RuntimeContentDatabase: {item.Kind}");
                 }
 
                 if (item.BuyPrice < 0 || item.SellPrice < 0)
@@ -85,9 +113,18 @@ namespace Conn.Core.Content
 
         private static void ValidateSkills(ContentDatabaseDefinition database, ContentValidationReport report)
         {
-            foreach (var skill in database.Skills)
+            foreach (var skill in database.Skills ?? Array.Empty<ContentSkillDefinition>())
             {
                 RequireName(skill.Id, skill.DisplayName, "skill", report);
+                if (string.IsNullOrWhiteSpace(skill.EffectKind))
+                {
+                    report.Error($"Skill {skill.Id} effect kind must not be empty.");
+                }
+                else if (!SupportedSkillEffectKinds.Contains(skill.EffectKind))
+                {
+                    report.Error($"Skill {skill.Id} effect kind is not supported by RuntimeContentDatabase: {skill.EffectKind}");
+                }
+
                 if (skill.BuyPrice < 0 || skill.SellPrice < 0)
                 {
                     report.Error($"Skill {skill.Id} prices must not be negative.");
@@ -97,7 +134,7 @@ namespace Conn.Core.Content
 
         private static void ValidateMonsters(ContentDatabaseDefinition database, ContentValidationReport report)
         {
-            foreach (var monster in database.Monsters)
+            foreach (var monster in database.Monsters ?? Array.Empty<ContentMonsterDefinition>())
             {
                 RequireName(monster.Id, monster.DisplayName, "monster", report);
                 if (monster.MaxHp <= 0)
@@ -189,7 +226,7 @@ namespace Conn.Core.Content
 
         private static void ValidateQuests(ContentDatabaseDefinition database, ContentIdRegistry registry, ContentValidationReport report)
         {
-            foreach (var quest in database.Quests)
+            foreach (var quest in database.Quests ?? Array.Empty<ContentQuestDefinition>())
             {
                 RequireName(quest.Id, quest.DisplayName, "quest", report);
                 if (string.IsNullOrWhiteSpace(quest.TargetMonsterId))
@@ -228,7 +265,7 @@ namespace Conn.Core.Content
                     report.Error($"Quest {quest.Id} rewards must not be negative.");
                 }
 
-                foreach (var reward in quest.RewardItems)
+                foreach (var reward in quest.RewardItems ?? Array.Empty<ContentItemStack>())
                 {
                     if (!registry.ContainsAnyItemLikeId(reward.ItemId))
                     {
@@ -246,9 +283,9 @@ namespace Conn.Core.Content
         private static void ValidateVendors(ContentDatabaseDefinition database, ContentIdRegistry registry, ContentValidationReport report)
         {
             var skillCatalogs = new HashSet<string>();
-            foreach (var skill in database.Skills)
+            foreach (var skill in database.Skills ?? Array.Empty<ContentSkillDefinition>())
             {
-                foreach (var catalogId in skill.CatalogIds)
+                foreach (var catalogId in skill.CatalogIds ?? Array.Empty<string>())
                 {
                     if (!string.IsNullOrWhiteSpace(catalogId))
                     {
@@ -257,7 +294,7 @@ namespace Conn.Core.Content
                 }
             }
 
-            foreach (var vendor in database.Vendors)
+            foreach (var vendor in database.Vendors ?? Array.Empty<ContentVendorDefinition>())
             {
                 if (string.IsNullOrWhiteSpace(vendor.Id))
                 {
@@ -324,7 +361,7 @@ namespace Conn.Core.Content
 
         private static void ValidateNpcs(ContentDatabaseDefinition database, ContentIdRegistry registry, ContentValidationReport report)
         {
-            foreach (var npc in database.Npcs)
+            foreach (var npc in database.Npcs ?? Array.Empty<ContentNpcDefinition>())
             {
                 RequireName(npc.Id, npc.DisplayName, "npc", report);
                 if (!string.IsNullOrWhiteSpace(npc.VendorId) && registry.FindVendor(npc.VendorId) == null)
@@ -332,7 +369,7 @@ namespace Conn.Core.Content
                     report.Error($"NPC {npc.Id} vendor is missing: {npc.VendorId}");
                 }
 
-                foreach (var questId in npc.QuestIds)
+                foreach (var questId in npc.QuestIds ?? Array.Empty<string>())
                 {
                     if (registry.FindQuest(questId) == null && !IsNpcQuestSeedId(questId))
                     {

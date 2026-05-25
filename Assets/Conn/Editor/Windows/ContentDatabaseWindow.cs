@@ -104,7 +104,9 @@ namespace Conn.Editor.Windows
 
                 if (GUILayout.Button("Import Legacy JSON"))
                 {
-                    database = LegacyContentJsonImporter.Import(legacyDataPath, LegacyContentJsonImporter.DefaultDatabaseAssetPath);
+                    var importTargetPath = ImportTargetPath();
+                    EnsureFolderForAsset(importTargetPath);
+                    database = LegacyContentJsonImporter.Import(legacyDataPath, importTargetPath);
                     validationReport = null;
                 }
 
@@ -137,14 +139,14 @@ namespace Conn.Editor.Windows
 
         private void DrawSummaryTab()
         {
-            EditorGUILayout.LabelField("Items", database.Items.Length.ToString());
-            EditorGUILayout.LabelField("Equipment", database.Equipment.Length.ToString());
-            EditorGUILayout.LabelField("Skills", database.Skills.Length.ToString());
-            EditorGUILayout.LabelField("Monsters", database.Monsters.Length.ToString());
+            EditorGUILayout.LabelField("Items", Count(database.Items).ToString());
+            EditorGUILayout.LabelField("Equipment", Count(database.Equipment).ToString());
+            EditorGUILayout.LabelField("Skills", Count(database.Skills).ToString());
+            EditorGUILayout.LabelField("Monsters", Count(database.Monsters).ToString());
             EditorGUILayout.LabelField("Encounters", (database.Encounters?.Length ?? 0).ToString());
-            EditorGUILayout.LabelField("Quests", database.Quests.Length.ToString());
-            EditorGUILayout.LabelField("Vendors", database.Vendors.Length.ToString());
-            EditorGUILayout.LabelField("NPCs", database.Npcs.Length.ToString());
+            EditorGUILayout.LabelField("Quests", Count(database.Quests).ToString());
+            EditorGUILayout.LabelField("Vendors", Count(database.Vendors).ToString());
+            EditorGUILayout.LabelField("NPCs", Count(database.Npcs).ToString());
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Vendor Rotation Entries", CountVendorRotations(database).ToString());
             EditorGUILayout.LabelField("Vendor Catalog References", CountVendorCatalogReferences(database).ToString());
@@ -227,7 +229,10 @@ namespace Conn.Editor.Windows
             EditorGUILayout.Space();
             if (GUILayout.Button("Delete Quest"))
             {
-                DeleteQuest(selectedQuestIndex);
+                if (ConfirmDelete("quest", quest.Id))
+                {
+                    DeleteQuest(selectedQuestIndex);
+                }
             }
         }
 
@@ -329,7 +334,10 @@ namespace Conn.Editor.Windows
             EditorGUILayout.Space();
             if (GUILayout.Button("Delete Monster"))
             {
-                DeleteMonster(selectedMonsterIndex);
+                if (ConfirmDelete("monster", monster.Id))
+                {
+                    DeleteMonster(selectedMonsterIndex);
+                }
             }
         }
 
@@ -401,7 +409,10 @@ namespace Conn.Editor.Windows
             EditorGUILayout.Space();
             if (GUILayout.Button("Delete Encounter"))
             {
-                DeleteEncounter(selectedEncounterIndex);
+                if (ConfirmDelete("encounter", encounter.Id))
+                {
+                    DeleteEncounter(selectedEncounterIndex);
+                }
             }
         }
 
@@ -498,9 +509,46 @@ namespace Conn.Editor.Windows
 
         private void SaveDatabase()
         {
+            var report = ContentDatabaseValidator.Validate(database);
+            validationReport = report;
+            if (!report.Passed)
+            {
+                EditorUtility.DisplayDialog(
+                    "Content Database Validation Failed",
+                    $"Fix {report.Errors.Count} validation error(s) before saving. See the Validation tab for details.",
+                    "OK");
+                selectedTab = Array.IndexOf(TabNames, "Validation");
+                return;
+            }
+
             EditorUtility.SetDirty(database);
             AssetDatabase.SaveAssets();
-            validationReport = null;
+        }
+
+        private string ImportTargetPath()
+        {
+            if (database != null)
+            {
+                var assetPath = AssetDatabase.GetAssetPath(database);
+                if (!string.IsNullOrWhiteSpace(assetPath))
+                {
+                    return assetPath;
+                }
+            }
+
+            return string.IsNullOrWhiteSpace(createAssetPath)
+                ? DefaultNewDatabasePath
+                : createAssetPath.Trim();
+        }
+
+        private static bool ConfirmDelete(string kind, string id)
+        {
+            var displayId = string.IsNullOrWhiteSpace(id) ? "(missing id)" : id;
+            return EditorUtility.DisplayDialog(
+                $"Delete {kind}",
+                $"Delete {kind} '{displayId}'? Existing references are not automatically rewritten; validation will report broken links.",
+                "Delete",
+                "Cancel");
         }
 
         private void RunValidation()
@@ -973,10 +1021,15 @@ namespace Conn.Editor.Windows
             validationReport = null;
         }
 
+        private static int Count<T>(T[] values)
+        {
+            return values?.Length ?? 0;
+        }
+
         private static int CountVendorRotations(ContentDatabaseDefinition database)
         {
             var count = 0;
-            foreach (var vendor in database.Vendors)
+            foreach (var vendor in database.Vendors ?? Array.Empty<ContentVendorDefinition>())
             {
                 count += vendor.Rotations?.Length ?? 0;
             }
@@ -987,7 +1040,7 @@ namespace Conn.Editor.Windows
         private static int CountVendorCatalogReferences(ContentDatabaseDefinition database)
         {
             var count = 0;
-            foreach (var vendor in database.Vendors)
+            foreach (var vendor in database.Vendors ?? Array.Empty<ContentVendorDefinition>())
             {
                 count += vendor.CatalogIds?.Length ?? 0;
                 foreach (var rotation in vendor.Rotations ?? System.Array.Empty<ContentVendorRotationDefinition>())
@@ -1001,18 +1054,25 @@ namespace Conn.Editor.Windows
 
         private static int CountQuestEncounterMonsterLinks(ContentDatabaseDefinition database)
         {
-            var registry = database.BuildRegistry();
-            var count = 0;
-            foreach (var quest in database.Quests)
+            try
             {
-                var encounter = registry.FindEncounter(quest.TargetEncounterId);
-                if (encounter != null && encounter.MonsterId == quest.TargetMonsterId && registry.FindMonster(quest.TargetMonsterId) != null)
+                var registry = database.BuildRegistry();
+                var count = 0;
+                foreach (var quest in database.Quests ?? Array.Empty<ContentQuestDefinition>())
                 {
-                    count++;
+                    var encounter = registry.FindEncounter(quest.TargetEncounterId);
+                    if (encounter != null && encounter.MonsterId == quest.TargetMonsterId && registry.FindMonster(quest.TargetMonsterId) != null)
+                    {
+                        count++;
+                    }
                 }
-            }
 
-            return count;
+                return count;
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
         }
 
         private static void LogReport(ContentValidationReport report)
