@@ -85,7 +85,7 @@ namespace Conn.Editor.UI
                 group.blocksRaycasts = false;
 
                 var image = panel.GetComponent<Image>();
-                image.color = new Color(0.04f, 0.05f, 0.07f, 0.84f);
+                image.color = InitialPanelColor(panelNames[i]);
 
                 var layout = panel.GetComponent<VerticalLayoutGroup>();
                 layout.padding = new RectOffset(12, 12, 10, 10);
@@ -95,6 +95,21 @@ namespace Conn.Editor.UI
                 layout.childForceExpandHeight = false;
                 layout.childForceExpandWidth = true;
             }
+        }
+
+        private static Color InitialPanelColor(string panelName)
+        {
+            if (panelName == "TownNpcBackdropPanel")
+            {
+                return new Color(0.015f, 0.012f, 0.01f, 0.96f);
+            }
+
+            if (panelName == "TownNpcStandingCgPanel")
+            {
+                return new Color(0.08f, 0.08f, 0.1f, 0.76f);
+            }
+
+            return new Color(0.04f, 0.05f, 0.07f, 0.84f);
         }
 
         private static void AddTitleBackground(Transform root)

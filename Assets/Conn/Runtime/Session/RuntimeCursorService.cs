@@ -8,18 +8,31 @@ namespace Conn.Runtime.Session
     public static class RuntimeCursorService
     {
         public static bool PointerUiActive { get; private set; }
+        public static bool ManualReleaseActive { get; private set; }
 
         public static void Apply(GameSceneId sceneId, GameSessionState session, bool characterPanelOpen)
         {
             var shouldShow = ShouldShowCursor(sceneId, session, characterPanelOpen);
+            shouldShow |= ManualReleaseActive;
             PointerUiActive = shouldShow;
             Cursor.visible = shouldShow;
             Cursor.lockState = shouldShow ? CursorLockMode.None : CursorLockMode.Locked;
         }
 
+        public static void ToggleManualRelease()
+        {
+            ManualReleaseActive = !ManualReleaseActive;
+        }
+
+        public static void ClearManualRelease()
+        {
+            ManualReleaseActive = false;
+        }
+
         public static void Release()
         {
             PointerUiActive = false;
+            ManualReleaseActive = false;
             Cursor.visible = true;
             Cursor.lockState = CursorLockMode.None;
         }
@@ -38,7 +51,8 @@ namespace Conn.Runtime.Session
 
             if (sceneId == GameSceneId.Town)
             {
-                return TownQuestBoardPanelState.IsOpen
+                return TownNpcInteractionState.IsOpen
+                    || TownQuestBoardPanelState.IsOpen
                     || TownShopPanelState.Current != TownShopPanelKind.None
                     || characterPanelOpen;
             }

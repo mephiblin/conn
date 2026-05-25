@@ -24,6 +24,12 @@ namespace Conn.Rendering.Interaction
 
         private void Update()
         {
+            if (TownNpcInteractionState.IsOpen)
+            {
+                focused = null;
+                return;
+            }
+
             focused = FindFocusedInteractable();
             if (focused != null && IsInteractPressed())
             {

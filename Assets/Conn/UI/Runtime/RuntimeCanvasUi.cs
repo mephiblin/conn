@@ -63,6 +63,11 @@ namespace Conn.UI.Runtime
                 canvas.enabled = true;
             }
 
+            if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+            {
+                RuntimeCursorService.ToggleManualRelease();
+            }
+
             if (Time.unscaledTime >= nextRefreshTime && !IsPointerPressActive())
             {
                 Refresh();
@@ -98,7 +103,7 @@ namespace Conn.UI.Runtime
 
             lastRenderKey = renderKey;
             HideScenePanels();
-            if (sceneId != GameSceneId.Title && sceneId != GameSceneId.Combat)
+            if (sceneId == GameSceneId.Dungeon)
             {
                 DrawCommon(session);
             }
@@ -136,8 +141,15 @@ namespace Conn.UI.Runtime
                 .Append('/').Append(session.Player.MaxHp)
                 .Append('|').Append(session.LastNotice)
                 .Append('|').Append(characterOpen)
+                .Append('|').Append(RuntimeCursorService.ManualReleaseActive)
                 .Append('|').Append(TownQuestBoardPanelState.IsOpen)
                 .Append('|').Append(TownShopPanelState.Current)
+                .Append('|').Append(TownNpcInteractionState.IsOpen)
+                .Append('|').Append(TownNpcInteractionState.Kind)
+                .Append('|').Append(TownNpcInteractionState.NpcName)
+                .Append('|').Append(TownNpcInteractionState.Dialogue)
+                .Append('|').Append(TownNpcInteractionState.Cost)
+                .Append('|').Append(TownNpcInteractionState.ItemId)
                 .Append('|').Append(selectedSkillId)
                 .Append('|').Append(session.Quest.HasActiveQuest)
                 .Append('|').Append(session.Quest.ActiveQuestId)
@@ -242,14 +254,124 @@ namespace Conn.UI.Runtime
             BuildPanel(hud, "Karash Outpost", false);
             AddText(hud, $"Gold {session.Gold}  XP {session.Player.Xp}  HP {session.Player.Hp}/{session.Player.MaxHp}");
             AddText(hud, session.Quest.HasActiveQuest ? $"Quest: {session.Quest.ActiveQuestTitle}" : "Quest: none");
-            AddButton(hud, characterOpen ? "Close Character" : "Character / Bag", () => characterOpen = !characterOpen);
-            AddButton(hud, "Back To Title", () => SceneFlowService.Load(GameSceneId.Title));
+            AddText(hud, RuntimeCursorService.ManualReleaseActive ? "Cursor: free (Esc)" : "Cursor: locked (Esc)");
 
-            DrawInteractionPrompt("TownInteractionPrompt");
-            DrawTownQuestBoard(session);
-            DrawTownShop(session);
-            DrawCharacterInventory(session);
-            DrawTownNotice(session);
+            var quickActions = Panel("TownQuickActionsPanel");
+            BuildPanel(quickActions, string.Empty, false);
+            AddSquareButton(quickActions, characterOpen ? "Bag -" : "Bag", () => characterOpen = !characterOpen);
+            AddSquareButton(quickActions, "Title", () =>
+            {
+                RuntimeCursorService.ClearManualRelease();
+                SceneFlowService.Load(GameSceneId.Title);
+            });
+
+            if (TownNpcInteractionState.IsOpen)
+            {
+                HidePanel("TownHud");
+                HidePanel("TownQuickActionsPanel");
+                HidePanel("TownInteractionPrompt");
+                HidePanel("TownNoticePanel");
+                HidePanel("TownCharacterInventoryPanel");
+                DrawTownNpcBackdrop();
+                DrawTownNpcInteraction(session);
+                HidePanel("TownQuestBoardPanel");
+                HidePanel("TownShopPanel");
+            }
+            else
+            {
+                DrawInteractionPrompt("TownInteractionPrompt");
+                HidePanel("TownNpcBackdropPanel");
+                HidePanel("TownNpcInteractionPanel");
+                HidePanel("TownNpcStandingCgPanel");
+                DrawTownQuestBoard(session);
+                DrawTownShop(session);
+                DrawTownNotice(session);
+                DrawCharacterInventory(session);
+            }
+        }
+
+        private void DrawTownNpcBackdrop()
+        {
+            var backdrop = Panel("TownNpcBackdropPanel");
+            BuildPanel(backdrop, string.Empty, false);
+        }
+
+        private void DrawTownNpcInteraction(GameSessionState session)
+        {
+            var npcName = FirstNonEmpty(TownNpcInteractionState.NpcName, string.Empty, "Town NPC");
+            var dialogue = FirstNonEmpty(TownNpcInteractionState.Dialogue, string.Empty, "Welcome. What do you need?");
+
+            OrderTownNpcPanels();
+
+            var interaction = Panel("TownNpcInteractionPanel");
+            BuildPanel(interaction, npcName, true);
+            AddText(interaction, dialogue, 16, FontStyle.Italic);
+            AddText(interaction, " ");
+            AddText(interaction, $"Gold {session.Gold}  XP {session.Player.Xp}  HP {session.Player.Hp}/{session.Player.MaxHp}");
+            if (TownNpcInteractionState.Kind != TownNpcInteractionKind.None)
+            {
+                AddText(interaction, $"Interaction: {TownNpcInteractionState.Kind}");
+            }
+
+            if (TownNpcInteractionState.Cost > 0)
+            {
+                AddText(interaction, $"Cost: {TownNpcInteractionState.Cost}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(TownNpcInteractionState.ItemId))
+            {
+                AddText(interaction, $"Item: {TownNpcInteractionState.ItemId}");
+            }
+
+            AddNpcInteractionActions(interaction, session);
+            AddButton(interaction, "Close", TownNpcInteractionState.Close);
+
+            var standingCg = Panel("TownNpcStandingCgPanel");
+            BuildPanel(standingCg, string.Empty, false);
+            AddText(standingCg, "Standing CG Placeholder", 26, FontStyle.Bold);
+            AddText(standingCg, npcName);
+        }
+
+        private void OrderTownNpcPanels()
+        {
+            canvas.transform.Find("TownNpcBackdropPanel")?.SetAsLastSibling();
+            canvas.transform.Find("TownNpcStandingCgPanel")?.SetAsLastSibling();
+            canvas.transform.Find("TownNpcInteractionPanel")?.SetAsLastSibling();
+        }
+
+        private void AddNpcInteractionActions(Transform panel, GameSessionState session)
+        {
+            if (TownNpcInteractionState.Kind == TownNpcInteractionKind.Inn)
+            {
+                AddButton(panel, "Rest", () => TownServiceRuntimeService.Rest(session, TownNpcInteractionState.Cost));
+                return;
+            }
+
+            if (TownNpcInteractionState.Kind == TownNpcInteractionKind.Trainer)
+            {
+                AddButton(panel, "Train Max HP", () => TownServiceRuntimeService.Train(session, TownNpcInteractionState.Cost));
+                return;
+            }
+
+            if (TownNpcInteractionState.Kind == TownNpcInteractionKind.Apothecary)
+            {
+                AddButton(panel, "Buy Item", () => ConsumableRuntimeService.Buy(session, TownNpcInteractionState.ItemId));
+                return;
+            }
+
+            if (TownNpcInteractionState.Kind == TownNpcInteractionKind.QuestBoard)
+            {
+                DrawTownQuestBoardContent(panel, session);
+                return;
+            }
+
+            if (TownNpcInteractionState.Kind == TownNpcInteractionKind.Blacksmith || TownNpcInteractionState.Kind == TownNpcInteractionKind.SkillMerchant)
+            {
+                var shopKind = TownNpcInteractionState.Kind == TownNpcInteractionKind.Blacksmith
+                    ? TownShopPanelKind.Blacksmith
+                    : TownShopPanelKind.SkillMerchant;
+                DrawTownShopContent(panel, session, shopKind);
+            }
         }
 
         private void DrawTownQuestBoard(GameSessionState session)
@@ -262,6 +384,11 @@ namespace Conn.UI.Runtime
 
             var panel = Panel("TownQuestBoardPanel");
             BuildPanel(panel, "Quest Board", true);
+            DrawTownQuestBoardContent(panel, session);
+        }
+
+        private void DrawTownQuestBoardContent(Transform panel, GameSessionState session)
+        {
             if (session.Quest.HasActiveQuest)
             {
                 AddText(panel, $"Active: {session.Quest.ActiveQuestTitle}");
@@ -313,7 +440,12 @@ namespace Conn.UI.Runtime
 
             var panel = Panel("TownShopPanel");
             BuildPanel(panel, "Town Shop", true);
-            if (TownShopPanelState.Current == TownShopPanelKind.Blacksmith)
+            DrawTownShopContent(panel, session, TownShopPanelState.Current);
+        }
+
+        private void DrawTownShopContent(Transform panel, GameSessionState session, TownShopPanelKind shopKind)
+        {
+            if (shopKind == TownShopPanelKind.Blacksmith)
             {
                 AddText(panel, "Blacksmith");
                 var stock = EquipmentShopRuntimeService.BlacksmithStockItemIds();
@@ -347,7 +479,7 @@ namespace Conn.UI.Runtime
                 AddButton(panel, "Switch Owned Loadout", () => EquipmentRuntimeService.ToggleOwnedLoadout(session));
                 AddButton(panel, "Close Shop", TownShopPanelState.Close);
             }
-            else if (TownShopPanelState.Current == TownShopPanelKind.SkillMerchant)
+            else if (shopKind == TownShopPanelKind.SkillMerchant)
             {
                 AddText(panel, $"Skill Merchant  |  Refresh #{session.Shop.SkillMerchantRefreshIndex}");
                 var stock = SkillShopRuntimeService.SkillMerchantStock(session);
@@ -639,10 +771,9 @@ namespace Conn.UI.Runtime
                 image = panel.gameObject.AddComponent<Image>();
             }
 
-            image.color = panel.name == "TitleRoot"
-                ? new Color(0f, 0f, 0f, 0f)
-                : new Color(0.04f, 0.05f, 0.07f, 0.84f);
-            image.raycastTarget = panel.name != "TitleRoot";
+            image.color = PanelBackgroundColor(panel.name);
+            image.raycastTarget = panel.name != "TitleRoot"
+                && panel.name != "TownNpcStandingCgPanel";
             var layout = panel.GetComponent<VerticalLayoutGroup>();
             if (layout == null)
             {
@@ -663,7 +794,10 @@ namespace Conn.UI.Runtime
                 scrollRect.content = null;
             }
 
-            AddTextRaw(panel, title, panel.name == "TitleRoot" ? 44 : 20, FontStyle.Bold);
+            if (!string.IsNullOrWhiteSpace(title))
+            {
+                AddTextRaw(panel, title, panel.name == "TitleRoot" ? 44 : 20, FontStyle.Bold);
+            }
         }
 
         private void AddText(Transform parent, string text, int size = 15, FontStyle style = FontStyle.Normal)
@@ -715,6 +849,21 @@ namespace Conn.UI.Runtime
             text.alignment = TextAnchor.MiddleCenter;
             text.horizontalOverflow = HorizontalWrapMode.Wrap;
             text.raycastTarget = false;
+            return button;
+        }
+
+        private Button AddSquareButton(Transform parent, string label, UnityEngine.Events.UnityAction action, bool interactable = true)
+        {
+            var button = AddButton(parent, label, action, interactable);
+            var layout = button.GetComponent<LayoutElement>();
+            if (layout != null)
+            {
+                layout.minWidth = 58f;
+                layout.preferredWidth = 58f;
+                layout.minHeight = 58f;
+                layout.preferredHeight = 58f;
+            }
+
             return button;
         }
 
@@ -891,7 +1040,8 @@ namespace Conn.UI.Runtime
             }
 
             group.alpha = visible ? 1f : 0f;
-            var passivePanel = name == "TownNoticePanel";
+            var passivePanel = name == "TownNoticePanel"
+                || name == "TownNpcStandingCgPanel";
             group.interactable = visible && !passivePanel;
             group.blocksRaycasts = visible && !passivePanel;
         }
@@ -923,6 +1073,36 @@ namespace Conn.UI.Runtime
         {
             var skill = RuntimeContentDatabase.FindSkill(skillId);
             return skill != null ? skill.DisplayName : "Unknown";
+        }
+
+        private static Color PanelBackgroundColor(string panelName)
+        {
+            if (panelName == "TitleRoot")
+            {
+                return new Color(0f, 0f, 0f, 0f);
+            }
+
+            if (panelName == "TownNpcBackdropPanel")
+            {
+                return new Color(0.015f, 0.012f, 0.01f, 0.96f);
+            }
+
+            if (panelName == "TownNpcStandingCgPanel")
+            {
+                return new Color(0.08f, 0.08f, 0.1f, 0.76f);
+            }
+
+            return new Color(0.04f, 0.05f, 0.07f, 0.84f);
+        }
+
+        private static string FirstNonEmpty(string first, string second, string fallback)
+        {
+            if (!string.IsNullOrWhiteSpace(first))
+            {
+                return first;
+            }
+
+            return !string.IsNullOrWhiteSpace(second) ? second : fallback;
         }
     }
 }

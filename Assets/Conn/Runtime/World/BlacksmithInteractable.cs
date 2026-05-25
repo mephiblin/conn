@@ -11,8 +11,10 @@ namespace Conn.Runtime.World
 
         public void Interact()
         {
-            TownShopPanelState.Open(TownShopPanelKind.Blacksmith);
-            RuntimeNoticeService.Set(GameSession.Instance.State, ChapterOneUxText.BlacksmithOpenNotice(GameSession.Instance.State));
+            var session = GameSession.Instance.State;
+            var dialogue = ChapterOneUxText.BlacksmithOpenNotice(session);
+            TownNpcInteractionState.Open(TownNpcInteractionKind.Blacksmith, "Blacksmith", dialogue);
+            RuntimeNoticeService.Set(session, dialogue);
         }
     }
 }

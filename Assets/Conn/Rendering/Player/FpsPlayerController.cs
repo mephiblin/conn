@@ -3,6 +3,7 @@ using Conn.Runtime.Equipment;
 using Conn.Runtime.Inventory;
 using Conn.Runtime.Session;
 using Conn.Runtime.Skills;
+using Conn.Runtime.World;
 using UnityEngine;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
@@ -34,11 +35,40 @@ namespace Conn.Rendering.Player
 
         private void Update()
         {
+            if (IsGameplayInputBlocked())
+            {
+                StopHorizontalMotion();
+                return;
+            }
+
             Look();
             Move();
             UsePotionShortcut();
             ToggleLoadoutShortcut();
             CycleSkillFaceShortcut();
+        }
+
+        private static bool IsGameplayInputBlocked()
+        {
+            return TownNpcInteractionState.IsOpen;
+        }
+
+        private void StopHorizontalMotion()
+        {
+            if (controller == null)
+            {
+                return;
+            }
+
+            var motion = Vector3.zero;
+            if (controller.isGrounded && verticalVelocity < 0f)
+            {
+                verticalVelocity = -1f;
+            }
+
+            verticalVelocity += gravity * Time.deltaTime;
+            motion.y = verticalVelocity;
+            controller.Move(motion * Time.deltaTime);
         }
 
         private void Look()

@@ -4,6 +4,7 @@ using Conn.Editor.Content;
 using Conn.Editor.UI;
 using Conn.Rendering.Interaction;
 using Conn.Rendering.Player;
+using Conn.Rendering.World;
 using Conn.Runtime.Scenes;
 using Conn.Runtime.World;
 using Conn.UI.Runtime;
@@ -184,6 +185,7 @@ namespace Conn.Editor.Tools
             board.transform.position = new Vector3(-2f, 1f, 2f);
             board.transform.localScale = new Vector3(1.5f, 1.4f, 0.25f);
             board.AddComponent<QuestBoardInteractable>();
+            ConfigureTownNpcVisual(board, "Quest Board CG", new Color(0.55f, 0.44f, 0.28f, 1f), new Vector2(1.5f, 1.7f));
 
             var gate = GameObject.CreatePrimitive(PrimitiveType.Cube);
             gate.name = "Dungeon Gate";
@@ -196,12 +198,14 @@ namespace Conn.Editor.Tools
             smith.transform.position = new Vector3(0f, 1f, 3.5f);
             smith.transform.localScale = new Vector3(1.4f, 1.3f, 0.5f);
             smith.AddComponent<BlacksmithInteractable>();
+            ConfigureTownNpcVisual(smith, "Blacksmith CG", new Color(0.7f, 0.36f, 0.26f, 1f), new Vector2(1.35f, 1.85f));
 
             var skillMerchant = GameObject.CreatePrimitive(PrimitiveType.Cube);
             skillMerchant.name = "Skill Merchant";
             skillMerchant.transform.position = new Vector3(-3.5f, 1f, 0f);
             skillMerchant.transform.localScale = new Vector3(1f, 1.4f, 1f);
             skillMerchant.AddComponent<SkillMerchantInteractable>();
+            ConfigureTownNpcVisual(skillMerchant, "Skill Merchant CG", new Color(0.35f, 0.48f, 0.78f, 1f), new Vector2(1.25f, 1.85f));
 
             CreateTownService("Inn", TownServiceKind.Inn, 3, new Vector3(3.5f, 1f, 0f));
             CreateTownService("Trainer", TownServiceKind.Trainer, 5, new Vector3(3.5f, 1f, -2f));
@@ -219,6 +223,39 @@ namespace Conn.Editor.Tools
             interactable.ServiceName = name;
             interactable.ServiceKind = kind;
             interactable.Cost = cost;
+            ConfigureTownNpcVisual(service, $"{name} CG", ColorForTownService(kind), new Vector2(1.2f, 1.8f));
+        }
+
+        private static void ConfigureTownNpcVisual(GameObject root, string visualName, Color color, Vector2 size)
+        {
+            var renderer = root.GetComponent<MeshRenderer>();
+            if (renderer != null)
+            {
+                renderer.enabled = false;
+            }
+
+            var visual = new GameObject(visualName, typeof(SpriteRenderer), typeof(NpcWorldBillboard));
+            visual.transform.SetParent(root.transform, false);
+            visual.transform.localPosition = new Vector3(0f, -0.65f, 0f);
+            visual.transform.localRotation = Quaternion.identity;
+
+            var billboard = visual.GetComponent<NpcWorldBillboard>();
+            billboard.FallbackColor = color;
+            billboard.Size = new Vector2(
+                size.x / Mathf.Max(0.01f, root.transform.localScale.x),
+                size.y / Mathf.Max(0.01f, root.transform.localScale.y));
+        }
+
+        private static Color ColorForTownService(TownServiceKind kind)
+        {
+            return kind switch
+            {
+                TownServiceKind.Inn => new Color(0.66f, 0.48f, 0.3f, 1f),
+                TownServiceKind.Trainer => new Color(0.62f, 0.34f, 0.28f, 1f),
+                TownServiceKind.Apothecary => new Color(0.28f, 0.62f, 0.38f, 1f),
+                TownServiceKind.Scholar => new Color(0.48f, 0.42f, 0.72f, 1f),
+                _ => new Color(0.78f, 0.68f, 0.52f, 1f)
+            };
         }
 
         private static void CreateLight()

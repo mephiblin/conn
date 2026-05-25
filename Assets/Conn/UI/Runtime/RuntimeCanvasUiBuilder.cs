@@ -30,7 +30,11 @@ namespace Conn.UI.Runtime
         public static readonly string[] TownPanelNames =
         {
             "TownHud",
+            "TownQuickActionsPanel",
             "TownInteractionPrompt",
+            "TownNpcBackdropPanel",
+            "TownNpcInteractionPanel",
+            "TownNpcStandingCgPanel",
             "TownQuestBoardPanel",
             "TownShopPanel",
             "TownCharacterInventoryPanel",
@@ -114,6 +118,21 @@ namespace Conn.UI.Runtime
                 return new Rect(0.02f, 0.02f, 0.24f, 0.16f);
             }
 
+            if (panelName == "TownHud")
+            {
+                return new Rect(0.02f, 0.82f, 0.22f, 0.14f);
+            }
+
+            if (panelName == "TownQuickActionsPanel")
+            {
+                return new Rect(0.88f, 0.82f, 0.1f, 0.14f);
+            }
+
+            if (panelName == "TownNpcBackdropPanel")
+            {
+                return new Rect(0f, 0f, 1f, 1f);
+            }
+
             if (panelName.Contains("Hud") || panelName.Contains("Title") || panelName.Contains("Ending"))
             {
                 return new Rect(0.02f, 0.78f, 0.96f, 0.2f);
@@ -127,6 +146,16 @@ namespace Conn.UI.Runtime
             if (panelName.Contains("Prompt"))
             {
                 return new Rect(0.32f, 0.08f, 0.36f, 0.12f);
+            }
+
+            if (panelName == "TownNpcInteractionPanel")
+            {
+                return new Rect(0.04f, 0.12f, 0.42f, 0.7f);
+            }
+
+            if (panelName == "TownNpcStandingCgPanel")
+            {
+                return new Rect(0.5f, 0.08f, 0.44f, 0.74f);
             }
 
             if (panelName.Contains("Bottom") || panelName.Contains("Dice") || panelName.Contains("Log"))

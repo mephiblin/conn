@@ -26,7 +26,23 @@ namespace Conn.Runtime.World
 
         public void Interact()
         {
-            TownQuestBoardPanelState.Open();
+            var session = GameSession.Instance.State;
+            TownNpcInteractionState.Open(TownNpcInteractionKind.QuestBoard, "Quest Board", DialogueFor(session));
+        }
+
+        private static string DialogueFor(Conn.Core.Session.GameSessionState session)
+        {
+            if (session.Quest.HasActiveQuest)
+            {
+                return string.IsNullOrWhiteSpace(session.Quest.ActiveQuestTitle)
+                    ? "Review your active quest."
+                    : $"Review {session.Quest.ActiveQuestTitle}.";
+            }
+
+            var offer = QuestRuntimeService.CurrentBoardOffer(session);
+            return offer != null
+                ? $"{offer.DisplayName}: reward {offer.GoldReward}g."
+                : "No quest is available right now.";
         }
     }
 }

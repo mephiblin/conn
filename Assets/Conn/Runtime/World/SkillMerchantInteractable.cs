@@ -11,8 +11,10 @@ namespace Conn.Runtime.World
 
         public void Interact()
         {
-            TownShopPanelState.Open(TownShopPanelKind.SkillMerchant);
-            RuntimeNoticeService.Set(GameSession.Instance.State, ChapterOneUxText.SkillMerchantOpenNotice(GameSession.Instance.State));
+            var session = GameSession.Instance.State;
+            var dialogue = ChapterOneUxText.SkillMerchantOpenNotice(session);
+            TownNpcInteractionState.Open(TownNpcInteractionKind.SkillMerchant, "Skill Merchant", dialogue);
+            RuntimeNoticeService.Set(session, dialogue);
         }
     }
 }

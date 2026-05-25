@@ -1,4 +1,3 @@
-using Conn.Runtime.Inventory;
 using Conn.Runtime.Session;
 using UnityEngine;
 
@@ -50,31 +49,12 @@ namespace Conn.Runtime.World
         public void Interact()
         {
             var session = GameSession.Instance.State;
-            if (serviceKind == TownServiceKind.Inn)
-            {
-                TownServiceRuntimeService.Rest(session, EffectiveCost);
-                return;
-            }
-
-            if (serviceKind == TownServiceKind.Trainer)
-            {
-                TownServiceRuntimeService.Train(session, EffectiveCost);
-                return;
-            }
-
-            if (serviceKind == TownServiceKind.Apothecary)
-            {
-                ConsumableRuntimeService.Buy(session, TownServiceRuntimeService.FirstConsumableStockIdFor(serviceKind));
-                return;
-            }
-
-            if (serviceKind == TownServiceKind.Scholar)
-            {
-                RuntimeNoticeService.Set(session, TownServiceRuntimeService.ScholarHint(session));
-                return;
-            }
-
-            RuntimeNoticeService.Set(session, $"{serviceName}: service is not implemented yet.");
+            var itemId = serviceKind == TownServiceKind.Apothecary
+                ? TownServiceRuntimeService.FirstConsumableStockIdFor(serviceKind)
+                : string.Empty;
+            var dialogue = DialogueFor(session);
+            TownNpcInteractionState.Open(NpcKindFor(serviceKind), serviceName, dialogue, serviceKind, EffectiveCost, itemId);
+            RuntimeNoticeService.Set(session, dialogue);
         }
 
         private string ApothecaryItemName
@@ -85,6 +65,34 @@ namespace Conn.Runtime.World
                 var item = Conn.Runtime.Content.RuntimeContentDatabase.FindConsumable(itemId);
                 return item != null ? item.DisplayName : itemId;
             }
+        }
+
+        private TownNpcInteractionKind NpcKindFor(TownServiceKind kind)
+        {
+            return kind switch
+            {
+                TownServiceKind.Inn => TownNpcInteractionKind.Inn,
+                TownServiceKind.Trainer => TownNpcInteractionKind.Trainer,
+                TownServiceKind.Apothecary => TownNpcInteractionKind.Apothecary,
+                TownServiceKind.Scholar => TownNpcInteractionKind.Scholar,
+                _ => TownNpcInteractionKind.None
+            };
+        }
+
+        private string DialogueFor(Conn.Core.Session.GameSessionState session)
+        {
+            return serviceKind switch
+            {
+                TownServiceKind.Inn => EffectiveCost > 0
+                    ? $"{serviceName}: rest here for {EffectiveCost}g."
+                    : $"{serviceName}: rest here.",
+                TownServiceKind.Trainer => EffectiveCost > 0
+                    ? $"{serviceName}: train Max HP for {EffectiveCost} XP."
+                    : $"{serviceName}: train Max HP.",
+                TownServiceKind.Apothecary => $"{serviceName}: buy {ApothecaryItemName} for {EffectiveCost}g.",
+                TownServiceKind.Scholar => TownServiceRuntimeService.ScholarHint(session),
+                _ => $"{serviceName}: service is not implemented yet."
+            };
         }
     }
 }

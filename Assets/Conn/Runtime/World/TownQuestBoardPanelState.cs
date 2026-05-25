@@ -6,13 +6,32 @@ namespace Conn.Runtime.World
 
         public static void Open()
         {
-            TownShopPanelState.Close();
+            Open(closeNpcInteraction: true);
+        }
+
+        internal static void Open(bool closeNpcInteraction)
+        {
+            TownShopPanelState.Close(closeNpcInteraction);
+            if (closeNpcInteraction)
+            {
+                TownNpcInteractionState.Close(syncLegacyPanelState: false);
+            }
+
             IsOpen = true;
         }
 
         public static void Close()
         {
+            Close(closeNpcInteraction: true);
+        }
+
+        internal static void Close(bool closeNpcInteraction)
+        {
             IsOpen = false;
+            if (closeNpcInteraction)
+            {
+                TownNpcInteractionState.Close(syncLegacyPanelState: false);
+            }
         }
     }
 }
