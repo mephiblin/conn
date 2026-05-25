@@ -16,7 +16,7 @@ namespace Conn.Editor.World
         public const string EnvironmentPrefabPath = PrefabFolder + "/TownEnvironment.prefab";
 
         private static readonly Vector2 DefaultFloorTileSize = new Vector2(1f, 1f);
-        private static readonly Vector2Int DefaultEnvironmentTileCount = new Vector2Int(8, 8);
+        private static readonly Vector2Int DefaultEnvironmentTileCount = new Vector2Int(10, 10);
         private static readonly Color DefaultEnvironmentTint = new Color(0.82f, 0.78f, 0.68f, 1f);
 
         [MenuItem("Conn/World/Ensure Town Environment Assets")]
@@ -230,6 +230,7 @@ namespace Conn.Editor.World
                     }
                 }
 
+                EnsureEnvironmentCollider(root, countX, countY);
                 return PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
             }
             finally
@@ -258,6 +259,21 @@ namespace Conn.Editor.World
             }
 
             return tile;
+        }
+
+        private static void EnsureEnvironmentCollider(GameObject root, int tileCountX, int tileCountY)
+        {
+            var collider = root.GetComponent<BoxCollider>();
+            if (collider == null)
+            {
+                collider = root.AddComponent<BoxCollider>();
+            }
+
+            collider.center = new Vector3(0f, -0.1f, 0f);
+            collider.size = new Vector3(
+                Mathf.Max(1f, tileCountX),
+                0.2f,
+                Mathf.Max(1f, tileCountY));
         }
 
         private static Shader DefaultShader()
