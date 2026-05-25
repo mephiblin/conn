@@ -1,0 +1,191 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f80c8ce603220d0e5a318eb8d7fb4ee4, type: 3}
+  m_Name: RuntimeMapGenerationBundle
+  m_EditorClassIdentifier: Conn.Core::Conn.Core.Maps.RuntimeMapGenerationBundleAsset
+  Bundle:
+    BundleId: chapter_two_catalog_runtime_map_generation_bundle
+    Version: catalog
+    Profiles:
+    - Profile:
+        ProfileId: ch2_first_slice_ruins
+        MapKind: Ruins
+        Theme: ruins
+        Width: 80
+        Height: 64
+        RoomWidth: 12
+        RoomHeight: 10
+        TargetModuleCount: 8
+        CriticalPathMin: 5
+        CriticalPathMax: 6
+        SideBranchCount: 2
+        LoopMin: 1
+        LoopMax: 2
+        MergeChancePer1000: 250
+        LockedDoorKeyId:
+        RequiredAnchors: 000000000100000002000000030000000400000005000000
+        ResourceSetId:
+        RequiredLandmarkRoomIds: []
+        OptionalChunkIds: []
+        OptionalLandmarkRoomIds: []
+        SpawnTableIds: []
+        SpawnTagFilters: []
+        DirectEncounterOverrideIds: []
+        GenerationWeightProfileId:
+      Floor: 1
+      Difficulty: 0
+      Chunks:
+      - Id: ruins_start
+        PresetId: ruins_start
+        Theme: ruins
+        Width: 12
+        Height: 10
+        OpenSides: 15
+        DoorSockets: 15
+        VariantGroup: Start
+        PopulationAllowed: 1
+        RoleTags: 00000000
+        AuthoringRoleTags: []
+        Anchors:
+        - Id: start
+          Kind: 0
+          X: 6
+          Y: 5
+      - Id: ruins_main
+        PresetId: ruins_main
+        Theme: ruins
+        Width: 12
+        Height: 10
+        OpenSides: 15
+        DoorSockets: 15
+        VariantGroup: MainPath
+        PopulationAllowed: 1
+        RoleTags: 01000000
+        AuthoringRoleTags: []
+        Anchors:
+        - Id: monster
+          Kind: 4
+          X: 6
+          Y: 5
+      - Id: ruins_quest_target
+        PresetId: ruins_quest_target
+        Theme: ruins
+        Width: 12
+        Height: 10
+        OpenSides: 15
+        DoorSockets: 15
+        VariantGroup: QuestTarget
+        PopulationAllowed: 1
+        RoleTags: 02000000
+        AuthoringRoleTags: []
+        Anchors:
+        - Id: questtarget
+          Kind: 1
+          X: 6
+          Y: 5
+      - Id: ruins_boss
+        PresetId: ruins_boss
+        Theme: ruins
+        Width: 12
+        Height: 10
+        OpenSides: 15
+        DoorSockets: 15
+        VariantGroup: Boss
+        PopulationAllowed: 1
+        RoleTags: 03000000
+        AuthoringRoleTags: []
+        Anchors:
+        - Id: boss
+          Kind: 2
+          X: 6
+          Y: 5
+      - Id: ruins_exit
+        PresetId: ruins_exit
+        Theme: ruins
+        Width: 12
+        Height: 10
+        OpenSides: 15
+        DoorSockets: 15
+        VariantGroup: Exit
+        PopulationAllowed: 1
+        RoleTags: 04000000
+        AuthoringRoleTags: []
+        Anchors:
+        - Id: exit
+          Kind: 3
+          X: 6
+          Y: 5
+      - Id: ruins_side
+        PresetId: ruins_side
+        Theme: ruins
+        Width: 12
+        Height: 10
+        OpenSides: 15
+        DoorSockets: 15
+        VariantGroup: SideBranch
+        PopulationAllowed: 1
+        RoleTags: 05000000
+        AuthoringRoleTags: []
+        Anchors:
+        - Id: loot
+          Kind: 5
+          X: 6
+          Y: 5
+      ResourceSetRuntimeIds: []
+      SpawnTableIds: []
+      EncounterPlacementRules:
+      - Id: catalog_quest_target
+        PlacementKind: 1
+        RoomRole:
+        SpawnSourceId:
+        EncounterId: encounter_test_guard
+        PrimaryMonsterId: monster_test_guard
+        SpawnRole: quest_target
+        RequiredForQuest: 1
+        SpawnEntries: []
+      - Id: catalog_monster
+        PlacementKind: 4
+        RoomRole:
+        SpawnSourceId:
+        EncounterId: encounter_test_guard
+        PrimaryMonsterId: monster_test_guard
+        SpawnRole: trash
+        RequiredForQuest: 0
+        SpawnEntries:
+        - EncounterId: encounter_test_guard
+          PrimaryMonsterId: monster_test_guard
+          SpawnSourceId:
+          SpawnRole: trash
+          Weight: 1
+          MinFloor: 1
+          MaxFloor: 99
+          MinDifficulty: 0
+          MaxDifficulty: 0
+          ThemeTags:
+          - ruins
+          BiomeTags: []
+          SpawnRoleTags:
+          - trash
+          AllowedMapTags: []
+          CompatibilityTags: []
+          RoomRoleConstraints: []
+      - Id: catalog_boss
+        PlacementKind: 2
+        RoomRole:
+        SpawnSourceId:
+        EncounterId: encounter_test_guard
+        PrimaryMonsterId: monster_test_guard
+        SpawnRole: boss
+        RequiredForQuest: 0
+        SpawnEntries: []
+      GenerationWeightProfileIds: []
+      ValidationHash: ch2_first_slice_ruins:6:catalog

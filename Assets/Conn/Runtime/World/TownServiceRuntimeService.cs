@@ -1,5 +1,5 @@
-using Conn.Core.Quests;
 using Conn.Core.Session;
+using Conn.Core.Items;
 using Conn.Runtime.Content;
 using Conn.Runtime.Session;
 using UnityEngine;
@@ -43,7 +43,7 @@ namespace Conn.Runtime.World
                 return $"Scholar: current target is {session.Quest.TargetMonsterId}.";
             }
 
-            var offer = QuestCatalog.BoardOffer(session.Quest.BoardOfferIndex);
+            var offer = RuntimeContentDatabase.BoardQuestAt(session.Quest.BoardOfferIndex);
             return offer != null
                 ? $"Scholar: board offer is {offer.DisplayName}."
                 : "Scholar: no quest offer is available.";
@@ -60,6 +60,13 @@ namespace Conn.Runtime.World
 
             var vendor = RuntimeContentDatabase.FindVendor(vendorId);
             return vendor != null && vendor.GoldCost > 0 ? vendor.GoldCost : fallbackCost;
+        }
+
+        public static string FirstConsumableStockIdFor(TownServiceKind serviceKind, int floor = 1, int bossesDefeated = 0)
+        {
+            var vendorId = VendorIdFor(serviceKind);
+            var consumableIds = RuntimeContentDatabase.ConsumableIdsForVendor(vendorId, floor, bossesDefeated);
+            return consumableIds.Length > 0 ? consumableIds[0] : ConsumableCatalog.MinorPotionId;
         }
 
         public static string VendorIdFor(TownServiceKind serviceKind)

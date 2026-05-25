@@ -2,12 +2,38 @@ using Conn.Core.Equipment;
 using Conn.Core.Session;
 using Conn.Runtime.Content;
 using Conn.Runtime.Session;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Conn.Runtime.Equipment
 {
     public static class EquipmentShopRuntimeService
     {
+        public static string[] BlacksmithStockItemIds()
+        {
+            var databaseItemIds = RuntimeContentDatabase.EquipmentIdsForVendor("vendor_smith");
+            if (databaseItemIds.Length > 0)
+            {
+                return databaseItemIds;
+            }
+
+            if (RuntimeContentDatabase.HasDatabase)
+            {
+                return System.Array.Empty<string>();
+            }
+
+            var result = new List<string>();
+            for (var i = 0; i < EquipmentCatalog.All.Length; i++)
+            {
+                if (EquipmentCatalog.All[i].BuyPrice > 0)
+                {
+                    result.Add(EquipmentCatalog.All[i].ItemId);
+                }
+            }
+
+            return result.ToArray();
+        }
+
         public static bool CanBuy(GameSessionState session, string itemId)
         {
             var item = RuntimeContentDatabase.FindEquipment(itemId);

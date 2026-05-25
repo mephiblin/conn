@@ -368,13 +368,11 @@ namespace Conn.UI.Runtime
         private static void DrawBlacksmithPanel(GameSessionState session)
         {
             GUILayout.Label("Blacksmith");
-            var stockItemIds = RuntimeContentDatabase.EquipmentIdsForVendor("vendor_smith");
-            for (var i = 0; i < (stockItemIds.Length > 0 ? stockItemIds.Length : EquipmentCatalog.All.Length); i++)
+            var stockItemIds = EquipmentShopRuntimeService.BlacksmithStockItemIds();
+            for (var i = 0; i < stockItemIds.Length; i++)
             {
-                var item = stockItemIds.Length > 0
-                    ? RuntimeContentDatabase.FindEquipment(stockItemIds[i])
-                    : EquipmentCatalog.All[i];
-                if (item.BuyPrice <= 0)
+                var item = RuntimeContentDatabase.FindEquipment(stockItemIds[i]);
+                if (item == null || item.BuyPrice <= 0)
                 {
                     continue;
                 }

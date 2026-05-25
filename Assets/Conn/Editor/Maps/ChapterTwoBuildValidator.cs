@@ -61,6 +61,7 @@ namespace Conn.Editor.Maps
             MapValidationService.ThrowIfFailed(MapValidationService.ValidateQuestMapContract(QuestCatalog.Find(QuestCatalog.TestHuntId), profile, compiled));
             ValidateDatabaseQuestMapContracts(database, profile, compiled);
             SaveCompiledMapAsset(compiled, 2001);
+            SaveRuntimeMapGenerationBundleAsset();
 
             if (compiled.Placements.Count < profile.RequiredAnchors.Count)
             {
@@ -110,6 +111,15 @@ namespace Conn.Editor.Maps
             asset.Json = JsonUtility.ToJson(compiled, true);
             EditorUtility.SetDirty(asset);
             AssetDatabase.SaveAssets();
+            return asset;
+        }
+
+        public static RuntimeMapGenerationBundleAsset SaveRuntimeMapGenerationBundleAsset()
+        {
+            var bundle = RuntimeMapGenerationBundleBuilder.BuildChapterTwoCatalogBundle();
+            var asset = RuntimeMapGenerationBundleBuilder.SaveBundleAsset(bundle);
+            var generated = RuntimeMapGenerationService.GenerateCompiled(bundle, MapGenerationCatalog.ChapterTwoFirstSliceProfileId, 2001);
+            MapValidationService.ThrowIfFailed(MapValidationService.ValidateCompiled(MapGenerationCatalog.ChapterTwoFirstSliceProfile(), generated));
             return asset;
         }
     }

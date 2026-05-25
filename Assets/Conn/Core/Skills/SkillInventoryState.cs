@@ -1,10 +1,13 @@
-using System.Collections.Generic;
-
 namespace Conn.Core.Skills
 {
+    using System;
+    using System.Collections.Generic;
+
     [System.Serializable]
     public sealed class SkillInventoryState
     {
+        public static Func<string, SkillDefinition> SkillResolver = SkillCatalog.Find;
+
         public List<string> OwnedSkillIds = new List<string>();
         public List<string> EquippedSkillIds = new List<string>();
         public int NextEditFaceIndex;
@@ -101,7 +104,7 @@ namespace Conn.Core.Skills
             var count = EquippedSkillIds.Count < diceCount ? EquippedSkillIds.Count : diceCount;
             for (var i = 0; i < count; i++)
             {
-                var skill = SkillCatalog.Find(EquippedSkillIds[i]);
+                var skill = ResolveSkill(EquippedSkillIds[i]);
                 if (skill != null)
                 {
                     total += skill.Power;
@@ -133,6 +136,11 @@ namespace Conn.Core.Skills
             OwnedSkillIds.Clear();
             EquippedSkillIds.Clear();
             NextEditFaceIndex = 0;
+        }
+
+        private static SkillDefinition ResolveSkill(string skillId)
+        {
+            return SkillResolver != null ? SkillResolver(skillId) : SkillCatalog.Find(skillId);
         }
     }
 }

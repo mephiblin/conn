@@ -31,6 +31,7 @@ namespace Conn.Editor.Tools
                 EnsureFolder("Assets/Conn");
                 EnsureFolder(SceneFolder);
                 EnsureCompiledMapAsset();
+                EnsureRuntimeMapGenerationBundleAsset();
 
                 CreateScene(GameSceneId.Title, false);
                 CreateScene(GameSceneId.Town, true, SceneContent.Town);
@@ -78,6 +79,16 @@ namespace Conn.Editor.Tools
             ChapterTwoBuildValidator.SaveCompiledMapAsset(compiled, Conn.Runtime.Maps.CompiledMapDungeonRuntimeService.DefaultDungeonSeed);
         }
 
+        private static void EnsureRuntimeMapGenerationBundleAsset()
+        {
+            if (AssetDatabase.LoadAssetAtPath<Conn.Core.Maps.RuntimeMapGenerationBundleAsset>(RuntimeMapGenerationBundleBuilder.DefaultBundleAssetPath) != null)
+            {
+                return;
+            }
+
+            ChapterTwoBuildValidator.SaveRuntimeMapGenerationBundleAsset();
+        }
+
         private static void CreateScene(GameSceneId sceneId, bool includePlayer, SceneContent content = SceneContent.None)
         {
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
@@ -90,6 +101,10 @@ namespace Conn.Editor.Tools
             bootstrap.CompiledMaps = new[]
             {
                 AssetDatabase.LoadAssetAtPath<Conn.Core.Maps.CompiledMapAsset>(ChapterTwoBuildValidator.DefaultCompiledMapAssetPath)
+            };
+            bootstrap.RuntimeMapGenerationBundles = new[]
+            {
+                AssetDatabase.LoadAssetAtPath<Conn.Core.Maps.RuntimeMapGenerationBundleAsset>(Conn.Editor.Maps.RuntimeMapGenerationBundleBuilder.DefaultBundleAssetPath)
             };
 
             var overlay = bootstrapObject.AddComponent<P0SceneOverlay>();

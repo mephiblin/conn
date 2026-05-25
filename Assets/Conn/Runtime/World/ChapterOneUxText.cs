@@ -77,7 +77,7 @@ namespace Conn.Runtime.World
 
         public static string ConsumableStatus(GameSessionState session, string itemId)
         {
-            var item = ConsumableCatalog.Find(itemId);
+            var item = RuntimeContentDatabase.FindConsumable(itemId);
             if (item == null)
             {
                 return "Unknown consumable";

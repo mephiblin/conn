@@ -53,6 +53,7 @@ namespace Conn.Core.Maps
 
             ExpectCompiledHeader(profile, compiled, report);
             ExpectCompiledPlacements(profile, compiled, report);
+            ExpectCompiledEncounterPlacements(compiled, report);
             ExpectCompiledDoors(compiled, report);
             return report;
         }
@@ -225,6 +226,42 @@ namespace Conn.Core.Maps
             }
         }
 
+        private static void ExpectCompiledEncounterPlacements(CompiledMap compiled, MapValidationReport report)
+        {
+            var ids = new HashSet<string>();
+            foreach (var placement in compiled.EncounterPlacements ?? new List<CompiledEncounterPlacement>())
+            {
+                if (string.IsNullOrEmpty(placement.PlacementId))
+                {
+                    report.Errors.Add("Compiled map contains an encounter placement with no id.");
+                }
+                else if (!ids.Add(placement.PlacementId))
+                {
+                    report.Errors.Add($"Compiled map contains duplicate encounter placement id: {placement.PlacementId}.");
+                }
+
+                if (FindPlacement(compiled.Placements, placement.MapPlacementId) == null)
+                {
+                    report.Errors.Add($"Compiled encounter placement {placement.PlacementId} references missing map placement {placement.MapPlacementId}.");
+                }
+
+                if (FindNode(compiled.Rooms, placement.RoomId) == null)
+                {
+                    report.Errors.Add($"Compiled encounter placement {placement.PlacementId} references missing room {placement.RoomId}.");
+                }
+
+                if (string.IsNullOrWhiteSpace(placement.EncounterId))
+                {
+                    report.Errors.Add($"Compiled encounter placement {placement.PlacementId} encounter id must not be empty.");
+                }
+
+                if (string.IsNullOrWhiteSpace(placement.PrimaryMonsterId))
+                {
+                    report.Errors.Add($"Compiled encounter placement {placement.PlacementId} primary monster id must not be empty.");
+                }
+            }
+        }
+
         private static void ExpectReachability(GeneratedMapDraft draft, MapValidationReport report)
         {
             var start = FindNodeByRole(draft.Graph, MapRoomRole.Start);
@@ -357,6 +394,19 @@ namespace Conn.Core.Maps
                 if (nodes[i].Id == id)
                 {
                     return nodes[i];
+                }
+            }
+
+            return null;
+        }
+
+        private static MapPlacement FindPlacement(List<MapPlacement> placements, string id)
+        {
+            for (var i = 0; i < placements.Count; i++)
+            {
+                if (placements[i].Id == id)
+                {
+                    return placements[i];
                 }
             }
 

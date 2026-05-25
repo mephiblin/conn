@@ -87,4 +87,5 @@ MonoBehaviour:
     \"side_1_a\",\n            \"X\": 30,\n            \"Y\": 25,\n            \"ReferenceId\":
     \"Loot\"\n        },\n        {\n            \"Id\": \"loot_side_1_b\",\n
     \"Kind\": 5,\n            \"RoomId\": \"side_1_b\",\n            \"X\": 42,\n
-    \"Y\": 25,\n            \"ReferenceId\": \"Loot\"\n        }\n    ]\n}"
+    \"Y\": 25,\n            \"ReferenceId\": \"Loot\"\n        }\n    ],\n    \"EncounterPlacements\":
+    []\n}"

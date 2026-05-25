@@ -152,6 +152,11 @@ namespace Conn.Runtime.Skills
                 return;
             }
 
+            if (RuntimeContentDatabase.HasDatabase)
+            {
+                return;
+            }
+
             var purchasableCount = CountPurchasableSkills();
             if (purchasableCount == 0)
             {

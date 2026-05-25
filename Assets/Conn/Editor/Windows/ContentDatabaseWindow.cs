@@ -1,6 +1,9 @@
 using Conn.Core.Content;
+using Conn.Authoring.Content;
+using Conn.Authoring.Maps;
 using Conn.Editor.Content;
 using System;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
@@ -18,6 +21,7 @@ namespace Conn.Editor.Windows
             "NPC",
             "Skill",
             "Vendor",
+            "Authoring",
             "Validation"
         };
 
@@ -30,6 +34,8 @@ namespace Conn.Editor.Windows
         private int selectedMonsterIndex;
         private int selectedEncounterIndex;
         private ContentValidationReport validationReport;
+        private ContentValidationReport authoringValidationReport;
+        private AuthoringContentSnapshot authoringSnapshot;
 
         [MenuItem("Conn/Content Database/Window")]
         public static void Open()
@@ -71,6 +77,9 @@ namespace Conn.Editor.Windows
                     DrawEncounterTab();
                     break;
                 case 7:
+                    DrawAuthoringTab();
+                    break;
+                case 8:
                     DrawValidationTab();
                     break;
                 default:
@@ -151,6 +160,10 @@ namespace Conn.Editor.Windows
             EditorGUILayout.LabelField("Vendor Rotation Entries", CountVendorRotations(database).ToString());
             EditorGUILayout.LabelField("Vendor Catalog References", CountVendorCatalogReferences(database).ToString());
             EditorGUILayout.LabelField("Quest -> Encounter -> Monster Links", CountQuestEncounterMonsterLinks(database).ToString());
+            EditorGUILayout.Space();
+            EditorGUILayout.HelpBox(
+                "Direct database editing remains available as a bootstrap bridge. Production source-of-truth work should move to typed authoring assets and use this window for browsing, validation, and build/export.",
+                MessageType.Info);
         }
 
         private static void DrawPlaceholderTab(string tabName)
@@ -473,6 +486,231 @@ namespace Conn.Editor.Windows
             DrawMessages("Warnings", validationReport.Warnings, MessageType.Warning);
         }
 
+        private void DrawAuthoringTab()
+        {
+            if (authoringSnapshot == null)
+            {
+                authoringSnapshot = AuthoringContentBuildService.FindAuthoringAssets();
+            }
+
+            EditorGUILayout.LabelField("Authoring Assets", EditorStyles.boldLabel);
+            EditorGUILayout.HelpBox(
+                "This tab is the bridge from Inspector-first authoring assets to runtime-safe ContentDatabase output. Existing DB row editors are retained for bootstrap/fallback editing.",
+                MessageType.Info);
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("Refresh Authoring Assets"))
+                {
+                    RefreshAuthoringAssets();
+                }
+
+                if (GUILayout.Button("Validate Authoring Assets"))
+                {
+                    ValidateAuthoringAssets();
+                }
+
+                using (new EditorGUI.DisabledScope(database == null))
+                {
+                    if (GUILayout.Button("Bake Authoring Assets Into Database"))
+                    {
+                        BakeAuthoringAssetsIntoDatabase();
+                    }
+                }
+            }
+
+            EditorGUILayout.Space();
+            DrawAuthoringCounts(authoringSnapshot);
+            EditorGUILayout.Space();
+            DrawAuthoringAssetList("MonsterDefinitionAsset", authoringSnapshot.Monsters);
+            DrawAuthoringAssetList("EncounterDefinitionAsset", authoringSnapshot.Encounters);
+            DrawAuthoringAssetList("SkillDefinitionAsset", authoringSnapshot.Skills);
+            DrawAuthoringAssetList("NpcDefinitionAsset", authoringSnapshot.Npcs);
+            DrawAuthoringAssetList("VendorDefinitionAsset", authoringSnapshot.Vendors);
+            DrawSpawnTablePreview(authoringSnapshot.SpawnTables);
+
+            EditorGUILayout.Space();
+            if (authoringValidationReport != null)
+            {
+                DrawValidationReport("Authoring Validation", authoringValidationReport);
+            }
+        }
+
+        private static void DrawAuthoringCounts(AuthoringContentSnapshot snapshot)
+        {
+            EditorGUILayout.LabelField("Monsters", Count(snapshot.Monsters).ToString());
+            EditorGUILayout.LabelField("Encounters", Count(snapshot.Encounters).ToString());
+            EditorGUILayout.LabelField("Skills", Count(snapshot.Skills).ToString());
+            EditorGUILayout.LabelField("NPCs", Count(snapshot.Npcs).ToString());
+            EditorGUILayout.LabelField("Vendors", Count(snapshot.Vendors).ToString());
+            EditorGUILayout.LabelField("Spawn Tables", Count(snapshot.SpawnTables).ToString());
+        }
+
+        private static void DrawAuthoringAssetList<T>(string label, T[] assets) where T : UnityEngine.Object
+        {
+            EditorGUILayout.LabelField(label, EditorStyles.boldLabel);
+            if (assets == null || assets.Length == 0)
+            {
+                EditorGUILayout.LabelField("None");
+                return;
+            }
+
+            foreach (var asset in assets)
+            {
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    EditorGUILayout.ObjectField(asset, typeof(T), false);
+                    if (GUILayout.Button("Ping", GUILayout.Width(60f)))
+                    {
+                        EditorGUIUtility.PingObject(asset);
+                        Selection.activeObject = asset;
+                    }
+                }
+            }
+        }
+
+        private static void DrawSpawnTablePreview(SpawnTableAsset[] spawnTables)
+        {
+            EditorGUILayout.LabelField("SpawnTableAsset", EditorStyles.boldLabel);
+            if (spawnTables == null || spawnTables.Length == 0)
+            {
+                EditorGUILayout.LabelField("None");
+                return;
+            }
+
+            var profileUsage = BuildSpawnTableUsage();
+            foreach (var spawnTable in spawnTables)
+            {
+                if (spawnTable == null)
+                {
+                    continue;
+                }
+
+                using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+                {
+                    using (new EditorGUILayout.HorizontalScope())
+                    {
+                        EditorGUILayout.ObjectField(spawnTable, typeof(SpawnTableAsset), false);
+                        if (GUILayout.Button("Ping", GUILayout.Width(60f)))
+                        {
+                            EditorGUIUtility.PingObject(spawnTable);
+                            Selection.activeObject = spawnTable;
+                        }
+                    }
+
+                    var tableId = string.IsNullOrWhiteSpace(spawnTable.Id) ? "(missing id)" : spawnTable.Id;
+                    EditorGUILayout.LabelField("Id", tableId);
+                    EditorGUILayout.LabelField("Pool", $"{Count(spawnTable.EncounterEntries)} encounter entries, {Count(spawnTable.DirectMonsterEntries)} direct monster entries");
+                    EditorGUILayout.LabelField("Required Tags", FormatTags(spawnTable.RequiredThemeTags, spawnTable.RequiredBiomeTags, spawnTable.RequiredSpawnRoleTags));
+                    EditorGUILayout.LabelField("Allowed Room Roles", FormatTags(spawnTable.AllowedRoomRoles));
+                    EditorGUILayout.LabelField("Resolved Members", FormatSpawnMembers(spawnTable));
+                    EditorGUILayout.LabelField("Used By Map Profiles", FormatUsage(profileUsage, spawnTable));
+                }
+            }
+        }
+
+        private static Dictionary<SpawnTableAsset, List<string>> BuildSpawnTableUsage()
+        {
+            var usage = new Dictionary<SpawnTableAsset, List<string>>();
+            foreach (var guid in AssetDatabase.FindAssets("t:MapProfileAsset"))
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                var profile = AssetDatabase.LoadAssetAtPath<MapProfileAsset>(path);
+                if (profile == null)
+                {
+                    continue;
+                }
+
+                var profileId = string.IsNullOrWhiteSpace(profile.Id) ? profile.name : profile.Id;
+                foreach (var spawnTable in profile.AllowedSpawnTables ?? Array.Empty<SpawnTableAsset>())
+                {
+                    if (spawnTable == null)
+                    {
+                        continue;
+                    }
+
+                    if (!usage.TryGetValue(spawnTable, out var profiles))
+                    {
+                        profiles = new List<string>();
+                        usage.Add(spawnTable, profiles);
+                    }
+
+                    if (!profiles.Contains(profileId))
+                    {
+                        profiles.Add(profileId);
+                    }
+                }
+            }
+
+            return usage;
+        }
+
+        private static string FormatSpawnMembers(SpawnTableAsset spawnTable)
+        {
+            var members = new List<string>();
+            foreach (var entry in spawnTable.EncounterEntries ?? Array.Empty<SpawnEncounterEntry>())
+            {
+                var encounterId = entry.Encounter != null && !string.IsNullOrWhiteSpace(entry.Encounter.Id)
+                    ? entry.Encounter.Id
+                    : entry.EncounterId;
+                if (!string.IsNullOrWhiteSpace(encounterId))
+                {
+                    members.Add($"{encounterId} w={entry.Weight} f={entry.MinFloor}-{entry.MaxFloor}");
+                }
+            }
+
+            foreach (var entry in spawnTable.DirectMonsterEntries ?? Array.Empty<SpawnMonsterEntry>())
+            {
+                var monsterId = entry.Monster != null && !string.IsNullOrWhiteSpace(entry.Monster.Id)
+                    ? entry.Monster.Id
+                    : entry.MonsterId;
+                if (!string.IsNullOrWhiteSpace(monsterId))
+                {
+                    members.Add($"{monsterId} -> generated single-primary w={entry.Weight} f={entry.MinFloor}-{entry.MaxFloor}");
+                }
+            }
+
+            return members.Count == 0 ? "(empty)" : string.Join(", ", members);
+        }
+
+        private static string FormatUsage(Dictionary<SpawnTableAsset, List<string>> usage, SpawnTableAsset spawnTable)
+        {
+            return usage.TryGetValue(spawnTable, out var profiles) && profiles.Count > 0
+                ? string.Join(", ", profiles)
+                : "(unused)";
+        }
+
+        private static string FormatTags(params string[][] tagSets)
+        {
+            var tags = new List<string>();
+            foreach (var tagSet in tagSets ?? Array.Empty<string[]>())
+            {
+                foreach (var tag in tagSet ?? Array.Empty<string>())
+                {
+                    if (!string.IsNullOrWhiteSpace(tag) && !tags.Contains(tag))
+                    {
+                        tags.Add(tag);
+                    }
+                }
+            }
+
+            return tags.Count == 0 ? "(none)" : string.Join(", ", tags);
+        }
+
+        private void DrawValidationReport(string label, ContentValidationReport report)
+        {
+            EditorGUILayout.LabelField(label, EditorStyles.boldLabel);
+            var messageType = report.Passed ? MessageType.Info : MessageType.Error;
+            EditorGUILayout.HelpBox(
+                report.Passed
+                    ? $"Validation passed with {report.Warnings.Count} warning(s)."
+                    : $"Validation failed with {report.Errors.Count} error(s) and {report.Warnings.Count} warning(s).",
+                messageType);
+
+            DrawMessages("Errors", report.Errors, MessageType.Error);
+            DrawMessages("Warnings", report.Warnings, MessageType.Warning);
+        }
+
         private static void DrawMessages(string label, System.Collections.Generic.IReadOnlyList<string> messages, MessageType messageType)
         {
             EditorGUILayout.LabelField(label, EditorStyles.boldLabel);
@@ -555,6 +793,32 @@ namespace Conn.Editor.Windows
         {
             validationReport = ContentDatabaseValidator.Validate(database);
             LogReport(validationReport);
+        }
+
+        private void RefreshAuthoringAssets()
+        {
+            authoringSnapshot = AuthoringContentBuildService.FindAuthoringAssets();
+            authoringValidationReport = null;
+        }
+
+        private void ValidateAuthoringAssets()
+        {
+            authoringSnapshot = AuthoringContentBuildService.FindAuthoringAssets();
+            authoringValidationReport = AuthoringContentBuildService.Validate(authoringSnapshot);
+            LogReport(authoringValidationReport);
+        }
+
+        private void BakeAuthoringAssetsIntoDatabase()
+        {
+            authoringSnapshot = AuthoringContentBuildService.FindAuthoringAssets();
+            authoringValidationReport = AuthoringContentBuildService.BakeInto(database, authoringSnapshot);
+            LogReport(authoringValidationReport);
+            validationReport = ContentDatabaseValidator.Validate(database);
+            if (authoringValidationReport.Passed)
+            {
+                AssetDatabase.SaveAssets();
+                selectedTab = Array.IndexOf(TabNames, "Validation");
+            }
         }
 
         private static void EnsureFolderForAsset(string assetPath)

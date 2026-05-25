@@ -62,6 +62,14 @@ namespace Conn.Core.Maps
         public int MergeChancePer1000;
         public string LockedDoorKeyId = string.Empty;
         public List<MapAnchorKind> RequiredAnchors = new List<MapAnchorKind>();
+        public string ResourceSetId = string.Empty;
+        public List<string> RequiredLandmarkRoomIds = new List<string>();
+        public List<string> OptionalChunkIds = new List<string>();
+        public List<string> OptionalLandmarkRoomIds = new List<string>();
+        public List<string> SpawnTableIds = new List<string>();
+        public List<string> SpawnTagFilters = new List<string>();
+        public List<string> DirectEncounterOverrideIds = new List<string>();
+        public string GenerationWeightProfileId = string.Empty;
     }
 
     [Serializable]
@@ -84,7 +92,9 @@ namespace Conn.Core.Maps
         public MapDirection OpenSides;
         public MapDirection DoorSockets;
         public string VariantGroup = string.Empty;
+        public bool PopulationAllowed = true;
         public List<MapRoomRole> RoleTags = new List<MapRoomRole>();
+        public List<string> AuthoringRoleTags = new List<string>();
         public List<ChunkAnchor> Anchors = new List<ChunkAnchor>();
 
         public bool Supports(MapRoomRole role, MapDirection sockets, string theme, int width, int height)
@@ -160,5 +170,22 @@ namespace Conn.Core.Maps
         public List<RoomGraphNode> Rooms = new List<RoomGraphNode>();
         public List<RoomGraphEdge> Doors = new List<RoomGraphEdge>();
         public List<MapPlacement> Placements = new List<MapPlacement>();
+        public List<CompiledEncounterPlacement> EncounterPlacements = new List<CompiledEncounterPlacement>();
+    }
+
+    [Serializable]
+    public sealed class CompiledEncounterPlacement
+    {
+        public string PlacementId = string.Empty;
+        public string MapPlacementId = string.Empty;
+        public string RoomId = string.Empty;
+        public string EncounterId = string.Empty;
+        public string SpawnSourceId = string.Empty;
+        public string PrimaryMonsterId = string.Empty;
+        public string SpawnRole = string.Empty;
+        public int X;
+        public int Y;
+        public string StateKey = string.Empty;
+        public bool RequiredForQuest;
     }
 }

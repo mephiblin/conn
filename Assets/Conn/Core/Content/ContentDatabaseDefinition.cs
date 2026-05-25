@@ -80,6 +80,10 @@ namespace Conn.Core.Content
         public int XpReward;
         public bool Boss;
         public string Ai;
+        public string[] ThemeTags = Array.Empty<string>();
+        public string[] BiomeTags = Array.Empty<string>();
+        public string[] SpawnRoleTags = Array.Empty<string>();
+        public string[] CompatibilityTags = Array.Empty<string>();
     }
 
     [Serializable]
@@ -92,6 +96,12 @@ namespace Conn.Core.Content
         public string RewardId;
         public string Pattern;
         public ContentEncounterEnemySlot[] EnemySlots = Array.Empty<ContentEncounterEnemySlot>();
+        public int MinDifficulty;
+        public int MaxDifficulty;
+        public string[] ThemeTags = Array.Empty<string>();
+        public string[] SpawnRoleTags = Array.Empty<string>();
+        public string[] AllowedMapTags = Array.Empty<string>();
+        public string[] CompatibilityTags = Array.Empty<string>();
     }
 
     [Serializable]

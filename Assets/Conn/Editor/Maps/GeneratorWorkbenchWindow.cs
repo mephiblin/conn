@@ -1,4 +1,6 @@
+using Conn.Authoring.Maps;
 using Conn.Core.Maps;
+using System;
 using UnityEditor;
 using UnityEngine;
 
@@ -7,9 +9,15 @@ namespace Conn.Editor.Maps
     public sealed class GeneratorWorkbenchWindow : EditorWindow
     {
         private int seed = 2001;
+        private int floor = 1;
+        private int difficulty = 0;
         private GeneratedMapDraft draft;
         private CompiledMap compiled;
         private MapValidationReport report;
+        private MapAuthoringSnapshot authoringSnapshot;
+        private MapValidationReport authoringReport;
+        private RuntimeMapGenerationBundle builtBundle;
+        private MapProfileAsset selectedProfile;
         private Vector2 scroll;
 
         [MenuItem("Conn/Map/Generator Workbench")]
@@ -20,8 +28,11 @@ namespace Conn.Editor.Maps
 
         private void OnGUI()
         {
-            EditorGUILayout.LabelField("Chapter 2 First Slice", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Map Generator Workbench", EditorStyles.boldLabel);
+            selectedProfile = (MapProfileAsset)EditorGUILayout.ObjectField("Map Profile Asset", selectedProfile, typeof(MapProfileAsset), false);
             seed = EditorGUILayout.IntField("Seed", seed);
+            floor = Mathf.Max(1, EditorGUILayout.IntField("Floor", floor));
+            difficulty = Mathf.Max(0, EditorGUILayout.IntField("Difficulty", difficulty));
 
             using (new EditorGUILayout.HorizontalScope())
             {
@@ -32,7 +43,7 @@ namespace Conn.Editor.Maps
 
                 if (GUILayout.Button("Random Seed"))
                 {
-                    seed = Random.Range(1, int.MaxValue);
+                    seed = UnityEngine.Random.Range(1, int.MaxValue);
                     Generate();
                 }
 
@@ -45,7 +56,68 @@ namespace Conn.Editor.Maps
                 GUI.enabled = true;
             }
 
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Authoring Asset Validation", EditorStyles.boldLabel);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("Refresh Authoring Assets"))
+                {
+                    authoringSnapshot = MapAuthoringValidationService.FindAuthoringAssets();
+                    authoringReport = null;
+                }
+
+                if (GUILayout.Button("Validate Map Authoring Assets"))
+                {
+                    authoringSnapshot = MapAuthoringValidationService.FindAuthoringAssets();
+                    authoringReport = MapAuthoringValidationService.Validate(authoringSnapshot);
+                }
+
+                using (new EditorGUI.DisabledScope(authoringSnapshot == null))
+                {
+                    if (GUILayout.Button("Build Runtime Bundle"))
+                    {
+                        BuildRuntimeBundleFromAuthoring();
+                    }
+                }
+
+                if (GUILayout.Button("Save Catalog Runtime Bundle"))
+                {
+                    builtBundle = RuntimeMapGenerationBundleBuilder.BuildChapterTwoCatalogBundle(floor, difficulty);
+                    RuntimeMapGenerationBundleBuilder.SaveBundleAsset(builtBundle);
+                }
+            }
+
             scroll = EditorGUILayout.BeginScrollView(scroll);
+            if (authoringSnapshot != null)
+            {
+                EditorGUILayout.Space();
+                DrawSelectedProfileSummary();
+                EditorGUILayout.LabelField("Authoring Profiles", authoringSnapshot.Profiles.Length.ToString());
+                EditorGUILayout.LabelField("Resource Sets", authoringSnapshot.ResourceSets.Length.ToString());
+                EditorGUILayout.LabelField("Room Chunks", authoringSnapshot.RoomChunks.Length.ToString());
+                EditorGUILayout.LabelField("Landmark Rooms", authoringSnapshot.LandmarkRooms.Length.ToString());
+                EditorGUILayout.LabelField("Spawn Tables", authoringSnapshot.SpawnTables.Length.ToString());
+                EditorGUILayout.LabelField("Weight Profiles", authoringSnapshot.WeightProfiles.Length.ToString());
+                if (builtBundle != null)
+                {
+                    EditorGUILayout.LabelField("Built Runtime Bundle Profiles", builtBundle.Profiles.Count.ToString());
+                }
+
+                if (authoringReport != null)
+                {
+                    EditorGUILayout.LabelField("Authoring Validation", authoringReport.Passed ? "Passed" : "Failed");
+                    for (var i = 0; i < authoringReport.Errors.Count; i++)
+                    {
+                        EditorGUILayout.HelpBox(authoringReport.Errors[i], MessageType.Error);
+                    }
+
+                    for (var i = 0; i < authoringReport.Warnings.Count; i++)
+                    {
+                        EditorGUILayout.HelpBox(authoringReport.Warnings[i], MessageType.Warning);
+                    }
+                }
+            }
+
             if (draft != null)
             {
                 EditorGUILayout.Space();
@@ -53,6 +125,7 @@ namespace Conn.Editor.Maps
                 EditorGUILayout.LabelField("Rooms", draft.Graph.Nodes.Count.ToString());
                 EditorGUILayout.LabelField("Edges", draft.Graph.Edges.Count.ToString());
                 EditorGUILayout.LabelField("Placements", draft.Placements.Count.ToString());
+                EditorGUILayout.LabelField("Encounter Placements", (compiled?.EncounterPlacements?.Count ?? 0).ToString());
                 EditorGUILayout.LabelField("Critical Path", string.Join(" -> ", draft.Graph.CriticalPath.ToArray()));
                 if (compiled != null)
                 {
@@ -78,6 +151,17 @@ namespace Conn.Editor.Maps
                     EditorGUILayout.LabelField($"{placement.Id}: {placement.Kind} room={placement.RoomId} pos=({placement.X},{placement.Y}) ref={placement.ReferenceId}");
                 }
 
+                if (compiled != null && compiled.EncounterPlacements != null && compiled.EncounterPlacements.Count > 0)
+                {
+                    EditorGUILayout.Space();
+                    EditorGUILayout.LabelField("Encounter Placement Details", EditorStyles.boldLabel);
+                    for (var i = 0; i < compiled.EncounterPlacements.Count; i++)
+                    {
+                        var placement = compiled.EncounterPlacements[i];
+                        EditorGUILayout.LabelField($"{placement.PlacementId}: map={placement.MapPlacementId} encounter={placement.EncounterId} monster={placement.PrimaryMonsterId} source={placement.SpawnSourceId} role={placement.SpawnRole}");
+                    }
+                }
+
                 EditorGUILayout.Space();
                 EditorGUILayout.LabelField("Room Details", EditorStyles.boldLabel);
                 for (var i = 0; i < draft.Graph.Nodes.Count; i++)
@@ -92,11 +176,86 @@ namespace Conn.Editor.Maps
 
         private void Generate()
         {
+            if (selectedProfile != null && GenerateFromSelectedProfile())
+            {
+                return;
+            }
+
             var profile = MapGenerationCatalog.ChapterTwoFirstSliceProfile();
             var chunks = MapGenerationCatalog.ChapterTwoFirstSliceChunks();
             draft = MapGenerationService.Generate(profile, chunks, seed);
             report = MapValidationService.Validate(profile, draft);
             compiled = MapGenerationService.Compile(profile, draft);
+        }
+
+        private bool GenerateFromSelectedProfile()
+        {
+            authoringSnapshot = MapAuthoringValidationService.FindAuthoringAssets();
+            authoringReport = MapAuthoringValidationService.Validate(authoringSnapshot);
+            if (!authoringReport.Passed)
+            {
+                draft = null;
+                compiled = null;
+                report = null;
+                return true;
+            }
+
+            builtBundle = RuntimeMapGenerationBundleBuilder.Build(authoringSnapshot, floor, difficulty);
+            var profileId = selectedProfile.Id;
+            var entry = builtBundle.FindProfile(profileId);
+            if (entry == null)
+            {
+                report = new MapValidationReport();
+                report.Errors.Add($"Selected map profile is not in the built runtime bundle: {profileId}");
+                draft = null;
+                compiled = null;
+                return true;
+            }
+
+            draft = RuntimeMapGenerationService.Generate(builtBundle, profileId, seed);
+            report = MapValidationService.Validate(entry.Profile, draft);
+            compiled = RuntimeMapGenerationService.GenerateCompiled(builtBundle, profileId, seed);
+            return true;
+        }
+
+        private void BuildRuntimeBundleFromAuthoring()
+        {
+            authoringSnapshot ??= MapAuthoringValidationService.FindAuthoringAssets();
+            authoringReport = MapAuthoringValidationService.Validate(authoringSnapshot);
+            if (!authoringReport.Passed)
+            {
+                return;
+            }
+
+            builtBundle = RuntimeMapGenerationBundleBuilder.Build(authoringSnapshot, floor, difficulty);
+            RuntimeMapGenerationBundleBuilder.SaveBundleAsset(builtBundle);
+        }
+
+        private void DrawSelectedProfileSummary()
+        {
+            if (selectedProfile == null)
+            {
+                EditorGUILayout.HelpBox("No MapProfileAsset selected. Generate uses the Chapter 2 catalog profile.", MessageType.Info);
+                return;
+            }
+
+            EditorGUILayout.LabelField("Selected Profile", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Id", selectedProfile.Id);
+            EditorGUILayout.LabelField("Generation Context", $"floor={floor}, difficulty={difficulty}");
+            EditorGUILayout.LabelField("Theme", selectedProfile.ThemeId);
+            EditorGUILayout.ObjectField("Resource Set", selectedProfile.ResourceSet, typeof(MapResourceSetAsset), false);
+            EditorGUILayout.ObjectField("Generation Weights", selectedProfile.GenerationWeightProfile, typeof(GenerationWeightProfileAsset), false);
+            EditorGUILayout.LabelField("Required Landmarks", Count(selectedProfile.RequiredLandmarkRooms).ToString());
+            EditorGUILayout.LabelField("Optional Chunks", Count(selectedProfile.OptionalChunks).ToString());
+            EditorGUILayout.LabelField("Optional Landmarks", Count(selectedProfile.OptionalLandmarks).ToString());
+            EditorGUILayout.LabelField("Spawn Tables", Count(selectedProfile.AllowedSpawnTables).ToString());
+            EditorGUILayout.LabelField("Tag Filters", string.Join(", ", selectedProfile.SpawnTagFilters ?? Array.Empty<string>()));
+            EditorGUILayout.LabelField("Direct Overrides", Count(selectedProfile.DirectEncounterOverrides).ToString());
+        }
+
+        private static int Count<T>(T[] values)
+        {
+            return values?.Length ?? 0;
         }
 
         private void SaveCompiledMap()

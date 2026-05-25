@@ -246,11 +246,10 @@ namespace Conn.UI.Runtime
             if (TownShopPanelState.Current == TownShopPanelKind.Blacksmith)
             {
                 AddText(panel, "Blacksmith");
-                var stock = RuntimeContentDatabase.EquipmentIdsForVendor("vendor_smith");
-                var count = stock.Length > 0 ? stock.Length : EquipmentCatalog.All.Length;
-                for (var i = 0; i < count; i++)
+                var stock = EquipmentShopRuntimeService.BlacksmithStockItemIds();
+                for (var i = 0; i < stock.Length; i++)
                 {
-                    var item = stock.Length > 0 ? RuntimeContentDatabase.FindEquipment(stock[i]) : EquipmentCatalog.All[i];
+                    var item = RuntimeContentDatabase.FindEquipment(stock[i]);
                     if (item == null || item.BuyPrice <= 0)
                     {
                         continue;

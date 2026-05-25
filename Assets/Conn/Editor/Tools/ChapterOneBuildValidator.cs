@@ -109,6 +109,14 @@ namespace Conn.Editor.Tools
                 throw new InvalidOperationException($"{sceneId} scene is missing SceneBootstrap.");
             }
 
+            if (sceneId == GameSceneId.Dungeon
+                && (bootstrap.RuntimeMapGenerationBundles == null
+                    || bootstrap.RuntimeMapGenerationBundles.Length == 0
+                    || bootstrap.RuntimeMapGenerationBundles[0] == null))
+            {
+                throw new InvalidOperationException($"{sceneId} scene bootstrap is missing RuntimeMapGenerationBundleAsset binding.");
+            }
+
             var runtimeUi = bootstrap.GetComponent<RuntimeCanvasUi>();
             if (runtimeUi == null || runtimeUi.SceneId != sceneId || runtimeUi.Canvas != canvas)
             {

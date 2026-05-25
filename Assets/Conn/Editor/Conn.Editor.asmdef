@@ -2,6 +2,7 @@
   "name": "Conn.Editor",
   "rootNamespace": "Conn.Editor",
   "references": [
+    "Conn.Authoring",
     "Conn.Core",
     "Conn.Runtime",
     "Conn.Rendering",

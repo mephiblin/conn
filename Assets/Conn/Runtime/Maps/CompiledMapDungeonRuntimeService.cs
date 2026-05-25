@@ -9,10 +9,16 @@ namespace Conn.Runtime.Maps
     {
         public const int DefaultDungeonSeed = 2001;
         private static CompiledMapAsset[] compiledMapAssets = System.Array.Empty<CompiledMapAsset>();
+        private static RuntimeMapGenerationBundleAsset[] runtimeMapGenerationBundles = System.Array.Empty<RuntimeMapGenerationBundleAsset>();
 
         public static void SetCompiledMapAssets(CompiledMapAsset[] assets)
         {
             compiledMapAssets = assets ?? System.Array.Empty<CompiledMapAsset>();
+        }
+
+        public static void SetRuntimeMapGenerationBundles(RuntimeMapGenerationBundleAsset[] bundles)
+        {
+            runtimeMapGenerationBundles = bundles ?? System.Array.Empty<RuntimeMapGenerationBundleAsset>();
         }
 
         public static CompiledMap BuildQuestCompiledMap(GameSessionState session)
@@ -22,6 +28,12 @@ namespace Conn.Runtime.Maps
             if (compiledAsset != null)
             {
                 return CompiledMapRuntimeLoader.LoadAndValidateFromJson(compiledAsset.Json, profile);
+            }
+
+            var runtimeBundle = FindRuntimeMapGenerationBundle(profile.ProfileId);
+            if (runtimeBundle != null)
+            {
+                return RuntimeMapGenerationService.GenerateCompiled(runtimeBundle.Bundle, profile.ProfileId, DefaultDungeonSeed);
             }
 
             var chunks = MapGenerationCatalog.ChapterTwoFirstSliceChunks();
@@ -37,10 +49,15 @@ namespace Conn.Runtime.Maps
             }
 
             var placement = CompiledMapRuntimeLoader.FindPlacement(compiledMap, MapPlacementKind.QuestTarget);
-            var encounterId = string.IsNullOrWhiteSpace(session.Quest.TargetEncounterId)
+            var encounterPlacement = CompiledMapRuntimeLoader.FindEncounterPlacement(compiledMap, placement.Id);
+            var encounterId = encounterPlacement != null && !string.IsNullOrWhiteSpace(encounterPlacement.EncounterId)
+                ? encounterPlacement.EncounterId
+                : string.IsNullOrWhiteSpace(session.Quest.TargetEncounterId)
                 ? EncounterCatalog.TestGuardId
                 : session.Quest.TargetEncounterId;
-            var monsterId = string.IsNullOrWhiteSpace(session.Quest.TargetMonsterId)
+            var monsterId = encounterPlacement != null && !string.IsNullOrWhiteSpace(encounterPlacement.PrimaryMonsterId)
+                ? encounterPlacement.PrimaryMonsterId
+                : string.IsNullOrWhiteSpace(session.Quest.TargetMonsterId)
                 ? MonsterCatalog.TestGuardId
                 : session.Quest.TargetMonsterId;
             FieldMonsterRuntimeService.Register(
@@ -69,12 +86,13 @@ namespace Conn.Runtime.Maps
                     continue;
                 }
 
+                var encounterPlacement = CompiledMapRuntimeLoader.FindEncounterPlacement(compiledMap, placement.Id);
                 FieldMonsterRuntimeService.Register(
                     session,
                     StateKeyFor(compiledMap, placement),
                     placement.Id,
-                    encounterId,
-                    monsterId);
+                    encounterPlacement != null && !string.IsNullOrWhiteSpace(encounterPlacement.EncounterId) ? encounterPlacement.EncounterId : encounterId,
+                    encounterPlacement != null && !string.IsNullOrWhiteSpace(encounterPlacement.PrimaryMonsterId) ? encounterPlacement.PrimaryMonsterId : monsterId);
                 registered++;
             }
 
@@ -114,6 +132,20 @@ namespace Conn.Runtime.Maps
             {
                 var asset = compiledMapAssets[i];
                 if (asset != null && asset.ProfileId == profileId && !string.IsNullOrWhiteSpace(asset.Json))
+                {
+                    return asset;
+                }
+            }
+
+            return null;
+        }
+
+        private static RuntimeMapGenerationBundleAsset FindRuntimeMapGenerationBundle(string profileId)
+        {
+            for (var i = 0; i < runtimeMapGenerationBundles.Length; i++)
+            {
+                var asset = runtimeMapGenerationBundles[i];
+                if (asset != null && asset.Bundle != null && asset.Bundle.FindProfile(profileId) != null)
                 {
                     return asset;
                 }

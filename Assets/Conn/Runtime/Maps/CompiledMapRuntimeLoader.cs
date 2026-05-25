@@ -46,5 +46,24 @@ namespace Conn.Runtime.Maps
 
             throw new InvalidOperationException($"Compiled map is missing placement {kind}.");
         }
+
+        public static CompiledEncounterPlacement FindEncounterPlacement(CompiledMap compiled, string mapPlacementId)
+        {
+            if (compiled == null)
+            {
+                throw new ArgumentNullException(nameof(compiled));
+            }
+
+            for (var i = 0; i < (compiled.EncounterPlacements?.Count ?? 0); i++)
+            {
+                var placement = compiled.EncounterPlacements[i];
+                if (placement.MapPlacementId == mapPlacementId)
+                {
+                    return placement;
+                }
+            }
+
+            return null;
+        }
     }
 }

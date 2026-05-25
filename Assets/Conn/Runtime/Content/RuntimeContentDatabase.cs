@@ -23,6 +23,7 @@ namespace Conn.Runtime.Content
             activeDatabase = database;
             activeRegistry = database != null ? database.BuildRegistry() : null;
             PlayerEquipmentState.EquipmentResolver = database != null ? FindEquipment : EquipmentCatalog.Find;
+            SkillInventoryState.SkillResolver = database != null ? FindSkill : SkillCatalog.Find;
         }
 
         public static MonsterDefinition FindMonster(string monsterId)
@@ -119,6 +120,12 @@ namespace Conn.Runtime.Content
             var contentEncounter = activeRegistry?.FindEncounter(encounterId);
             if (contentEncounter == null)
             {
+                var generated = TryGeneratedSinglePrimaryEncounter(encounterId);
+                if (generated != null)
+                {
+                    return generated;
+                }
+
                 return EncounterCatalog.Find(encounterId);
             }
 
@@ -130,6 +137,33 @@ namespace Conn.Runtime.Content
                 contentEncounter.RewardId,
                 contentEncounter.Pattern,
                 ConvertEnemySlots(contentEncounter.EnemySlots));
+        }
+
+        private static EncounterDefinition TryGeneratedSinglePrimaryEncounter(string encounterId)
+        {
+            const string prefix = "generated_single_primary_";
+            if (string.IsNullOrWhiteSpace(encounterId) || !encounterId.StartsWith(prefix, StringComparison.Ordinal))
+            {
+                return null;
+            }
+
+            var monsterId = encounterId.Substring(prefix.Length);
+            if (string.IsNullOrWhiteSpace(monsterId))
+            {
+                return null;
+            }
+
+            return new EncounterDefinition(
+                encounterId,
+                $"Generated {monsterId}",
+                monsterId,
+                0,
+                string.Empty,
+                "single_primary",
+                new[]
+                {
+                    new EncounterEnemySlotDefinition("primary", monsterId, 1, true)
+                });
         }
 
         public static EncounterDefinition FindEncounterForMonster(string monsterId)
@@ -268,6 +302,35 @@ namespace Conn.Runtime.Content
             for (var i = 0; i < stockItemIds.Length; i++)
             {
                 if (FindEquipment(stockItemIds[i]) != null)
+                {
+                    result.Add(stockItemIds[i]);
+                }
+            }
+
+            return result.ToArray();
+        }
+
+        public static string[] ConsumableIdsForVendor(string vendorId, int floor = 1, int bossesDefeated = 0)
+        {
+            var vendor = FindVendor(vendorId);
+            if (vendor == null)
+            {
+                return Array.Empty<string>();
+            }
+
+            var rotation = SelectVendorRotation(vendorId, floor, bossesDefeated);
+            var stockItemIds = rotation != null && rotation.StockItemIds != null && rotation.StockItemIds.Length > 0
+                ? rotation.StockItemIds
+                : vendor.StockItemIds;
+            if (stockItemIds == null || stockItemIds.Length == 0)
+            {
+                return Array.Empty<string>();
+            }
+
+            var result = new List<string>();
+            for (var i = 0; i < stockItemIds.Length; i++)
+            {
+                if (FindConsumable(stockItemIds[i]) != null)
                 {
                     result.Add(stockItemIds[i]);
                 }

@@ -347,6 +347,10 @@ MonoBehaviour:
     XpReward: 8
     Boss: 0
     Ai: aggressive
+    ThemeTags: []
+    BiomeTags: []
+    SpawnRoleTags: []
+    CompatibilityTags: []
   - Id: grave_robber
     DisplayName: "\uB3C4\uAD74\uAFBC"
     MaxHp: 22
@@ -355,6 +359,10 @@ MonoBehaviour:
     XpReward: 14
     Boss: 0
     Ai: coward
+    ThemeTags: []
+    BiomeTags: []
+    SpawnRoleTags: []
+    CompatibilityTags: []
   - Id: serpent_guard
     DisplayName: "\uBC40 \uC0AC\uC6D0 \uACBD\uBE44\uBCD1"
     MaxHp: 28
@@ -363,6 +371,10 @@ MonoBehaviour:
     XpReward: 20
     Boss: 0
     Ai: guardian
+    ThemeTags: []
+    BiomeTags: []
+    SpawnRoleTags: []
+    CompatibilityTags: []
   - Id: poisoned_raider
     DisplayName: "\uB3C5\uC5D0 \uBBF8\uCE5C \uC57D\uD0C8\uC790"
     MaxHp: 30
@@ -371,6 +383,10 @@ MonoBehaviour:
     XpReward: 24
     Boss: 0
     Ai: ambusher
+    ThemeTags: []
+    BiomeTags: []
+    SpawnRoleTags: []
+    CompatibilityTags: []
   - Id: cursed_gladiator
     DisplayName: "\uC800\uC8FC\uBC1B\uC740 \uAC80\uD22C\uC0AC"
     MaxHp: 42
@@ -379,6 +395,10 @@ MonoBehaviour:
     XpReward: 34
     Boss: 0
     Ai: defensive
+    ThemeTags: []
+    BiomeTags: []
+    SpawnRoleTags: []
+    CompatibilityTags: []
   - Id: black_water_beast
     DisplayName: "\uAC80\uC740 \uBB3C\uC758 \uD30C\uCDA9\uC218"
     MaxHp: 70
@@ -387,6 +407,10 @@ MonoBehaviour:
     XpReward: 70
     Boss: 1
     Ai: aggressive
+    ThemeTags: []
+    BiomeTags: []
+    SpawnRoleTags: []
+    CompatibilityTags: []
   - Id: serpent_priest
     DisplayName: "\uBC40 \uC0AC\uC81C"
     MaxHp: 36
@@ -395,6 +419,10 @@ MonoBehaviour:
     XpReward: 32
     Boss: 0
     Ai: caster
+    ThemeTags: []
+    BiomeTags: []
+    SpawnRoleTags: []
+    CompatibilityTags: []
   - Id: blind_priest
     DisplayName: "\uB208\uBA3C \uC0AC\uC81C"
     MaxHp: 82
@@ -403,6 +431,10 @@ MonoBehaviour:
     XpReward: 90
     Boss: 1
     Ai: caster
+    ThemeTags: []
+    BiomeTags: []
+    SpawnRoleTags: []
+    CompatibilityTags: []
   - Id: crawling_fish
     DisplayName: "\uAE30\uC5B4\uB2E4\uB2C8\uB294 \uBB3C\uACE0\uAE30"
     MaxHp: 10
@@ -411,6 +443,10 @@ MonoBehaviour:
     XpReward: 10
     Boss: 0
     Ai: aggressive
+    ThemeTags: []
+    BiomeTags: []
+    SpawnRoleTags: []
+    CompatibilityTags: []
   - Id: reef_cultist
     DisplayName: "\uC0B0\uD638 \uAD11\uC2E0\uB3C4"
     MaxHp: 24
@@ -419,6 +455,10 @@ MonoBehaviour:
     XpReward: 18
     Boss: 0
     Ai: caster
+    ThemeTags: []
+    BiomeTags: []
+    SpawnRoleTags: []
+    CompatibilityTags: []
   - Id: ruin_husk
     DisplayName: "\uD3D0\uD5C8\uC758 \uBE48 \uAECD\uC9C8"
     MaxHp: 26
@@ -427,6 +467,10 @@ MonoBehaviour:
     XpReward: 18
     Boss: 0
     Ai: defensive
+    ThemeTags: []
+    BiomeTags: []
+    SpawnRoleTags: []
+    CompatibilityTags: []
   Encounters:
   - Id: encounter_desert_rat
     DisplayName: "\uC0AC\uB9C9 \uC9D0\uC2B9 \uC870\uC6B0"
@@ -439,6 +483,12 @@ MonoBehaviour:
       MonsterId: desert_rat
       Count: 1
       Primary: 1
+    MinDifficulty: 0
+    MaxDifficulty: 0
+    ThemeTags: []
+    SpawnRoleTags: []
+    AllowedMapTags: []
+    CompatibilityTags: []
   - Id: encounter_grave_robber
     DisplayName: "\uB3C4\uAD74\uAFBC \uC870\uC6B0"
     MonsterId: grave_robber
@@ -450,6 +500,12 @@ MonoBehaviour:
       MonsterId: grave_robber
       Count: 1
       Primary: 1
+    MinDifficulty: 0
+    MaxDifficulty: 0
+    ThemeTags: []
+    SpawnRoleTags: []
+    AllowedMapTags: []
+    CompatibilityTags: []
   - Id: encounter_serpent_guard
     DisplayName: "\uBC40 \uC0AC\uC6D0 \uACBD\uBE44 \uC870\uC6B0"
     MonsterId: serpent_guard
@@ -461,6 +517,12 @@ MonoBehaviour:
       MonsterId: serpent_guard
       Count: 1
       Primary: 1
+    MinDifficulty: 0
+    MaxDifficulty: 0
+    ThemeTags: []
+    SpawnRoleTags: []
+    AllowedMapTags: []
+    CompatibilityTags: []
   - Id: encounter_poisoned_raider
     DisplayName: "\uB3C5\uAD11 \uC57D\uD0C8\uC790 \uC870\uC6B0"
     MonsterId: poisoned_raider
@@ -472,6 +534,12 @@ MonoBehaviour:
       MonsterId: poisoned_raider
       Count: 1
       Primary: 1
+    MinDifficulty: 0
+    MaxDifficulty: 0
+    ThemeTags: []
+    SpawnRoleTags: []
+    AllowedMapTags: []
+    CompatibilityTags: []
   - Id: encounter_cursed_gladiator
     DisplayName: "\uC800\uC8FC \uAC80\uD22C\uC0AC \uC870\uC6B0"
     MonsterId: cursed_gladiator
@@ -483,6 +551,12 @@ MonoBehaviour:
       MonsterId: cursed_gladiator
       Count: 1
       Primary: 1
+    MinDifficulty: 0
+    MaxDifficulty: 0
+    ThemeTags: []
+    SpawnRoleTags: []
+    AllowedMapTags: []
+    CompatibilityTags: []
   - Id: encounter_black_water_beast
     DisplayName: "\uAC80\uC740 \uBB3C\uC758 \uD30C\uCDA9\uC218 \uC870\uC6B0"
     MonsterId: black_water_beast
@@ -494,6 +568,12 @@ MonoBehaviour:
       MonsterId: black_water_beast
       Count: 1
       Primary: 1
+    MinDifficulty: 0
+    MaxDifficulty: 0
+    ThemeTags: []
+    SpawnRoleTags: []
+    AllowedMapTags: []
+    CompatibilityTags: []
   - Id: encounter_serpent_priest
     DisplayName: "\uBC40 \uC0AC\uC81C \uC870\uC6B0"
     MonsterId: serpent_guard
@@ -505,6 +585,12 @@ MonoBehaviour:
       MonsterId: serpent_guard
       Count: 1
       Primary: 1
+    MinDifficulty: 0
+    MaxDifficulty: 0
+    ThemeTags: []
+    SpawnRoleTags: []
+    AllowedMapTags: []
+    CompatibilityTags: []
   - Id: encounter_blind_priest
     DisplayName: "\uB208\uBA3C \uC0AC\uC81C \uC870\uC6B0"
     MonsterId: blind_priest
@@ -516,6 +602,12 @@ MonoBehaviour:
       MonsterId: blind_priest
       Count: 1
       Primary: 1
+    MinDifficulty: 0
+    MaxDifficulty: 0
+    ThemeTags: []
+    SpawnRoleTags: []
+    AllowedMapTags: []
+    CompatibilityTags: []
   - Id: encounter_crawling_fish
     DisplayName: "\uAE30\uC5B4\uB2E4\uB2C8\uB294 \uBB3C\uACE0\uAE30 \uC870\uC6B0"
     MonsterId: crawling_fish
@@ -527,6 +619,12 @@ MonoBehaviour:
       MonsterId: crawling_fish
       Count: 1
       Primary: 1
+    MinDifficulty: 0
+    MaxDifficulty: 0
+    ThemeTags: []
+    SpawnRoleTags: []
+    AllowedMapTags: []
+    CompatibilityTags: []
   - Id: encounter_reef_cultist
     DisplayName: "\uC0B0\uD638 \uAD11\uC2E0\uB3C4 \uC870\uC6B0"
     MonsterId: reef_cultist
@@ -538,6 +636,12 @@ MonoBehaviour:
       MonsterId: reef_cultist
       Count: 1
       Primary: 1
+    MinDifficulty: 0
+    MaxDifficulty: 0
+    ThemeTags: []
+    SpawnRoleTags: []
+    AllowedMapTags: []
+    CompatibilityTags: []
   - Id: encounter_ruin_husk
     DisplayName: "\uD3D0\uD5C8\uC758 \uBE48 \uAECD\uC9C8 \uC870\uC6B0"
     MonsterId: ruin_husk
@@ -549,6 +653,12 @@ MonoBehaviour:
       MonsterId: ruin_husk
       Count: 1
       Primary: 1
+    MinDifficulty: 0
+    MaxDifficulty: 0
+    ThemeTags: []
+    SpawnRoleTags: []
+    AllowedMapTags: []
+    CompatibilityTags: []
   Quests:
   - Id: quest_twisted_temple_clear
     DisplayName: "\uB4A4\uD2C0\uB9B0 \uC0AC\uC6D0 \uC815\uCC30"

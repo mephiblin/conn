@@ -1,4 +1,3 @@
-using Conn.Core.Items;
 using Conn.Runtime.Inventory;
 using Conn.Runtime.Session;
 using UnityEngine;
@@ -19,7 +18,7 @@ namespace Conn.Runtime.World
                 {
                     TownServiceKind.Inn => EffectiveCost > 0 ? $"{serviceName}: Rest ({EffectiveCost}g)" : $"{serviceName}: Rest",
                     TownServiceKind.Trainer => EffectiveCost > 0 ? $"{serviceName}: Train Max HP ({EffectiveCost} XP)" : $"{serviceName}: Train Max HP",
-                    TownServiceKind.Apothecary => $"{serviceName}: Buy {ConsumableCatalog.Find(ConsumableCatalog.MinorPotionId)?.DisplayName} ({EffectiveCost}g)",
+                    TownServiceKind.Apothecary => $"{serviceName}: Buy {ApothecaryItemName} ({EffectiveCost}g)",
                     TownServiceKind.Scholar => $"{serviceName}: Ask about quest",
                     _ => $"{serviceName}: Talk"
                 };
@@ -65,7 +64,7 @@ namespace Conn.Runtime.World
 
             if (serviceKind == TownServiceKind.Apothecary)
             {
-                ConsumableRuntimeService.Buy(session, ConsumableCatalog.MinorPotionId);
+                ConsumableRuntimeService.Buy(session, TownServiceRuntimeService.FirstConsumableStockIdFor(serviceKind));
                 return;
             }
 
@@ -76,6 +75,16 @@ namespace Conn.Runtime.World
             }
 
             RuntimeNoticeService.Set(session, $"{serviceName}: service is not implemented yet.");
+        }
+
+        private string ApothecaryItemName
+        {
+            get
+            {
+                var itemId = TownServiceRuntimeService.FirstConsumableStockIdFor(serviceKind);
+                var item = Conn.Runtime.Content.RuntimeContentDatabase.FindConsumable(itemId);
+                return item != null ? item.DisplayName : itemId;
+            }
         }
     }
 }

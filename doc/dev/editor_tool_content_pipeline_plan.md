@@ -44,13 +44,24 @@ flowchart TD
 
 ## Core Principles
 
-- Runtime reads `ContentDatabase.asset` and `CompiledMapAsset` first.
+- Runtime reads `ContentDatabase.asset` first. Maps can be consumed either as
+  generated runtime maps from a validated `RuntimeMapGenerationBundle` plus seed
+  or as saved `CompiledMapAsset` fixtures for fixed/debug/test content.
 - C# catalog fallback remains until the database route is validated.
 - Editor tools must support authoring, saving, validation, and runtime verification.
+- Current direct database editing is a bootstrap bridge, not the final Unity
+  authoring model.
+- Final editor UX should be Inspector-first and asset-first. Use typed
+  ScriptableObject authoring assets, prefab/FBX/material references, custom
+  inspectors, Scene View tools, and build/validation windows.
 - Editor-only code must stay out of Runtime/Core assemblies.
 - Runtime/Core/UI Runtime must not reference `UnityEditor`, `EditorWindow`, `AssetDatabase`, `MenuItem`, or `Conn.Editor`.
 - Test content should be produced only after the relevant editor and validation path exists.
 - Monster field AI/FSM should come after map, encounter, and placement contracts are stable.
+
+Architecture reference:
+
+- [`editor/inspector_first_editor_architecture.md`](editor/inspector_first_editor_architecture.md)
 
 ## Phase 0: Baseline Audit
 
@@ -216,15 +227,15 @@ Fields:
 
 Checklist:
 
-- [ ] Add NPC list view.
-- [ ] Add NPC detail editor.
-- [ ] Add service type field or selector.
-- [ ] Add vendor selector.
-- [ ] Add quest/quest seed list editor.
-- [ ] Validate vendor reference.
-- [ ] Treat `quest_seed_` ids as NPC seed namespace.
-- [ ] Warn on unknown non-seed quest ids.
-- [ ] Confirm Runtime town service lookup can consume NPC/vendor data.
+- [x] Add NPC authoring asset browser/build bridge.
+- [x] Add NPC detail authoring fields.
+- [x] Add service type field or selector.
+- [x] Add vendor selector.
+- [x] Add quest/quest seed list editor.
+- [x] Validate vendor reference.
+- [x] Treat `quest_seed_` ids as NPC seed namespace.
+- [x] Warn on unknown non-seed quest ids.
+- [x] Confirm Runtime town service lookup can consume NPC/vendor data.
 
 Completion gate:
 
@@ -246,15 +257,15 @@ Fields:
 
 Checklist:
 
-- [ ] Add skill list view.
-- [ ] Add skill detail editor.
-- [ ] Add effect kind selector.
-- [ ] Add target mode selector or field.
-- [ ] Add formula field.
-- [ ] Add catalog id list editor.
-- [ ] Validate non-negative prices.
-- [ ] Validate effect kind is runtime-supported or explicitly reserved.
-- [ ] Confirm Skill Shop can sell editor-authored skill stock.
+- [x] Add skill authoring asset browser/build bridge.
+- [x] Add skill detail authoring fields.
+- [x] Add effect kind selector.
+- [x] Add target mode selector or field.
+- [x] Add formula field.
+- [x] Add catalog id list editor.
+- [x] Validate non-negative prices.
+- [x] Validate effect kind is runtime-supported or explicitly reserved.
+- [x] Confirm Skill Shop can sell editor-authored skill stock.
 
 Completion gate:
 
@@ -275,16 +286,16 @@ Fields:
 
 Checklist:
 
-- [ ] Add vendor list view.
-- [ ] Add vendor detail editor.
-- [ ] Add stock item selector.
-- [ ] Add stock skill selector.
-- [ ] Add catalog id list editor.
-- [ ] Add rotation editor.
-- [ ] Validate stock item references.
-- [ ] Validate stock skill references.
-- [ ] Validate rotation conditions.
-- [ ] Confirm Blacksmith/Skill Merchant/Apothecary can consume editor-authored vendor data.
+- [x] Add vendor authoring asset browser/build bridge.
+- [x] Add vendor detail authoring fields.
+- [x] Add stock item selector.
+- [x] Add stock skill selector.
+- [x] Add catalog id list editor.
+- [x] Add rotation editor.
+- [x] Validate stock item references.
+- [x] Validate stock skill references.
+- [x] Validate rotation conditions.
+- [x] Confirm Blacksmith/Skill Merchant/Apothecary can consume editor-authored vendor data.
 
 Completion gate:
 
@@ -300,9 +311,9 @@ Checklist:
 - [x] Add quest -> encounter -> monster validation.
 - [x] Add quest -> map profile validation.
 - [x] Add encounter enemy slot validation.
-- [ ] Add NPC vendor/service/quest seed validation.
-- [!] Add skill effect/target/formula validation.
-- [ ] Add vendor stock/rotation validation.
+- [x] Add NPC vendor/service/quest seed validation.
+- [x] Add skill effect/target/formula validation.
+- [x] Add vendor stock/rotation validation.
 - [x] Add generated equipment contract validation.
 - [x] Add reward item validation.
 - [x] Run the same validation in Chapter 1 and Chapter 2 batch validators where relevant.
@@ -320,34 +331,51 @@ Tool target:
 ```text
 Generator Workbench
 ├─ Map Profile Selection
+├─ Resource / Landmark / Chunk Selection
+├─ Spawn Source / Tag Filter Selection
+├─ Generation Weight Profile
 ├─ Seed Input
 ├─ Generate Draft
 ├─ Room Graph Summary
 ├─ Placement List
 ├─ Validation Result
-└─ Save CompiledMapAsset
+├─ Build RuntimeMapGenerationBundle
+└─ Save optional CompiledMapAsset
 ```
 
 Checklist:
 
-- [ ] Add map profile selection.
-- [ ] Add seed input and regenerate action.
-- [ ] Show room graph node list.
-- [ ] Show critical path and side branch summary.
-- [ ] Show placement list.
-- [ ] Show start placement.
-- [ ] Show quest target placement.
-- [ ] Show boss placement.
-- [ ] Show exit placement.
-- [ ] Show monster placements.
-- [ ] Show loot placements.
-- [ ] Show validation errors/warnings.
-- [ ] Save/export `CompiledMapAsset`.
-- [ ] Validate saved compiledMap can be loaded by Runtime.
+- [x] Add map profile selection.
+- [x] Add seed input and regenerate action.
+- [x] Show room graph node list.
+- [x] Show critical path and side branch summary.
+- [x] Show placement list.
+- [x] Show start placement.
+- [x] Show quest target placement.
+- [x] Show boss placement.
+- [x] Show exit placement.
+- [x] Show monster placements.
+- [x] Show loot placements.
+- [x] Add resource set and landmark/chunk selection.
+- [x] Add spawn table, tag-filter, and direct encounter override selection.
+- [x] Add generation weight profile authoring/selection.
+- [x] Show validation errors/warnings.
+- [x] Build/export `RuntimeMapGenerationBundle`.
+- [x] Validate runtime generation bundle can generate a map from profile + seed.
+- [x] Bind `RuntimeMapGenerationBundleAsset` to Dungeon runtime generation after saved compiledMap lookup.
+- [x] Build and bind the default `RuntimeMapGenerationBundle.asset` during Chapter validators/P0 scene generation.
+- [x] Add compiled encounter placement records from spawn source/direct encounter data.
+- [x] Resolve spawn table entries with deterministic weights at runtime generation.
+- [x] Apply floor/difficulty/theme/tag compatibility filters during spawn resolution.
+- [x] Expose floor/difficulty generation context in Generator Workbench.
+- [x] Save/export `CompiledMapAsset`.
+- [x] Validate saved compiledMap can be loaded by Runtime.
 
 Completion gate:
 
-- A compiled map can be generated, inspected, validated, saved, and consumed by Runtime.
+- A map can be generated from validated profile/weights/seed, inspected,
+  validated, and consumed by Runtime. Saved `CompiledMapAsset` support remains
+  available for fixed maps, debug repro, and test fixtures.
 
 ## Phase 4: Runtime Data Consumption
 
@@ -377,11 +405,16 @@ Purpose: shrink C# catalog usage only after the DB route is verified.
 
 Checklist:
 
-- [ ] Mark fallback paths as required, debug-only, or removable.
-- [ ] Replace one verified fallback path at a time.
-- [ ] Add validation before removing each fallback.
+- [x] Mark fallback paths as required, debug-only, or removable.
+- [x] Replace `SkillInventoryState.EquippedPower` direct `SkillCatalog.Find` lookup with DB-installed skill resolver.
+- [x] Replace `TownServiceRuntimeService.ScholarHint` direct `QuestCatalog.BoardOffer` lookup with DB-first board offer lookup.
+- [x] Replace Apothecary fixed `minor_potion` service lookup with DB-first consumable vendor stock lookup.
+- [x] Restrict `SkillShopRuntimeService` `SkillCatalog.All` stock generation to no-DB emergency fallback.
+- [x] Restrict Blacksmith UI `EquipmentCatalog.All` stock display to no-DB emergency fallback.
+- [x] Replace consumable UX direct `ConsumableCatalog.Find` lookup with DB-first consumable lookup.
+- [x] Add validation before removing each fallback.
 - [ ] Keep emergency fallback for batch validation until replacement is proven.
-- [ ] Document every removed fallback in `remaining_work.md`.
+- [x] Document every removed fallback in `remaining_work.md`.
 
 Completion gate:
 
@@ -502,18 +535,129 @@ Completion gate:
 
 - The authored content pipeline supports repeated manual playtests.
 
+## Inspector-First Transition Track
+
+Purpose: move the production source of truth from direct database row editing to
+Unity-native authoring assets while keeping the current DB-first runtime path
+validated.
+
+### E-0: Baseline and Plan Sync
+
+Checklist:
+
+- [x] Sync this checklist with `editor/README.md`, `editor/inspector_first_editor_architecture.md`, and map generator cooperation docs.
+- [x] Confirm `ContentDatabaseWindow` is a bootstrap/browser/build/validation bridge, not the final editor.
+- [x] Confirm Runtime/Core/UI Runtime forbidden Editor reference scan passes.
+- [x] Record any priority/status change in `remaining_work.md`.
+
+Completion gate:
+
+- The next work is explicitly tracked as Inspector-first authoring asset work,
+  and current database editing is documented as a bridge.
+
+### E-1: Authoring Asset Foundation
+
+Checklist:
+
+- [x] Add `MonsterDefinitionAsset`.
+- [x] Add `EncounterDefinitionAsset`.
+- [x] Add `SpawnTableAsset`.
+- [x] Add `MapProfileAsset`.
+- [x] Add `MapResourceSetAsset`.
+- [x] Add `RoomChunkAsset`.
+- [x] Add `LandmarkRoomAsset`.
+- [x] Add `GenerationWeightProfileAsset`.
+- [x] Keep authoring asset code free of `UnityEditor` and outside Runtime/Core/UI Runtime assemblies.
+- [x] Add minimal validation/bake path from authoring assets to runtime-safe data.
+- [x] Confirm RuntimeContentDatabase can read editor-authored monster/encounter data after bake/export.
+
+Completion gate:
+
+- Designers can create typed authoring assets from the Project Browser, with
+  Unity object references staying in authoring assets and runtime ids/data kept
+  separate.
+
+### E-2: ContentDatabaseWindow Role Reduction
+
+Checklist:
+
+- [x] Add authoring asset discovery/browser section.
+- [x] Add validation entry point for authoring assets.
+- [x] Add minimal build/export path into `ContentDatabaseDefinition`.
+- [x] Keep existing DB direct editing available as bootstrap/fallback bridge.
+- [x] Document fallback catalog preservation.
+
+Completion gate:
+
+- `ContentDatabaseWindow` can find authored assets, validate them, and build DB
+  output without becoming the final field-by-field production editor.
+
+### S-1: Monster and Encounter Metadata
+
+Checklist:
+
+- [x] Add theme tags to monster/encounter authoring.
+- [x] Add biome tags to monster authoring.
+- [x] Add spawn role tags to monster/encounter authoring.
+- [x] Add boss/elite/trash/ambush role metadata.
+- [x] Add allowed map or compatibility tags.
+- [x] Preserve single primary monster encounter fallback during bake/runtime.
+
+Completion gate:
+
+- Monsters remain independent content, while maps reference spawn sources,
+  filters, or encounter overrides instead of owning monster data.
+
+### S-2: SpawnTableAsset
+
+Checklist:
+
+- [x] Add encounter entries with weights and floor/difficulty constraints.
+- [x] Add direct monster entries with generated single-primary encounter policy.
+- [x] Add tag filters and room role constraints.
+- [x] Validate id uniqueness, missing encounter/monster, empty resolved pool, and invalid weights.
+- [x] Add membership/usage preview in browser or inspector.
+
+Completion gate:
+
+- Spawn tables can describe reusable encounter pools without binding monsters to
+  map profiles.
+
+### M-1: Map Authoring Asset Wiring
+
+Checklist:
+
+- [x] Add map profile theme/map kind/resource set fields.
+- [x] Add required landmarks, optional chunks/landmarks, allowed spawn tables, tag filters, direct encounter overrides.
+- [x] Add generation weight profile reference.
+- [x] Add resource set fields for tile/wall/door/decor/prefab/material registrations.
+- [x] Add room chunk/landmark socket, anchor, population, role tag, tilemap/prefab reference fields.
+- [x] Validate map profile/resource/spawn/chunk compatibility.
+- [x] Validate spawn table resolved pools and encounter/theme compatibility in map authoring validation.
+- [x] Validate quest target and boss encounter placements resolve to runtime encounters.
+- [x] Validate ResourceSet and chunk Unity object references are not broken.
+- [x] Validate required landmark roles, unique landmark reuse, and landmark count ranges.
+- [x] Validate profile room size and required role/socket chunk coverage.
+- [x] Validate `RuntimeMapGenerationBundle` contract has no Editor/authoring object references.
+
+Completion gate:
+
+- Map profiles reference authored map resources and spawn sources, not copied
+  monster data.
+
 ## Current Recommended Next Step
 
-Continue with Phase 1.5 through Phase 1.7:
+Continue with fallback reduction and production content authoring only after the
+checked Inspector-first, spawn table, map authoring, runtime bundle, and
+validation paths remain green in batch validation:
 
-1. NPC Editor
-2. Skill Editor
-3. Vendor Editor
+1. Phase 5 Fallback Reduction
+2. Phase 6 Test Content Production
+3. Phase 8 Play Mode Verification
+4. Phase 7 Monster Field FSM after editor/map/encounter contracts stay stable
 
 Do not start Monster Field FSM until the editor, validation, map, encounter, and placement contracts are stable.
 
 ## Deferred Notes
 
 Add notes here when a checklist item is intentionally postponed.
-
-- Skill target/formula validation is partially deferred until Skill Editor exposes the supported target modes and formula contract.

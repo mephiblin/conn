@@ -1,4 +1,6 @@
 using System;
+using Conn.Editor.Content;
+using Conn.Editor.Maps;
 using Conn.Core.Combat;
 using Conn.Core.Content;
 using Conn.Core.Equipment;
@@ -39,6 +41,9 @@ namespace Conn.Editor.Tools
             VerifyCombatWinGrantsXp();
             VerifyCombatContentDefinitions();
             VerifyRuntimeContentDatabaseMonsterLookup();
+            VerifyAuthoringBakeRuntimeContentBridge();
+            VerifyMapAuthoringValidationBridge();
+            VerifyRuntimeMapGenerationBundleBridge();
             VerifyChapterTwoRuntimeDataConsumption();
             VerifyCombatFleeRestoresDungeonState();
             VerifyCombatDeathRoutesToEndingState();
@@ -73,6 +78,23 @@ namespace Conn.Editor.Tools
             VerifyDatabaseTownServiceRuntime();
             VerifyCompiledMapDungeonRuntimeConnection();
             Debug.Log("Conn Chapter 2 runtime data consumption verification passed.");
+        }
+
+        private static void VerifyAuthoringBakeRuntimeContentBridge()
+        {
+            AuthoringContentBuildService.VerifyRuntimeCanReadBakedAuthoringContent();
+        }
+
+        private static void VerifyMapAuthoringValidationBridge()
+        {
+            MapAuthoringValidationService.VerifySampleMapAuthoringValidation();
+        }
+
+        private static void VerifyRuntimeMapGenerationBundleBridge()
+        {
+            RuntimeMapGenerationBundleBuilder.VerifyRuntimeGenerationFromBundle();
+            var generated = RuntimeContentDatabase.FindEncounter($"generated_single_primary_{MonsterCatalog.TestGuardId}");
+            Expect(generated != null && generated.MonsterId == MonsterCatalog.TestGuardId && generated.EnemySlots.Length == 1, "Generated single-primary encounter ids must resolve through RuntimeContentDatabase.");
         }
 
         private static void VerifyCompiledMapRuntimeLoader()
@@ -395,6 +417,7 @@ namespace Conn.Editor.Tools
                 Expect(baseStock[0] == "db_vendor_guard", "Runtime skill shop must use database vendor stock order.");
                 Expect(SkillShopRuntimeService.BuyAndEquip(session, "db_vendor_guard"), "Runtime skill shop must sell database-only skill stock.");
                 Expect(session.Skills.HasSkill("db_vendor_guard"), "Runtime skill purchase must add database-only skill to inventory.");
+                Expect(session.Skills.EquippedPower(session.Equipment.DiceCount) == 2, "Skill inventory equipped power must resolve database-only skills through RuntimeContentDatabase.");
 
                 SkillShopRuntimeService.RefreshSkillMerchantStock(session, 2, 0);
                 var rotatedStock = SkillShopRuntimeService.SkillMerchantStock(session, 2, 0);
@@ -406,6 +429,34 @@ namespace Conn.Editor.Tools
                 var smithRotatedStock = RuntimeContentDatabase.EquipmentIdsForVendor("vendor_smith", 2, 0);
                 Expect(smithRotatedStock.Length == 1 && smithRotatedStock[0] == "db_vendor_axe", "Blacksmith stock must consume database equipment vendor rotation.");
                 Expect(EquipmentShopRuntimeService.BuyAndEquip(session, "db_vendor_axe"), "Runtime equipment shop must sell database-only rotated blacksmith stock.");
+
+                var emptySkillVendorDatabase = ScriptableObject.CreateInstance<ContentDatabaseDefinition>();
+                emptySkillVendorDatabase.Skills = database.Skills;
+                emptySkillVendorDatabase.Vendors = new[]
+                {
+                    new ContentVendorDefinition
+                    {
+                        Id = "merchant_basic",
+                        ServiceType = "skill_shop"
+                    }
+                };
+                RuntimeContentDatabase.SetActive(emptySkillVendorDatabase);
+                var emptyStockSession = new GameSessionState();
+                emptyStockSession.StartNewGame();
+                Expect(SkillShopRuntimeService.SkillMerchantStock(emptyStockSession).Length == 0, "Active database with empty skill merchant stock must not fall back to SkillCatalog stock.");
+
+                var emptyEquipmentVendorDatabase = ScriptableObject.CreateInstance<ContentDatabaseDefinition>();
+                emptyEquipmentVendorDatabase.Equipment = database.Equipment;
+                emptyEquipmentVendorDatabase.Vendors = new[]
+                {
+                    new ContentVendorDefinition
+                    {
+                        Id = "vendor_smith",
+                        ServiceType = "equipment_shop"
+                    }
+                };
+                RuntimeContentDatabase.SetActive(emptyEquipmentVendorDatabase);
+                Expect(EquipmentShopRuntimeService.BlacksmithStockItemIds().Length == 0, "Active database with empty blacksmith stock must not fall back to EquipmentCatalog stock.");
             }
             finally
             {
@@ -442,17 +493,71 @@ namespace Conn.Editor.Tools
             Expect(state.EncounterId == session.Quest.TargetEncounterId, "Runtime field monster must use quest encounter reference.");
             Expect(state.MonsterId == session.Quest.TargetMonsterId, "Runtime field monster must use quest monster reference.");
             CompiledMapDungeonRuntimeService.SetCompiledMapAssets(null);
+
+            var bundleAsset = ScriptableObject.CreateInstance<RuntimeMapGenerationBundleAsset>();
+            bundleAsset.Bundle = RuntimeMapGenerationBundleBuilder.BuildChapterTwoCatalogBundle();
+            CompiledMapDungeonRuntimeService.SetRuntimeMapGenerationBundles(new[] { bundleAsset });
+            var runtimeGenerated = CompiledMapDungeonRuntimeService.BuildQuestCompiledMap(session);
+            Expect(
+                runtimeGenerated.EncounterPlacements.Count > 0,
+                "Dungeon runtime must generate compiled encounter placements from RuntimeMapGenerationBundle when no saved compiledMap asset is bound.");
+            Expect(
+                runtimeGenerated.EncounterPlacements[0].EncounterId == EncounterCatalog.TestGuardId,
+                "RuntimeMapGenerationBundle dungeon generation must preserve encounter ids.");
+            CompiledMapDungeonRuntimeService.SetRuntimeMapGenerationBundles(null);
         }
 
         private static void VerifyDatabaseTownServiceRuntime()
         {
             var database = ScriptableObject.CreateInstance<ContentDatabaseDefinition>();
+            database.Monsters = new[]
+            {
+                new ContentMonsterDefinition
+                {
+                    Id = "db_scholar_target",
+                    DisplayName = "DB Scholar Target",
+                    MaxHp = 9,
+                    AttackPower = 2
+                }
+            };
+            database.Encounters = new[]
+            {
+                new ContentEncounterDefinition
+                {
+                    Id = "db_scholar_encounter",
+                    DisplayName = "DB Scholar Encounter",
+                    MonsterId = "db_scholar_target",
+                    Pattern = "single_primary",
+                    EnemySlots = new[]
+                    {
+                        new ContentEncounterEnemySlot
+                        {
+                            SlotId = "primary",
+                            MonsterId = "db_scholar_target",
+                            Count = 1,
+                            Primary = true
+                        }
+                    }
+                }
+            };
+            database.Quests = new[]
+            {
+                new ContentQuestDefinition
+                {
+                    Id = "db_scholar_quest",
+                    DisplayName = "DB Scholar Quest",
+                    TargetMonsterId = "db_scholar_target",
+                    TargetEncounterId = "db_scholar_encounter",
+                    MapProfileId = MapGenerationCatalog.ChapterTwoFirstSliceProfileId,
+                    GoldReward = 7
+                }
+            };
             database.Items = new[]
             {
                 new ContentItemDefinition
                 {
-                    Id = ConsumableCatalog.MinorPotionId,
-                    DisplayName = "DB Minor Potion",
+                    Id = "db_apothecary_tonic",
+                    DisplayName = "DB Apothecary Tonic",
                     Kind = "consumable",
                     BuyPrice = 2,
                     SellPrice = 1,
@@ -472,14 +577,14 @@ namespace Conn.Editor.Tools
                     Id = "vendor_apothecary",
                     ServiceType = "sell_bundle",
                     GoldCost = 2,
-                    StockItemIds = new[] { ConsumableCatalog.MinorPotionId },
+                    StockItemIds = new[] { "db_apothecary_tonic" },
                     Rotations = new[]
                     {
                         new ContentVendorRotationDefinition
                         {
                             MinFloor = 2,
                             GoldCost = 4,
-                            StockItemIds = new[] { ConsumableCatalog.MinorPotionId }
+                            StockItemIds = new[] { "db_apothecary_tonic" }
                         }
                     }
                 }
@@ -503,11 +608,15 @@ namespace Conn.Editor.Tools
                 session.Player.Damage(5);
 
                 Expect(TownServiceRuntimeService.CostFor(TownServiceKind.Inn, 99) == 3, "Town service must prefer database vendor service cost.");
+                Expect(TownServiceRuntimeService.ScholarHint(session).Contains("DB Scholar Quest"), "Scholar hint must prefer database board offers over QuestCatalog fallback.");
                 Expect(TownServiceRuntimeService.Rest(session, TownServiceRuntimeService.CostFor(TownServiceKind.Inn, 99)), "Database-backed inn service must run in runtime.");
                 Expect(session.Player.Hp == session.Player.MaxHp, "Database-backed inn service must heal the player.");
                 Expect(RuntimeContentDatabase.FindNpc("npc_apothecary")?.VendorId == "vendor_apothecary", "Runtime must expose database NPC vendor links.");
                 Expect(RuntimeContentDatabase.SelectVendorRotation("vendor_apothecary", 2, 0)?.GoldCost == 4, "Runtime must expose non-skill vendor rotation conditions.");
-                Expect(ConsumableRuntimeService.Buy(session, ConsumableCatalog.MinorPotionId), "Apothecary must buy database item definitions at runtime.");
+                Expect(TownServiceRuntimeService.FirstConsumableStockIdFor(TownServiceKind.Apothecary) == "db_apothecary_tonic", "Apothecary service must resolve database vendor consumable stock before fixed potion fallback.");
+                Expect(ConsumableRuntimeService.Buy(session, TownServiceRuntimeService.FirstConsumableStockIdFor(TownServiceKind.Apothecary)), "Apothecary must buy database item definitions at runtime.");
+                Expect(ConsumableRuntimeService.Count(session, "db_apothecary_tonic") == 1, "Apothecary stock purchase must add the database-only consumable.");
+                Expect(ChapterOneUxText.ConsumableStatus(session, "db_apothecary_tonic").Contains("DB Apothecary Tonic"), "Consumable UX text must resolve database-only consumables.");
             }
             finally
             {
