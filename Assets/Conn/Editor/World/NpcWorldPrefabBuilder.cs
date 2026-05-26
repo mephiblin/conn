@@ -20,7 +20,7 @@ namespace Conn.Editor.World
         public const float QuestBoardHeight = 1.4f;
         public const float GateHeight = 3.8f;
 
-        [MenuItem("Conn/Build NPC World Prefabs")]
+        [MenuItem("Conn/Samples/Ensure Missing NPC World Prefabs")]
         public static void BuildAllNpcWorldPrefabs()
         {
             EnsureAllNpcWorldPrefabs();
@@ -60,18 +60,24 @@ namespace Conn.Editor.World
                 throw new ArgumentException($"NPC texture must be under {NpcTextureFolder}: {texturePath}", nameof(texturePath));
             }
 
+            EnsureFolder("Assets/Conn");
+            EnsureFolder(MaterialFolder);
+            EnsureFolder(PrefabFolder);
+
+            var prefabPath = PrefabPathForTexture(texturePath);
+            var existingPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+            if (existingPrefab != null)
+            {
+                return existingPrefab;
+            }
+
             var texture = LoadNpcTexture(texturePath);
             if (texture == null)
             {
                 throw new FileNotFoundException($"NPC texture was not found or could not be imported: {texturePath}", texturePath);
             }
 
-            EnsureFolder("Assets/Conn");
-            EnsureFolder(MaterialFolder);
-            EnsureFolder(PrefabFolder);
-
             var material = EnsureNpcWorldMaterial(texturePath);
-            var prefabPath = PrefabPathForTexture(texturePath);
             var npcName = NpcNameForTexture(texturePath);
 
             var root = new GameObject(npcName);
@@ -142,11 +148,17 @@ namespace Conn.Editor.World
             EnsureFolder(PrefabFolder);
 
             var resolvedName = string.IsNullOrWhiteSpace(npcName) ? NpcNameForTexture(texturePath) : npcName;
+            var prefabPath = $"{PrefabFolder}/{resolvedName}.prefab";
+            var existingPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+            if (existingPrefab != null)
+            {
+                return existingPrefab;
+            }
+
             var texture = string.IsNullOrWhiteSpace(texturePath) ? null : LoadNpcTexture(texturePath);
             var material = string.IsNullOrWhiteSpace(texturePath)
                 ? EnsureFallbackMaterial(resolvedName)
                 : EnsureNpcWorldMaterial(texturePath);
-            var prefabPath = $"{PrefabFolder}/{resolvedName}.prefab";
 
             var root = new GameObject(resolvedName);
             try
@@ -181,11 +193,17 @@ namespace Conn.Editor.World
             EnsureFolder(PrefabFolder);
 
             var resolvedName = string.IsNullOrWhiteSpace(npcName) ? NpcNameForTexture(texturePath) : npcName;
+            var prefabPath = $"{PrefabFolder}/{resolvedName}.prefab";
+            var existingPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+            if (existingPrefab != null)
+            {
+                return existingPrefab;
+            }
+
             var texture = string.IsNullOrWhiteSpace(texturePath) ? null : LoadNpcTexture(texturePath);
             var material = string.IsNullOrWhiteSpace(texturePath)
                 ? EnsureFallbackMaterial(resolvedName)
                 : EnsureNpcWorldMaterial(texturePath);
-            var prefabPath = $"{PrefabFolder}/{resolvedName}.prefab";
 
             var root = new GameObject(resolvedName);
             try

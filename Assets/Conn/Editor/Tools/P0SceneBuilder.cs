@@ -122,9 +122,18 @@ namespace Conn.Editor.Tools
                 0)
         };
 
-        [MenuItem("Conn/Build P0 Scenes")]
+        [MenuItem("Conn/Samples/Rebuild P0 Sample Scenes (Overwrite)")]
         public static void BuildP0Scenes()
         {
+            if (!EditorUtility.DisplayDialog(
+                    "Rebuild P0 sample scenes?",
+                    "This regenerates the P0 sample scenes and can overwrite developer-authored scene layout changes. Use this only for sample recovery or smoke-test fixture generation.",
+                    "Rebuild Samples",
+                    "Cancel"))
+            {
+                return;
+            }
+
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
             {
                 throw new System.OperationCanceledException("P0 scene build canceled because current scene changes were not saved.");
