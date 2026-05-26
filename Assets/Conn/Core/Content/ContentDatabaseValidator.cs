@@ -185,6 +185,16 @@ namespace Conn.Core.Content
                     report.Error($"Monster {monster.Id} XP reward must not be negative.");
                 }
 
+                if (monster.DefaultGroupCount <= 0)
+                {
+                    report.Error($"Monster {monster.Id} default group count must be positive.");
+                }
+
+                if (monster.EvasionRate < 0f || monster.EvasionRate > 1f)
+                {
+                    report.Error($"Monster {monster.Id} evasion rate must be between 0 and 1.");
+                }
+
                 if (monster.FieldAiProfile == null)
                 {
                     report.Error($"Monster {monster.Id} field AI profile must not be null.");

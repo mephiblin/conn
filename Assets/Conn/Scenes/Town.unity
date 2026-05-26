@@ -330,18 +330,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 243168095576714491, guid: 7ac4086778480508fbf6668bd0af1e86, type: 3}
-      propertyPath: cost
-      value: 4
-      objectReference: {fileID: 0}
-    - target: {fileID: 243168095576714491, guid: 7ac4086778480508fbf6668bd0af1e86, type: 3}
-      propertyPath: serviceKind
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 243168095576714491, guid: 7ac4086778480508fbf6668bd0af1e86, type: 3}
-      propertyPath: serviceName
-      value: Apothecary
-      objectReference: {fileID: 0}
     - target: {fileID: 2393622769275559779, guid: 7ac4086778480508fbf6668bd0af1e86, type: 3}
       propertyPath: m_Name
       value: Apothecary
@@ -486,14 +474,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 3874192966346179614, guid: 072f142262d5b8232910bb1a2c87d3ad, type: 3}
-      propertyPath: cost
-      value: 3
-      objectReference: {fileID: 0}
-    - target: {fileID: 3874192966346179614, guid: 072f142262d5b8232910bb1a2c87d3ad, type: 3}
-      propertyPath: serviceName
-      value: Inn
-      objectReference: {fileID: 0}
     - target: {fileID: 6264955264586192577, guid: 072f142262d5b8232910bb1a2c87d3ad, type: 3}
       propertyPath: m_LocalPosition.x
       value: 3.5
@@ -812,14 +792,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 1118462546819328549, guid: 6a8097558d2efaf39987ed82d79c20be, type: 3}
-      propertyPath: serviceKind
-      value: 3
-      objectReference: {fileID: 0}
-    - target: {fileID: 1118462546819328549, guid: 6a8097558d2efaf39987ed82d79c20be, type: 3}
-      propertyPath: serviceName
-      value: Scholar
-      objectReference: {fileID: 0}
     - target: {fileID: 1485152805184730888, guid: 6a8097558d2efaf39987ed82d79c20be, type: 3}
       propertyPath: m_Name
       value: Scholar
@@ -877,13 +849,25 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1371642007913317546, guid: ba04c007f86c81dfbb247f2e72041f05, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.4
+      objectReference: {fileID: 0}
+    - target: {fileID: 1371642007913317546, guid: ba04c007f86c81dfbb247f2e72041f05, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.4
+      objectReference: {fileID: 0}
+    - target: {fileID: 1371642007913317546, guid: ba04c007f86c81dfbb247f2e72041f05, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3203659669442135782, guid: ba04c007f86c81dfbb247f2e72041f05, type: 3}
       propertyPath: m_LocalPosition.x
       value: -2
       objectReference: {fileID: 0}
     - target: {fileID: 3203659669442135782, guid: ba04c007f86c81dfbb247f2e72041f05, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0
+      value: 0.04
       objectReference: {fileID: 0}
     - target: {fileID: 3203659669442135782, guid: ba04c007f86c81dfbb247f2e72041f05, type: 3}
       propertyPath: m_LocalPosition.z

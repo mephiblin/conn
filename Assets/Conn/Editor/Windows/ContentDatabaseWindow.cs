@@ -349,8 +349,12 @@ namespace Conn.Editor.Windows
             monster.MaxHp = EditorGUILayout.IntField("Max HP", monster.MaxHp);
             monster.AttackPower = EditorGUILayout.IntField("Attack Power", monster.AttackPower);
             monster.Defense = EditorGUILayout.IntField("Defense", monster.Defense);
+            monster.EvasionRate = EditorGUILayout.Slider("Evasion Rate", monster.EvasionRate, 0f, 1f);
             monster.XpReward = EditorGUILayout.IntField("XP Reward", monster.XpReward);
             monster.Boss = EditorGUILayout.Toggle("Boss", monster.Boss);
+            monster.Species = EditorGUILayout.TextField("Species", monster.Species);
+            monster.Grade = EditorGUILayout.TextField("Grade", monster.Grade);
+            monster.DefaultGroupCount = EditorGUILayout.IntField("Default Group Count", monster.DefaultGroupCount);
             monster.Ai = EditorGUILayout.TextField("AI", monster.Ai);
             if (EditorGUI.EndChangeCheck())
             {
@@ -961,6 +965,7 @@ namespace Conn.Editor.Windows
                 DisplayName = "New Monster",
                 MaxHp = 1,
                 AttackPower = 1,
+                DefaultGroupCount = 1,
                 XpReward = 0,
                 Ai = "Attack"
             };

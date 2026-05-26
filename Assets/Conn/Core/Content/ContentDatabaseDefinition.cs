@@ -31,6 +31,20 @@ namespace Conn.Core.Content
             registry.RegisterNpcs(Npcs);
             return registry;
         }
+
+        private void OnValidate()
+        {
+            foreach (var monster in Monsters ?? Array.Empty<ContentMonsterDefinition>())
+            {
+                if (monster == null)
+                {
+                    continue;
+                }
+
+                monster.DefaultGroupCount = Math.Max(1, monster.DefaultGroupCount);
+                monster.EvasionRate = Mathf.Clamp01(monster.EvasionRate);
+            }
+        }
     }
 
     [Serializable]
@@ -81,9 +95,13 @@ namespace Conn.Core.Content
         public int MaxHp;
         public int AttackPower;
         public int Defense;
+        public float EvasionRate;
         public int XpReward;
         public bool Boss;
         public string Ai;
+        public string Species;
+        public string Grade;
+        public int DefaultGroupCount = 1;
         public FieldMonsterAiProfile FieldAiProfile = FieldMonsterAiProfile.Default();
         public string[] ThemeTags = Array.Empty<string>();
         public string[] BiomeTags = Array.Empty<string>();

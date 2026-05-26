@@ -119,8 +119,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6264955264586192577}
-  - component: {fileID: 5962745752224842474}
   - component: {fileID: 3874192966346179614}
+  - component: {fileID: 3521445131986196425}
   m_Layer: 0
   m_Name: Inn
   m_TagString: Untagged
@@ -144,8 +144,23 @@ Transform:
   - {fileID: 3518143990432122401}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!65 &5962745752224842474
-BoxCollider:
+--- !u!114 &3874192966346179614
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8359280045382556645}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e77f4f6952ab8622b92938e93e96793b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Conn.Runtime::Conn.Runtime.World.TownServiceInteractable
+  serviceName: Inn
+  serviceKind: 0
+  cost: 3
+--- !u!136 &3521445131986196425
+CapsuleCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -162,21 +177,8 @@ BoxCollider:
   m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 1, y: 1.3, z: 1}
+  serializedVersion: 2
+  m_Radius: 0.5
+  m_Height: 1.87
+  m_Direction: 1
   m_Center: {x: 0, y: 1, z: 0}
---- !u!114 &3874192966346179614
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8359280045382556645}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e77f4f6952ab8622b92938e93e96793b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Conn.Runtime::Conn.Runtime.World.TownServiceInteractable
-  serviceName: Town Service
-  serviceKind: 0
-  cost: 0

@@ -13,6 +13,24 @@ namespace Conn.Authoring.Content
         public float EncounterSpacing = 2f;
         public bool ClearBeforePreview = true;
 
+        [Header("Create Monster")]
+        public string CreateId = "monster_new";
+        public string CreateDisplayName = "New Monster";
+        public Texture2D CreateVisualImage;
+        public MonsterSpecies CreateSpecies;
+        public MonsterGrade CreateGrade;
+        public int CreateDefaultGroupCount = 1;
+        public int CreateMaxHp = 8;
+        public int CreateAttackPower = 2;
+        public int CreateDefense;
+        [Range(0f, 1f)]
+        public float CreateEvasionRate;
+        public int CreateXpReward = 3;
+        public string CreateAi = "Attack";
+        public string CreateAssetFolder = "Assets/Conn/Authoring/Content/GeneratedMonsters";
+        public string CreatePrefabFolder = "Assets/Conn/Prefabs/Monsters";
+        public MonsterDefinitionAsset LastCreatedMonster;
+
         public void PreviewMonster()
         {
             if (Monster == null)
