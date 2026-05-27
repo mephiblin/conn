@@ -93,18 +93,17 @@ namespace Conn.Authoring.Content
                 ClearPreview();
             }
 
-            var monster = SelectDirectMonster(SpawnTable, seed);
-            if (monster != null)
+            var selection = SelectSpawnTableEntry(SpawnTable, seed);
+            if (selection.Encounter != null)
             {
-                SpawnMonster(monster, "SpawnTable Monster", SpawnPosition(0));
+                Encounter = selection.Encounter;
+                PreviewEncounter();
                 return;
             }
 
-            var encounter = SelectEncounter(SpawnTable, seed);
-            if (encounter != null)
+            if (selection.Monster != null)
             {
-                Encounter = encounter;
-                PreviewEncounter();
+                SpawnMonster(selection.Monster, "SpawnTable Monster", SpawnPosition(0));
             }
         }
 
@@ -159,11 +158,18 @@ namespace Conn.Authoring.Content
             return origin + new Vector3(index * Mathf.Max(0.1f, EncounterSpacing), 0f, 0f);
         }
 
-        private static MonsterDefinitionAsset SelectDirectMonster(SpawnTableAsset spawnTable, int seed)
+        private static SpawnTableSelection SelectSpawnTableEntry(SpawnTableAsset spawnTable, int seed)
         {
-            var entries = spawnTable.DirectMonsterEntries ?? Array.Empty<SpawnMonsterEntry>();
             var totalWeight = 0;
-            foreach (var entry in entries)
+            foreach (var entry in spawnTable.EncounterEntries ?? Array.Empty<SpawnEncounterEntry>())
+            {
+                if (entry != null && entry.Encounter != null && entry.Weight > 0)
+                {
+                    totalWeight += entry.Weight;
+                }
+            }
+
+            foreach (var entry in spawnTable.DirectMonsterEntries ?? Array.Empty<SpawnMonsterEntry>())
             {
                 if (entry != null && entry.Monster != null && entry.Weight > 0)
                 {
@@ -173,62 +179,37 @@ namespace Conn.Authoring.Content
 
             if (totalWeight <= 0)
             {
-                return null;
+                return default;
             }
 
-            var roll = PositiveHash(seed, spawnTable.Id, "monster") % totalWeight;
-            foreach (var entry in entries)
-            {
-                if (entry == null || entry.Monster == null || entry.Weight <= 0)
-                {
-                    continue;
-                }
-
-                if (roll < entry.Weight)
-                {
-                    return entry.Monster;
-                }
-
-                roll -= entry.Weight;
-            }
-
-            return null;
-        }
-
-        private static EncounterDefinitionAsset SelectEncounter(SpawnTableAsset spawnTable, int seed)
-        {
-            var entries = spawnTable.EncounterEntries ?? Array.Empty<SpawnEncounterEntry>();
-            var totalWeight = 0;
-            foreach (var entry in entries)
+            var roll = PositiveHash(seed, spawnTable.Id, "spawn_table") % totalWeight;
+            foreach (var entry in spawnTable.EncounterEntries ?? Array.Empty<SpawnEncounterEntry>())
             {
                 if (entry != null && entry.Encounter != null && entry.Weight > 0)
                 {
-                    totalWeight += entry.Weight;
+                    if (roll < entry.Weight)
+                    {
+                        return SpawnTableSelection.ForEncounter(entry.Encounter);
+                    }
+
+                    roll -= entry.Weight;
                 }
             }
 
-            if (totalWeight <= 0)
+            foreach (var entry in spawnTable.DirectMonsterEntries ?? Array.Empty<SpawnMonsterEntry>())
             {
-                return null;
+                if (entry != null && entry.Monster != null && entry.Weight > 0)
+                {
+                    if (roll < entry.Weight)
+                    {
+                        return SpawnTableSelection.ForMonster(entry.Monster);
+                    }
+
+                    roll -= entry.Weight;
+                }
             }
 
-            var roll = PositiveHash(seed, spawnTable.Id, "encounter") % totalWeight;
-            foreach (var entry in entries)
-            {
-                if (entry == null || entry.Encounter == null || entry.Weight <= 0)
-                {
-                    continue;
-                }
-
-                if (roll < entry.Weight)
-                {
-                    return entry.Encounter;
-                }
-
-                roll -= entry.Weight;
-            }
-
-            return null;
+            return default;
         }
 
         private static int PositiveHash(int seed, string a, string b)
@@ -254,6 +235,28 @@ namespace Conn.Authoring.Content
 
                 return hash;
             }
+        }
+    }
+
+    internal readonly struct SpawnTableSelection
+    {
+        private SpawnTableSelection(EncounterDefinitionAsset encounter, MonsterDefinitionAsset monster)
+        {
+            Encounter = encounter;
+            Monster = monster;
+        }
+
+        public EncounterDefinitionAsset Encounter { get; }
+        public MonsterDefinitionAsset Monster { get; }
+
+        public static SpawnTableSelection ForEncounter(EncounterDefinitionAsset encounter)
+        {
+            return new SpawnTableSelection(encounter, null);
+        }
+
+        public static SpawnTableSelection ForMonster(MonsterDefinitionAsset monster)
+        {
+            return new SpawnTableSelection(null, monster);
         }
     }
 

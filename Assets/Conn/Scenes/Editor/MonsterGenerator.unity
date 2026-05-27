@@ -451,7 +451,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b9590258bbd04fc47a9bb66be346cc20, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Conn.Authoring::Conn.Authoring.Content.MonsterGeneratorWorkspace
+  m_EditorClassIdentifier: Conn.Editor::Conn.Authoring.Content.MonsterGeneratorWorkspace
   Monster: {fileID: 0}
   Encounter: {fileID: 0}
   SpawnTable: {fileID: 0}
@@ -463,6 +463,21 @@ MonoBehaviour:
   - {fileID: 1946014286}
   EncounterSpacing: 2
   ClearBeforePreview: 1
+  CreateId: monster_new
+  CreateDisplayName: New Monster
+  CreateVisualImage: {fileID: 0}
+  CreateSpecies: 0
+  CreateGrade: 0
+  CreateDefaultGroupCount: 1
+  CreateMaxHp: 8
+  CreateAttackPower: 2
+  CreateDefense: 0
+  CreateEvasionRate: 0
+  CreateXpReward: 3
+  CreateAi: Attack
+  CreateAssetFolder: Assets/Conn/Authoring/Content/GeneratedMonsters
+  CreatePrefabFolder: Assets/Conn/Prefabs/Monsters
+  LastCreatedMonster: {fileID: 0}
 --- !u!4 &1362939733
 Transform:
   m_ObjectHideFlags: 0

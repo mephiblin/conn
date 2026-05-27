@@ -71,13 +71,15 @@ namespace Conn.Editor.Content
             {
                 if (GUILayout.Button("Preview Monster"))
                 {
-                    workspace.PreviewMonster();
+                    serializedObject.ApplyModifiedProperties();
+                    PreviewWithUndo(workspace, "Preview Monster", workspace.PreviewMonster);
                     MarkSceneDirty(workspace);
                 }
 
                 if (GUILayout.Button("Preview Encounter"))
                 {
-                    workspace.PreviewEncounter();
+                    serializedObject.ApplyModifiedProperties();
+                    PreviewWithUndo(workspace, "Preview Encounter", workspace.PreviewEncounter);
                     MarkSceneDirty(workspace);
                 }
             }
@@ -86,13 +88,15 @@ namespace Conn.Editor.Content
             {
                 if (GUILayout.Button("Preview Spawn Table"))
                 {
-                    workspace.PreviewSpawnTable(seed);
+                    serializedObject.ApplyModifiedProperties();
+                    PreviewWithUndo(workspace, "Preview Spawn Table", () => workspace.PreviewSpawnTable(seed));
                     MarkSceneDirty(workspace);
                 }
 
                 if (GUILayout.Button("Clear Preview"))
                 {
-                    workspace.ClearPreview();
+                    serializedObject.ApplyModifiedProperties();
+                    ClearPreviewWithUndo(workspace, "Clear Preview");
                     MarkSceneDirty(workspace);
                 }
             }
@@ -100,6 +104,7 @@ namespace Conn.Editor.Content
 
         private static void CreateMonster(MonsterGeneratorWorkspace workspace)
         {
+            Undo.RecordObject(workspace, "Create Monster");
             EnsureFolder(workspace.CreateAssetFolder);
             EnsureFolder(workspace.CreatePrefabFolder);
 
@@ -134,7 +139,7 @@ namespace Conn.Editor.Content
 
             workspace.Monster = monster;
             workspace.LastCreatedMonster = monster;
-            workspace.PreviewMonster();
+            PreviewWithUndo(workspace, "Create Monster", workspace.PreviewMonster);
             EditorUtility.SetDirty(workspace);
             Selection.activeObject = monster;
             EditorGUIUtility.PingObject(monster);
@@ -196,12 +201,50 @@ namespace Conn.Editor.Content
 
             SetColorIfPresent(material, "_Color", Color.white);
             SetColorIfPresent(material, "_BaseColor", Color.white);
-            material.SetOverrideTag("RenderType", "Transparent");
-            material.renderQueue = (int)RenderQueue.Transparent;
+            ConfigureTransparentMaterial(material);
 
             var materialPath = AssetDatabase.GenerateUniqueAssetPath($"{materialFolder}/{monster.Id}.mat");
             AssetDatabase.CreateAsset(material, materialPath);
             return material;
+        }
+
+        private static void ConfigureTransparentMaterial(Material material)
+        {
+            if (material.HasProperty("_Surface"))
+            {
+                material.SetFloat("_Surface", 1f);
+            }
+
+            if (material.HasProperty("_AlphaClip"))
+            {
+                material.SetFloat("_AlphaClip", 0f);
+            }
+
+            if (material.HasProperty("_SrcBlend"))
+            {
+                material.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);
+            }
+
+            if (material.HasProperty("_DstBlend"))
+            {
+                material.SetFloat("_DstBlend", (float)BlendMode.OneMinusSrcAlpha);
+            }
+
+            if (material.HasProperty("_ZWrite"))
+            {
+                material.SetFloat("_ZWrite", 0f);
+            }
+
+            if (material.HasProperty("_Mode"))
+            {
+                material.SetFloat("_Mode", 3f);
+            }
+
+            material.SetOverrideTag("RenderType", "Transparent");
+            material.renderQueue = (int)RenderQueue.Transparent;
+            material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            material.EnableKeyword("_ALPHABLEND_ON");
+            material.DisableKeyword("_ALPHATEST_ON");
         }
 
         private static Vector3 VisualScale(Texture2D image)
@@ -239,8 +282,8 @@ namespace Conn.Editor.Content
 
         private static Shader FindTransparentShader()
         {
-            return Shader.Find("Sprites/Default")
-                ?? Shader.Find("Universal Render Pipeline/Unlit")
+            return Shader.Find("Universal Render Pipeline/Unlit")
+                ?? Shader.Find("Sprites/Default")
                 ?? Shader.Find("Unlit/Transparent")
                 ?? Shader.Find("Standard");
         }
@@ -259,6 +302,100 @@ namespace Conn.Editor.Content
             {
                 material.SetColor(propertyName, color);
             }
+        }
+
+        private static void PreviewWithUndo(MonsterGeneratorWorkspace workspace, string undoName, System.Action previewAction)
+        {
+            if (workspace == null || previewAction == null)
+            {
+                return;
+            }
+
+            var undoGroup = Undo.GetCurrentGroup();
+            Undo.SetCurrentGroupName(undoName);
+            Undo.RecordObject(workspace, undoName);
+
+            var previewRoot = ResolvePreviewRoot(workspace);
+            var existingChildren = CapturePreviewChildren(previewRoot);
+            var clearBeforePreview = workspace.ClearBeforePreview;
+
+            if (clearBeforePreview)
+            {
+                ClearPreviewWithUndo(workspace, undoName);
+                workspace.ClearBeforePreview = false;
+            }
+
+            try
+            {
+                previewAction();
+            }
+            finally
+            {
+                if (clearBeforePreview)
+                {
+                    workspace.ClearBeforePreview = true;
+                }
+            }
+
+            RegisterCreatedPreviewObjects(previewRoot, existingChildren, undoName);
+            EditorUtility.SetDirty(workspace);
+            Undo.CollapseUndoOperations(undoGroup);
+        }
+
+        private static void ClearPreviewWithUndo(MonsterGeneratorWorkspace workspace, string undoName)
+        {
+            if (workspace == null)
+            {
+                return;
+            }
+
+            Undo.SetCurrentGroupName(undoName);
+            var root = ResolvePreviewRoot(workspace);
+            for (var i = root.childCount - 1; i >= 0; i--)
+            {
+                Undo.DestroyObjectImmediate(root.GetChild(i).gameObject);
+            }
+        }
+
+        private static Transform ResolvePreviewRoot(MonsterGeneratorWorkspace workspace)
+        {
+            return workspace.PreviewRoot != null ? workspace.PreviewRoot : workspace.transform;
+        }
+
+        private static GameObject[] CapturePreviewChildren(Transform root)
+        {
+            var children = new GameObject[root.childCount];
+            for (var i = 0; i < root.childCount; i++)
+            {
+                children[i] = root.GetChild(i).gameObject;
+            }
+
+            return children;
+        }
+
+        private static void RegisterCreatedPreviewObjects(Transform root, GameObject[] existingChildren, string undoName)
+        {
+            for (var i = 0; i < root.childCount; i++)
+            {
+                var child = root.GetChild(i).gameObject;
+                if (!Contains(existingChildren, child))
+                {
+                    Undo.RegisterCreatedObjectUndo(child, undoName);
+                }
+            }
+        }
+
+        private static bool Contains(GameObject[] objects, GameObject candidate)
+        {
+            for (var i = 0; i < objects.Length; i++)
+            {
+                if (objects[i] == candidate)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static void EnsureFolder(string path)

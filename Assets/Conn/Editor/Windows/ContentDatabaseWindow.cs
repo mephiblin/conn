@@ -619,7 +619,7 @@ namespace Conn.Editor.Windows
 
                     var tableId = string.IsNullOrWhiteSpace(spawnTable.Id) ? "(missing id)" : spawnTable.Id;
                     EditorGUILayout.LabelField("Id", tableId);
-                    EditorGUILayout.LabelField("Pool", $"{Count(spawnTable.EncounterEntries)} encounter entries, {Count(spawnTable.DirectMonsterEntries)} direct monster entries");
+                    EditorGUILayout.LabelField("Pool", $"{Count(spawnTable.EncounterEntries)} encounter entries, {Count(spawnTable.DirectMonsterEntries)} direct monster entries, combined weight {SpawnTableWeight(spawnTable)}");
                     EditorGUILayout.LabelField("Required Tags", FormatTags(spawnTable.RequiredThemeTags, spawnTable.RequiredBiomeTags, spawnTable.RequiredSpawnRoleTags));
                     EditorGUILayout.LabelField("Allowed Room Roles", FormatTags(spawnTable.AllowedRoomRoles));
                     EditorGUILayout.LabelField("Resolved Members", FormatSpawnMembers(spawnTable));
@@ -690,6 +690,28 @@ namespace Conn.Editor.Windows
             }
 
             return members.Count == 0 ? "(empty)" : string.Join(", ", members);
+        }
+
+        private static int SpawnTableWeight(SpawnTableAsset spawnTable)
+        {
+            var total = 0;
+            foreach (var entry in spawnTable.EncounterEntries ?? Array.Empty<SpawnEncounterEntry>())
+            {
+                if (entry != null && entry.Encounter != null && entry.Weight > 0)
+                {
+                    total += entry.Weight;
+                }
+            }
+
+            foreach (var entry in spawnTable.DirectMonsterEntries ?? Array.Empty<SpawnMonsterEntry>())
+            {
+                if (entry != null && entry.Monster != null && entry.Weight > 0)
+                {
+                    total += entry.Weight;
+                }
+            }
+
+            return total;
         }
 
         private static string FormatUsage(Dictionary<SpawnTableAsset, List<string>> usage, SpawnTableAsset spawnTable)
