@@ -159,7 +159,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8d1b0ef097df42d1a0c6b81db02f4ad9, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Conn.Editor::Conn.Editor.Maps.MapGeneratorWorkspace
+  m_EditorClassIdentifier: Conn.EditorWorkspaces::Conn.Editor.Maps.MapGeneratorWorkspace
   MapProfile: {fileID: 0}
   PreviewRoot: {fileID: 100101}
   Seed: 2001
@@ -308,7 +308,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 100300}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.39209774, y: -0.27165377, z: 0.12697317, w: 0.86984783}
+  m_LocalRotation: {x: 0.39204013, y: -0.27161387, z: 0.12695451, w: 0.86972004}
   m_LocalPosition: {x: 0, y: 3, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0

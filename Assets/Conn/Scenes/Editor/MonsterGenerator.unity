@@ -451,7 +451,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b9590258bbd04fc47a9bb66be346cc20, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Conn.Editor::Conn.Authoring.Content.MonsterGeneratorWorkspace
+  m_EditorClassIdentifier: Conn.EditorWorkspaces::Conn.Authoring.Content.MonsterGeneratorWorkspace
   Monster: {fileID: 0}
   Encounter: {fileID: 0}
   SpawnTable: {fileID: 0}

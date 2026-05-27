@@ -16,11 +16,14 @@ namespace Conn.Editor.Maps
             var workspace = (MapGeneratorWorkspace)target;
             serializedObject.Update();
 
-            EditorGUILayout.LabelField("Generate Map", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Layout Snapshot Source", EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.MapProfile)));
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.Seed)));
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.Floor)));
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.Difficulty)));
+
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Visualization", EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.RoomSpacing)));
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.RoomHeight)));
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.ClearBeforePreview)));
@@ -28,20 +31,42 @@ namespace Conn.Editor.Maps
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.PreviewRoot)));
 
             EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Visualization-First Workflow", EditorStyles.boldLabel);
+            EditorGUILayout.HelpBox(
+                "Capture Layout Snapshot generates once from the current seed and serializes PreviewRooms, PreviewEdges, and PreviewPlacements for gizmos. Build Scene Preview From Captured Snapshot uses only those serialized arrays.",
+                MessageType.Info);
             using (new EditorGUILayout.HorizontalScope())
             {
-                if (GUILayout.Button("Generate Preview"))
+                if (GUILayout.Button("Capture Layout Snapshot"))
+                {
+                    serializedObject.ApplyModifiedProperties();
+                    GenerateLayoutSnapshot(workspace);
+                }
+
+                using (new EditorGUI.DisabledScope(!workspace.HasPreviewSnapshot))
+                {
+                    if (GUILayout.Button("Build Scene Preview From Captured Snapshot"))
+                    {
+                        serializedObject.ApplyModifiedProperties();
+                        BuildScenePreviewFromSnapshot(workspace);
+                    }
+                }
+            }
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("Generate Preview (Capture + Build)"))
                 {
                     serializedObject.ApplyModifiedProperties();
                     GeneratePreview(workspace);
                 }
 
-                if (GUILayout.Button("Random Seed"))
+                if (GUILayout.Button("Random Seed + Capture Snapshot"))
                 {
                     serializedObject.ApplyModifiedProperties();
                     Undo.RecordObject(workspace, "Random Map Seed");
                     workspace.Seed = UnityEngine.Random.Range(1, int.MaxValue);
-                    GeneratePreview(workspace);
+                    GenerateLayoutSnapshot(workspace);
                 }
             }
 
@@ -55,7 +80,7 @@ namespace Conn.Editor.Maps
                     }
                 }
 
-                if (GUILayout.Button("Clear Preview"))
+                if (GUILayout.Button("Clear Scene Preview Objects"))
                 {
                     ClearPreviewWithUndo(workspace, "Clear Map Preview");
                     MarkSceneDirty(workspace);
@@ -65,6 +90,8 @@ namespace Conn.Editor.Maps
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Last Result", EditorStyles.boldLabel);
             EditorGUILayout.LabelField("Map", string.IsNullOrWhiteSpace(workspace.LastGeneratedMapId) ? "(none)" : workspace.LastGeneratedMapId);
+            EditorGUILayout.LabelField("Profile", string.IsNullOrWhiteSpace(workspace.LastGeneratedProfileId) ? "(none)" : workspace.LastGeneratedProfileId);
+            EditorGUILayout.LabelField("Seed", workspace.LastGeneratedSeed.ToString());
             EditorGUILayout.LabelField("Validation", workspace.LastValidation);
             EditorGUILayout.LabelField("Rooms", workspace.LastRoomCount.ToString());
             EditorGUILayout.LabelField("Edges", workspace.LastEdgeCount.ToString());
@@ -103,18 +130,57 @@ namespace Conn.Editor.Maps
                     ClearPreviewWithUndo(workspace, "Generate Map Preview");
                 }
 
-                DrawPreview(workspace, generated.Draft);
+                DrawPreview(workspace, "Generate Map Preview");
                 MarkSceneDirty(workspace);
             }
             catch (Exception exception)
             {
-                var report = new MapValidationReport();
-                report.Errors.Add(exception.Message);
-                Undo.RecordObject(workspace, "Generate Map Preview");
-                workspace.SetGeneratedResult(null, null, report);
-                EditorUtility.SetDirty(workspace);
-                Debug.LogException(exception);
+                RecordGenerationException(workspace, "Generate Map Preview", exception);
             }
+        }
+
+        private static void GenerateLayoutSnapshot(MapGeneratorWorkspace workspace)
+        {
+            try
+            {
+                var generated = Generate(workspace);
+                Undo.RecordObject(workspace, "Generate Map Layout");
+                workspace.SetGeneratedResult(generated.Draft, generated.Compiled, generated.Report);
+                EditorUtility.SetDirty(workspace);
+                MarkSceneDirty(workspace);
+                SceneView.RepaintAll();
+            }
+            catch (Exception exception)
+            {
+                RecordGenerationException(workspace, "Generate Map Layout", exception);
+            }
+        }
+
+        private static void BuildScenePreviewFromSnapshot(MapGeneratorWorkspace workspace)
+        {
+            if (!workspace.HasPreviewSnapshot)
+            {
+                return;
+            }
+
+            if (workspace.ClearBeforePreview)
+            {
+                ClearPreviewWithUndo(workspace, "Build Map Scene Preview");
+            }
+
+            DrawPreview(workspace, "Build Map Scene Preview");
+            MarkSceneDirty(workspace);
+        }
+
+        private static void RecordGenerationException(MapGeneratorWorkspace workspace, string undoName, Exception exception)
+        {
+            var report = new MapValidationReport();
+            report.Errors.Add(exception.Message);
+            Undo.RecordObject(workspace, undoName);
+            workspace.SetGeneratedResult(null, null, report);
+            EditorUtility.SetDirty(workspace);
+            MarkSceneDirty(workspace);
+            Debug.LogException(exception);
         }
 
         private static GeneratedMapResult Generate(MapGeneratorWorkspace workspace)
@@ -148,22 +214,23 @@ namespace Conn.Editor.Maps
             return new GeneratedMapResult(catalogDraft, catalogCompiled, catalogReport);
         }
 
-        private static void DrawPreview(MapGeneratorWorkspace workspace, GeneratedMapDraft draft)
+        private static void DrawPreview(MapGeneratorWorkspace workspace, string undoName)
         {
-            if (draft?.Graph == null)
+            if (!workspace.HasPreviewSnapshot)
             {
                 return;
             }
 
             var root = workspace.ResolvePreviewRoot();
             var materialCache = new PreviewMaterialCache();
+            var rooms = workspace.PreviewRooms ?? Array.Empty<PreviewRoom>();
+            var edges = workspace.PreviewEdges ?? Array.Empty<PreviewEdge>();
+            var placements = workspace.PreviewPlacements ?? Array.Empty<PreviewPlacement>();
 
-            for (var i = 0; i < draft.Graph.Edges.Count; i++)
+            for (var i = 0; i < edges.Length; i++)
             {
-                var edge = draft.Graph.Edges[i];
-                var from = FindNode(draft, edge.FromNodeId);
-                var to = FindNode(draft, edge.ToNodeId);
-                if (from == null || to == null)
+                var edge = edges[i];
+                if (!workspace.TryFindPreviewRoom(edge.FromNodeId, out var from) || !workspace.TryFindPreviewRoom(edge.ToNodeId, out var to))
                 {
                     continue;
                 }
@@ -171,37 +238,36 @@ namespace Conn.Editor.Maps
                 var link = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 link.name = $"Edge {edge.FromNodeId} -> {edge.ToNodeId}";
                 link.transform.SetParent(root, false);
-                var fromPosition = RoomPosition(workspace, from);
-                var toPosition = RoomPosition(workspace, to);
+                var fromPosition = workspace.PreviewRoomPosition(from);
+                var toPosition = workspace.PreviewRoomPosition(to);
                 var midpoint = (fromPosition + toPosition) * 0.5f;
                 var delta = toPosition - fromPosition;
                 link.transform.position = midpoint + Vector3.up * 0.03f;
                 link.transform.rotation = Quaternion.LookRotation(delta.normalized, Vector3.up);
                 link.transform.localScale = new Vector3(0.16f, 0.08f, Mathf.Max(0.2f, delta.magnitude));
                 link.GetComponent<MeshRenderer>().sharedMaterial = materialCache.Edge;
-                Undo.RegisterCreatedObjectUndo(link, "Generate Map Preview");
+                Undo.RegisterCreatedObjectUndo(link, undoName);
             }
 
-            for (var i = 0; i < draft.Graph.Nodes.Count; i++)
+            for (var i = 0; i < rooms.Length; i++)
             {
-                var node = draft.Graph.Nodes[i];
+                var roomSnapshot = rooms[i];
                 var room = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                room.name = $"Room {node.Id} ({node.Role})";
+                room.name = $"Room {roomSnapshot.Id} ({roomSnapshot.Role})";
                 room.transform.SetParent(root, false);
-                room.transform.position = RoomPosition(workspace, node);
+                room.transform.position = workspace.PreviewRoomPosition(roomSnapshot);
                 room.transform.localScale = new Vector3(1.8f, Mathf.Max(0.05f, workspace.RoomHeight), 1.8f);
-                room.GetComponent<MeshRenderer>().sharedMaterial = materialCache.ForRole(node.Role);
-                Undo.RegisterCreatedObjectUndo(room, "Generate Map Preview");
+                room.GetComponent<MeshRenderer>().sharedMaterial = materialCache.ForRole(roomSnapshot.Role);
+                Undo.RegisterCreatedObjectUndo(room, undoName);
 
                 var label = CreateLabel(root, room.name, room.transform.position + Vector3.up * 0.35f, 0.22f);
-                Undo.RegisterCreatedObjectUndo(label, "Generate Map Preview");
+                Undo.RegisterCreatedObjectUndo(label, undoName);
             }
 
-            for (var i = 0; i < draft.Placements.Count; i++)
+            for (var i = 0; i < placements.Length; i++)
             {
-                var placement = draft.Placements[i];
-                var node = FindNode(draft, placement.RoomId);
-                if (node == null)
+                var placement = placements[i];
+                if (!workspace.TryFindPreviewRoom(placement.RoomId, out var room))
                 {
                     continue;
                 }
@@ -209,10 +275,10 @@ namespace Conn.Editor.Maps
                 var marker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                 marker.name = $"Placement {placement.Id} ({placement.Kind})";
                 marker.transform.SetParent(root, false);
-                marker.transform.position = RoomPosition(workspace, node) + PlacementOffset(placement.Kind);
+                marker.transform.position = workspace.PreviewRoomPosition(room) + PlacementOffset(placement.Kind);
                 marker.transform.localScale = Vector3.one * 0.32f;
                 marker.GetComponent<MeshRenderer>().sharedMaterial = materialCache.ForPlacement(placement.Kind);
-                Undo.RegisterCreatedObjectUndo(marker, "Generate Map Preview");
+                Undo.RegisterCreatedObjectUndo(marker, undoName);
             }
         }
 
@@ -230,24 +296,6 @@ namespace Conn.Editor.Maps
             mesh.fontSize = 48;
             mesh.color = Color.white;
             return label;
-        }
-
-        private static RoomGraphNode FindNode(GeneratedMapDraft draft, string id)
-        {
-            for (var i = 0; i < draft.Graph.Nodes.Count; i++)
-            {
-                if (draft.Graph.Nodes[i].Id == id)
-                {
-                    return draft.Graph.Nodes[i];
-                }
-            }
-
-            return null;
-        }
-
-        private static Vector3 RoomPosition(MapGeneratorWorkspace workspace, RoomGraphNode node)
-        {
-            return new Vector3(node.GridX * workspace.RoomSpacing, 0f, node.GridY * workspace.RoomSpacing);
         }
 
         private static Vector3 PlacementOffset(MapPlacementKind kind)

@@ -1,18 +1,11 @@
 {
-  "name": "Conn.Editor",
-  "rootNamespace": "Conn.Editor",
+  "name": "Conn.EditorWorkspaces",
+  "rootNamespace": "Conn.EditorWorkspaces",
   "references": [
     "Conn.Authoring",
-    "Conn.Core",
-    "Conn.EditorWorkspaces",
-    "Conn.Runtime",
-    "Conn.Rendering",
-    "Conn.UI",
-    "Unity.InputSystem"
+    "Conn.Core"
   ],
-  "includePlatforms": [
-    "Editor"
-  ],
+  "includePlatforms": [],
   "excludePlatforms": [],
   "allowUnsafeCode": false,
   "overrideReferences": false,

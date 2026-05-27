@@ -19,6 +19,10 @@ namespace Conn.Editor.Maps
         public float RoomHeight = 0.18f;
         public bool ClearBeforePreview = true;
         public string LastGeneratedMapId = string.Empty;
+        public string LastGeneratedProfileId = string.Empty;
+        public int LastGeneratedSeed;
+        public int LastGeneratedFloor;
+        public int LastGeneratedDifficulty;
         public int LastRoomCount;
         public int LastEdgeCount;
         public int LastPlacementCount;
@@ -31,6 +35,14 @@ namespace Conn.Editor.Maps
         public GeneratedMapDraft LastDraft { get; private set; }
         public CompiledMap LastCompiled { get; private set; }
         public MapValidationReport LastReport { get; private set; }
+
+        public bool HasPreviewSnapshot
+        {
+            get
+            {
+                return Count(PreviewRooms) > 0 || Count(PreviewEdges) > 0 || Count(PreviewPlacements) > 0;
+            }
+        }
 
         public Transform ResolvePreviewRoot()
         {
@@ -60,6 +72,10 @@ namespace Conn.Editor.Maps
             LastCompiled = compiled;
             LastReport = report;
             LastGeneratedMapId = compiled != null ? compiled.MapId : string.Empty;
+            LastGeneratedProfileId = compiled != null ? compiled.ProfileId : draft?.ProfileId ?? string.Empty;
+            LastGeneratedSeed = compiled?.Seed ?? draft?.Seed ?? 0;
+            LastGeneratedFloor = Mathf.Max(1, Floor);
+            LastGeneratedDifficulty = Mathf.Max(0, Difficulty);
             LastRoomCount = draft?.Graph?.Nodes?.Count ?? 0;
             LastEdgeCount = draft?.Graph?.Edges?.Count ?? 0;
             LastPlacementCount = draft?.Placements?.Count ?? 0;
@@ -67,13 +83,60 @@ namespace Conn.Editor.Maps
             CapturePreviewSnapshot(draft);
         }
 
+        public void ClearGeneratedResult()
+        {
+            LastDraft = null;
+            LastCompiled = null;
+            LastReport = null;
+            LastGeneratedMapId = string.Empty;
+            LastGeneratedProfileId = string.Empty;
+            LastGeneratedSeed = 0;
+            LastGeneratedFloor = 0;
+            LastGeneratedDifficulty = 0;
+            LastRoomCount = 0;
+            LastEdgeCount = 0;
+            LastPlacementCount = 0;
+            LastValidation = "Not generated";
+            ClearPreviewSnapshot();
+        }
+
+        public void ClearPreviewSnapshot()
+        {
+            PreviewRooms = Array.Empty<PreviewRoom>();
+            PreviewEdges = Array.Empty<PreviewEdge>();
+            PreviewPlacements = Array.Empty<PreviewPlacement>();
+        }
+
+        public bool TryFindPreviewRoom(string id, out PreviewRoom room)
+        {
+            return TryFindRoom(id, out room);
+        }
+
+        public Vector3 PreviewRoomPosition(PreviewRoom room)
+        {
+            return transform.TransformPoint(LocalPreviewRoomPosition(room));
+        }
+
+        public Vector3 PreviewPlacementPosition(PreviewPlacement placement)
+        {
+            if (!TryFindPreviewRoom(placement.RoomId, out var room))
+            {
+                return transform.position;
+            }
+
+            return PreviewRoomPosition(room) + PlacementOffset(placement.Kind);
+        }
+
+        public Vector3 LocalPreviewRoomPosition(PreviewRoom room)
+        {
+            return new Vector3(room.GridX * RoomSpacing, 0f, room.GridY * RoomSpacing);
+        }
+
         private void CapturePreviewSnapshot(GeneratedMapDraft draft)
         {
             if (draft?.Graph == null)
             {
-                PreviewRooms = Array.Empty<PreviewRoom>();
-                PreviewEdges = Array.Empty<PreviewEdge>();
-                PreviewPlacements = Array.Empty<PreviewPlacement>();
+                ClearPreviewSnapshot();
                 return;
             }
 
@@ -128,20 +191,24 @@ namespace Conn.Editor.Maps
                 return;
             }
 
-            for (var i = 0; i < PreviewEdges.Length; i++)
+            var rooms = PreviewRooms ?? Array.Empty<PreviewRoom>();
+            var edges = PreviewEdges ?? Array.Empty<PreviewEdge>();
+            var placements = PreviewPlacements ?? Array.Empty<PreviewPlacement>();
+
+            for (var i = 0; i < edges.Length; i++)
             {
-                if (!TryFindRoom(PreviewEdges[i].FromNodeId, out var from) || !TryFindRoom(PreviewEdges[i].ToNodeId, out var to))
+                if (!TryFindRoom(edges[i].FromNodeId, out var from) || !TryFindRoom(edges[i].ToNodeId, out var to))
                 {
                     continue;
                 }
 
-                Gizmos.color = PreviewEdges[i].Locked ? new Color(1f, 0.45f, 0.15f) : new Color(0.75f, 0.75f, 0.75f);
+                Gizmos.color = edges[i].Locked ? new Color(1f, 0.45f, 0.15f) : new Color(0.75f, 0.75f, 0.75f);
                 Gizmos.DrawLine(RoomPosition(from) + Vector3.up * 0.18f, RoomPosition(to) + Vector3.up * 0.18f);
             }
 
-            for (var i = 0; i < PreviewRooms.Length; i++)
+            for (var i = 0; i < rooms.Length; i++)
             {
-                var room = PreviewRooms[i];
+                var room = rooms[i];
                 Gizmos.color = RoleColor(room.Role);
                 Gizmos.DrawCube(RoomPosition(room), new Vector3(1.8f, Mathf.Max(0.05f, RoomHeight), 1.8f));
                 Gizmos.color = Color.black;
@@ -151,28 +218,29 @@ namespace Conn.Editor.Maps
 #endif
             }
 
-            for (var i = 0; i < PreviewPlacements.Length; i++)
+            for (var i = 0; i < placements.Length; i++)
             {
-                if (!TryFindRoom(PreviewPlacements[i].RoomId, out var room))
+                if (!TryFindRoom(placements[i].RoomId, out var room))
                 {
                     continue;
                 }
 
-                Gizmos.color = PlacementColor(PreviewPlacements[i].Kind);
-                Gizmos.DrawSphere(RoomPosition(room) + PlacementOffset(PreviewPlacements[i].Kind), 0.18f);
+                Gizmos.color = PlacementColor(placements[i].Kind);
+                Gizmos.DrawSphere(RoomPosition(room) + PlacementOffset(placements[i].Kind), 0.18f);
 #if UNITY_EDITOR
-                Handles.Label(RoomPosition(room) + PlacementOffset(PreviewPlacements[i].Kind) + Vector3.up * 0.25f, PreviewPlacements[i].Kind.ToString());
+                Handles.Label(RoomPosition(room) + PlacementOffset(placements[i].Kind) + Vector3.up * 0.25f, placements[i].Kind.ToString());
 #endif
             }
         }
 
         private bool TryFindRoom(string id, out PreviewRoom room)
         {
-            for (var i = 0; i < PreviewRooms.Length; i++)
+            var rooms = PreviewRooms ?? Array.Empty<PreviewRoom>();
+            for (var i = 0; i < rooms.Length; i++)
             {
-                if (PreviewRooms[i].Id == id)
+                if (rooms[i].Id == id)
                 {
-                    room = PreviewRooms[i];
+                    room = rooms[i];
                     return true;
                 }
             }
@@ -183,7 +251,12 @@ namespace Conn.Editor.Maps
 
         private Vector3 RoomPosition(PreviewRoom room)
         {
-            return transform.TransformPoint(new Vector3(room.GridX * RoomSpacing, 0f, room.GridY * RoomSpacing));
+            return PreviewRoomPosition(room);
+        }
+
+        private static int Count<T>(T[] values)
+        {
+            return values?.Length ?? 0;
         }
 
         private static Color RoleColor(MapRoomRole role)
