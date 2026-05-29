@@ -16,6 +16,8 @@ namespace Conn.Authoring.Maps
         public bool PopulationAllowed = true;
         public string[] RoleTags = Array.Empty<string>();
         public AuthoringChunkAnchor[] Anchors = Array.Empty<AuthoringChunkAnchor>();
+        public RoomChunkCell[] Cells = Array.Empty<RoomChunkCell>();
+        public RoomChunkObjectPlacement[] Objects = Array.Empty<RoomChunkObjectPlacement>();
         public GameObject RoomPrefab;
         public UnityEngine.Object TilemapReference;
         public Texture2D PreviewThumbnail;

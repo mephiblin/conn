@@ -207,7 +207,9 @@ namespace Conn.Editor.Maps
                 typeof(RuntimeSpawnEntry),
                 typeof(MapProfile),
                 typeof(ChunkPreset),
-                typeof(ChunkAnchor)
+                typeof(ChunkAnchor),
+                typeof(RoomChunkCell),
+                typeof(RoomChunkObjectPlacement)
             };
 
             foreach (var type in allowedTypes)
@@ -689,6 +691,49 @@ namespace Conn.Editor.Maps
                 });
             }
 
+            var cells = new List<RoomChunkCell>();
+            foreach (var cell in asset.Cells ?? Array.Empty<RoomChunkCell>())
+            {
+                if (cell == null)
+                {
+                    continue;
+                }
+
+                cells.Add(new RoomChunkCell
+                {
+                    X = cell.X,
+                    Y = cell.Y,
+                    Type = cell.Type,
+                    Height = cell.Height,
+                    Direction = cell.Direction,
+                    MaterialId = cell.MaterialId
+                });
+            }
+
+            var objects = new List<RoomChunkObjectPlacement>();
+            foreach (var placement in asset.Objects ?? Array.Empty<RoomChunkObjectPlacement>())
+            {
+                if (placement == null)
+                {
+                    continue;
+                }
+
+                objects.Add(new RoomChunkObjectPlacement
+                {
+                    Id = placement.Id,
+                    Kind = placement.Kind,
+                    X = placement.X,
+                    Y = placement.Y,
+                    Height = placement.Height,
+                    Direction = placement.Direction,
+                    Width = placement.Width,
+                    Depth = placement.Depth,
+                    BlocksMovement = placement.BlocksMovement,
+                    PrefabId = placement.PrefabId,
+                    MaterialId = placement.MaterialId
+                });
+            }
+
             return new ChunkPreset
             {
                 Id = asset.Id,
@@ -702,7 +747,9 @@ namespace Conn.Editor.Maps
                 PopulationAllowed = asset.PopulationAllowed,
                 RoleTags = roleTags,
                 AuthoringRoleTags = new List<string>(asset.RoleTags ?? Array.Empty<string>()),
-                Anchors = anchors
+                Anchors = anchors,
+                Cells = cells,
+                Objects = objects
             };
         }
 

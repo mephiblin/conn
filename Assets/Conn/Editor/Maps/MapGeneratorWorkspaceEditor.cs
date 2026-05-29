@@ -26,6 +26,10 @@ namespace Conn.Editor.Maps
             EditorGUILayout.LabelField("Visualization", EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.RoomSpacing)));
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.RoomHeight)));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.UseCellPreviewWhenAvailable)));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.UseTestCellPreviewGrid)));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.PreviewCellSize)));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.PreviewWallHeight)));
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.ClearBeforePreview)));
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.DrawSceneGizmos)));
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.PreviewRoot)));
@@ -252,6 +256,18 @@ namespace Conn.Editor.Maps
             for (var i = 0; i < rooms.Length; i++)
             {
                 var roomSnapshot = rooms[i];
+                if (MapChunkCellPreviewBuilder.TryBuildRoom(
+                    workspace,
+                    roomSnapshot,
+                    root,
+                    undoName,
+                    materialCache.ForRole(roomSnapshot.Role)))
+                {
+                    var cellLabel = CreateLabel(root, $"Room {roomSnapshot.Id} ({roomSnapshot.Role})", workspace.PreviewRoomPosition(roomSnapshot) + Vector3.up * 0.7f, 0.18f);
+                    Undo.RegisterCreatedObjectUndo(cellLabel, undoName);
+                    continue;
+                }
+
                 var room = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 room.name = $"Room {roomSnapshot.Id} ({roomSnapshot.Role})";
                 room.transform.SetParent(root, false);

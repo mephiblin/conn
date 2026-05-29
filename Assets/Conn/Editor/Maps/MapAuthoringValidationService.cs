@@ -294,6 +294,8 @@ namespace Conn.Editor.Maps
                 }
 
                 ValidateAnchors(chunk.Id, chunk.Size, chunk.Anchors, chunk.PopulationAllowed, report);
+                ValidateCells(chunk.Id, chunk.Size, chunk.Cells, report);
+                ValidateObjects(chunk.Id, chunk.Size, chunk.Cells, chunk.Objects, report);
                 ValidateObjectReference(chunk.Id, "room prefab", chunk.RoomPrefab, report);
                 ValidateObjectReference(chunk.Id, "tilemap reference", chunk.TilemapReference, report);
                 ValidateObjectReference(chunk.Id, "preview thumbnail", chunk.PreviewThumbnail, report);
@@ -712,6 +714,136 @@ namespace Conn.Editor.Maps
                     report.Errors.Add($"Chunk {ownerId} has populationAllowed=false but contains monster anchor {anchor.Id}.");
                 }
             }
+        }
+
+        private static void ValidateCells(string ownerId, Vector2Int size, RoomChunkCell[] cells, MapValidationReport report)
+        {
+            var occupied = new HashSet<string>();
+            foreach (var cell in cells ?? Array.Empty<RoomChunkCell>())
+            {
+                if (cell == null)
+                {
+                    report.Errors.Add($"Chunk {ownerId} has a missing cell entry.");
+                    continue;
+                }
+
+                if (cell.X < 0 || cell.Y < 0 || cell.X >= size.x || cell.Y >= size.y)
+                {
+                    report.Errors.Add($"Chunk {ownerId} cell {cell.X},{cell.Y} is outside chunk bounds.");
+                    continue;
+                }
+
+                if (!occupied.Add($"{cell.X},{cell.Y}"))
+                {
+                    report.Errors.Add($"Chunk {ownerId} has duplicate cell coordinates: {cell.X},{cell.Y}.");
+                }
+
+                if (cell.Height < 0)
+                {
+                    report.Errors.Add($"Chunk {ownerId} cell {cell.X},{cell.Y} height must not be negative.");
+                }
+
+                if ((cell.Type == RoomChunkCellType.Slope || cell.Type == RoomChunkCellType.Stair) && !IsSingleCardinalDirection(cell.Direction))
+                {
+                    report.Errors.Add($"Chunk {ownerId} cell {cell.X},{cell.Y} {cell.Type} must have one cardinal direction.");
+                }
+            }
+        }
+
+        private static bool IsSingleCardinalDirection(MapDirection direction)
+        {
+            return direction == MapDirection.North
+                || direction == MapDirection.East
+                || direction == MapDirection.South
+                || direction == MapDirection.West;
+        }
+
+        private static void ValidateObjects(string ownerId, Vector2Int size, RoomChunkCell[] cells, RoomChunkObjectPlacement[] objects, MapValidationReport report)
+        {
+            var ids = new HashSet<string>();
+            var walkableCells = WalkableCellSet(cells);
+            foreach (var placement in objects ?? Array.Empty<RoomChunkObjectPlacement>())
+            {
+                if (placement == null)
+                {
+                    report.Errors.Add($"Chunk {ownerId} has a missing object placement.");
+                    continue;
+                }
+
+                if (string.IsNullOrWhiteSpace(placement.Id))
+                {
+                    report.Errors.Add($"Chunk {ownerId} has an object placement with no id.");
+                }
+                else if (!ids.Add(placement.Id))
+                {
+                    report.Errors.Add($"Chunk {ownerId} has duplicate object placement id: {placement.Id}");
+                }
+
+                if (placement.Width <= 0 || placement.Depth <= 0)
+                {
+                    report.Errors.Add($"Chunk {ownerId} object {placement.Id} footprint must be positive.");
+                    continue;
+                }
+
+                if (placement.Height < 0)
+                {
+                    report.Errors.Add($"Chunk {ownerId} object {placement.Id} height must not be negative.");
+                }
+
+                if (!FootprintInsideBounds(placement, size))
+                {
+                    report.Errors.Add($"Chunk {ownerId} object {placement.Id} footprint is outside chunk bounds.");
+                    continue;
+                }
+
+                if (walkableCells.Count > 0 && !FootprintOnWalkableCells(placement, walkableCells))
+                {
+                    report.Errors.Add($"Chunk {ownerId} object {placement.Id} must be placed on floor, slope, or stair cells.");
+                }
+            }
+        }
+
+        private static HashSet<string> WalkableCellSet(RoomChunkCell[] cells)
+        {
+            var walkable = new HashSet<string>();
+            foreach (var cell in cells ?? Array.Empty<RoomChunkCell>())
+            {
+                if (cell == null)
+                {
+                    continue;
+                }
+
+                if (cell.Type == RoomChunkCellType.Floor || cell.Type == RoomChunkCellType.Slope || cell.Type == RoomChunkCellType.Stair)
+                {
+                    walkable.Add($"{cell.X},{cell.Y}");
+                }
+            }
+
+            return walkable;
+        }
+
+        private static bool FootprintInsideBounds(RoomChunkObjectPlacement placement, Vector2Int size)
+        {
+            return placement.X >= 0
+                && placement.Y >= 0
+                && placement.X + placement.Width <= size.x
+                && placement.Y + placement.Depth <= size.y;
+        }
+
+        private static bool FootprintOnWalkableCells(RoomChunkObjectPlacement placement, HashSet<string> walkableCells)
+        {
+            for (var x = placement.X; x < placement.X + placement.Width; x++)
+            {
+                for (var y = placement.Y; y < placement.Y + placement.Depth; y++)
+                {
+                    if (!walkableCells.Contains($"{x},{y}"))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
         }
 
         private static void ValidateWeightedReferences(string ownerId, string label, WeightedAssetReference[] references, HashSet<string> validIds, MapValidationReport report)

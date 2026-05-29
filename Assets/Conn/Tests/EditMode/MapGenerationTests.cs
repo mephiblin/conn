@@ -68,5 +68,41 @@ namespace Conn.Tests.EditMode
             Assert.That(questPlacement.RoomId, Is.Not.Empty);
             Assert.That(questReport.Passed, Is.True, string.Join("\n", questReport.Errors.ToArray()));
         }
+
+        [Test]
+        public void ChunkPresetCellGridSurvivesUnityJsonSerialization()
+        {
+            var preset = new ChunkPreset
+            {
+                Id = "cell_grid_probe",
+                PresetId = "cell_grid_probe",
+                Width = 2,
+                Height = 2,
+                Cells = new System.Collections.Generic.List<RoomChunkCell>
+                {
+                    new RoomChunkCell { X = 0, Y = 0, Type = RoomChunkCellType.Floor, Height = 0, Direction = MapDirection.North, MaterialId = "stone" },
+                    new RoomChunkCell { X = 1, Y = 0, Type = RoomChunkCellType.Slope, Height = 0, Direction = MapDirection.East, MaterialId = "moss" },
+                    new RoomChunkCell { X = 1, Y = 1, Type = RoomChunkCellType.Stair, Height = 1, Direction = MapDirection.South, MaterialId = "broken" }
+                },
+                Objects = new System.Collections.Generic.List<RoomChunkObjectPlacement>
+                {
+                    new RoomChunkObjectPlacement { Id = "north_chest", Kind = RoomChunkObjectKind.Chest, X = 0, Y = 0, Direction = MapDirection.South, PrefabId = "chest_small" },
+                    new RoomChunkObjectPlacement { Id = "east_torch", Kind = RoomChunkObjectKind.Torch, X = 1, Y = 0, Height = 1, BlocksMovement = false, PrefabId = "torch_wall" }
+                }
+            };
+
+            var json = JsonUtility.ToJson(preset);
+            var loaded = JsonUtility.FromJson<ChunkPreset>(json);
+
+            Assert.That(loaded.Cells.Count, Is.EqualTo(3));
+            Assert.That(loaded.Cells[1].Type, Is.EqualTo(RoomChunkCellType.Slope));
+            Assert.That(loaded.Cells[1].Direction, Is.EqualTo(MapDirection.East));
+            Assert.That(loaded.Cells[1].MaterialId, Is.EqualTo("moss"));
+            Assert.That(loaded.Cells[2].Height, Is.EqualTo(1));
+            Assert.That(loaded.Objects.Count, Is.EqualTo(2));
+            Assert.That(loaded.Objects[0].Kind, Is.EqualTo(RoomChunkObjectKind.Chest));
+            Assert.That(loaded.Objects[0].PrefabId, Is.EqualTo("chest_small"));
+            Assert.That(loaded.Objects[1].Height, Is.EqualTo(1));
+        }
     }
 }

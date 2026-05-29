@@ -17,6 +17,10 @@ namespace Conn.Editor.Maps
         public int Difficulty;
         public float RoomSpacing = 3f;
         public float RoomHeight = 0.18f;
+        public bool UseCellPreviewWhenAvailable = true;
+        public bool UseTestCellPreviewGrid;
+        public float PreviewCellSize = 0.28f;
+        public float PreviewWallHeight = 0.75f;
         public bool ClearBeforePreview = true;
         public string LastGeneratedMapId = string.Empty;
         public string LastGeneratedProfileId = string.Empty;

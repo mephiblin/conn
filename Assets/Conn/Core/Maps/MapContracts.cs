@@ -33,6 +33,25 @@ namespace Conn.Core.Maps
         Loot = 5
     }
 
+    public enum RoomChunkCellType
+    {
+        Floor = 0,
+        Wall = 1,
+        Slope = 2,
+        Stair = 3,
+        Gap = 4
+    }
+
+    public enum RoomChunkObjectKind
+    {
+        Decor = 0,
+        Chest = 1,
+        Barrel = 2,
+        Torch = 3,
+        SpawnHint = 4,
+        Blocker = 5
+    }
+
     public enum MapPlacementKind
     {
         Start = 0,
@@ -82,6 +101,33 @@ namespace Conn.Core.Maps
     }
 
     [Serializable]
+    public sealed class RoomChunkCell
+    {
+        public int X;
+        public int Y;
+        public RoomChunkCellType Type = RoomChunkCellType.Floor;
+        public int Height;
+        public MapDirection Direction;
+        public string MaterialId = string.Empty;
+    }
+
+    [Serializable]
+    public sealed class RoomChunkObjectPlacement
+    {
+        public string Id = string.Empty;
+        public RoomChunkObjectKind Kind;
+        public int X;
+        public int Y;
+        public int Height;
+        public MapDirection Direction;
+        public int Width = 1;
+        public int Depth = 1;
+        public bool BlocksMovement;
+        public string PrefabId = string.Empty;
+        public string MaterialId = string.Empty;
+    }
+
+    [Serializable]
     public sealed class ChunkPreset
     {
         public string Id = string.Empty;
@@ -96,6 +142,8 @@ namespace Conn.Core.Maps
         public List<MapRoomRole> RoleTags = new List<MapRoomRole>();
         public List<string> AuthoringRoleTags = new List<string>();
         public List<ChunkAnchor> Anchors = new List<ChunkAnchor>();
+        public List<RoomChunkCell> Cells = new List<RoomChunkCell>();
+        public List<RoomChunkObjectPlacement> Objects = new List<RoomChunkObjectPlacement>();
 
         public bool Supports(MapRoomRole role, MapDirection sockets, string theme, int width, int height)
         {
