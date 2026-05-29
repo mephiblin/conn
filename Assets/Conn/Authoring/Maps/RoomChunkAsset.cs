@@ -11,6 +11,10 @@ namespace Conn.Authoring.Maps
         public string DisplayName = string.Empty;
         public string ThemeId = string.Empty;
         public Vector2Int Size = new Vector2Int(8, 8);
+        public RoomChunkLayoutKind LayoutKind = RoomChunkLayoutKind.Room;
+        public int CorridorLength;
+        public int CorridorWidth;
+        public int DeadEndDepth;
         public MapDirection OpenSides;
         public MapDirection DoorSockets;
         public bool PopulationAllowed = true;

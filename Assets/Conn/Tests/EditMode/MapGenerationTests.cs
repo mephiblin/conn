@@ -78,6 +78,12 @@ namespace Conn.Tests.EditMode
                 PresetId = "cell_grid_probe",
                 Width = 2,
                 Height = 2,
+                LayoutKind = RoomChunkLayoutKind.DeadEnd,
+                CorridorLength = 4,
+                CorridorWidth = 1,
+                DeadEndDepth = 2,
+                OpenSides = MapDirection.North,
+                DoorSockets = MapDirection.North,
                 Cells = new System.Collections.Generic.List<RoomChunkCell>
                 {
                     new RoomChunkCell { X = 0, Y = 0, Type = RoomChunkCellType.Floor, Height = 0, Direction = MapDirection.North, MaterialId = "stone" },
@@ -95,6 +101,11 @@ namespace Conn.Tests.EditMode
             var loaded = JsonUtility.FromJson<ChunkPreset>(json);
 
             Assert.That(loaded.Cells.Count, Is.EqualTo(3));
+            Assert.That(loaded.LayoutKind, Is.EqualTo(RoomChunkLayoutKind.DeadEnd));
+            Assert.That(loaded.CorridorLength, Is.EqualTo(4));
+            Assert.That(loaded.CorridorWidth, Is.EqualTo(1));
+            Assert.That(loaded.DeadEndDepth, Is.EqualTo(2));
+            Assert.That(loaded.OpenSides, Is.EqualTo(MapDirection.North));
             Assert.That(loaded.Cells[1].Type, Is.EqualTo(RoomChunkCellType.Slope));
             Assert.That(loaded.Cells[1].Direction, Is.EqualTo(MapDirection.East));
             Assert.That(loaded.Cells[1].MaterialId, Is.EqualTo("moss"));

@@ -52,6 +52,15 @@ namespace Conn.Core.Maps
         Blocker = 5
     }
 
+    public enum RoomChunkLayoutKind
+    {
+        Room = 0,
+        Hub = 1,
+        Corridor = 2,
+        DeadEnd = 3,
+        HeightTransition = 4
+    }
+
     public enum MapPlacementKind
     {
         Start = 0,
@@ -135,6 +144,10 @@ namespace Conn.Core.Maps
         public string Theme = string.Empty;
         public int Width;
         public int Height;
+        public RoomChunkLayoutKind LayoutKind = RoomChunkLayoutKind.Room;
+        public int CorridorLength;
+        public int CorridorWidth;
+        public int DeadEndDepth;
         public MapDirection OpenSides;
         public MapDirection DoorSockets;
         public string VariantGroup = string.Empty;

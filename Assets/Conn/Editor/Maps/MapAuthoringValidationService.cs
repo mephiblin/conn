@@ -288,6 +288,8 @@ namespace Conn.Editor.Maps
                     report.Errors.Add($"Room chunk {chunk.Id} door sockets must include every open side.");
                 }
 
+                ValidateChunkLayout(chunk, report);
+
                 if (IsEmpty(chunk.RoleTags))
                 {
                     report.Errors.Add($"Room chunk {chunk.Id} must include at least one role tag.");
@@ -300,6 +302,119 @@ namespace Conn.Editor.Maps
                 ValidateObjectReference(chunk.Id, "tilemap reference", chunk.TilemapReference, report);
                 ValidateObjectReference(chunk.Id, "preview thumbnail", chunk.PreviewThumbnail, report);
             }
+        }
+
+        private static void ValidateChunkLayout(RoomChunkAsset chunk, MapValidationReport report)
+        {
+            var openSideCount = CountOpenSides(chunk.OpenSides);
+            if (chunk.LayoutKind == RoomChunkLayoutKind.Hub && openSideCount < 3)
+            {
+                report.Errors.Add($"Room chunk {chunk.Id} layout Hub must have at least three open sides.");
+            }
+
+            if (chunk.LayoutKind == RoomChunkLayoutKind.Corridor)
+            {
+                if (openSideCount != 2)
+                {
+                    report.Errors.Add($"Room chunk {chunk.Id} layout Corridor must have exactly two open sides.");
+                }
+
+                if (chunk.CorridorLength <= 0)
+                {
+                    report.Errors.Add($"Room chunk {chunk.Id} corridor length must be positive.");
+                }
+
+                if (chunk.CorridorWidth <= 0)
+                {
+                    report.Errors.Add($"Room chunk {chunk.Id} corridor width must be positive.");
+                }
+            }
+
+            if (chunk.LayoutKind == RoomChunkLayoutKind.DeadEnd)
+            {
+                if (openSideCount != 1)
+                {
+                    report.Errors.Add($"Room chunk {chunk.Id} layout DeadEnd must have exactly one open side.");
+                }
+
+                if (chunk.DeadEndDepth <= 0)
+                {
+                    report.Errors.Add($"Room chunk {chunk.Id} dead-end depth must be positive.");
+                }
+                else if (chunk.DeadEndDepth > 3)
+                {
+                    report.Warnings.Add($"Room chunk {chunk.Id} dead-end depth is {chunk.DeadEndDepth}; short dead-end chunks should stay at 3 cells or less.");
+                }
+            }
+
+            if (chunk.LayoutKind == RoomChunkLayoutKind.HeightTransition)
+            {
+                if (openSideCount == 0)
+                {
+                    report.Errors.Add($"Room chunk {chunk.Id} layout HeightTransition must have at least one open side.");
+                }
+
+                if (!HasHeightTransitionCells(chunk.Cells))
+                {
+                    report.Errors.Add($"Room chunk {chunk.Id} layout HeightTransition must include slope, stair, or varied cell heights.");
+                }
+            }
+        }
+
+        private static int CountOpenSides(MapDirection sides)
+        {
+            var count = 0;
+            if ((sides & MapDirection.North) != MapDirection.None)
+            {
+                count++;
+            }
+
+            if ((sides & MapDirection.East) != MapDirection.None)
+            {
+                count++;
+            }
+
+            if ((sides & MapDirection.South) != MapDirection.None)
+            {
+                count++;
+            }
+
+            if ((sides & MapDirection.West) != MapDirection.None)
+            {
+                count++;
+            }
+
+            return count;
+        }
+
+        private static bool HasHeightTransitionCells(RoomChunkCell[] cells)
+        {
+            var firstHeight = 0;
+            var hasHeight = false;
+            foreach (var cell in cells ?? Array.Empty<RoomChunkCell>())
+            {
+                if (cell == null)
+                {
+                    continue;
+                }
+
+                if (cell.Type == RoomChunkCellType.Slope || cell.Type == RoomChunkCellType.Stair)
+                {
+                    return true;
+                }
+
+                if (!hasHeight)
+                {
+                    firstHeight = cell.Height;
+                    hasHeight = true;
+                }
+                else if (cell.Height != firstHeight)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static void ValidateLandmarks(LandmarkRoomAsset[] landmarks, MapValidationReport report)
@@ -315,6 +430,8 @@ namespace Conn.Editor.Maps
                 {
                     report.Errors.Add($"Landmark room {landmark.Id} weight must be positive.");
                 }
+
+                ValidateChunkLayout(landmark, report);
 
                 if (string.IsNullOrWhiteSpace(landmark.LandmarkRole))
                 {
