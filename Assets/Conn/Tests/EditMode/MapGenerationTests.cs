@@ -727,6 +727,47 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void DrawnPlayableMetadataClearsStaleDisconnectedCellOwnership()
+        {
+            var draft = ScriptableObject.CreateInstance<EditableMapDraftAsset>();
+            draft.InitializeBlank(8, 4, 1f, 1f);
+            for (var x = 1; x <= 5; x++)
+            {
+                draft.TrySetCell(new EditableMapCell
+                {
+                    X = x,
+                    Y = 1,
+                    RoomId = "old_room",
+                    ZoneId = "old_zone",
+                    Terrain = RoomChunkCellType.Floor,
+                    Height = 0,
+                    Direction = MapDirection.East
+                });
+            }
+
+            draft.TrySetCell(new EditableMapCell
+            {
+                X = 7,
+                Y = 3,
+                RoomId = "stale_disconnected_room",
+                ZoneId = "stale_disconnected_zone",
+                Terrain = RoomChunkCellType.Floor,
+                Height = 0,
+                Direction = MapDirection.North
+            });
+
+            EditableMapDraftMetadataBuilder.BuildPlayableMetadataFromDrawing(draft);
+            var disconnected = draft.GetCell(7, 3);
+            var report = EditableMapValidationService.Validate(draft);
+
+            Assert.That(disconnected.RoomId, Is.Empty);
+            Assert.That(disconnected.ZoneId, Is.Empty);
+            Assert.That(report.Passed, Is.True, string.Join("\n", report.Errors));
+
+            Object.DestroyImmediate(draft);
+        }
+
+        [Test]
         public void EditableValidationReportsBlockedRequiredRoute()
         {
             var draft = ScriptableObject.CreateInstance<EditableMapDraftAsset>();

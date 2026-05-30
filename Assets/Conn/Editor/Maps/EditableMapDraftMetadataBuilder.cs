@@ -42,6 +42,7 @@ namespace Conn.Editor.Maps
             var areaRoomId = "drawn_area";
             var bounds = CalculateBounds(component);
 
+            ClearCellOwnershipOutsideComponent(draft, component);
             ApplyCellOwnership(draft, component, areaRoomId, zoneId);
 
             draft.Zones = new[]
@@ -227,6 +228,24 @@ namespace Conn.Editor.Maps
                 var cell = draft.GetCell(position.x, position.y);
                 cell.RoomId = roomId;
                 cell.ZoneId = zoneId;
+                draft.TrySetCell(cell);
+            }
+        }
+
+        private static void ClearCellOwnershipOutsideComponent(EditableMapDraftAsset draft, List<Vector2Int> component)
+        {
+            var selected = new HashSet<Vector2Int>(component);
+            foreach (var source in draft.Cells ?? Array.Empty<EditableMapCell>())
+            {
+                var position = new Vector2Int(source.X, source.Y);
+                if (selected.Contains(position) || (string.IsNullOrWhiteSpace(source.RoomId) && string.IsNullOrWhiteSpace(source.ZoneId)))
+                {
+                    continue;
+                }
+
+                var cell = source;
+                cell.RoomId = string.Empty;
+                cell.ZoneId = string.Empty;
                 draft.TrySetCell(cell);
             }
         }
