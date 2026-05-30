@@ -50,6 +50,7 @@ namespace Conn.Editor.Maps
             ConnectRooms(draft, random, rooms[2], rooms[6]);
             ConnectRooms(draft, random, rooms[2], rooms[7]);
             ConnectRooms(draft, random, rooms[6], rooms[3]);
+            AddSidePassages(draft, random, rooms);
             AddHeightTransitionFeature(draft, rooms[4]);
             CarveWallsAroundFloors(draft);
             ClassifyWallVariants(draft);
@@ -88,6 +89,84 @@ namespace Conn.Editor.Maps
                 branchWidth,
                 branchHeight));
             return rooms;
+        }
+
+        private static void AddSidePassages(EditableMapDraftAsset draft, System.Random random, List<RectInt> rooms)
+        {
+            if (rooms == null || rooms.Count < 4)
+            {
+                return;
+            }
+
+            var passageCount = Mathf.Clamp(rooms.Count / 2, 3, 5);
+            for (var i = 0; i < passageCount; i++)
+            {
+                var room = rooms[1 + (i % Mathf.Max(1, rooms.Count - 2))];
+                var direction = PickSidePassageDirection(i, room, draft.Height);
+                var length = random.Next(3, 7);
+                var start = PickSidePassageStart(random, room, direction);
+                CarveSidePassage(draft, start, direction, length);
+            }
+        }
+
+        private static MapDirection PickSidePassageDirection(int index, RectInt room, int mapHeight)
+        {
+            if (index % 3 == 0 && room.yMax + 6 < mapHeight - 1)
+            {
+                return MapDirection.North;
+            }
+
+            if (index % 3 == 1 && room.yMin - 6 > 1)
+            {
+                return MapDirection.South;
+            }
+
+            return index % 2 == 0 ? MapDirection.East : MapDirection.West;
+        }
+
+        private static Vector2Int PickSidePassageStart(System.Random random, RectInt room, MapDirection direction)
+        {
+            switch (direction)
+            {
+                case MapDirection.East:
+                    return new Vector2Int(room.xMax - 1, random.Next(room.yMin + 1, Mathf.Max(room.yMin + 2, room.yMax - 1)));
+                case MapDirection.South:
+                    return new Vector2Int(random.Next(room.xMin + 1, Mathf.Max(room.xMin + 2, room.xMax - 1)), room.yMin);
+                case MapDirection.West:
+                    return new Vector2Int(room.xMin, random.Next(room.yMin + 1, Mathf.Max(room.yMin + 2, room.yMax - 1)));
+                default:
+                    return new Vector2Int(random.Next(room.xMin + 1, Mathf.Max(room.xMin + 2, room.xMax - 1)), room.yMax - 1);
+            }
+        }
+
+        private static void CarveSidePassage(EditableMapDraftAsset draft, Vector2Int start, MapDirection direction, int length)
+        {
+            var offset = DirectionOffset(direction);
+            for (var i = 0; i <= length; i++)
+            {
+                var position = start + offset * i;
+                if (!draft.IsInBounds(position.x, position.y))
+                {
+                    return;
+                }
+
+                SetCell(draft, position.x, position.y, RoomChunkCellType.Floor, "generated_corridor", direction);
+            }
+        }
+
+        private static Vector2Int DirectionOffset(MapDirection direction)
+        {
+            switch (direction)
+            {
+                case MapDirection.East:
+                    return Vector2Int.right;
+                case MapDirection.South:
+                    return Vector2Int.down;
+                case MapDirection.West:
+                    return Vector2Int.left;
+                default:
+                    return Vector2Int.up;
+            }
         }
 
         private static void CarveRoom(EditableMapDraftAsset draft, System.Random random, RectInt room, int roomIndex)

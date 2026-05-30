@@ -579,6 +579,7 @@ namespace Conn.Tests.EditMode
                 var slopeCount = result.Draft.Cells.Count(cell => cell.Terrain == RoomChunkCellType.Slope);
                 var stairCount = result.Draft.Cells.Count(cell => cell.Terrain == RoomChunkCellType.Stair);
                 var doorCount = result.Draft.Cells.Count(cell => cell.MaterialId == "generated_door");
+                var deadEndCellCount = result.Draft.Cells.Count(cell => IsWalkableCell(cell) && CountWalkableNeighbors(result.Draft, cell.X, cell.Y) == 1);
                 var wallCornerCount = result.Draft.Cells.Count(cell => cell.WallVariantId == "wall_corner");
                 var wallEdgeCount = result.Draft.Cells.Count(cell => cell.WallVariantId == "wall_edge");
                 var tileIds = result.Draft.TilePalette.Tiles.Select(tile => tile.Id).ToHashSet();
@@ -594,6 +595,7 @@ namespace Conn.Tests.EditMode
                 Assert.That(slopeCount, Is.GreaterThanOrEqualTo(1));
                 Assert.That(stairCount, Is.GreaterThanOrEqualTo(1));
                 Assert.That(doorCount, Is.GreaterThanOrEqualTo(4));
+                Assert.That(deadEndCellCount, Is.GreaterThanOrEqualTo(2));
                 Assert.That(wallCornerCount, Is.GreaterThanOrEqualTo(4));
                 Assert.That(wallEdgeCount, Is.GreaterThanOrEqualTo(4));
                 Assert.That(result.Draft.Objects.Any(placement => placement.Kind == RoomChunkObjectKind.Chest), Is.True);
@@ -1577,6 +1579,37 @@ namespace Conn.Tests.EditMode
             }
 
             return false;
+        }
+
+        private static int CountWalkableNeighbors(EditableMapDraftAsset draft, int x, int y)
+        {
+            var count = 0;
+            if (draft.TryGetCell(x + 1, y, out var east) && IsWalkableCell(east))
+            {
+                count++;
+            }
+
+            if (draft.TryGetCell(x, y + 1, out var north) && IsWalkableCell(north))
+            {
+                count++;
+            }
+
+            if (draft.TryGetCell(x - 1, y, out var west) && IsWalkableCell(west))
+            {
+                count++;
+            }
+
+            if (draft.TryGetCell(x, y - 1, out var south) && IsWalkableCell(south))
+            {
+                count++;
+            }
+
+            return count;
+        }
+
+        private static bool IsWalkableCell(EditableMapCell cell)
+        {
+            return cell.Terrain != RoomChunkCellType.Gap && cell.Terrain != RoomChunkCellType.Wall;
         }
     }
 }
