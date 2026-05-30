@@ -3,6 +3,52 @@
 Date: 2026-05-25
 Status: first-pass authoring, validation, workbench, and runtime bundle bridge implemented; manual Game view verification remains.
 
+## Current Planning Update
+
+The current generator has moved past pure graph preview foundations, but the
+next target is a new editable cell-map workflow rather than further expansion
+of temporary preview objects. See `editable_cell_map_editor_plan.md` for the
+plan to introduce an `EditableMapDraftAsset`, tileable cell layers, object
+palettes, paint/stamp tools, mesh preview, validation, and runtime bake.
+`MapGeneratorWorkspace` should remain legacy debug/reference tooling until the
+new draft pipeline can fully replace it.
+
+As of 2026-05-30, the first draft-backed path is now in the project:
+
+- `EditableMapDraftAsset` stores the editable cell grid, object placements,
+  rooms, zones, and sockets as serialized asset data.
+- `EditableMapDraftBuilder` can create a blank draft asset or adapt the current
+  `GeneratedMapDraft` graph into a saved editable draft under
+  `Assets/Conn/Authoring/Maps/Drafts`.
+- `EditableMapPreviewMeshBuilder` rebuilds a disposable scene preview directly
+  from the draft asset instead of relying on `MapGeneratorWorkspace` room cubes.
+- `EditableMapDraftEditor` adds first-pass draft actions for blank grid reset,
+  preview rebuild, and preview clear.
+- `MapGeneratorWorkspaceEditor` now has a bridge button that saves the current
+  generated result as an `EditableMapDraftAsset` without making the workspace a
+  required dependency of the new pipeline.
+
+This is still a Phase 1/2 slice, not the final editor. Painting tools,
+palettes, validation, and bake are still pending.
+
+## Manual Unity Check Steps
+
+Use these steps after pulling the branch:
+
+1. Open Unity and let the project recompile.
+2. Open the existing `MapGenerator` editor scene if you want a legacy debug
+   generation context, or stay in any scene for asset-first checks.
+3. In a `MapGeneratorWorkspace` inspector, generate or capture a layout, then
+   click `Create Editable Draft Asset`.
+4. Select the new draft asset in `Assets/Conn/Authoring/Maps/Drafts`.
+5. Use `Rebuild Preview` in the draft inspector and confirm that an
+   `Editable Map Preview Root (...)` scene object appears with terrain, wall,
+   slope, stair, object, and overlay children.
+6. Use `Clear Preview` and confirm the preview root is deleted while the draft
+   asset data remains unchanged.
+7. Rebuild the preview again to confirm the draft asset is the source of truth
+   and preview objects are disposable.
+
 ## Purpose
 
 The map editor and monster editor must not evolve as separate tools. A final

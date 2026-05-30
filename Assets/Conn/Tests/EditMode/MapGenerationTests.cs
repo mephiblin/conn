@@ -1,4 +1,6 @@
+using Conn.Authoring.Maps;
 using Conn.Core.Maps;
+using Conn.Editor.Maps;
 using Conn.Core.Quests;
 using Conn.Runtime.Maps;
 using NUnit.Framework;
@@ -114,6 +116,150 @@ namespace Conn.Tests.EditMode
             Assert.That(loaded.Objects[0].Kind, Is.EqualTo(RoomChunkObjectKind.Chest));
             Assert.That(loaded.Objects[0].PrefabId, Is.EqualTo("chest_small"));
             Assert.That(loaded.Objects[1].Height, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void EditableMapDraftAssetSurvivesUnityJsonSerialization()
+        {
+            var draft = ScriptableObject.CreateInstance<EditableMapDraftAsset>();
+            draft.Id = "draft_probe";
+            draft.SourceProfileId = "profile_probe";
+            draft.Seed = 42;
+            draft.Floor = 2;
+            draft.Difficulty = 3;
+            draft.InitializeBlank(3, 2, 0.5f, 0.25f);
+            draft.TrySetCell(new EditableMapCell
+            {
+                X = 1,
+                Y = 0,
+                RoomId = "room_a",
+                ZoneId = "zone_a",
+                Terrain = RoomChunkCellType.Stair,
+                Height = 2,
+                Direction = MapDirection.East,
+                MaterialId = "stone"
+            });
+            draft.Objects = new[]
+            {
+                new EditableMapObjectPlacement
+                {
+                    Id = "chest_01",
+                    PaletteObjectId = "chest_small",
+                    Kind = RoomChunkObjectKind.Chest,
+                    X = 1,
+                    Y = 1,
+                    Width = 1,
+                    Depth = 1,
+                    Direction = MapDirection.South
+                }
+            };
+            draft.Rooms = new[]
+            {
+                new EditableMapRoom
+                {
+                    Id = "room_a",
+                    Role = MapRoomRole.Start,
+                    LayoutKind = RoomChunkLayoutKind.Room,
+                    X = 0,
+                    Y = 0,
+                    Width = 3,
+                    Height = 2,
+                    SocketMask = MapDirection.East
+                }
+            };
+            draft.Zones = new[]
+            {
+                new EditableMapZone
+                {
+                    Id = "zone_a",
+                    ThemeId = "ruins",
+                    IntendedDifficulty = 2,
+                    Purpose = "start"
+                }
+            };
+            draft.Sockets = new[]
+            {
+                new EditableMapSocket
+                {
+                    Id = "socket_a",
+                    RoomId = "room_a",
+                    X = 2,
+                    Y = 1,
+                    Direction = MapDirection.East,
+                    Width = 1,
+                    TargetRoomId = "room_b"
+                }
+            };
+
+            var json = JsonUtility.ToJson(draft);
+            var loaded = ScriptableObject.CreateInstance<EditableMapDraftAsset>();
+            JsonUtility.FromJsonOverwrite(json, loaded);
+
+            Assert.That(loaded.Id, Is.EqualTo("draft_probe"));
+            Assert.That(loaded.SourceProfileId, Is.EqualTo("profile_probe"));
+            Assert.That(loaded.Width, Is.EqualTo(3));
+            Assert.That(loaded.Height, Is.EqualTo(2));
+            Assert.That(loaded.Cells.Length, Is.EqualTo(6));
+            Assert.That(loaded.GetCell(1, 0).Terrain, Is.EqualTo(RoomChunkCellType.Stair));
+            Assert.That(loaded.GetCell(1, 0).Direction, Is.EqualTo(MapDirection.East));
+            Assert.That(loaded.Objects.Length, Is.EqualTo(1));
+            Assert.That(loaded.Rooms[0].Id, Is.EqualTo("room_a"));
+            Assert.That(loaded.Zones[0].ThemeId, Is.EqualTo("ruins"));
+            Assert.That(loaded.Sockets[0].TargetRoomId, Is.EqualTo("room_b"));
+        }
+
+        [Test]
+        public void EditableDraftBuilderConvertsGeneratedDraftIntoCellMap()
+        {
+            var profile = MapGenerationCatalog.ChapterTwoFirstSliceProfile();
+            var chunks = MapGenerationCatalog.ChapterTwoFirstSliceChunks();
+            var generated = MapGenerationService.Generate(profile, chunks, 2001);
+            var draft = ScriptableObject.CreateInstance<EditableMapDraftAsset>();
+
+            EditableMapDraftBuilder.PopulateFromGeneratedDraft(draft, generated, profile, 1, 0, 0.5f, 0.25f);
+
+            Assert.That(draft.Width, Is.GreaterThan(0));
+            Assert.That(draft.Height, Is.GreaterThan(0));
+            Assert.That(draft.Rooms.Length, Is.EqualTo(generated.Graph.Nodes.Count));
+            Assert.That(draft.Sockets.Length, Is.EqualTo(generated.Graph.Edges.Count * 2));
+            Assert.That(draft.Objects.Length, Is.GreaterThanOrEqualTo(0));
+            Assert.That(draft.Cells.Length, Is.EqualTo(draft.Width * draft.Height));
+        }
+
+        [Test]
+        public void EditablePreviewBuilderRebuildsWithoutWorkspaceDependency()
+        {
+            var draft = ScriptableObject.CreateInstance<EditableMapDraftAsset>();
+            draft.name = "PreviewProbe";
+            draft.InitializeBlank(2, 2, 1f, 0.5f);
+            draft.TrySetCell(new EditableMapCell { X = 0, Y = 0, Terrain = RoomChunkCellType.Floor, Direction = MapDirection.North, MaterialId = "floor" });
+            draft.TrySetCell(new EditableMapCell { X = 1, Y = 0, Terrain = RoomChunkCellType.Wall, Height = 0, Direction = MapDirection.North, MaterialId = "wall" });
+            draft.TrySetCell(new EditableMapCell { X = 0, Y = 1, Terrain = RoomChunkCellType.Slope, Height = 0, Direction = MapDirection.East, MaterialId = "slope" });
+            draft.TrySetCell(new EditableMapCell { X = 1, Y = 1, Terrain = RoomChunkCellType.Stair, Height = 0, Direction = MapDirection.South, MaterialId = "stair" });
+            draft.Objects = new[]
+            {
+                new EditableMapObjectPlacement
+                {
+                    Id = "torch_01",
+                    Kind = RoomChunkObjectKind.Torch,
+                    X = 0,
+                    Y = 0,
+                    Width = 1,
+                    Depth = 1,
+                    Direction = MapDirection.North
+                }
+            };
+
+            var root = EditableMapPreviewMeshBuilder.RebuildPreview(draft);
+
+            Assert.That(root, Is.Not.Null);
+            Assert.That(root.transform.Find("Terrain Mesh"), Is.Not.Null);
+            Assert.That(root.transform.Find("Wall Mesh"), Is.Not.Null);
+            Assert.That(root.transform.Find("Slope Mesh"), Is.Not.Null);
+            Assert.That(root.transform.Find("Stair Mesh"), Is.Not.Null);
+            Assert.That(root.transform.Find("Object Preview Root"), Is.Not.Null);
+
+            Object.DestroyImmediate(root);
         }
     }
 }

@@ -91,6 +91,15 @@ namespace Conn.Editor.Maps
                 }
             }
 
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("Create Editable Draft Asset"))
+                {
+                    serializedObject.ApplyModifiedProperties();
+                    CreateEditableDraftAsset(workspace);
+                }
+            }
+
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Last Result", EditorStyles.boldLabel);
             EditorGUILayout.LabelField("Map", string.IsNullOrWhiteSpace(workspace.LastGeneratedMapId) ? "(none)" : workspace.LastGeneratedMapId);
@@ -185,6 +194,35 @@ namespace Conn.Editor.Maps
             EditorUtility.SetDirty(workspace);
             MarkSceneDirty(workspace);
             Debug.LogException(exception);
+        }
+
+        private static void CreateEditableDraftAsset(MapGeneratorWorkspace workspace)
+        {
+            try
+            {
+                var generated = workspace.LastDraft != null
+                    ? new GeneratedMapResult(workspace.LastDraft, workspace.LastCompiled, workspace.LastReport)
+                    : Generate(workspace);
+                var runtimeProfile = workspace.MapProfile != null
+                    ? workspace.MapProfile.ToRuntimeProfile()
+                    : MapGenerationCatalog.ChapterTwoFirstSliceProfile();
+                var assetPath = EditableMapDraftBuilder.BuildDefaultAssetPath($"{generated.Draft.ProfileId}_{generated.Draft.Seed}_draft");
+                var draftAsset = EditableMapDraftBuilder.CreateDraftAssetFromGenerated(
+                    assetPath,
+                    generated.Draft,
+                    runtimeProfile,
+                    workspace.Floor,
+                    workspace.Difficulty,
+                    workspace.PreviewCellSize,
+                    workspace.PreviewCellSize);
+
+                Selection.activeObject = draftAsset;
+                EditorGUIUtility.PingObject(draftAsset);
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+            }
         }
 
         private static GeneratedMapResult Generate(MapGeneratorWorkspace workspace)

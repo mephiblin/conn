@@ -3,7 +3,9 @@
   "rootNamespace": "Conn.Tests",
   "references": [
     "Conn.Core",
-    "Conn.Runtime"
+    "Conn.Runtime",
+    "Conn.Authoring",
+    "Conn.Editor"
   ],
   "includePlatforms": [
     "Editor"

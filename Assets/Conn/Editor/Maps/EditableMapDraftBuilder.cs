@@ -1,0 +1,381 @@
+using Conn.Authoring.Maps;
+using Conn.Core.Maps;
+using System;
+using System.Collections.Generic;
+using UnityEditor;
+using UnityEngine;
+
+namespace Conn.Editor.Maps
+{
+    public static class EditableMapDraftBuilder
+    {
+        public static EditableMapDraftAsset CreateBlankDraftAsset(
+            string assetPath,
+            string id,
+            string sourceProfileId,
+            int width,
+            int height,
+            float cellSize = 1f,
+            float heightStep = 1f)
+        {
+            EnsureDraftFolders();
+
+            var draft = ScriptableObject.CreateInstance<EditableMapDraftAsset>();
+            draft.Id = string.IsNullOrWhiteSpace(id) ? "editable_map_draft" : id.Trim();
+            draft.SourceProfileId = sourceProfileId ?? string.Empty;
+            draft.InitializeBlank(width, height, cellSize, heightStep);
+
+            AssetDatabase.CreateAsset(draft, assetPath);
+            AssetDatabase.SaveAssets();
+            return draft;
+        }
+
+        public static EditableMapDraftAsset CreateDraftAssetFromGenerated(
+            string assetPath,
+            GeneratedMapDraft generatedDraft,
+            MapProfile profile,
+            int floor,
+            int difficulty,
+            float cellSize = 1f,
+            float heightStep = 1f)
+        {
+            EnsureDraftFolders();
+
+            var draft = ScriptableObject.CreateInstance<EditableMapDraftAsset>();
+            PopulateFromGeneratedDraft(draft, generatedDraft, profile, floor, difficulty, cellSize, heightStep);
+            AssetDatabase.CreateAsset(draft, assetPath);
+            AssetDatabase.SaveAssets();
+            return draft;
+        }
+
+        public static void PopulateFromGeneratedDraft(
+            EditableMapDraftAsset target,
+            GeneratedMapDraft generatedDraft,
+            MapProfile profile,
+            int floor,
+            int difficulty,
+            float cellSize = 1f,
+            float heightStep = 1f)
+        {
+            if (target == null)
+            {
+                throw new ArgumentNullException(nameof(target));
+            }
+
+            if (generatedDraft == null)
+            {
+                throw new ArgumentNullException(nameof(generatedDraft));
+            }
+
+            if (profile == null)
+            {
+                throw new ArgumentNullException(nameof(profile));
+            }
+
+            var chunkLookup = BuildChunkLookup();
+            var roomBounds = CalculateRoomBounds(generatedDraft.Graph);
+            var mapWidth = roomBounds.width * Mathf.Max(1, profile.RoomWidth);
+            var mapHeight = roomBounds.height * Mathf.Max(1, profile.RoomHeight);
+
+            target.Id = $"{generatedDraft.ProfileId}_{generatedDraft.Seed}_draft";
+            target.SourceProfileId = generatedDraft.ProfileId ?? string.Empty;
+            target.Seed = generatedDraft.Seed;
+            target.Floor = Mathf.Max(1, floor);
+            target.Difficulty = Mathf.Max(0, difficulty);
+            target.Version = 1;
+            target.InitializeBlank(mapWidth, mapHeight, cellSize, heightStep);
+
+            var rooms = new List<EditableMapRoom>();
+            var objects = new List<EditableMapObjectPlacement>();
+            var sockets = new List<EditableMapSocket>();
+            var edges = BuildEdgeLookup(generatedDraft.Graph);
+            var nodes = BuildNodeLookup(generatedDraft.Graph);
+
+            foreach (var node in generatedDraft.Graph.Nodes)
+            {
+                var roomOriginX = (node.GridX - roomBounds.xMin) * profile.RoomWidth;
+                var roomOriginY = (node.GridY - roomBounds.yMin) * profile.RoomHeight;
+                var layoutKind = RoomChunkLayoutKind.Room;
+                if (chunkLookup.TryGetValue(node.ChunkId ?? string.Empty, out var chunk))
+                {
+                    layoutKind = chunk.LayoutKind;
+                    StampChunk(target, chunk, roomOriginX, roomOriginY, node.Id, objects);
+                }
+                else
+                {
+                    FillRoomFallback(target, roomOriginX, roomOriginY, profile.RoomWidth, profile.RoomHeight, node.Id);
+                }
+
+                rooms.Add(new EditableMapRoom
+                {
+                    Id = node.Id ?? string.Empty,
+                    Role = node.Role,
+                    LayoutKind = layoutKind,
+                    X = roomOriginX,
+                    Y = roomOriginY,
+                    Width = profile.RoomWidth,
+                    Height = profile.RoomHeight,
+                    SocketMask = node.SocketMask,
+                    HeightLevel = 0,
+                    ZoneId = string.Empty,
+                    ChunkId = node.ChunkId ?? string.Empty
+                });
+
+                CreateSocketsForNode(node, roomOriginX, roomOriginY, profile, edges, nodes, sockets);
+            }
+
+            target.Rooms = rooms.ToArray();
+            target.Objects = objects.ToArray();
+            target.Sockets = sockets.ToArray();
+            target.Zones = Array.Empty<EditableMapZone>();
+        }
+
+        public static string BuildDefaultAssetPath(string baseName)
+        {
+            EnsureDraftFolders();
+            var fileName = string.IsNullOrWhiteSpace(baseName) ? "EditableMapDraft.asset" : $"{SanitizeFileName(baseName)}.asset";
+            return AssetDatabase.GenerateUniqueAssetPath($"{EditableMapDraftAsset.DefaultDraftFolder}/{fileName}");
+        }
+
+        private static void EnsureDraftFolders()
+        {
+            if (!AssetDatabase.IsValidFolder("Assets/Conn/Authoring/Maps/Drafts"))
+            {
+                AssetDatabase.CreateFolder("Assets/Conn/Authoring/Maps", "Drafts");
+            }
+        }
+
+        private static Dictionary<string, RoomChunkAsset> BuildChunkLookup()
+        {
+            var lookup = new Dictionary<string, RoomChunkAsset>(StringComparer.Ordinal);
+            var guids = new List<string>();
+            guids.AddRange(AssetDatabase.FindAssets("t:RoomChunkAsset"));
+            guids.AddRange(AssetDatabase.FindAssets("t:LandmarkRoomAsset"));
+
+            foreach (var guid in guids)
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                var chunk = AssetDatabase.LoadAssetAtPath<RoomChunkAsset>(path);
+                if (chunk == null || string.IsNullOrWhiteSpace(chunk.Id) || lookup.ContainsKey(chunk.Id))
+                {
+                    continue;
+                }
+
+                lookup.Add(chunk.Id, chunk);
+            }
+
+            return lookup;
+        }
+
+        private static RectInt CalculateRoomBounds(RoomGraph graph)
+        {
+            if (graph == null || graph.Nodes.Count == 0)
+            {
+                return new RectInt(0, 0, 1, 1);
+            }
+
+            var minX = graph.Nodes[0].GridX;
+            var maxX = graph.Nodes[0].GridX;
+            var minY = graph.Nodes[0].GridY;
+            var maxY = graph.Nodes[0].GridY;
+            foreach (var node in graph.Nodes)
+            {
+                minX = Mathf.Min(minX, node.GridX);
+                maxX = Mathf.Max(maxX, node.GridX);
+                minY = Mathf.Min(minY, node.GridY);
+                maxY = Mathf.Max(maxY, node.GridY);
+            }
+
+            return new RectInt(minX, minY, (maxX - minX) + 1, (maxY - minY) + 1);
+        }
+
+        private static Dictionary<string, List<RoomGraphEdge>> BuildEdgeLookup(RoomGraph graph)
+        {
+            var lookup = new Dictionary<string, List<RoomGraphEdge>>(StringComparer.Ordinal);
+            if (graph == null)
+            {
+                return lookup;
+            }
+
+            foreach (var edge in graph.Edges)
+            {
+                AddEdgeLookup(lookup, edge.FromNodeId, edge);
+                AddEdgeLookup(lookup, edge.ToNodeId, edge);
+            }
+
+            return lookup;
+        }
+
+        private static Dictionary<string, RoomGraphNode> BuildNodeLookup(RoomGraph graph)
+        {
+            var lookup = new Dictionary<string, RoomGraphNode>(StringComparer.Ordinal);
+            if (graph == null)
+            {
+                return lookup;
+            }
+
+            foreach (var node in graph.Nodes)
+            {
+                if (!string.IsNullOrWhiteSpace(node.Id))
+                {
+                    lookup[node.Id] = node;
+                }
+            }
+
+            return lookup;
+        }
+
+        private static void AddEdgeLookup(Dictionary<string, List<RoomGraphEdge>> lookup, string key, RoomGraphEdge edge)
+        {
+            if (!lookup.TryGetValue(key, out var edges))
+            {
+                edges = new List<RoomGraphEdge>();
+                lookup.Add(key, edges);
+            }
+
+            edges.Add(edge);
+        }
+
+        private static void FillRoomFallback(
+            EditableMapDraftAsset target,
+            int originX,
+            int originY,
+            int roomWidth,
+            int roomHeight,
+            string roomId)
+        {
+            for (var y = 0; y < roomHeight; y++)
+            {
+                for (var x = 0; x < roomWidth; x++)
+                {
+                    var cell = EditableMapCell.CreateDefault(originX + x, originY + y);
+                    cell.RoomId = roomId ?? string.Empty;
+                    cell.Terrain = RoomChunkCellType.Floor;
+                    target.TrySetCell(cell);
+                }
+            }
+        }
+
+        private static void StampChunk(
+            EditableMapDraftAsset target,
+            RoomChunkAsset chunk,
+            int originX,
+            int originY,
+            string roomId,
+            List<EditableMapObjectPlacement> objects)
+        {
+            foreach (var sourceCell in chunk.Cells ?? Array.Empty<RoomChunkCell>())
+            {
+                var cell = EditableMapCell.CreateDefault(originX + sourceCell.X, originY + sourceCell.Y);
+                cell.RoomId = roomId ?? string.Empty;
+                cell.Terrain = sourceCell.Type;
+                cell.Height = sourceCell.Height;
+                cell.Direction = sourceCell.Direction;
+                cell.MaterialId = sourceCell.MaterialId ?? string.Empty;
+                target.TrySetCell(cell);
+            }
+
+            foreach (var sourceObject in chunk.Objects ?? Array.Empty<RoomChunkObjectPlacement>())
+            {
+                objects.Add(new EditableMapObjectPlacement
+                {
+                    Id = sourceObject.Id ?? string.Empty,
+                    PaletteObjectId = sourceObject.PrefabId ?? string.Empty,
+                    Kind = sourceObject.Kind,
+                    X = originX + sourceObject.X,
+                    Y = originY + sourceObject.Y,
+                    Height = sourceObject.Height,
+                    Width = Mathf.Max(1, sourceObject.Width),
+                    Depth = Mathf.Max(1, sourceObject.Depth),
+                    Direction = sourceObject.Direction,
+                    BlocksMovement = sourceObject.BlocksMovement,
+                    RuntimeReferenceId = sourceObject.PrefabId ?? string.Empty,
+                    MaterialId = sourceObject.MaterialId ?? string.Empty
+                });
+            }
+        }
+
+        private static void CreateSocketsForNode(
+            RoomGraphNode node,
+            int roomOriginX,
+            int roomOriginY,
+            MapProfile profile,
+            Dictionary<string, List<RoomGraphEdge>> edgeLookup,
+            Dictionary<string, RoomGraphNode> nodeLookup,
+            List<EditableMapSocket> sockets)
+        {
+            if (!edgeLookup.TryGetValue(node.Id, out var edges))
+            {
+                return;
+            }
+
+            foreach (var edge in edges)
+            {
+                var isFrom = string.Equals(edge.FromNodeId, node.Id, StringComparison.Ordinal);
+                var otherId = isFrom ? edge.ToNodeId : edge.FromNodeId;
+                var direction = ResolveSocketDirection(node, otherId, nodeLookup);
+                var socketPosition = SocketPosition(roomOriginX, roomOriginY, profile.RoomWidth, profile.RoomHeight, direction);
+                sockets.Add(new EditableMapSocket
+                {
+                    Id = $"{node.Id}_{direction}_{otherId}",
+                    RoomId = node.Id ?? string.Empty,
+                    X = socketPosition.x,
+                    Y = socketPosition.y,
+                    Direction = direction,
+                    Width = 1,
+                    TargetRoomId = otherId ?? string.Empty,
+                    LockedDoorKeyId = edge.Locked ? "locked" : string.Empty
+                });
+            }
+        }
+
+        private static MapDirection ResolveSocketDirection(RoomGraphNode node, string otherId, Dictionary<string, RoomGraphNode> nodeLookup)
+        {
+            if (nodeLookup.TryGetValue(otherId ?? string.Empty, out var other))
+            {
+                if (other.GridX > node.GridX)
+                {
+                    return MapDirection.East;
+                }
+
+                if (other.GridX < node.GridX)
+                {
+                    return MapDirection.West;
+                }
+
+                return other.GridY > node.GridY ? MapDirection.North : MapDirection.South;
+            }
+
+            return MapDirection.North;
+        }
+
+        private static Vector2Int SocketPosition(int originX, int originY, int roomWidth, int roomHeight, MapDirection direction)
+        {
+            var centerX = originX + Mathf.Max(0, roomWidth / 2);
+            var centerY = originY + Mathf.Max(0, roomHeight / 2);
+            switch (direction)
+            {
+                case MapDirection.East:
+                    return new Vector2Int(originX + Mathf.Max(0, roomWidth - 1), centerY);
+                case MapDirection.South:
+                    return new Vector2Int(centerX, originY);
+                case MapDirection.West:
+                    return new Vector2Int(originX, centerY);
+                default:
+                    return new Vector2Int(centerX, originY + Mathf.Max(0, roomHeight - 1));
+            }
+        }
+
+        private static string SanitizeFileName(string value)
+        {
+            var invalidChars = System.IO.Path.GetInvalidFileNameChars();
+            var sanitized = value;
+            foreach (var invalid in invalidChars)
+            {
+                sanitized = sanitized.Replace(invalid, '_');
+            }
+
+            return string.IsNullOrWhiteSpace(sanitized) ? "EditableMapDraft" : sanitized;
+        }
+    }
+}
