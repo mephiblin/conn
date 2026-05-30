@@ -572,8 +572,10 @@ namespace Conn.MapGenV2.Editor
             EditorGUILayout.LabelField("연결 에셋 / Linked Assets", EditorStyles.boldLabel);
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
-                DrawObjectShortcutRow("Profile", profile);
-                DrawObjectShortcutRow("Draft", draft);
+                var style = new GUIStyle(EditorStyles.miniLabel) { wordWrap = true };
+                EditorGUILayout.LabelField(BuildLinkedAssetShortcutSummary(), style);
+                DrawObjectShortcutRow("Profile", profile, CreateStarterSetupFromShortcut);
+                DrawObjectShortcutRow("Draft", draft, profile != null ? CreateDraft : null);
                 DrawObjectShortcutRow("Materialized Root", selectedMaterializedRoot);
                 DrawObjectShortcutRow("Baked Asset", LoadExpectedBakedAsset());
 
@@ -609,29 +611,165 @@ namespace Conn.MapGenV2.Editor
             }
         }
 
-        private static void DrawObjectShortcutRow(string label, Object target)
+        public static string BuildLinkedAssetShortcutSummary()
+        {
+            return "연결 에셋 작업: Ping, Select, Open, Create, Duplicate, Validate, Fix/Create Missing. "
+                + "중요 참조 옆에서 즉시 찾기, 열기, 복제, 검증, 누락 생성 흐름을 실행합니다.";
+        }
+
+        private void DrawObjectShortcutRow(string label, Object target, System.Action createAction = null)
         {
             using (new EditorGUILayout.HorizontalScope())
             {
                 EditorGUILayout.ObjectField(label, target, typeof(Object), false);
+                using (new EditorGUI.DisabledScope(createAction == null || target != null))
+                {
+                    if (GUILayout.Button(new GUIContent("Create", "누락된 기본 에셋을 생성합니다."), GUILayout.Width(58f)))
+                    {
+                        createAction();
+                    }
+                }
+
                 using (new EditorGUI.DisabledScope(target == null))
                 {
-                    if (GUILayout.Button("Ping", GUILayout.Width(52f)))
+                    if (GUILayout.Button(new GUIContent("Ping", "Project 또는 Hierarchy에서 에셋 위치를 표시합니다."), GUILayout.Width(52f)))
                     {
                         EditorGUIUtility.PingObject(target);
                     }
 
-                    if (GUILayout.Button("Select", GUILayout.Width(58f)))
+                    if (GUILayout.Button(new GUIContent("Select", "현재 Selection으로 지정합니다."), GUILayout.Width(58f)))
                     {
                         Selection.activeObject = target;
                     }
 
-                    if (GUILayout.Button("Open", GUILayout.Width(52f)))
+                    if (GUILayout.Button(new GUIContent("Open", "Inspector 또는 에셋 편집기를 엽니다."), GUILayout.Width(52f)))
                     {
                         AssetDatabase.OpenAsset(target);
                     }
+
+                    using (new EditorGUI.DisabledScope(!CanDuplicateShortcutTarget(target)))
+                    {
+                        if (GUILayout.Button(new GUIContent("Duplicate", "Project 에셋을 같은 폴더에 복제합니다."), GUILayout.Width(76f)))
+                        {
+                            DuplicateShortcutTarget(target);
+                        }
+                    }
+
+                    if (GUILayout.Button(new GUIContent("Validate", "선택한 MapGenV2 에셋의 검증 결과를 요약합니다."), GUILayout.Width(70f)))
+                    {
+                        var report = ValidateShortcutTarget(target);
+                        var summary = BuildShortcutValidationSummary(target, report);
+                        EditorUtility.DisplayDialog("MapGenV2 Validate", summary, "OK");
+                        SetLastOperationResult(summary);
+                    }
+                }
+
+                using (new EditorGUI.DisabledScope(target != null || createAction == null))
+                {
+                    if (GUILayout.Button(new GUIContent("Fix/Create Missing", "누락된 참조를 만들거나 starter 흐름으로 보정합니다."), GUILayout.Width(128f)))
+                    {
+                        createAction();
+                    }
                 }
             }
+        }
+
+        public static string BuildShortcutValidationSummary(Object target, MapGenValidationReport report)
+        {
+            var targetName = target != null ? target.name : "(none)";
+            if (report == null)
+            {
+                return $"Validate {targetName}: unsupported target.";
+            }
+
+            return $"Validate {targetName}: {(report.IsValid ? "Valid" : $"Issues {report.Issues.Count}")}.";
+        }
+
+        private static MapGenValidationReport ValidateShortcutTarget(Object target)
+        {
+            var report = new MapGenValidationReport();
+            switch (target)
+            {
+                case MapGenProfileAsset profileAsset:
+                    report.AddRange(profileAsset.Validate(), profileAsset.name);
+                    report.AddRange(MapGenProfileGraphValidator.Validate(profileAsset), profileAsset.name);
+                    return report;
+                case MapGenRuleSetAsset ruleSet:
+                    report.AddRange(ruleSet.Validate(), ruleSet.name);
+                    return report;
+                case MapGenStyleSetAsset styleSet:
+                    report.AddRange(styleSet.Validate(), styleSet.name);
+                    return report;
+                case MapGenModuleSetAsset moduleSet:
+                    report.AddRange(moduleSet.Validate(), moduleSet.name);
+                    return report;
+                case MapGenRoomShapeAsset roomShape:
+                    report.AddRange(roomShape.Validate(), roomShape.name);
+                    return report;
+                case MapGenRoomTemplateAsset roomTemplate:
+                    report.AddRange(roomTemplate.Validate(), roomTemplate.name);
+                    return report;
+                case MapGenCorridorTemplateAsset corridorTemplate:
+                    report.AddRange(corridorTemplate.Validate(), corridorTemplate.name);
+                    return report;
+                case MapGenBakedMapAsset bakedMap:
+                    var migration = MapGenBakedMapMigration.MigrateInMemory(bakedMap);
+                    if (!migration.IsValid)
+                    {
+                        report.Add(new MapGenIssue(
+                            MapGenGenerationPhase.BakeRuntime,
+                            "runtime_bake_incompatible_version",
+                            migration.Message,
+                            "Rebake this runtime asset with the current MapGenV2 runtime.",
+                            severity: MapGenIssueSeverity.Fatal));
+                    }
+
+                    return report;
+                case MapGenMockupDraftAsset mockupDraft when mockupDraft.Profile != null:
+                    report.AddRange(mockupDraft.Profile.Validate(), mockupDraft.Profile.name);
+                    report.AddRange(MapGenMockupFeasibilityValidator.Validate(mockupDraft.Width, mockupDraft.Height, mockupDraft.Cells), mockupDraft.name);
+                    return report;
+                default:
+                    return report;
+            }
+        }
+
+        private static bool CanDuplicateShortcutTarget(Object target)
+        {
+            return target != null && !string.IsNullOrEmpty(AssetDatabase.GetAssetPath(target));
+        }
+
+        private static void DuplicateShortcutTarget(Object target)
+        {
+            var sourcePath = AssetDatabase.GetAssetPath(target);
+            if (string.IsNullOrEmpty(sourcePath))
+            {
+                return;
+            }
+
+            var directory = System.IO.Path.GetDirectoryName(sourcePath)?.Replace('\\', '/') ?? "Assets";
+            var fileName = System.IO.Path.GetFileNameWithoutExtension(sourcePath);
+            var extension = System.IO.Path.GetExtension(sourcePath);
+            var destinationPath = AssetDatabase.GenerateUniqueAssetPath($"{directory}/{fileName}_Copy{extension}");
+            if (!AssetDatabase.CopyAsset(sourcePath, destinationPath))
+            {
+                EditorUtility.DisplayDialog("MapGenV2 Duplicate", $"Failed to duplicate {sourcePath}.", "OK");
+                return;
+            }
+
+            AssetDatabase.ImportAsset(destinationPath);
+            var copy = AssetDatabase.LoadAssetAtPath<Object>(destinationPath);
+            Selection.activeObject = copy;
+            EditorGUIUtility.PingObject(copy);
+        }
+
+        private void CreateStarterSetupFromShortcut()
+        {
+            var setup = MapGenV2StarterSetupBuilder.CreateStarterProfileSetup();
+            profile = setup.Profile;
+            draft = setup.Draft;
+            Selection.activeObject = draft != null ? draft : profile;
+            SetLastOperationResult("Starter setup created from linked asset shortcut.");
         }
 
         private void DrawSceneOutputControls(MapGenV2WorkflowStatus workflow)

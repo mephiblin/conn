@@ -145,6 +145,23 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void MapGenV2WindowLinkedAssetShortcutSummaryListsReferenceActions()
+        {
+            var summary = MapGenV2Window.BuildLinkedAssetShortcutSummary();
+            var validation = MapGenV2Window.BuildShortcutValidationSummary(null, new MapGenValidationReport());
+
+            Assert.That(summary, Does.Contain("Ping"));
+            Assert.That(summary, Does.Contain("Select"));
+            Assert.That(summary, Does.Contain("Open"));
+            Assert.That(summary, Does.Contain("Create"));
+            Assert.That(summary, Does.Contain("Duplicate"));
+            Assert.That(summary, Does.Contain("Validate"));
+            Assert.That(summary, Does.Contain("Fix/Create Missing"));
+            Assert.That(summary, Does.Contain("누락 생성"));
+            Assert.That(validation, Does.Contain("Validate (none): Valid"));
+        }
+
+        [Test]
         public void MapGenV2WindowPrimaryActionExplanationIncludesChangeReasonAndOutput()
         {
             var explanation = MapGenV2Window.BuildPrimaryActionExplanation(
