@@ -17,6 +17,8 @@ namespace Conn.Core.Maps
                 Height = 64,
                 RoomWidth = 12,
                 RoomHeight = 10,
+                RoomCountMin = 8,
+                RoomCountMax = 17,
                 TargetModuleCount = 8,
                 CriticalPathMin = 9,
                 CriticalPathMax = 9,

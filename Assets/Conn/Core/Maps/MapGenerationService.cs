@@ -10,7 +10,12 @@ namespace Conn.Core.Maps
             ValidateProfile(profile);
             var random = new Random(seed);
             var draft = new GeneratedMapDraft { ProfileId = profile.ProfileId, Seed = seed };
-            var pathLength = random.Next(profile.CriticalPathMin, profile.CriticalPathMax + 1);
+            var roomCountMin = ResolveRoomCountMin(profile);
+            var roomCountMax = ResolveRoomCountMax(profile, roomCountMin);
+            var pathMin = Math.Max(4, Math.Min(profile.CriticalPathMin, roomCountMax));
+            var pathMax = Math.Max(pathMin, Math.Min(profile.CriticalPathMax, roomCountMax));
+            var pathLength = random.Next(pathMin, pathMax + 1);
+            var sideBranchCount = ResolveSideBranchCount(profile, pathLength, roomCountMin, roomCountMax);
             var x = 0;
             var y = profile.Height / profile.RoomHeight / 2;
             var hubAttachIndex = Math.Max(1, Math.Min(pathLength - 5, pathLength / 2));
@@ -29,7 +34,7 @@ namespace Conn.Core.Maps
             var maxAttachIndex = Math.Max(1, pathLength - 4);
             var northBranchCount = 0;
             var southBranchCount = 0;
-            for (var i = 0; i < profile.SideBranchCount; i++)
+            for (var i = 0; i < sideBranchCount; i++)
             {
                 var direction = i % 2 == 0 ? 1 : -1;
                 var attachIndex = direction > 0
@@ -70,6 +75,34 @@ namespace Conn.Core.Maps
             AssignLayoutKinds(draft.Graph, random);
             AssignChunksAndPlacements(draft, profile, chunks);
             return draft;
+        }
+
+        private static int ResolveRoomCountMin(MapProfile profile)
+        {
+            if (profile.RoomCountMin > 0)
+            {
+                return Math.Max(4, profile.RoomCountMin);
+            }
+
+            return Math.Max(4, profile.TargetModuleCount);
+        }
+
+        private static int ResolveRoomCountMax(MapProfile profile, int roomCountMin)
+        {
+            if (profile.RoomCountMax > 0)
+            {
+                return Math.Max(roomCountMin, profile.RoomCountMax);
+            }
+
+            return Math.Max(roomCountMin, Math.Max(profile.TargetModuleCount, profile.CriticalPathMax + (profile.SideBranchCount * 2)));
+        }
+
+        private static int ResolveSideBranchCount(MapProfile profile, int pathLength, int roomCountMin, int roomCountMax)
+        {
+            var maxBranchesByRoomCount = Math.Max(0, (roomCountMax - pathLength) / 2);
+            var minBranchesByRoomCount = Math.Max(0, (roomCountMin - pathLength + 1) / 2);
+            var requested = Math.Max(0, profile.SideBranchCount);
+            return Math.Min(maxBranchesByRoomCount, Math.Max(requested, minBranchesByRoomCount));
         }
 
         public static CompiledMap Compile(MapProfile profile, GeneratedMapDraft draft)

@@ -81,6 +81,8 @@ namespace Conn.Core.Maps
         public int Height;
         public int RoomWidth;
         public int RoomHeight;
+        public int RoomCountMin;
+        public int RoomCountMax;
         public int TargetModuleCount;
         public int CriticalPathMin;
         public int CriticalPathMax;

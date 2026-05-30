@@ -17,6 +17,8 @@ namespace Conn.Authoring.Maps
         [Header("Generation Rules")]
         public Vector2Int GridSize = new Vector2Int(5, 5);
         public Vector2Int RoomSize = new Vector2Int(8, 8);
+        public int RoomCountMin = 6;
+        public int RoomCountMax = 12;
         public int TargetModuleCount = 6;
         public int CriticalPathMin = 3;
         public int CriticalPathMax = 5;
@@ -49,6 +51,8 @@ namespace Conn.Authoring.Maps
                 Height = GridSize.y,
                 RoomWidth = RoomSize.x,
                 RoomHeight = RoomSize.y,
+                RoomCountMin = RoomCountMin,
+                RoomCountMax = RoomCountMax,
                 TargetModuleCount = TargetModuleCount,
                 CriticalPathMin = CriticalPathMin,
                 CriticalPathMax = CriticalPathMax,

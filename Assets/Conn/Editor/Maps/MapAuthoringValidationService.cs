@@ -642,6 +642,16 @@ namespace Conn.Editor.Maps
                     report.Errors.Add($"Map profile {profile.Id} theme id must not be empty.");
                 }
 
+                if (profile.RoomCountMin < 4)
+                {
+                    report.Errors.Add($"Map profile {profile.Id} room count min must be at least 4.");
+                }
+
+                if (profile.RoomCountMax < profile.RoomCountMin)
+                {
+                    report.Errors.Add($"Map profile {profile.Id} room count max must be greater than or equal to room count min.");
+                }
+
                 if (profile.ResourceSet == null)
                 {
                     report.Errors.Add($"Map profile {profile.Id} resource set is missing.");

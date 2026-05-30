@@ -18,6 +18,7 @@ namespace Conn.Editor.Maps
 
             EditorGUILayout.LabelField("Layout Snapshot Source", EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.MapProfile)));
+            DrawProfileSummary(workspace.MapProfile);
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.Seed)));
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.Floor)));
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.Difficulty)));
@@ -149,6 +150,26 @@ namespace Conn.Editor.Maps
             }
 
             serializedObject.ApplyModifiedProperties();
+        }
+
+        private static void DrawProfileSummary(MapProfileAsset profile)
+        {
+            if (profile == null)
+            {
+                return;
+            }
+
+            EditorGUILayout.LabelField("Room Count", $"{profile.RoomCountMin} - {profile.RoomCountMax}");
+            EditorGUILayout.LabelField("Critical Path", $"{profile.CriticalPathMin} - {profile.CriticalPathMax}");
+            EditorGUILayout.LabelField("Side Branches", profile.SideBranchCount.ToString());
+            EditorGUILayout.LabelField(
+                "Room Asset Pools",
+                $"chunks={Count(profile.OptionalChunks)}, required landmarks={Count(profile.RequiredLandmarkRooms)}, optional landmarks={Count(profile.OptionalLandmarks)}");
+        }
+
+        private static int Count<T>(T[] values)
+        {
+            return values?.Length ?? 0;
         }
 
         private static void GeneratePreview(MapGeneratorWorkspace workspace)

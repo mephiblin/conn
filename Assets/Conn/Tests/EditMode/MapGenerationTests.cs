@@ -63,6 +63,26 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void MapGenerationRespectsProfileRoomCountRange()
+        {
+            var profile = MapGenerationCatalog.ChapterTwoFirstSliceProfile();
+            var chunks = MapGenerationCatalog.ChapterTwoFirstSliceChunks();
+            profile.RoomCountMin = 7;
+            profile.RoomCountMax = 9;
+            profile.CriticalPathMin = 5;
+            profile.CriticalPathMax = 7;
+            profile.SideBranchCount = 4;
+
+            for (var seed = 2001; seed < 2010; seed++)
+            {
+                var draft = MapGenerationService.Generate(profile, chunks, seed);
+
+                Assert.That(draft.Graph.Nodes.Count, Is.GreaterThanOrEqualTo(profile.RoomCountMin), $"seed={seed}");
+                Assert.That(draft.Graph.Nodes.Count, Is.LessThanOrEqualTo(profile.RoomCountMax), $"seed={seed}");
+            }
+        }
+
+        [Test]
         public void FirstSliceProductionShapeIncludesBranchesLoopsAndSpecialRooms()
         {
             var profile = MapGenerationCatalog.ChapterTwoFirstSliceProfile();

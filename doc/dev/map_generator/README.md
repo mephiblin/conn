@@ -111,7 +111,10 @@ Use these steps after pulling the branch:
 2. Open the existing `MapGenerator` editor scene and select the
    `MapGeneratorWorkspace`.
 3. Assign a `MapProfileAsset` to `Map Profile`. The workspace does not use a
-   hidden fallback profile when this field is empty.
+   hidden fallback profile when this field is empty. The selected profile owns
+   generation rules such as `Room Count Min/Max`, critical path range, side
+   branch count, and the room asset pools (`OptionalChunks`,
+   `RequiredLandmarkRooms`, and `OptionalLandmarks`).
 4. In `Preview`, set `Room Spacing Min` and `Room Spacing Max`. Matching values
    produce fixed spacing; different values produce deterministic spacing
    variation for the preview layout.

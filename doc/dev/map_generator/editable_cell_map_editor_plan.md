@@ -1122,6 +1122,9 @@ is partially complete.
     section. Legacy `Room Height` and cell-debug toggles are no longer exposed,
     and `Room Spacing` is replaced with min/max spacing where equal values mean
     fixed spacing.
+  - 2026-05-30: `MapProfileAsset` now has explicit `Room Count Min/Max`.
+    Generation clamps critical path and side branches to stay inside that room
+    count range, and the workspace shows selected profile rule/pool summaries.
 - [x] Add screenshots or saved sample assets when the first usable version
   exists.
   - 2026-05-30: Chapter 2 saved `CompiledMapAsset` samples are regenerated
