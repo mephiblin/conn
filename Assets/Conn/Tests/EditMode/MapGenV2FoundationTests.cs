@@ -1135,12 +1135,20 @@ namespace Conn.Tests.EditMode
                 Assert.That(firstRoot.GetComponent<MapGenV2GeneratedMapMarker>().MaterializationRequestCount, Is.GreaterThan(0));
                 Assert.That(firstRoot.GetComponent<MapGenV2GeneratedMapMarker>().MaterializationInstantiatedCount, Is.GreaterThan(0));
                 Assert.That(firstRoot.transform.Find("Floors"), Is.Not.Null);
+                Assert.That(firstRoot.transform.Find("Navigation"), Is.Not.Null);
                 Assert.That(MapGenMockupMaterializer.FindExistingMarker(draft).gameObject, Is.SameAs(firstRoot));
-                var moduleMarker = firstRoot.GetComponentInChildren<MapGenV2MaterializedModuleMarker>();
-                Assert.That(moduleMarker, Is.Not.Null);
-                Assert.That(moduleMarker.RegionId, Is.EqualTo(3));
-                Assert.That(moduleMarker.SourceTemplateId, Is.EqualTo("start_template"));
-                Assert.That(moduleMarker.DraftSignature, Is.EqualTo(draft.AcceptedSignature));
+                var moduleMarkers = firstRoot.GetComponentsInChildren<MapGenV2MaterializedModuleMarker>();
+                var floorMarker = System.Array.Find(moduleMarkers, marker => marker.ModuleCategory == MapGenModuleCategory.FloorA);
+                var navigationMarker = System.Array.Find(moduleMarkers, marker => marker.ModuleCategory == MapGenModuleCategory.NavigationHelper);
+                Assert.That(floorMarker, Is.Not.Null);
+                Assert.That(floorMarker.RegionId, Is.EqualTo(3));
+                Assert.That(floorMarker.SourceTemplateId, Is.EqualTo("start_template"));
+                Assert.That(floorMarker.DraftSignature, Is.EqualTo(draft.AcceptedSignature));
+                Assert.That(navigationMarker, Is.Not.Null);
+                Assert.That(navigationMarker.transform.parent.name, Is.EqualTo("Navigation"));
+                Assert.That(navigationMarker.RegionId, Is.EqualTo(3));
+                Assert.That(navigationMarker.SourceTemplateId, Is.EqualTo("start_template"));
+                Assert.That(navigationMarker.DraftSignature, Is.EqualTo(draft.AcceptedSignature));
 
                 secondRoot = MapGenMockupMaterializer.Materialize(draft, MapGenV2SceneOutputMode.ReplacePreviousRoot);
                 Assert.That(secondRoot, Is.Not.Null);
@@ -1744,12 +1752,37 @@ namespace Conn.Tests.EditMode
                 request => request.Category == MapGenModuleCategory.FloorA
                     && request.RegionId == 7
                     && request.SourceTemplateId == "start_template"));
+            Assert.That(requests, Has.Exactly(1).Matches<MapGenModuleRequest>(
+                request => request.Category == MapGenModuleCategory.NavigationHelper
+                    && request.RegionId == 7
+                    && request.SourceTemplateId == "start_template"));
             Assert.That(requests, Has.Exactly(4).Matches<MapGenModuleRequest>(
                 request => request.Category == MapGenModuleCategory.WallStraight
                     && request.RegionId == 7
                     && request.SourceTemplateId == "start_template"));
             Assert.That(requests, Has.Exactly(4).Matches<MapGenModuleRequest>(
                 request => request.Category == MapGenModuleCategory.WallCornerOutside));
+            Assert.That(requests, Has.None.Matches<MapGenModuleRequest>(
+                request => request.Category == MapGenModuleCategory.WallCornerInside));
+        }
+
+        [Test]
+        public void MaterializationClassifierCreatesInsideCornerRequestsForConcaveCells()
+        {
+            var cells = new[]
+            {
+                new MapGenMockupCell { State = MapGenCellState.Room, RegionId = 1 },
+                new MapGenMockupCell { State = MapGenCellState.Room, RegionId = 1 },
+                new MapGenMockupCell { State = MapGenCellState.Room, RegionId = 1 },
+                new MapGenMockupCell { State = MapGenCellState.Empty }
+            };
+
+            var requests = MapGenMaterializationClassifier.Classify(2, 2, cells);
+
+            Assert.That(requests, Has.Some.Matches<MapGenModuleRequest>(
+                request => request.Category == MapGenModuleCategory.WallCornerInside
+                    && request.Coord == new MapGenGridCoord(0, 0)
+                    && request.RegionId == 1));
         }
 
         [Test]
@@ -1834,7 +1867,7 @@ namespace Conn.Tests.EditMode
                 var report = MapGenMockupMaterializer.BuildReport(moduleSet, plan);
 
                 Assert.That(report.TotalRequests, Is.EqualTo(plan.RequestCount));
-                Assert.That(report.InstantiableRequests, Is.EqualTo(1));
+                Assert.That(report.InstantiableRequests, Is.EqualTo(2));
                 Assert.That(report.MissingModuleRequests, Is.GreaterThan(0));
                 Assert.That(report.MissingModuleCategories, Contains.Item(nameof(MapGenModuleCategory.WallStraight)));
             }
@@ -1890,7 +1923,7 @@ namespace Conn.Tests.EditMode
                 var second = MapGenMockupMaterializer.BuildReport(moduleSet, plan, 1234);
 
                 Assert.That(second.SelectedPrefabNames, Is.EqualTo(first.SelectedPrefabNames));
-                Assert.That(first.InstantiableRequests, Is.EqualTo(2));
+                Assert.That(first.InstantiableRequests, Is.EqualTo(4));
                 Assert.That(first.FootprintOutOfBoundsRequests, Is.GreaterThan(0));
                 Assert.That(first.FootprintOverlapRequests, Is.GreaterThan(0));
                 Assert.That(first.HasFootprintIssues, Is.True);

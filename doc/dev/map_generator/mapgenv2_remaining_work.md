@@ -716,6 +716,10 @@ Progress note 2026-05-31:
 - Door connector classification now requests whole-door and split
   frame/panel module categories, while non-door corridor sockets avoid door
   requests.
+- Materialization classification now includes inside wall corners and
+  navigation helper objects. Navigation helpers materialize as marker-bearing
+  empty objects under the `Navigation` scene group instead of requiring prefab
+  module entries.
 
 Goal: turn accepted mockups into readable project-prefab maps.
 
@@ -726,8 +730,9 @@ Tasks:
   materialization.
 - [x] Preserve mockup region ids so selected/locked room edits can be traced in
   the materialized output.
-- [ ] Classify floors, corridors, straight walls, inside corners, outside
-  corners, ceilings, doors, props, and navigation helper objects.
+- [x] Classify floors, corridors, straight walls, inside corners, outside
+  corners, interior ceilings, doors, props, and navigation helper objects.
+- [ ] Add exterior ceiling classification.
 - [x] Use `CellSize` consistently for positions.
 - [x] Respect prefab footprint in materialization preflight.
 - [x] Respect allowed rotations and module offsets.
@@ -737,7 +742,7 @@ Tasks:
 - [ ] Support connector-width-aware door openings.
 - [x] Add overlap detection.
 - [x] Add missing-module warnings before instantiation.
-- [ ] Group output hierarchy:
+- [x] Group output hierarchy:
   floors, corridors, walls, ceilings, doors, props, navigation.
 - [x] Attach editor-only source metadata to materialized scene objects:
   draft id, region id, template id, module category, and selected prefab.
@@ -758,6 +763,8 @@ Verification:
 - EditMode test for deterministic weighted selection and footprint overlap.
 - EditMode test for `CellSize`, module offset, and rotation-policy stamping.
 - EditMode tests for whole-door and split-door request classification.
+- EditMode tests for inside-corner and navigation-helper classification.
+- EditMode test for navigation-helper scene grouping and source metadata.
 - EditMode test for missing prefab/module reports.
 - Manual Unity check with at least two style sets.
 

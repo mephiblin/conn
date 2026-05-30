@@ -63,6 +63,8 @@ namespace Conn.MapGenV2.Authoring
                     return HalfDoorFrames;
                 case MapGenModuleCategory.DoorPanelHalf:
                     return HalfDoorPanels;
+                case MapGenModuleCategory.NavigationHelper:
+                    return Array.Empty<MapGenModuleEntry>();
                 case MapGenModuleCategory.Prop:
                     return PropCategories;
                 default:

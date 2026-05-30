@@ -29,6 +29,7 @@ namespace Conn.MapGenV2.Core
                     RegionId = cell.RegionId,
                     SourceTemplateId = cell.SourceTemplateId
                 });
+                AddRequest(requests, MapGenModuleCategory.NavigationHelper, cell, coord, MapGenGridDirection.North);
 
                 if (cell.State == MapGenCellState.Room)
                 {
@@ -113,6 +114,10 @@ namespace Conn.MapGenV2.Core
             AddCorner(requests, cells, width, coord, east && south);
             AddCorner(requests, cells, width, coord, south && west);
             AddCorner(requests, cells, width, coord, west && north);
+            AddInsideCorner(requests, cells, width, height, coord, north, east, MapGenGridDirection.North);
+            AddInsideCorner(requests, cells, width, height, coord, east, south, MapGenGridDirection.East);
+            AddInsideCorner(requests, cells, width, height, coord, south, west, MapGenGridDirection.South);
+            AddInsideCorner(requests, cells, width, height, coord, west, north, MapGenGridDirection.West);
         }
 
         private static void AddWall(
@@ -160,6 +165,31 @@ namespace Conn.MapGenV2.Core
             });
         }
 
+        private static void AddInsideCorner(
+            List<MapGenModuleRequest> requests,
+            MapGenMockupCell[] cells,
+            int width,
+            int height,
+            MapGenGridCoord coord,
+            bool firstBoundary,
+            bool secondBoundary,
+            MapGenGridDirection direction)
+        {
+            if (firstBoundary || secondBoundary || CountNavigableNeighbors(width, height, cells, coord) < 2)
+            {
+                return;
+            }
+
+            requests.Add(new MapGenModuleRequest
+            {
+                Category = MapGenModuleCategory.WallCornerInside,
+                Coord = coord,
+                Direction = direction,
+                RegionId = cells[coord.ToIndex(width)].RegionId,
+                SourceTemplateId = cells[coord.ToIndex(width)].SourceTemplateId
+            });
+        }
+
         private static bool IsBoundary(
             int width,
             int height,
@@ -197,6 +227,31 @@ namespace Conn.MapGenV2.Core
             }
 
             return MapGenGridDirection.North;
+        }
+
+        private static int CountNavigableNeighbors(
+            int width,
+            int height,
+            MapGenMockupCell[] cells,
+            MapGenGridCoord coord)
+        {
+            var count = 0;
+            foreach (var direction in new[]
+            {
+                MapGenGridDirection.North,
+                MapGenGridDirection.East,
+                MapGenGridDirection.South,
+                MapGenGridDirection.West
+            })
+            {
+                var neighbor = coord.Offset(direction);
+                if (neighbor.IsInBounds(width, height) && IsNavigable(cells[neighbor.ToIndex(width)].State))
+                {
+                    count++;
+                }
+            }
+
+            return count;
         }
 
         private static bool IsNavigable(MapGenCellState state)

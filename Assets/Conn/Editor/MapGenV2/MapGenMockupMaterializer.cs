@@ -68,6 +68,17 @@ namespace Conn.MapGenV2.Editor
             for (var i = 0; i < plan.RequestCount; i++)
             {
                 var request = plan.Requests[i];
+                if (request.Category == MapGenModuleCategory.NavigationHelper)
+                {
+                    var navigationGroup = GetOrCreateGroup(root, groups, request.Category);
+                    var helper = new GameObject(BuildInstanceName(draft, request, "NavigationHelper"));
+                    Undo.RegisterCreatedObjectUndo(helper, "Materialize MapGen Navigation Helper");
+                    helper.transform.SetParent(navigationGroup, false);
+                    helper.transform.position = ToWorld(draft, request.Coord);
+                    AttachSourceMarker(helper, draft, request, "NavigationHelper");
+                    continue;
+                }
+
                 var entry = PickEntry(moduleSet.GetEntries(request.Category), ref rng);
                 if (entry == null || entry.Prefab == null)
                 {
@@ -125,6 +136,13 @@ namespace Conn.MapGenV2.Editor
             var rng = new MapGenRandom(seed).Fork("materialize");
             foreach (var request in plan?.Requests ?? Array.Empty<MapGenModuleRequest>())
             {
+                if (request.Category == MapGenModuleCategory.NavigationHelper)
+                {
+                    report.InstantiableRequests++;
+                    selectedPrefabNames.Add("NavigationHelper");
+                    continue;
+                }
+
                 var entry = PickEntry(moduleSet != null ? moduleSet.GetEntries(request.Category) : null, ref rng);
                 if (entry != null && entry.Prefab != null)
                 {
@@ -237,7 +255,7 @@ namespace Conn.MapGenV2.Editor
             var ceilings = CreateGroup(root.transform, "Ceilings");
             var doors = CreateGroup(root.transform, "Doors");
             var props = CreateGroup(root.transform, "Props");
-            CreateGroup(root.transform, "Navigation");
+            var navigation = CreateGroup(root.transform, "Navigation");
             CreateGroup(root.transform, "Debug");
 
             groups[MapGenModuleCategory.FloorA] = floors;
@@ -250,6 +268,7 @@ namespace Conn.MapGenV2.Editor
             groups[MapGenModuleCategory.DoorWhole] = doors;
             groups[MapGenModuleCategory.DoorFrameHalf] = doors;
             groups[MapGenModuleCategory.DoorPanelHalf] = doors;
+            groups[MapGenModuleCategory.NavigationHelper] = navigation;
             groups[MapGenModuleCategory.Prop] = props;
         }
 
