@@ -39,6 +39,7 @@ namespace Conn.MapGenV2.Editor
 
             var moduleSet = draft.Profile.StyleSet.ModuleSet;
             var plan = BuildPlan(draft);
+            var report = BuildReport(moduleSet, plan);
             var targetRoot = ResolveTargetRoot(draft, outputMode, selectedRoot);
             if (targetRoot != null)
             {
@@ -58,6 +59,7 @@ namespace Conn.MapGenV2.Editor
 
             var marker = Undo.AddComponent<MapGenV2GeneratedMapMarker>(root);
             marker.PopulateFromDraft(draft, DateTime.UtcNow.ToString("O"));
+            marker.PopulateMaterializationSummary(report);
 
             var groups = new Dictionary<MapGenModuleCategory, Transform>();
             CreateStandardGroups(root, groups);
@@ -105,6 +107,36 @@ namespace Conn.MapGenV2.Editor
                 draft.Profile.CellSize,
                 draft.AcceptedSignature,
                 draft.Cells);
+        }
+
+        public static MapGenMaterializationReport BuildReport(
+            MapGenModuleSetAsset moduleSet,
+            MapGenMaterializationPlan plan)
+        {
+            var report = new MapGenMaterializationReport
+            {
+                TotalRequests = plan != null ? plan.RequestCount : 0
+            };
+
+            var missingCategories = new List<string>();
+            foreach (var request in plan?.Requests ?? Array.Empty<MapGenModuleRequest>())
+            {
+                if (HasUsableEntry(moduleSet != null ? moduleSet.GetEntries(request.Category) : null))
+                {
+                    report.InstantiableRequests++;
+                    continue;
+                }
+
+                report.MissingModuleRequests++;
+                var category = request.Category.ToString();
+                if (!missingCategories.Contains(category))
+                {
+                    missingCategories.Add(category);
+                }
+            }
+
+            report.MissingModuleCategories = missingCategories.ToArray();
+            return report;
         }
 
         public static MapGenV2GeneratedMapMarker FindExistingMarker(MapGenMockupDraftAsset draft)
@@ -293,6 +325,19 @@ namespace Conn.MapGenV2.Editor
             }
 
             return null;
+        }
+
+        private static bool HasUsableEntry(MapGenModuleEntry[] entries)
+        {
+            foreach (var entry in entries ?? Array.Empty<MapGenModuleEntry>())
+            {
+                if (entry != null && entry.Prefab != null && entry.Weight > 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static Vector3 ToWorld(MapGenMockupDraftAsset draft, MapGenGridCoord coord)

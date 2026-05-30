@@ -706,6 +706,8 @@ Progress note 2026-05-31:
   cell size, source signature, and classified module requests.
 - Module requests now preserve draft region ids and source template ids, and
   materialized scene objects receive editor-only source metadata components.
+- Added a materialization report that counts total/instantiable/missing module
+  requests and names missing module categories before scene objects are stamped.
 
 Goal: turn accepted mockups into readable project-prefab maps.
 
@@ -725,12 +727,12 @@ Tasks:
 - [ ] Support whole doors and split door frames/panels.
 - [ ] Support connector-width-aware door openings.
 - [ ] Add overlap detection.
-- [ ] Add missing-module warnings before instantiation.
+- [x] Add missing-module warnings before instantiation.
 - [ ] Group output hierarchy:
   floors, corridors, walls, ceilings, doors, props, navigation.
 - [x] Attach editor-only source metadata to materialized scene objects:
   draft id, region id, template id, module category, and selected prefab.
-- [ ] Add materialized output summary.
+- [x] Add materialized output summary.
 
 Acceptance:
 
@@ -745,7 +747,7 @@ Verification:
 - EditMode tests for category classification.
 - EditMode test for materialization plan source metadata.
 - EditMode tests for deterministic weighted selection.
-- EditMode tests for missing prefab failure reports.
+- EditMode test for missing prefab/module reports.
 - Manual Unity check with at least two style sets.
 
 ## Phase 10: Prop Placement

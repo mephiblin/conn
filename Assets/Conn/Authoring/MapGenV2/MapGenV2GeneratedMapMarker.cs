@@ -1,3 +1,4 @@
+using Conn.MapGenV2.Core;
 using UnityEngine;
 
 namespace Conn.MapGenV2.Authoring
@@ -9,6 +10,9 @@ namespace Conn.MapGenV2.Authoring
         public string DraftSignature = string.Empty;
         public string StyleId = string.Empty;
         public string GeneratedUtc = string.Empty;
+        public int MaterializationRequestCount;
+        public int MaterializationInstantiatedCount;
+        public int MaterializationMissingModuleCount;
         public MapGenMockupDraftAsset SourceDraft;
 
         public void PopulateFromDraft(MapGenMockupDraftAsset draft, string generatedUtc)
@@ -21,6 +25,13 @@ namespace Conn.MapGenV2.Authoring
                 ? draft.Profile.StyleSet.StyleId
                 : string.Empty;
             GeneratedUtc = generatedUtc;
+        }
+
+        public void PopulateMaterializationSummary(MapGenMaterializationReport report)
+        {
+            MaterializationRequestCount = report != null ? report.TotalRequests : 0;
+            MaterializationInstantiatedCount = report != null ? report.InstantiableRequests : 0;
+            MaterializationMissingModuleCount = report != null ? report.MissingModuleRequests : 0;
         }
     }
 }

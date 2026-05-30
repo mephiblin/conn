@@ -1132,6 +1132,8 @@ namespace Conn.Tests.EditMode
                 Assert.That(firstRoot, Is.Not.Null);
                 Assert.That(firstRoot.name, Is.EqualTo("MapGenV2_scene_controls_profile_55"));
                 Assert.That(firstRoot.GetComponent<MapGenV2GeneratedMapMarker>(), Is.Not.Null);
+                Assert.That(firstRoot.GetComponent<MapGenV2GeneratedMapMarker>().MaterializationRequestCount, Is.GreaterThan(0));
+                Assert.That(firstRoot.GetComponent<MapGenV2GeneratedMapMarker>().MaterializationInstantiatedCount, Is.GreaterThan(0));
                 Assert.That(firstRoot.transform.Find("Floors"), Is.Not.Null);
                 Assert.That(MapGenMockupMaterializer.FindExistingMarker(draft).gameObject, Is.SameAs(firstRoot));
                 var moduleMarker = firstRoot.GetComponentInChildren<MapGenV2MaterializedModuleMarker>();
@@ -1667,6 +1669,48 @@ namespace Conn.Tests.EditMode
                     && request.SourceTemplateId == "start_template"));
             Assert.That(requests, Has.Exactly(4).Matches<MapGenModuleRequest>(
                 request => request.Category == MapGenModuleCategory.WallCornerOutside));
+        }
+
+        [Test]
+        public void MaterializationReportNamesMissingModuleCategories()
+        {
+            var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
+            var floor = new GameObject("FloorModule");
+
+            try
+            {
+                moduleSet.FloorsA = new[]
+                {
+                    new MapGenModuleEntry
+                    {
+                        Prefab = floor,
+                        Weight = 1,
+                        Footprint = Vector2Int.one
+                    }
+                };
+                var cells = new[]
+                {
+                    new MapGenMockupCell
+                    {
+                        State = MapGenCellState.Room,
+                        RegionId = 3,
+                        RoomCategory = MapGenRoomCategory.Start
+                    }
+                };
+                var plan = MapGenMaterializationPlanner.Build(1, 1, 1f, "signature", cells);
+
+                var report = MapGenMockupMaterializer.BuildReport(moduleSet, plan);
+
+                Assert.That(report.TotalRequests, Is.EqualTo(plan.RequestCount));
+                Assert.That(report.InstantiableRequests, Is.EqualTo(1));
+                Assert.That(report.MissingModuleRequests, Is.GreaterThan(0));
+                Assert.That(report.MissingModuleCategories, Contains.Item(nameof(MapGenModuleCategory.WallStraight)));
+            }
+            finally
+            {
+                Object.DestroyImmediate(floor);
+                Object.DestroyImmediate(moduleSet);
+            }
         }
 
         [Test]
