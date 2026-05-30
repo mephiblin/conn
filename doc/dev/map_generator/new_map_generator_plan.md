@@ -1162,6 +1162,9 @@ Current verification status:
   `/home/inri/Unity/Hub/Editor/6000.4.8f1/Editor/Unity`.
 - Batchmode EditMode test execution was attempted, but Unity refused to open the
   project because another Unity instance already has this project open.
+- Basic Roslyn compile smoke check passed for `Conn.MapGenV2.Core`,
+  `Conn.MapGenV2.Authoring`, and `Conn.MapGenV2.Editor` source files using Unity
+  6000.4.8f1 reference assemblies.
 - Manual Unity checks remain pending and must be run from the currently open
   Unity editor instance or after closing it.
 
