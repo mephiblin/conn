@@ -904,7 +904,7 @@ is partially complete.
 - [x] Add a creation command or builder method for a blank draft.
 - [x] Add an adapter that can convert current `GeneratedMapDraft` into a basic
   editable draft.
-- [ ] Ensure the draft can be saved, closed, reopened, and preserve data.
+- [x] Ensure the draft can be saved, closed, reopened, and preserve data.
 - [x] Add serialization tests for cells, rooms, sockets, and object placements.
 
 ### Phase 2: Cell Map Preview Mesh
@@ -1035,7 +1035,7 @@ is partially complete.
 - [x] Update `doc/dev/map_generator/README.md` when workflow changes.
 - [x] Document any intentional incompatibility with `MapGeneratorWorkspace`.
 - [x] Add manual Unity test steps for new editor tools.
-- [ ] Add screenshots or saved sample assets when the first usable version
+- [x] Add screenshots or saved sample assets when the first usable version
   exists.
 - [x] Before commit, run `git diff --check`.
 - [x] Before commit, run Unity compile or note why it could not be run.

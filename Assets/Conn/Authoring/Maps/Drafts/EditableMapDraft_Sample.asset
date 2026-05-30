@@ -1,0 +1,603 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46d75dbdffff4fedbed66cade1b26703, type: 3}
+  m_Name: EditableMapDraft_Sample
+  m_EditorClassIdentifier: Conn.Authoring::Conn.Authoring.Maps.EditableMapDraftAsset
+  Id: editable_map_sample
+  SourceProfileId: ch2_first_slice_ruins
+  Seed: 2001
+  Floor: 1
+  Difficulty: 0
+  Version: 1
+  Width: 8
+  Height: 5
+  CellSize: 1
+  HeightStep: 1
+  TilePalette: {fileID: 0}
+  ObjectPalette: {fileID: 0}
+  Cells:
+  - X: 0
+    Y: 0
+    RoomId: 
+    ZoneId: 
+    Terrain: 4
+    Height: 0
+    Direction: 1
+    MaterialId: 
+    FloorVariantId: 
+    WallVariantId: 
+    Flags: 0
+  - X: 1
+    Y: 0
+    RoomId: 
+    ZoneId: 
+    Terrain: 4
+    Height: 0
+    Direction: 1
+    MaterialId: 
+    FloorVariantId: 
+    WallVariantId: 
+    Flags: 0
+  - X: 2
+    Y: 0
+    RoomId: 
+    ZoneId: 
+    Terrain: 4
+    Height: 0
+    Direction: 1
+    MaterialId: 
+    FloorVariantId: 
+    WallVariantId: 
+    Flags: 0
+  - X: 3
+    Y: 0
+    RoomId: 
+    ZoneId: 
+    Terrain: 4
+    Height: 0
+    Direction: 1
+    MaterialId: 
+    FloorVariantId: 
+    WallVariantId: 
+    Flags: 0
+  - X: 4
+    Y: 0
+    RoomId: 
+    ZoneId: 
+    Terrain: 4
+    Height: 0
+    Direction: 1
+    MaterialId: 
+    FloorVariantId: 
+    WallVariantId: 
+    Flags: 0
+  - X: 5
+    Y: 0
+    RoomId: 
+    ZoneId: 
+    Terrain: 4
+    Height: 0
+    Direction: 1
+    MaterialId: 
+    FloorVariantId: 
+    WallVariantId: 
+    Flags: 0
+  - X: 6
+    Y: 0
+    RoomId: 
+    ZoneId: 
+    Terrain: 4
+    Height: 0
+    Direction: 1
+    MaterialId: 
+    FloorVariantId: 
+    WallVariantId: 
+    Flags: 0
+  - X: 7
+    Y: 0
+    RoomId: 
+    ZoneId: 
+    Terrain: 4
+    Height: 0
+    Direction: 1
+    MaterialId: 
+    FloorVariantId: 
+    WallVariantId: 
+    Flags: 0
+  - X: 0
+    Y: 1
+    RoomId: start
+    ZoneId: sample_zone
+    Terrain: 0
+    Height: 0
+    Direction: 1
+    MaterialId: sample_start_floor
+    FloorVariantId: 
+    WallVariantId: 
+    Flags: 0
+  - X: 1
+    Y: 1
+    RoomId: start
+    ZoneId: sample_zone
+    Terrain: 0
+    Height: 0
+    Direction: 1
+    MaterialId: sample_start_floor
+    FloorVariantId: 
+    WallVariantId: 
+    Flags: 0
+  - X: 2
+    Y: 1
+    RoomId: quest
+    ZoneId: sample_zone
+    Terrain: 0
+    Height: 0
+    Direction: 1
+    MaterialId: sample_quest_floor
+    FloorVariantId: 
+    WallVariantId: 
+    Flags: 0
+  - X: 3
+    Y: 1
+    RoomId: quest
+    ZoneId: sample_zone
+    Terrain: 0
+    Height: 0
+    Direction: 1
+    MaterialId: sample_quest_floor
+    FloorVariantId: 
+    WallVariantId: 
+    Flags: 0
+  - X: 4
+    Y: 1
+    RoomId: boss
+    ZoneId: sample_zone
+    Terrain: 0
+    Height: 0
+    Direction: 1
+    MaterialId: sample_boss_floor
+    FloorVariantId: 
+    WallVariantId: 
+    Flags: 0
+  - X: 5
+    Y: 1
+    RoomId: boss
+    ZoneId: sample_zone
+    Terrain: 0
+    Height: 0
+    Direction: 1
+    MaterialId: sample_boss_floor
+    FloorVariantId: 
+    WallVariantId: 
+    Flags: 0
+  - X: 6
+    Y: 1
+    RoomId: exit
+    ZoneId: sample_zone
+    Terrain: 0
+    Height: 0
+    Direction: 1
+    MaterialId: sample_exit_floor
+    FloorVariantId: 
+    WallVariantId: 
+    Flags: 0
+  - X: 7
+    Y: 1
+    RoomId: exit
+    ZoneId: sample_zone
+    Terrain: 0
+    Height: 0
+    Direction: 1
+    MaterialId: sample_exit_floor
+    FloorVariantId: 
+    WallVariantId: 
+    Flags: 0
+  - X: 0
+    Y: 2
+    RoomId: start
+    ZoneId: sample_zone
+    Terrain: 0
+    Height: 0
+    Direction: 1
+    MaterialId: sample_start_floor
+    FloorVariantId: 
+    WallVariantId: 
+    Flags: 0
+  - X: 1
+    Y: 2
+    RoomId: start
+    ZoneId: sample_zone
+    Terrain: 0
+    Height: 0
+    Direction: 1
+    MaterialId: sample_start_floor
+    FloorVariantId: 
+    WallVariantId: 
+    Flags: 0
+  - X: 2
+    Y: 2
+    RoomId: quest
+    ZoneId: sample_zone
+    Terrain: 0
+    Height: 0
+    Direction: 1
+    MaterialId: sample_quest_floor
+    FloorVariantId: 
+    WallVariantId: 
+    Flags: 0
+  - X: 3
+    Y: 2
+    RoomId: quest
+    ZoneId: sample_zone
+    Terrain: 2
+    Height: 0
+    Direction: 2
+    MaterialId: sample_transition_floor
+    FloorVariantId: 
+    WallVariantId: 
+    Flags: 0
+  - X: 4
+    Y: 2
+    RoomId: boss
+    ZoneId: sample_zone
+    Terrain: 0
+    Height: 1
+    Direction: 1
+    MaterialId: sample_transition_floor
+    FloorVariantId: 
+    WallVariantId: 
+    Flags: 0
+  - X: 5
+    Y: 2
+    RoomId: boss
+    ZoneId: sample_zone
+    Terrain: 0
+    Height: 0
+    Direction: 1
+    MaterialId: sample_boss_floor
+    FloorVariantId: 
+    WallVariantId: 
+    Flags: 0
+  - X: 6
+    Y: 2
+    RoomId: exit
+    ZoneId: sample_zone
+    Terrain: 0
+    Height: 0
+    Direction: 1
+    MaterialId: sample_exit_floor
+    FloorVariantId: 
+    WallVariantId: 
+    Flags: 0
+  - X: 7
+    Y: 2
+    RoomId: exit
+    ZoneId: sample_zone
+    Terrain: 0
+    Height: 0
+    Direction: 1
+    MaterialId: sample_exit_floor
+    FloorVariantId: 
+    WallVariantId: 
+    Flags: 0
+  - X: 0
+    Y: 3
+    RoomId: start
+    ZoneId: sample_zone
+    Terrain: 0
+    Height: 0
+    Direction: 1
+    MaterialId: sample_start_floor
+    FloorVariantId: 
+    WallVariantId: 
+    Flags: 0
+  - X: 1
+    Y: 3
+    RoomId: start
+    ZoneId: sample_zone
+    Terrain: 0
+    Height: 0
+    Direction: 1
+    MaterialId: sample_start_floor
+    FloorVariantId: 
+    WallVariantId: 
+    Flags: 0
+  - X: 2
+    Y: 3
+    RoomId: quest
+    ZoneId: sample_zone
+    Terrain: 0
+    Height: 0
+    Direction: 1
+    MaterialId: sample_quest_floor
+    FloorVariantId: 
+    WallVariantId: 
+    Flags: 0
+  - X: 3
+    Y: 3
+    RoomId: quest
+    ZoneId: sample_zone
+    Terrain: 0
+    Height: 0
+    Direction: 1
+    MaterialId: sample_quest_floor
+    FloorVariantId: 
+    WallVariantId: 
+    Flags: 0
+  - X: 4
+    Y: 3
+    RoomId: boss
+    ZoneId: sample_zone
+    Terrain: 0
+    Height: 0
+    Direction: 1
+    MaterialId: sample_boss_floor
+    FloorVariantId: 
+    WallVariantId: 
+    Flags: 0
+  - X: 5
+    Y: 3
+    RoomId: boss
+    ZoneId: sample_zone
+    Terrain: 0
+    Height: 0
+    Direction: 1
+    MaterialId: sample_boss_floor
+    FloorVariantId: 
+    WallVariantId: 
+    Flags: 0
+  - X: 6
+    Y: 3
+    RoomId: exit
+    ZoneId: sample_zone
+    Terrain: 0
+    Height: 0
+    Direction: 1
+    MaterialId: sample_exit_floor
+    FloorVariantId: 
+    WallVariantId: 
+    Flags: 0
+  - X: 7
+    Y: 3
+    RoomId: exit
+    ZoneId: sample_zone
+    Terrain: 0
+    Height: 0
+    Direction: 1
+    MaterialId: sample_exit_floor
+    FloorVariantId: 
+    WallVariantId: 
+    Flags: 0
+  - X: 0
+    Y: 4
+    RoomId: 
+    ZoneId: 
+    Terrain: 4
+    Height: 0
+    Direction: 1
+    MaterialId: 
+    FloorVariantId: 
+    WallVariantId: 
+    Flags: 0
+  - X: 1
+    Y: 4
+    RoomId: 
+    ZoneId: 
+    Terrain: 4
+    Height: 0
+    Direction: 1
+    MaterialId: 
+    FloorVariantId: 
+    WallVariantId: 
+    Flags: 0
+  - X: 2
+    Y: 4
+    RoomId: 
+    ZoneId: 
+    Terrain: 4
+    Height: 0
+    Direction: 1
+    MaterialId: 
+    FloorVariantId: 
+    WallVariantId: 
+    Flags: 0
+  - X: 3
+    Y: 4
+    RoomId: 
+    ZoneId: 
+    Terrain: 4
+    Height: 0
+    Direction: 1
+    MaterialId: 
+    FloorVariantId: 
+    WallVariantId: 
+    Flags: 0
+  - X: 4
+    Y: 4
+    RoomId: 
+    ZoneId: 
+    Terrain: 4
+    Height: 0
+    Direction: 1
+    MaterialId: 
+    FloorVariantId: 
+    WallVariantId: 
+    Flags: 0
+  - X: 5
+    Y: 4
+    RoomId: 
+    ZoneId: 
+    Terrain: 4
+    Height: 0
+    Direction: 1
+    MaterialId: 
+    FloorVariantId: 
+    WallVariantId: 
+    Flags: 0
+  - X: 6
+    Y: 4
+    RoomId: 
+    ZoneId: 
+    Terrain: 4
+    Height: 0
+    Direction: 1
+    MaterialId: 
+    FloorVariantId: 
+    WallVariantId: 
+    Flags: 0
+  - X: 7
+    Y: 4
+    RoomId: 
+    ZoneId: 
+    Terrain: 4
+    Height: 0
+    Direction: 1
+    MaterialId: 
+    FloorVariantId: 
+    WallVariantId: 
+    Flags: 0
+  Objects:
+  - Id: sample_spawn_hint
+    PaletteObjectId: sample_spawn_hint
+    Kind: 4
+    X: 2
+    Y: 2
+    Height: 0
+    Width: 1
+    Depth: 1
+    Direction: 0
+    BlocksMovement: 0
+    RuntimeReferenceId: sample_spawn_runtime
+    MaterialId: 
+  - Id: sample_chest
+    PaletteObjectId: sample_chest
+    Kind: 1
+    X: 7
+    Y: 2
+    Height: 0
+    Width: 1
+    Depth: 1
+    Direction: 0
+    BlocksMovement: 0
+    RuntimeReferenceId: sample_chest_runtime
+    MaterialId: 
+  - Id: sample_torch
+    PaletteObjectId: sample_torch
+    Kind: 3
+    X: 0
+    Y: 2
+    Height: 0
+    Width: 1
+    Depth: 1
+    Direction: 0
+    BlocksMovement: 0
+    RuntimeReferenceId: sample_torch_runtime
+    MaterialId: 
+  Rooms:
+  - Id: start
+    Role: 0
+    LayoutKind: 0
+    X: 0
+    Y: 1
+    Width: 2
+    Height: 3
+    SocketMask: 2
+    HeightLevel: 0
+    ZoneId: sample_zone
+    ChunkId: 
+  - Id: quest
+    Role: 2
+    LayoutKind: 2
+    X: 2
+    Y: 1
+    Width: 2
+    Height: 3
+    SocketMask: 10
+    HeightLevel: 0
+    ZoneId: sample_zone
+    ChunkId: 
+  - Id: boss
+    Role: 3
+    LayoutKind: 4
+    X: 4
+    Y: 1
+    Width: 2
+    Height: 3
+    SocketMask: 10
+    HeightLevel: 0
+    ZoneId: sample_zone
+    ChunkId: 
+  - Id: exit
+    Role: 4
+    LayoutKind: 0
+    X: 6
+    Y: 1
+    Width: 2
+    Height: 3
+    SocketMask: 8
+    HeightLevel: 0
+    ZoneId: sample_zone
+    ChunkId: 
+  Zones:
+  - Id: sample_zone
+    ThemeId: ruins
+    IntendedDifficulty: 0
+    Purpose: sample_playable
+  Sockets:
+  - Id: start_quest
+    RoomId: start
+    X: 1
+    Y: 2
+    Direction: 2
+    Width: 1
+    TargetRoomId: quest
+    LockedDoorKeyId: 
+  - Id: quest_start
+    RoomId: quest
+    X: 2
+    Y: 2
+    Direction: 8
+    Width: 1
+    TargetRoomId: start
+    LockedDoorKeyId: 
+  - Id: quest_boss
+    RoomId: quest
+    X: 3
+    Y: 2
+    Direction: 2
+    Width: 1
+    TargetRoomId: boss
+    LockedDoorKeyId: 
+  - Id: boss_quest
+    RoomId: boss
+    X: 4
+    Y: 2
+    Direction: 8
+    Width: 1
+    TargetRoomId: quest
+    LockedDoorKeyId: 
+  - Id: boss_exit
+    RoomId: boss
+    X: 5
+    Y: 2
+    Direction: 2
+    Width: 1
+    TargetRoomId: exit
+    LockedDoorKeyId: 
+  - Id: exit_boss
+    RoomId: exit
+    X: 6
+    Y: 2
+    Direction: 8
+    Width: 1
+    TargetRoomId: boss
+    LockedDoorKeyId: 

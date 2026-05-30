@@ -215,6 +215,123 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void EditableMapDraftAssetCanBeSavedClosedAndReopenedWithoutDataLoss()
+        {
+            var draft = ScriptableObject.CreateInstance<EditableMapDraftAsset>();
+            draft.Id = "asset_round_trip_probe";
+            draft.SourceProfileId = MapGenerationCatalog.ChapterTwoFirstSliceProfileId;
+            draft.Seed = 77;
+            draft.Floor = 2;
+            draft.Difficulty = 1;
+            draft.InitializeBlank(3, 2, 0.5f, 0.25f);
+            draft.TrySetCell(new EditableMapCell
+            {
+                X = 2,
+                Y = 1,
+                RoomId = "room_probe",
+                ZoneId = "zone_probe",
+                Terrain = RoomChunkCellType.Stair,
+                Height = 1,
+                Direction = MapDirection.East,
+                MaterialId = "probe_floor"
+            });
+            draft.Rooms = new[]
+            {
+                new EditableMapRoom
+                {
+                    Id = "room_probe",
+                    Role = MapRoomRole.Start,
+                    LayoutKind = RoomChunkLayoutKind.Room,
+                    X = 0,
+                    Y = 0,
+                    Width = 3,
+                    Height = 2,
+                    SocketMask = MapDirection.East,
+                    ZoneId = "zone_probe"
+                }
+            };
+            draft.Zones = new[]
+            {
+                new EditableMapZone
+                {
+                    Id = "zone_probe",
+                    ThemeId = "ruins",
+                    IntendedDifficulty = 1,
+                    Purpose = "round_trip"
+                }
+            };
+            draft.Sockets = new[]
+            {
+                new EditableMapSocket
+                {
+                    Id = "room_probe_exit",
+                    RoomId = "room_probe",
+                    X = 2,
+                    Y = 1,
+                    Direction = MapDirection.East,
+                    Width = 1,
+                    TargetRoomId = "room_neighbor"
+                }
+            };
+            draft.Objects = new[]
+            {
+                new EditableMapObjectPlacement
+                {
+                    Id = "probe_torch",
+                    PaletteObjectId = "torch_probe",
+                    Kind = RoomChunkObjectKind.Torch,
+                    X = 1,
+                    Y = 0,
+                    Width = 1,
+                    Depth = 1,
+                    RuntimeReferenceId = "torch_probe_runtime"
+                }
+            };
+
+            var assetPath = AssetDatabase.GenerateUniqueAssetPath($"{EditableMapDraftAsset.DefaultDraftFolder}/EditableMapDraft_RoundTripTest.asset");
+
+            try
+            {
+                AssetDatabase.CreateAsset(draft, assetPath);
+                AssetDatabase.SaveAssets();
+                AssetDatabase.Refresh();
+
+                var loaded = AssetDatabase.LoadAssetAtPath<EditableMapDraftAsset>(assetPath);
+                Assert.That(loaded, Is.Not.Null);
+                Assert.That(loaded.Id, Is.EqualTo(draft.Id));
+                Assert.That(loaded.SourceProfileId, Is.EqualTo(draft.SourceProfileId));
+                Assert.That(loaded.GetCell(2, 1).Terrain, Is.EqualTo(RoomChunkCellType.Stair));
+                Assert.That(loaded.GetCell(2, 1).MaterialId, Is.EqualTo("probe_floor"));
+                Assert.That(loaded.Rooms.Length, Is.EqualTo(1));
+                Assert.That(loaded.Zones.Length, Is.EqualTo(1));
+                Assert.That(loaded.Sockets.Length, Is.EqualTo(1));
+                Assert.That(loaded.Objects.Length, Is.EqualTo(1));
+            }
+            finally
+            {
+                AssetDatabase.DeleteAsset(assetPath);
+                AssetDatabase.Refresh();
+            }
+        }
+
+        [Test]
+        public void SampleEditableMapDraftAssetLoadsValidatesAndBakes()
+        {
+            var draft = AssetDatabase.LoadAssetAtPath<EditableMapDraftAsset>(EditableMapDraftSampleAssetBuilder.SampleDraftAssetPath);
+
+            Assert.That(draft, Is.Not.Null);
+
+            var report = EditableMapValidationService.Validate(draft);
+            Assert.That(report.Passed, Is.True, string.Join("\n", report.Errors.ToArray()));
+
+            var compiled = EditableMapBakeService.Bake(draft);
+            Assert.That(compiled.Cells.Count, Is.GreaterThan(0));
+            Assert.That(compiled.Objects.Count, Is.GreaterThan(0));
+            Assert.That(compiled.Placements.Exists(placement => placement.Kind == MapPlacementKind.Start), Is.True);
+            Assert.That(compiled.EncounterPlacements.Count, Is.GreaterThan(0));
+        }
+
+        [Test]
         public void EditableDraftBuilderConvertsGeneratedDraftIntoCellMap()
         {
             var profile = MapGenerationCatalog.ChapterTwoFirstSliceProfile();
