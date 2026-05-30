@@ -35,12 +35,19 @@ As of 2026-05-30, the first draft-backed path is now in the project:
 - `EditableMapBakeService` now extends `CompiledMap` with runtime-safe cell,
   object, room, zone, and socket payloads, blocks bake on validation errors,
   and can save a `CompiledMapAsset` directly from an edited draft.
+- Dungeon runtime now reads baked draft payloads through
+  `CompiledMapDungeonRuntimeService`, exposes baked cell/object counts in the
+  dungeon UI readout, spawns field monsters from baked monster placements, and
+  spawns first-pass dungeon object actors plus chest/barrel/torch interactions
+  from baked object placements.
 - `MapGeneratorWorkspaceEditor` now has a bridge button that saves the current
   generated result as an `EditableMapDraftAsset` without making the workspace a
   required dependency of the new pipeline.
 
-This is still a Phase 1/2 slice, not the final editor. Painting tools,
-palettes, validation, and bake are still pending.
+This is no longer only a Phase 1/2 slice. Draft authoring, palettes, preview,
+validation, and first-pass bake/runtime consumption now exist, but Scene View
+painting, richer route validation, generator depth, and full dungeon gameplay
+integration are still pending.
 
 ## Manual Unity Check Steps
 

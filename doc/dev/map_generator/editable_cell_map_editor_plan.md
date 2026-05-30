@@ -970,7 +970,7 @@ is partially complete.
 - [x] Validate broken prefab/material references.
 - [x] Validate draft cells reference existing tile ids.
 - [x] Validate draft objects reference existing object ids.
-- [ ] Ensure runtime bake uses ids, not Unity references.
+- [x] Ensure runtime bake uses ids, not Unity references.
 
 ### Phase 5: Generator To Draft
 
@@ -1005,7 +1005,7 @@ is partially complete.
 - [ ] Validate optional treasure/dead-end routes do not break required routes.
 - [x] Validate slope direction and height delta.
 - [x] Validate stair direction and height delta.
-- [ ] Report validation failures by cell, object id, room id, socket id, or
+- [x] Report validation failures by cell, object id, room id, socket id, or
   palette id.
 - [x] Block bake when required validation errors exist.
 - [x] Add tests for disconnected routes.
@@ -1024,8 +1024,8 @@ is partially complete.
 - [ ] Bake anchors and encounter placements.
 - [x] Confirm no baked type stores Unity object or editor references.
 - [x] Save optional `CompiledMapAsset` from an edited draft.
-- [ ] Load baked draft data in Dungeon runtime.
-- [ ] Spawn monsters/interactions from baked object/placement data.
+- [x] Load baked draft data in Dungeon runtime.
+- [x] Spawn monsters/interactions from baked object/placement data.
 - [x] Add deterministic bake test for unchanged draft data.
 - [x] Add runtime load smoke test.
 

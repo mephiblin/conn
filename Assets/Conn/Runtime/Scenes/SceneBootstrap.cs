@@ -57,6 +57,7 @@ namespace Conn.Runtime.Scenes
                 var compiledMap = CompiledMapDungeonRuntimeService.BuildQuestCompiledMap(session.State);
                 CompiledMapDungeonRuntimeService.RegisterQuestTargetFieldMonster(session.State, compiledMap);
                 FieldMonsterActorSpawner.SpawnFromCompiledMap(session.State, compiledMap);
+                DungeonObjectActorSpawner.SpawnFromCompiledMap(compiledMap);
             }
         }
     }

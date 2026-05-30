@@ -2,6 +2,7 @@ using Conn.Core.Combat;
 using Conn.Core.Maps;
 using Conn.Core.Session;
 using Conn.Runtime.World;
+using System.Collections.Generic;
 
 namespace Conn.Runtime.Maps
 {
@@ -10,6 +11,7 @@ namespace Conn.Runtime.Maps
         public const int DefaultDungeonSeed = 2001;
         private static CompiledMapAsset[] compiledMapAssets = System.Array.Empty<CompiledMapAsset>();
         private static RuntimeMapGenerationBundleAsset[] runtimeMapGenerationBundles = System.Array.Empty<RuntimeMapGenerationBundleAsset>();
+        private static CompiledMap currentCompiledMap;
 
         public static void SetCompiledMapAssets(CompiledMapAsset[] assets)
         {
@@ -27,19 +29,24 @@ namespace Conn.Runtime.Maps
             var compiledAsset = FindCompiledMapAsset(profile.ProfileId);
             if (compiledAsset != null)
             {
-                return CompiledMapRuntimeLoader.LoadAndValidateFromJson(compiledAsset.Json, profile);
+                currentCompiledMap = CompiledMapRuntimeLoader.LoadAndValidateFromJson(compiledAsset.Json, profile);
+                return currentCompiledMap;
             }
 
             var runtimeBundle = FindRuntimeMapGenerationBundle(profile.ProfileId);
             if (runtimeBundle != null)
             {
-                return RuntimeMapGenerationService.GenerateCompiled(runtimeBundle.Bundle, profile.ProfileId, DefaultDungeonSeed);
+                currentCompiledMap = RuntimeMapGenerationService.GenerateCompiled(runtimeBundle.Bundle, profile.ProfileId, DefaultDungeonSeed);
+                return currentCompiledMap;
             }
 
             var chunks = MapGenerationCatalog.ChapterTwoFirstSliceChunks();
             var draft = MapGenerationService.Generate(profile, chunks, DefaultDungeonSeed);
-            return MapGenerationService.Compile(profile, draft);
+            currentCompiledMap = MapGenerationService.Compile(profile, draft);
+            return currentCompiledMap;
         }
+
+        public static CompiledMap CurrentCompiledMap => currentCompiledMap;
 
         public static bool RegisterQuestTargetFieldMonster(GameSessionState session, CompiledMap compiledMap)
         {
@@ -116,6 +123,84 @@ namespace Conn.Runtime.Maps
         public static string StateKeyFor(CompiledMap compiledMap, MapPlacement placement)
         {
             return $"compiled_{compiledMap.MapId}_{placement.Id}";
+        }
+
+        public static int CountBakedCells(CompiledMap compiledMap)
+        {
+            return compiledMap?.Cells?.Count ?? 0;
+        }
+
+        public static int CountBakedObjects(CompiledMap compiledMap)
+        {
+            return compiledMap?.Objects?.Count ?? 0;
+        }
+
+        public static int CountInteractiveObjects(CompiledMap compiledMap)
+        {
+            var count = 0;
+            foreach (var placement in InteractiveObjects(compiledMap))
+            {
+                if (placement != null)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        public static IEnumerable<CompiledMapObjectPlacement> InteractiveObjects(CompiledMap compiledMap)
+        {
+            for (var i = 0; i < (compiledMap?.Objects?.Count ?? 0); i++)
+            {
+                var placement = compiledMap.Objects[i];
+                if (placement == null)
+                {
+                    continue;
+                }
+
+                if (placement.Kind == RoomChunkObjectKind.Chest
+                    || placement.Kind == RoomChunkObjectKind.Barrel
+                    || placement.Kind == RoomChunkObjectKind.Torch)
+                {
+                    yield return placement;
+                }
+            }
+        }
+
+        public static int RegisterBakedSpawnHintPlacements(GameSessionState session, CompiledMap compiledMap)
+        {
+            if (session == null || compiledMap == null)
+            {
+                return 0;
+            }
+
+            var registered = 0;
+            foreach (var bakedObject in compiledMap.Objects ?? new List<CompiledMapObjectPlacement>())
+            {
+                if (bakedObject == null || bakedObject.Kind != RoomChunkObjectKind.SpawnHint)
+                {
+                    continue;
+                }
+
+                var placement = CompiledMapRuntimeLoader.FindPlacement(compiledMap, MapPlacementKind.Monster);
+                if (placement == null)
+                {
+                    continue;
+                }
+
+                FieldMonsterRuntimeService.RegisterAt(
+                    session,
+                    $"compiled_{compiledMap.MapId}_object_{bakedObject.PlacementId}",
+                    bakedObject.PlacementId,
+                    session.Quest.TargetEncounterId,
+                    session.Quest.TargetMonsterId,
+                    bakedObject.X,
+                    bakedObject.Y);
+                registered++;
+            }
+
+            return registered;
         }
 
         private static MapProfile ResolveProfile(GameSessionState session)

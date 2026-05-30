@@ -1,8 +1,11 @@
 using Conn.Authoring.Maps;
 using Conn.Core.Maps;
+using Conn.Core.Session;
 using Conn.Editor.Maps;
 using Conn.Core.Quests;
 using Conn.Runtime.Maps;
+using Conn.Runtime.Session;
+using Conn.Runtime.World;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -413,6 +416,59 @@ namespace Conn.Tests.EditMode
             Assert.That(loaded.Placements.Exists(placement => placement.Kind == MapPlacementKind.Monster), Is.True);
         }
 
+        [Test]
+        public void DungeonRuntimeLoadsBakedCompiledDraftPayload()
+        {
+            var draft = BuildBakeDraft();
+            var compiled = EditableMapBakeService.Bake(draft);
+            var asset = ScriptableObject.CreateInstance<CompiledMapAsset>();
+            asset.ProfileId = MapGenerationCatalog.ChapterTwoFirstSliceProfileId;
+            asset.Seed = compiled.Seed;
+            asset.Json = JsonUtility.ToJson(compiled);
+            var session = new GameSessionState();
+            session.StartNewGame();
+            QuestRuntimeService.AcceptQuest(session, QuestCatalog.TestHuntId);
+
+            CompiledMapDungeonRuntimeService.SetCompiledMapAssets(new[] { asset });
+            var loaded = CompiledMapDungeonRuntimeService.BuildQuestCompiledMap(session);
+
+            Assert.That(loaded.Cells.Count, Is.EqualTo(compiled.Cells.Count));
+            Assert.That(loaded.Objects.Count, Is.EqualTo(compiled.Objects.Count));
+            Assert.That(CompiledMapDungeonRuntimeService.CurrentCompiledMap, Is.Not.Null);
+            Assert.That(CompiledMapDungeonRuntimeService.CountBakedCells(loaded), Is.EqualTo(compiled.Cells.Count));
+            Assert.That(CompiledMapDungeonRuntimeService.CountBakedObjects(loaded), Is.EqualTo(compiled.Objects.Count));
+            Assert.That(CompiledMapDungeonRuntimeService.CountInteractiveObjects(loaded), Is.EqualTo(1));
+
+            CompiledMapDungeonRuntimeService.SetCompiledMapAssets(null);
+            Object.DestroyImmediate(asset);
+        }
+
+        [Test]
+        public void DungeonObjectSpawnerCreatesInteractableActorsFromBakedObjects()
+        {
+            var draft = BuildBakeDraft();
+            var compiled = EditableMapBakeService.Bake(draft);
+            var root = new GameObject("Dungeon Object Root").transform;
+            var sessionGameObject = new GameObject("GameSession Test");
+            var gameSession = sessionGameObject.AddComponent<GameSession>();
+            gameSession.State.StartNewGame();
+            var startingGold = gameSession.State.Gold;
+
+            var spawned = DungeonObjectActorSpawner.SpawnFromCompiledMap(compiled, root);
+            var interactable = root.GetComponentInChildren<DungeonObjectInteractable>();
+
+            Assert.That(spawned, Is.EqualTo(compiled.Objects.Count));
+            Assert.That(interactable, Is.Not.Null);
+            Assert.That(interactable.Prompt, Is.EqualTo("Open Chest"));
+
+            interactable.Interact();
+            Assert.That(gameSession.State.Gold, Is.GreaterThan(startingGold));
+            Assert.That(gameSession.State.LastNotice.Contains("Opened chest"), Is.True);
+
+            Object.DestroyImmediate(root.gameObject);
+            Object.DestroyImmediate(sessionGameObject);
+        }
+
         private static EditableMapDraftAsset BuildLinearValidationDraft()
         {
             var draft = ScriptableObject.CreateInstance<EditableMapDraftAsset>();
@@ -441,11 +497,12 @@ namespace Conn.Tests.EditMode
 
         private static EditableMapDraftAsset BuildBakeDraft()
         {
+            var profile = MapGenerationCatalog.ChapterTwoFirstSliceProfile();
             var draft = ScriptableObject.CreateInstance<EditableMapDraftAsset>();
             draft.Id = "bake_probe";
-            draft.SourceProfileId = "profile_probe";
+            draft.SourceProfileId = MapGenerationCatalog.ChapterTwoFirstSliceProfileId;
             draft.Seed = 17;
-            draft.InitializeBlank(4, 2, 1f, 1f);
+            draft.InitializeBlank(profile.Width, profile.Height, 1f, 1f);
             for (var x = 0; x < 4; x++)
             {
                 for (var y = 0; y < 2; y++)

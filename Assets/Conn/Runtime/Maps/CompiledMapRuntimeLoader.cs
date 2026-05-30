@@ -65,5 +65,24 @@ namespace Conn.Runtime.Maps
 
             return null;
         }
+
+        public static CompiledMapObjectPlacement FindObjectPlacement(CompiledMap compiled, string placementId)
+        {
+            if (compiled == null)
+            {
+                throw new ArgumentNullException(nameof(compiled));
+            }
+
+            for (var i = 0; i < (compiled.Objects?.Count ?? 0); i++)
+            {
+                var placement = compiled.Objects[i];
+                if (placement != null && placement.PlacementId == placementId)
+                {
+                    return placement;
+                }
+            }
+
+            return null;
+        }
     }
 }

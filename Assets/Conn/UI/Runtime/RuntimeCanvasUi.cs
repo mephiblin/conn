@@ -5,6 +5,7 @@ using Conn.Runtime.Combat;
 using Conn.Runtime.Content;
 using Conn.Runtime.Equipment;
 using Conn.Runtime.Inventory;
+using Conn.Runtime.Maps;
 using Conn.Runtime.Scenes;
 using Conn.Runtime.Session;
 using Conn.Runtime.Skills;
@@ -711,9 +712,13 @@ namespace Conn.UI.Runtime
 
             var readout = Panel("DungeonPlacementReadout");
             BuildPanel(readout, "CompiledMap Readout", true);
+            var compiledMap = CompiledMapDungeonRuntimeService.CurrentCompiledMap;
             AddText(readout, $"Snapshot: {(session.PreEncounterSnapshot.Valid ? "saved" : "none")}");
             AddText(readout, $"Field monsters active: {FieldMonsterRuntimeService.CountActive(session)}");
             AddText(readout, $"Field monsters defeated: {FieldMonsterRuntimeService.CountDefeated(session)}");
+            AddText(readout, $"Baked cells: {CompiledMapDungeonRuntimeService.CountBakedCells(compiledMap)}");
+            AddText(readout, $"Baked objects: {CompiledMapDungeonRuntimeService.CountBakedObjects(compiledMap)}");
+            AddText(readout, $"Interactive objects: {CompiledMapDungeonRuntimeService.CountInteractiveObjects(compiledMap)}");
             AddText(readout, "Placements: start / quest target / exit / monster / loot");
         }
 
