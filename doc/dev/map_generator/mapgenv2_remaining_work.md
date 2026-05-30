@@ -233,6 +233,8 @@ Progress note 2026-05-31:
 - The preview now highlights the selected region, selected connector cells, and
   adjacent corridor/connector links so region connectivity is visible before
   acceptance.
+- Focused tests now lock the invariant that mockup generation updates draft data
+  only and does not create scene objects.
 - Remaining Phase 1 work is fuller selected-region edit coverage:
   reroll/regenerate/reroute actions.
 
@@ -266,7 +268,7 @@ Tasks:
 - [x] Add `Randomize Seed` and `Randomize Seed + Generate`.
 - [x] Add `Regenerate Same Seed`.
 - [x] Add `Clear Draft`.
-- [ ] Keep mockup preview editor-only; do not create scene objects on
+- [x] Keep mockup preview editor-only; do not create scene objects on
   `Generate Mockup`.
 - [x] Add screenshot-friendly preview sizing and scroll/zoom for large grids.
 
@@ -287,6 +289,7 @@ Verification:
 - EditMode test for selected-region edit persistence in a draft asset.
 - EditMode test for selected-region delete/block/reserve state edits.
 - EditMode test for generated corridor cells receiving selectable region ids.
+- EditMode test that mockup generation does not create scene objects.
 - Manual Unity check: generate 3 seeds and confirm visible layout changes.
 - Manual Unity check: select a generated room, change/lock it, regenerate
   allowed parts, and confirm the locked edit remains.

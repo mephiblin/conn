@@ -619,6 +619,43 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void MockupDraftGenerationDoesNotCreateSceneObjects()
+        {
+            var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
+            var styleSet = ScriptableObject.CreateInstance<MapGenStyleSetAsset>();
+            var ruleSet = ScriptableObject.CreateInstance<MapGenRuleSetAsset>();
+            var roomShape = ScriptableObject.CreateInstance<MapGenRoomShapeAsset>();
+            var profile = ScriptableObject.CreateInstance<MapGenProfileAsset>();
+            var draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();
+            GameObject floor = null;
+            GameObject wall = null;
+
+            try
+            {
+                PopulateValidWorkflowProfile(profile, styleSet, moduleSet, ruleSet, roomShape, out floor, out wall);
+                draft.Profile = profile;
+                draft.Seed = 44;
+                var rootCountBeforeGenerate = UnityEngine.SceneManagement.SceneManager.GetActiveScene().GetRootGameObjects().Length;
+
+                Assert.That(draft.GenerateFromProfile().IsValid, Is.True);
+
+                var rootCountAfterGenerate = UnityEngine.SceneManagement.SceneManager.GetActiveScene().GetRootGameObjects().Length;
+                Assert.That(rootCountAfterGenerate, Is.EqualTo(rootCountBeforeGenerate));
+            }
+            finally
+            {
+                Object.DestroyImmediate(draft);
+                Object.DestroyImmediate(profile);
+                Object.DestroyImmediate(roomShape);
+                Object.DestroyImmediate(ruleSet);
+                Object.DestroyImmediate(styleSet);
+                Object.DestroyImmediate(moduleSet);
+                Object.DestroyImmediate(floor);
+                Object.DestroyImmediate(wall);
+            }
+        }
+
+        [Test]
         public void MockupPreviewDataExtractsCellsAndSummary()
         {
             var draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();
