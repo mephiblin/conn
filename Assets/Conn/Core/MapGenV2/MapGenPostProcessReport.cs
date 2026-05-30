@@ -15,6 +15,8 @@ namespace Conn.MapGenV2.Core
         public string BeforeSignature { get; set; } = string.Empty;
 
         public string AfterSignature { get; set; } = string.Empty;
+
+        public MapGenGridCoord[] ChangedCoords { get; set; } = System.Array.Empty<MapGenGridCoord>();
     }
 
     public sealed class MapGenPostProcessReport

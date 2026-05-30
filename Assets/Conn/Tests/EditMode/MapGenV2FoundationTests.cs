@@ -2502,6 +2502,8 @@ namespace Conn.Tests.EditMode
             Assert.That(report.PassReports[1].PassKind, Is.EqualTo(MapGenPostProcessPassKind.AddDirectRoutes));
             Assert.That(report.PassReports[1].ChangedCells, Is.EqualTo(report.DirectRouteCellsAdded));
             Assert.That(report.PassReports[1].BeforeSignature, Is.Not.EqualTo(report.PassReports[1].AfterSignature));
+            Assert.That(report.PassReports[1].ChangedCoords, Has.Length.EqualTo(report.DirectRouteCellsAdded));
+            Assert.That(report.PassReports[1].ChangedCoords, Has.Some.EqualTo(new MapGenGridCoord(1, 0)));
         }
 
         [Test]

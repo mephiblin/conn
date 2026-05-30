@@ -13,6 +13,7 @@ namespace Conn.MapGenV2.Editor
         private const string PreviewCellSizeKey = "Conn.MapGenV2.Window.PreviewCellSize";
         private const string OutputModeKey = "Conn.MapGenV2.Window.OutputMode";
         private const string ShowPropOverlayKey = "Conn.MapGenV2.Window.ShowPropOverlay";
+        private const string ShowPostProcessOverlayKey = "Conn.MapGenV2.Window.ShowPostProcessOverlay";
         private static readonly Color EmptyColor = new Color(0.04f, 0.08f, 0.9f, 1f);
         private static readonly Color RoomColor = new Color(0.9f, 0f, 0f, 1f);
         private static readonly Color CorridorColor = new Color(0f, 0f, 0f, 1f);
@@ -40,6 +41,9 @@ namespace Conn.MapGenV2.Editor
         private GameObject selectedMaterializedRoot;
         private MapGenV2SceneOutputMode outputMode = MapGenV2SceneOutputMode.ReplacePreviousRoot;
         private bool showPropPlacementOverlay = true;
+        private bool showPostProcessOverlay = true;
+        private int selectedPostProcessPassIndex;
+        private MapGenPostProcessReport lastPostProcessReport;
         private string lastOperationResult = "아직 실행한 작업이 없습니다. / No operation has run yet.";
         private readonly MapGenV2PreviewTextureCache previewTextureCache = new MapGenV2PreviewTextureCache();
 
@@ -62,6 +66,7 @@ namespace Conn.MapGenV2.Editor
             previewCellSize = EditorPrefs.GetFloat(PreviewCellSizeKey, previewCellSize);
             outputMode = (MapGenV2SceneOutputMode)EditorPrefs.GetInt(OutputModeKey, (int)outputMode);
             showPropPlacementOverlay = EditorPrefs.GetBool(ShowPropOverlayKey, showPropPlacementOverlay);
+            showPostProcessOverlay = EditorPrefs.GetBool(ShowPostProcessOverlayKey, showPostProcessOverlay);
             profile = LoadAssetFromEditorPrefs<MapGenProfileAsset>(ProfilePathKey);
             draft = LoadAssetFromEditorPrefs<MapGenMockupDraftAsset>(DraftPathKey);
         }
@@ -695,8 +700,13 @@ namespace Conn.MapGenV2.Editor
                     () => draft.ApplyPostProcessingFromProfile(() => MapGenV2EditorProgress.Begin("Post-Process Mockup", "Running post-process passes...")),
                     result => MapGenV2PerformanceDetails.ForPostProcess(result, $"Seed={draft.Seed}"),
                     out var sample);
+                lastPostProcessReport = report;
+                selectedPostProcessPassIndex = Mathf.Clamp(
+                    selectedPostProcessPassIndex,
+                    0,
+                    Mathf.Max(0, (report.PassReports?.Length ?? 1) - 1));
                 EditorUtility.SetDirty(draft);
-                lastOperationResult = $"Post-process complete. Direct routes +{report.DirectRouteCellsAdded}, dead ends removed {report.DeadEndCorridorsRemoved}, isolated rooms removed {report.IsolatedRoomsRemoved}. Perf {sample.ElapsedMs}ms/{sample.BudgetMs}ms {sample.Target}.";
+                lastOperationResult = $"Post-process complete. Passes {report.PassesRun}, Direct routes +{report.DirectRouteCellsAdded}, dead ends removed {report.DeadEndCorridorsRemoved}, isolated rooms removed {report.IsolatedRoomsRemoved}. Perf {sample.ElapsedMs}ms/{sample.BudgetMs}ms {sample.Target}.";
             }
             finally
             {
@@ -981,6 +991,7 @@ namespace Conn.MapGenV2.Editor
             EditorPrefs.SetFloat(PreviewCellSizeKey, previewCellSize);
             EditorPrefs.SetInt(OutputModeKey, (int)outputMode);
             EditorPrefs.SetBool(ShowPropOverlayKey, showPropPlacementOverlay);
+            EditorPrefs.SetBool(ShowPostProcessOverlayKey, showPostProcessOverlay);
         }
 
         private static void SaveAssetToEditorPrefs(string key, Object asset)
@@ -1033,6 +1044,7 @@ namespace Conn.MapGenV2.Editor
 
             var propPlacement = MapGenPropPlacementPlanner.BuildForDraft(draft);
             DrawPropPlacementPreviewSummary(propPlacement);
+            DrawPostProcessPassSummary();
             DrawMockupPreview(previewData);
             DrawCellDetails(previewData);
         }
@@ -1047,6 +1059,10 @@ namespace Conn.MapGenV2.Editor
                 EditorGUILayout.LabelField("확대 / Zoom", GUILayout.Width(72f));
                 previewCellSize = EditorGUILayout.Slider(previewCellSize, 6f, 32f, GUILayout.Width(180f));
                 showPropPlacementOverlay = EditorGUILayout.ToggleLeft("프롭 오버레이 / Props", showPropPlacementOverlay, GUILayout.Width(150f));
+                using (new EditorGUI.DisabledScope(!HasPostProcessPassOverlay()))
+                {
+                    showPostProcessOverlay = EditorGUILayout.ToggleLeft("후처리 오버레이 / Post", showPostProcessOverlay, GUILayout.Width(170f));
+                }
             }
 
             DrawLegend();
@@ -1066,6 +1082,7 @@ namespace Conn.MapGenV2.Editor
             HandlePreviewInput(previewData, rect);
             DrawPreviewCells(previewData, rect);
             DrawPropPlacementOverlay(previewData, rect, propPlacement);
+            DrawPostProcessPassOverlay(previewData, rect);
             EditorGUILayout.EndScrollView();
         }
 
@@ -1100,6 +1117,38 @@ namespace Conn.MapGenV2.Editor
                 if (!propPlacement.Report.IsValid)
                 {
                     EditorGUILayout.HelpBox("프롭 배치에 문제가 있습니다. Materialize 전에 rule/filter/blocker 설정을 확인하세요.", MessageType.Warning);
+                }
+            }
+        }
+
+        private void DrawPostProcessPassSummary()
+        {
+            if (!HasPostProcessPassOverlay())
+            {
+                return;
+            }
+
+            var passReports = lastPostProcessReport.PassReports;
+            selectedPostProcessPassIndex = Mathf.Clamp(selectedPostProcessPassIndex, 0, passReports.Length - 1);
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                EditorGUILayout.LabelField("후처리 패스 미리보기 / Post-Process Pass Preview", EditorStyles.boldLabel);
+                var labels = new string[passReports.Length];
+                for (var i = 0; i < passReports.Length; i++)
+                {
+                    var pass = passReports[i];
+                    labels[i] = $"{i + 1}. {pass.PassKind} changed {pass.ChangedCells}"
+                        + (pass.RolledBack ? " (rollback)" : string.Empty);
+                }
+
+                selectedPostProcessPassIndex = EditorGUILayout.Popup("Overlay Pass", selectedPostProcessPassIndex, labels);
+                var selected = passReports[selectedPostProcessPassIndex];
+                EditorGUILayout.LabelField(
+                    "Selected Pass",
+                    $"{selected.PassKind}, Changed {selected.ChangedCells}, Connectivity {(selected.ConnectivityValid ? "valid" : "invalid")}, Before {selected.BeforeSignature}, After {selected.AfterSignature}");
+                if (selected.RolledBack)
+                {
+                    EditorGUILayout.HelpBox("이 패스는 필수 경로를 깨서 rollback되었습니다. / This pass was rolled back because required traversal broke.", MessageType.Warning);
                 }
             }
         }
@@ -1160,6 +1209,38 @@ namespace Conn.MapGenV2.Editor
                         EditorGUI.DrawRect(new Rect(cellRect.xMax - 1f, cellRect.y, 1f, cellRect.height), GridLineColor);
                     }
                 }
+            }
+        }
+
+        private bool HasPostProcessPassOverlay()
+        {
+            return lastPostProcessReport != null
+                && lastPostProcessReport.PassReports != null
+                && lastPostProcessReport.PassReports.Length > 0;
+        }
+
+        private void DrawPostProcessPassOverlay(MapGenMockupPreviewData previewData, Rect rect)
+        {
+            if (!showPostProcessOverlay || !HasPostProcessPassOverlay())
+            {
+                return;
+            }
+
+            var passReports = lastPostProcessReport.PassReports;
+            selectedPostProcessPassIndex = Mathf.Clamp(selectedPostProcessPassIndex, 0, passReports.Length - 1);
+            var selected = passReports[selectedPostProcessPassIndex];
+            foreach (var coord in selected.ChangedCoords ?? System.Array.Empty<MapGenGridCoord>())
+            {
+                if (!coord.IsInBounds(previewData.Width, previewData.Height))
+                {
+                    continue;
+                }
+
+                var cellRect = RectForCell(previewData, rect, coord.X, coord.Y);
+                var overlay = selected.RolledBack
+                    ? new Color(1f, 0.25f, 0.05f, 0.48f)
+                    : new Color(1f, 0.95f, 0.05f, 0.42f);
+                EditorGUI.DrawRect(cellRect, overlay);
             }
         }
 

@@ -40,7 +40,9 @@ namespace Conn.MapGenV2.Core
 
                     var beforePass = CopyCells(cells);
                     var beforeSignature = BuildCellStateSignature(beforePass);
-                    var changedCells = ApplyPass(passKind, width, height, cells);
+                    ApplyPass(passKind, width, height, cells);
+                    var changedCoords = BuildChangedCoords(beforePass, cells, width);
+                    var changedCells = changedCoords.Length;
                     changed |= changedCells > 0;
 
                     report.PassesRun++;
@@ -63,7 +65,8 @@ namespace Conn.MapGenV2.Core
                         RolledBack = rolledBack,
                         ConnectivityValid = connectivityValid,
                         BeforeSignature = beforeSignature,
-                        AfterSignature = BuildCellStateSignature(cells)
+                        AfterSignature = BuildCellStateSignature(cells),
+                        ChangedCoords = changedCoords
                     });
 
                     if (rolledBack)
@@ -258,6 +261,31 @@ namespace Conn.MapGenV2.Core
 
                 return hash.ToString("X16");
             }
+        }
+
+        private static MapGenGridCoord[] BuildChangedCoords(MapGenMockupCell[] before, MapGenMockupCell[] after, int width)
+        {
+            if (before == null || after == null || before.Length != after.Length)
+            {
+                return Array.Empty<MapGenGridCoord>();
+            }
+
+            var changed = new MapGenGridCoord[after.Length];
+            var count = 0;
+            for (var i = 0; i < after.Length; i++)
+            {
+                if (before[i].State == after[i].State
+                    && before[i].RegionId == after[i].RegionId
+                    && before[i].RoomCategory == after[i].RoomCategory)
+                {
+                    continue;
+                }
+
+                changed[count++] = MapGenGridCoord.FromIndex(i, width);
+            }
+
+            Array.Resize(ref changed, count);
+            return changed;
         }
 
         private static int AddDirectRoute(int width, int height, MapGenMockupCell[] cells)

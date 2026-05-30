@@ -681,6 +681,9 @@ Progress note 2026-05-31:
   `MapGenPostProcessRules.PassOrder` and records per-pass reports with pass
   kind, changed cell count, rollback state, connectivity state, and before/after
   signatures for preview overlays.
+- The MapGenV2 window now shows the latest post-process pass list and can
+  overlay changed cells for the selected pass on the mockup preview. Rolled back
+  passes use a separate warning overlay.
 
 Goal: make post-processing explicit, configurable, visible, and safe.
 
@@ -694,7 +697,7 @@ Tasks:
 - [x] Implement enclosed-empty-space fill pass.
 - [ ] Extend fill pass to designer-selected empty-space masks.
 - [x] Each pass must report what changed.
-- [ ] Add per-pass before/after overlay in preview.
+- [x] Add per-pass before/after overlay in preview.
 - [x] Add pass order configuration.
 - [x] Add connectivity validation after every pass.
 - [x] Add rollback if a pass breaks required traversal.
