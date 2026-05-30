@@ -188,6 +188,8 @@ namespace Conn.MapGenV2.Editor
             {
                 DrawObjectShortcutRow("Profile", profile);
                 DrawObjectShortcutRow("Draft", draft);
+                DrawObjectShortcutRow("Materialized Root", selectedMaterializedRoot);
+                DrawObjectShortcutRow("Baked Asset", LoadExpectedBakedAsset());
 
                 if (profile == null)
                 {
@@ -202,6 +204,21 @@ namespace Conn.MapGenV2.Editor
                 for (var i = 0; i < roomShapes.Length; i++)
                 {
                     DrawObjectShortcutRow($"Room Shape {i}", roomShapes[i]);
+                }
+
+                if (profile.StyleSet != null)
+                {
+                    var roomTemplates = profile.StyleSet.RoomTemplates ?? System.Array.Empty<MapGenRoomTemplateAsset>();
+                    for (var i = 0; i < roomTemplates.Length; i++)
+                    {
+                        DrawObjectShortcutRow($"Room Template {i}", roomTemplates[i]);
+                    }
+
+                    var corridorTemplates = profile.StyleSet.CorridorTemplates ?? System.Array.Empty<MapGenCorridorTemplateAsset>();
+                    for (var i = 0; i < corridorTemplates.Length; i++)
+                    {
+                        DrawObjectShortcutRow($"Corridor Template {i}", corridorTemplates[i]);
+                    }
                 }
             }
         }
@@ -518,6 +535,12 @@ namespace Conn.MapGenV2.Editor
             }
 
             return $"{GetBakedAssetFolder()}/{draft.Profile.ProfileId}_{draft.Seed}_BakedMap.asset";
+        }
+
+        private MapGenBakedMapAsset LoadExpectedBakedAsset()
+        {
+            var path = BuildExpectedBakedAssetPath();
+            return AssetDatabase.LoadAssetAtPath<MapGenBakedMapAsset>(path);
         }
 
         private string GetDraftFolder()

@@ -310,6 +310,9 @@ Progress note 2026-05-31:
   `Materialize To Scene` and `Bake Runtime Asset`.
 - Linked asset rows now expose `Ping`, `Select`, and `Open` shortcuts for the
   selected profile, draft, rule set, style set, module set, and room shapes.
+- Linked asset rows also include materialized root, expected baked asset, room
+  templates, and corridor templates so the whole authoring chain can be opened
+  or selected from the main window.
 - Draft/materialized-prefab/baked-asset output paths and window state
   persistence are implemented with `EditorPrefs`.
 
@@ -327,7 +330,7 @@ Tasks:
 - [x] Show last operation result and failure reason.
 - [x] Show generation result summary:
   seed, retry count, room count, corridor count, changed post-process passes.
-- [ ] Add `Open/Select` buttons beside profile, rule set, style set, module set,
+- [x] Add `Open/Select` buttons beside profile, rule set, style set, module set,
   room shapes, draft, materialized root, and baked asset.
 - [x] Add output paths for draft, materialized prefab, and baked asset.
 - [x] Persist window state with `EditorPrefs` or a workspace asset.
