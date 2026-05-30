@@ -723,6 +723,8 @@ Progress note 2026-05-31:
 - Module sets now include an explicit module bounds contract for cell size,
   height, pivot mode, pivot tolerance, root rotation, and root scale. Validation
   reports prefab root pivot/rotation/scale mismatches before materialization.
+- Ceiling classification now distinguishes room interior ceilings from
+  corridor/connector exterior ceilings.
 
 Goal: turn accepted mockups into readable project-prefab maps.
 
@@ -734,8 +736,8 @@ Tasks:
 - [x] Preserve mockup region ids so selected/locked room edits can be traced in
   the materialized output.
 - [x] Classify floors, corridors, straight walls, inside corners, outside
-  corners, interior ceilings, doors, props, and navigation helper objects.
-- [ ] Add exterior ceiling classification.
+  corners, interior/exterior ceilings, doors, props, and navigation helper
+  objects.
 - [x] Use `CellSize` consistently for positions.
 - [x] Respect prefab footprint in materialization preflight.
 - [x] Respect allowed rotations and module offsets.
@@ -767,6 +769,7 @@ Verification:
 - EditMode test for `CellSize`, module offset, and rotation-policy stamping.
 - EditMode tests for whole-door and split-door request classification.
 - EditMode tests for inside-corner and navigation-helper classification.
+- EditMode test for exterior ceiling classification.
 - EditMode test for navigation-helper scene grouping and source metadata.
 - EditMode test for module bounds contract prefab root validation.
 - EditMode test for missing prefab/module reports.

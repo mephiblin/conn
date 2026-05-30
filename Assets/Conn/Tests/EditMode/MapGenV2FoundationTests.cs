@@ -1820,6 +1820,33 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void MaterializationClassifierCreatesExteriorCeilingForCorridors()
+        {
+            var cells = new[]
+            {
+                new MapGenMockupCell
+                {
+                    State = MapGenCellState.Corridor,
+                    RegionId = 12,
+                    SourceTemplateId = "corridor_template"
+                }
+            };
+
+            var requests = MapGenMaterializationClassifier.Classify(1, 1, cells);
+
+            Assert.That(requests, Has.Exactly(1).Matches<MapGenModuleRequest>(
+                request => request.Category == MapGenModuleCategory.FloorB
+                    && request.RegionId == 12
+                    && request.SourceTemplateId == "corridor_template"));
+            Assert.That(requests, Has.Exactly(1).Matches<MapGenModuleRequest>(
+                request => request.Category == MapGenModuleCategory.CeilingExterior
+                    && request.RegionId == 12
+                    && request.SourceTemplateId == "corridor_template"));
+            Assert.That(requests, Has.None.Matches<MapGenModuleRequest>(
+                request => request.Category == MapGenModuleCategory.CeilingInterior));
+        }
+
+        [Test]
         public void MaterializationClassifierRequestsWholeAndSplitDoorModules()
         {
             var cells = new[]

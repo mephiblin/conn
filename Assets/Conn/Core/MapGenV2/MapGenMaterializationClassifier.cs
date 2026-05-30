@@ -42,6 +42,17 @@ namespace Conn.MapGenV2.Core
                         SourceTemplateId = cell.SourceTemplateId
                     });
                 }
+                else
+                {
+                    requests.Add(new MapGenModuleRequest
+                    {
+                        Category = MapGenModuleCategory.CeilingExterior,
+                        Coord = coord,
+                        Direction = MapGenGridDirection.North,
+                        RegionId = cell.RegionId,
+                        SourceTemplateId = cell.SourceTemplateId
+                    });
+                }
 
                 if (cell.State == MapGenCellState.Connector && cell.SocketKind == MapGenSocketKind.Door)
                 {
