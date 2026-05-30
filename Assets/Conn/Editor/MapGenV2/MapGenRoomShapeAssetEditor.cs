@@ -133,18 +133,7 @@ namespace Conn.MapGenV2.Editor
         private static void DrawValidation(MapGenRoomShapeAsset shape)
         {
             EditorGUILayout.Space();
-            var report = shape.Validate();
-            if (report.IsValid)
-            {
-                EditorGUILayout.HelpBox("Room shape is valid.", MessageType.Info);
-                return;
-            }
-
-            foreach (var issue in report.Issues)
-            {
-                var cellText = issue.Cell.HasValue ? $" Cell {issue.Cell.Value}." : string.Empty;
-                EditorGUILayout.HelpBox($"{issue.Message}{cellText}\nFix: {issue.SuggestedFix}", MessageType.Warning);
-            }
+            MapGenValidationReportEditorGUI.Draw(shape.Validate(), shape, "Room shape is valid.");
         }
 
         private static MapGenCellState NormalizeBrushState(MapGenCellState state)

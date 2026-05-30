@@ -1133,7 +1133,7 @@ be committed and pushed separately.
   prefab grid validation.
 - [x] Profile/style/rule assets: profile wiring, style set, rule set, creation
   menus, default folders.
-- [ ] Validation reports: structured issue codes, suggested fixes, context
+- [x] Validation reports: structured issue codes, suggested fixes, context
   objects, editor display.
 - [ ] Mockup draft model: cells, regions, signatures, accepted/stale state,
   save/load.

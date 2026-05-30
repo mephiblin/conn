@@ -11,17 +11,7 @@ namespace Conn.MapGenV2.Editor
             DrawDefaultInspector();
 
             var moduleSet = (MapGenModuleSetAsset)target;
-            var report = moduleSet.Validate();
-            if (report.IsValid)
-            {
-                EditorGUILayout.HelpBox("Module set is valid.", MessageType.Info);
-                return;
-            }
-
-            foreach (var issue in report.Issues)
-            {
-                EditorGUILayout.HelpBox($"{issue.Message}\nFix: {issue.SuggestedFix}", MessageType.Warning);
-            }
+            MapGenValidationReportEditorGUI.Draw(moduleSet.Validate(), moduleSet, "Module set is valid.");
         }
     }
 }

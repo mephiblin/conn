@@ -11,17 +11,7 @@ namespace Conn.MapGenV2.Editor
             DrawDefaultInspector();
 
             var profile = (MapGenProfileAsset)target;
-            var report = profile.Validate();
-            if (report.IsValid)
-            {
-                EditorGUILayout.HelpBox("Profile is valid.", MessageType.Info);
-                return;
-            }
-
-            foreach (var issue in report.Issues)
-            {
-                EditorGUILayout.HelpBox($"{issue.Message}\nFix: {issue.SuggestedFix}", MessageType.Warning);
-            }
+            MapGenValidationReportEditorGUI.Draw(profile.Validate(), profile, "Profile is valid.");
         }
     }
 }
