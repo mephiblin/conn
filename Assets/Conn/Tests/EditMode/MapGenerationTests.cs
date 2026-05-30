@@ -215,6 +215,26 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void EditableMapDraftAssetUsesVisualFirstCustomEditor()
+        {
+            var draft = ScriptableObject.CreateInstance<EditableMapDraftAsset>();
+            draft.InitializeBlank(4, 3, 1f, 1f);
+
+            var editor = UnityEditor.Editor.CreateEditor(draft);
+
+            try
+            {
+                Assert.That(editor, Is.Not.Null);
+                Assert.That(editor.GetType().FullName, Is.EqualTo("Conn.Editor.Maps.EditableMapDraftEditor"));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(editor);
+                UnityEngine.Object.DestroyImmediate(draft);
+            }
+        }
+
+        [Test]
         public void EditableMapDraftAssetCanBeSavedClosedAndReopenedWithoutDataLoss()
         {
             var draft = ScriptableObject.CreateInstance<EditableMapDraftAsset>();

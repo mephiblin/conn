@@ -13,6 +13,12 @@ namespace Conn.Editor.Maps
     {
         private static readonly Color HoverColor = new Color(0.2f, 0.7f, 1f, 0.18f);
         private static readonly Color ValidationColor = new Color(1f, 0.2f, 0.2f, 0.18f);
+        private static readonly Color FloorColor = new Color(0.34f, 0.38f, 0.37f, 1f);
+        private static readonly Color WallColor = new Color(0.1f, 0.11f, 0.11f, 1f);
+        private static readonly Color GapColor = new Color(0.17f, 0.17f, 0.17f, 1f);
+        private static readonly Color SlopeColor = new Color(0.53f, 0.48f, 0.31f, 1f);
+        private static readonly Color StairColor = new Color(0.42f, 0.46f, 0.57f, 1f);
+        private static readonly Color GridLineColor = new Color(0f, 0f, 0f, 0.22f);
 
         private enum BrushMode
         {
@@ -38,6 +44,7 @@ namespace Conn.Editor.Maps
         private int cellY;
         private bool scenePaintEnabled = true;
         private bool scenePaintActive;
+        private bool showRawData;
         private Vector2Int hoveredCell = new Vector2Int(-1, -1);
         private Vector2Int lastScenePaintCell = new Vector2Int(int.MinValue, int.MinValue);
         private MapValidationReport lastValidationReport;
@@ -55,39 +62,103 @@ namespace Conn.Editor.Maps
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
-            DrawDefaultInspector();
-
             var draft = (EditableMapDraftAsset)target;
 
-            EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Brush", EditorStyles.boldLabel);
-            brushMode = (BrushMode)EditorGUILayout.EnumPopup("Mode", brushMode);
-            selectedTerrain = (RoomChunkCellType)EditorGUILayout.EnumPopup("Terrain", selectedTerrain);
-            selectedMaterialId = EditorGUILayout.TextField("Material Id", selectedMaterialId ?? string.Empty);
-            selectedObjectPaletteId = EditorGUILayout.TextField("Object Palette Id", selectedObjectPaletteId ?? string.Empty);
-            brushSize = Mathf.Max(1, EditorGUILayout.IntField("Brush Size", brushSize));
-            direction = (MapDirection)EditorGUILayout.EnumPopup("Direction", direction);
-            targetHeight = EditorGUILayout.IntField("Absolute Height", targetHeight);
-            useHeightDelta = EditorGUILayout.Toggle("Use Height Delta", useHeightDelta);
-            heightDelta = EditorGUILayout.IntField("Height Delta", heightDelta);
-            eraseMode = EditorGUILayout.Toggle("Erase Mode", eraseMode);
-            cellX = EditorGUILayout.IntField("Cell X", cellX);
-            cellY = EditorGUILayout.IntField("Cell Y", cellY);
-            scenePaintEnabled = EditorGUILayout.Toggle("Scene Paint Enabled", scenePaintEnabled);
+            DrawMapPreview(draft);
+            DrawDraftSummary(draft);
+            DrawDraftActions(draft);
+            DrawBrushControls(draft);
+            DrawValidationReport();
+            DrawAuthoringFields();
+            DrawRawDataFoldout();
 
-            using (new EditorGUILayout.HorizontalScope())
+            serializedObject.ApplyModifiedProperties();
+        }
+
+        private void DrawMapPreview(EditableMapDraftAsset draft)
+        {
+            EditorGUILayout.LabelField("Map Preview", EditorStyles.boldLabel);
+            var previewWidth = EditorGUIUtility.currentViewWidth - 36f;
+            var aspect = draft.Width > 0 ? draft.Height / (float)draft.Width : 1f;
+            var previewHeight = Mathf.Clamp(previewWidth * aspect, 96f, 280f);
+            var rect = GUILayoutUtility.GetRect(previewWidth, previewHeight, GUILayout.ExpandWidth(true));
+            EditorGUI.DrawRect(rect, new Color(0.12f, 0.12f, 0.12f, 1f));
+
+            if (draft.Cells == null || draft.Cells.Length == 0 || draft.Width <= 0 || draft.Height <= 0)
             {
-                if (GUILayout.Button("Apply Brush To Cell"))
-                {
-                    PaintBrush(draft, cellX, cellY);
-                }
-
-                if (GUILayout.Button("Fill Grid"))
-                {
-                    FillGrid(draft);
-                }
+                EditorGUI.LabelField(rect, "No cells", EditorStyles.centeredGreyMiniLabel);
+                return;
             }
 
+            var cellWidth = rect.width / draft.Width;
+            var cellHeight = rect.height / draft.Height;
+            foreach (var cell in draft.Cells)
+            {
+                if (!draft.IsInBounds(cell.X, cell.Y))
+                {
+                    continue;
+                }
+
+                var cellRect = new Rect(
+                    rect.x + cell.X * cellWidth,
+                    rect.y + (draft.Height - cell.Y - 1) * cellHeight,
+                    Mathf.Ceil(cellWidth),
+                    Mathf.Ceil(cellHeight));
+                EditorGUI.DrawRect(cellRect, ColorForTerrain(cell.Terrain));
+            }
+
+            if (draft.Width <= 96 && draft.Height <= 64)
+            {
+                DrawPreviewGrid(rect, draft.Width, draft.Height, cellWidth, cellHeight);
+            }
+        }
+
+        private static void DrawPreviewGrid(Rect rect, int width, int height, float cellWidth, float cellHeight)
+        {
+            for (var x = 0; x <= width; x++)
+            {
+                var line = new Rect(rect.x + x * cellWidth, rect.y, 1f, rect.height);
+                EditorGUI.DrawRect(line, GridLineColor);
+            }
+
+            for (var y = 0; y <= height; y++)
+            {
+                var line = new Rect(rect.x, rect.y + y * cellHeight, rect.width, 1f);
+                EditorGUI.DrawRect(line, GridLineColor);
+            }
+        }
+
+        private static Color ColorForTerrain(RoomChunkCellType terrain)
+        {
+            switch (terrain)
+            {
+                case RoomChunkCellType.Floor:
+                    return FloorColor;
+                case RoomChunkCellType.Wall:
+                    return WallColor;
+                case RoomChunkCellType.Slope:
+                    return SlopeColor;
+                case RoomChunkCellType.Stair:
+                    return StairColor;
+                default:
+                    return GapColor;
+            }
+        }
+
+        private void DrawDraftSummary(EditableMapDraftAsset draft)
+        {
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Draft", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Id", string.IsNullOrWhiteSpace(draft.Id) ? "(none)" : draft.Id);
+            EditorGUILayout.LabelField("Size", $"{draft.Width} x {draft.Height} cells");
+            EditorGUILayout.LabelField("Rooms", (draft.Rooms?.Length ?? 0).ToString());
+            EditorGUILayout.LabelField("Objects", (draft.Objects?.Length ?? 0).ToString());
+            EditorGUILayout.LabelField("Sockets", (draft.Sockets?.Length ?? 0).ToString());
+        }
+
+        private void DrawDraftActions(EditableMapDraftAsset draft)
+        {
+            EditorGUILayout.Space();
             EditorGUILayout.LabelField("Draft Actions", EditorStyles.boldLabel);
             using (new EditorGUILayout.HorizontalScope())
             {
@@ -105,8 +176,7 @@ namespace Conn.Editor.Maps
 
                 if (GUILayout.Button("Validate"))
                 {
-                    lastValidationReport = EditableMapValidationService.Validate(draft);
-                    SceneView.RepaintAll();
+                    ValidateDraft(draft);
                 }
             }
 
@@ -161,28 +231,103 @@ namespace Conn.Editor.Maps
                     }
                 }
             }
+        }
 
-            if (lastValidationReport != null)
+        private void DrawBrushControls(EditableMapDraftAsset draft)
+        {
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Brush", EditorStyles.boldLabel);
+            brushMode = (BrushMode)EditorGUILayout.EnumPopup("Mode", brushMode);
+            selectedTerrain = (RoomChunkCellType)EditorGUILayout.EnumPopup("Terrain", selectedTerrain);
+            selectedMaterialId = EditorGUILayout.TextField("Material Id", selectedMaterialId ?? string.Empty);
+            selectedObjectPaletteId = EditorGUILayout.TextField("Object Palette Id", selectedObjectPaletteId ?? string.Empty);
+            brushSize = Mathf.Max(1, EditorGUILayout.IntField("Brush Size", brushSize));
+            direction = (MapDirection)EditorGUILayout.EnumPopup("Direction", direction);
+            targetHeight = EditorGUILayout.IntField("Absolute Height", targetHeight);
+            useHeightDelta = EditorGUILayout.Toggle("Use Height Delta", useHeightDelta);
+            heightDelta = EditorGUILayout.IntField("Height Delta", heightDelta);
+            eraseMode = EditorGUILayout.Toggle("Erase Mode", eraseMode);
+            cellX = EditorGUILayout.IntField("Cell X", cellX);
+            cellY = EditorGUILayout.IntField("Cell Y", cellY);
+            scenePaintEnabled = EditorGUILayout.Toggle("Scene Paint Enabled", scenePaintEnabled);
+
+            using (new EditorGUILayout.HorizontalScope())
             {
-                EditorGUILayout.Space();
-                EditorGUILayout.LabelField("Validation", EditorStyles.boldLabel);
-                if (lastValidationReport.Passed)
+                if (GUILayout.Button("Apply Brush To Cell"))
                 {
-                    EditorGUILayout.HelpBox("Validation passed.", MessageType.Info);
+                    PaintBrush(draft, cellX, cellY);
                 }
 
-                foreach (var error in lastValidationReport.Errors)
+                if (GUILayout.Button("Fill Grid"))
                 {
-                    EditorGUILayout.HelpBox(error, MessageType.Error);
-                }
-
-                foreach (var warning in lastValidationReport.Warnings)
-                {
-                    EditorGUILayout.HelpBox(warning, MessageType.Warning);
+                    FillGrid(draft);
                 }
             }
+        }
 
-            serializedObject.ApplyModifiedProperties();
+        private void DrawValidationReport()
+        {
+            if (lastValidationReport == null)
+            {
+                return;
+            }
+
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Validation", EditorStyles.boldLabel);
+            if (lastValidationReport.Passed)
+            {
+                EditorGUILayout.HelpBox("Validation passed.", MessageType.Info);
+            }
+
+            foreach (var error in lastValidationReport.Errors)
+            {
+                EditorGUILayout.HelpBox(error, MessageType.Error);
+            }
+
+            foreach (var warning in lastValidationReport.Warnings)
+            {
+                EditorGUILayout.HelpBox(warning, MessageType.Warning);
+            }
+        }
+
+        private void DrawAuthoringFields()
+        {
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Authoring Data", EditorStyles.boldLabel);
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(EditableMapDraftAsset.Id)));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(EditableMapDraftAsset.SourceProfileId)));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(EditableMapDraftAsset.Seed)));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(EditableMapDraftAsset.Floor)));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(EditableMapDraftAsset.Difficulty)));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(EditableMapDraftAsset.Version)));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(EditableMapDraftAsset.Width)));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(EditableMapDraftAsset.Height)));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(EditableMapDraftAsset.CellSize)));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(EditableMapDraftAsset.HeightStep)));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(EditableMapDraftAsset.TilePalette)));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(EditableMapDraftAsset.ObjectPalette)));
+        }
+
+        private void DrawRawDataFoldout()
+        {
+            EditorGUILayout.Space();
+            showRawData = EditorGUILayout.Foldout(showRawData, "Raw Data", true);
+            if (!showRawData)
+            {
+                return;
+            }
+
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(EditableMapDraftAsset.Cells)), true);
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(EditableMapDraftAsset.Objects)), true);
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(EditableMapDraftAsset.Rooms)), true);
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(EditableMapDraftAsset.Zones)), true);
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(EditableMapDraftAsset.Sockets)), true);
+        }
+
+        private void ValidateDraft(EditableMapDraftAsset draft)
+        {
+            lastValidationReport = EditableMapValidationService.Validate(draft);
+            SceneView.RepaintAll();
         }
 
         private void PaintBrush(EditableMapDraftAsset draft, int centerX, int centerY)
