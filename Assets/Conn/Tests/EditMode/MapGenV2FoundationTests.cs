@@ -339,6 +339,73 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void DraftInspectorSummaryReportsSelectionOverridesAndReadiness()
+        {
+            var draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();
+
+            try
+            {
+                draft.GridSize = new Vector2Int(2, 2);
+                draft.Cells = new[]
+                {
+                    new MapGenMockupCell
+                    {
+                        State = MapGenCellState.Room,
+                        RegionId = 7,
+                        RoomCategory = MapGenRoomCategory.Start,
+                        SourceTemplateId = "start_template",
+                        SourceShapeId = "shape_a"
+                    },
+                    new MapGenMockupCell
+                    {
+                        State = MapGenCellState.Connector,
+                        RegionId = 7,
+                        RoomCategory = MapGenRoomCategory.Start,
+                        SocketKind = MapGenSocketKind.Door
+                    },
+                    MapGenMockupCell.Empty,
+                    MapGenMockupCell.Empty
+                };
+                draft.RegionOverrides = new[]
+                {
+                    new MapGenMockupRegionOverride
+                    {
+                        RegionId = 7,
+                        Locked = true,
+                        HasCategoryOverride = true,
+                        CategoryOverride = MapGenRoomCategory.Boss
+                    }
+                };
+                draft.Accept();
+
+                var summary = MapGenMockupDraftAssetEditor.BuildInspectorSummary(draft, 7);
+                var selected = MapGenMockupDraftAssetEditor.BuildSelectedRegionSummary(draft, 7);
+
+                Assert.That(summary, Does.Contain("Grid 2x2"));
+                Assert.That(summary, Does.Contain("Cells 4"));
+                Assert.That(summary, Does.Contain("Regions 1"));
+                Assert.That(summary, Does.Contain("Selected 7"));
+                Assert.That(summary, Does.Contain("Overrides 1"));
+                Assert.That(summary, Does.Contain("Accepted Yes"));
+                Assert.That(summary, Does.Contain("Stale No"));
+                Assert.That(summary, Does.Contain("Materialization Ready"));
+                Assert.That(selected, Does.Contain("Selected region 7"));
+                Assert.That(selected, Does.Contain("State Connector"));
+                Assert.That(selected, Does.Contain("Category Start"));
+                Assert.That(selected, Does.Contain("Cells 2"));
+                Assert.That(selected, Does.Contain("Connectors 1"));
+                Assert.That(selected, Does.Contain("Template start_template"));
+                Assert.That(selected, Does.Contain("Shape shape_a"));
+                Assert.That(selected, Does.Contain("Locked Yes"));
+                Assert.That(selected, Does.Contain("Category override Boss"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(draft);
+            }
+        }
+
+        [Test]
         public void RoomShapeValidatorRejectsConnectorAwayFromEdge()
         {
             var cells = new MapGenShapeCell[9];

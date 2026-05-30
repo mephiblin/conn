@@ -164,7 +164,7 @@ tool, and generated output workflow.
 - [x] Rule set inspector must show designer-language controls before raw values:
   room count, corridor density, loops, dead-end policy, blocked regions,
   required categories, post-process pass list.
-- [ ] Draft inspector must show the mockup preview, selected region details,
+- [x] Draft inspector must show the mockup preview, selected region details,
   manual overrides, accept/stale status, and materialization readiness.
 - [x] Baked map inspector must show runtime-safe summary only:
   grid bounds, regions, connectors, traversal graph, nav data availability,
