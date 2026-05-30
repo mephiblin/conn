@@ -94,6 +94,7 @@ namespace Conn.Tests.EditMode
             compiled.Zones.Add(new CompiledMapZoneRecord { Id = "zone_a", ThemeId = "ruins" });
             compiled.Cells.Add(new CompiledMapCell { X = 0, Y = 0, RoomId = "missing_room", ZoneId = "missing_zone", Terrain = RoomChunkCellType.Floor });
             compiled.Cells.Add(new CompiledMapCell { X = 1, Y = 0, RoomId = "start", ZoneId = "zone_a", Terrain = RoomChunkCellType.Wall });
+            compiled.Cells.Add(new CompiledMapCell { X = 0, Y = 0, RoomId = "start", ZoneId = "zone_a", Terrain = RoomChunkCellType.Floor });
             compiled.Placements.Add(new MapPlacement { Id = "blocked_spawn", Kind = MapPlacementKind.Monster, RoomId = "start", X = 1, Y = 0 });
             compiled.Objects.Add(new CompiledMapObjectPlacement { PlacementId = "duplicate_object", X = 1, Y = 0, Width = 1, Depth = 1, Kind = RoomChunkObjectKind.Blocker });
             compiled.Objects.Add(new CompiledMapObjectPlacement { PlacementId = "duplicate_object", X = profile.Width, Y = 0, Width = 1, Depth = 1, Kind = RoomChunkObjectKind.Chest });
@@ -103,6 +104,9 @@ namespace Conn.Tests.EditMode
             var report = MapValidationService.ValidateCompiled(profile, compiled);
 
             Assert.That(report.Passed, Is.False);
+            Assert.That(report.Errors.Exists(error => error.Contains("cell count mismatch")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("duplicate cell coordinate (0, 0)")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("missing cell coordinate (2, 0)")), Is.True);
             Assert.That(report.Errors.Exists(error => error.Contains("cell (0, 0)") && error.Contains("missing room missing_room")), Is.True);
             Assert.That(report.Errors.Exists(error => error.Contains("cell (0, 0)") && error.Contains("missing zone missing_zone")), Is.True);
             Assert.That(report.Errors.Exists(error => error.Contains("placement blocked_spawn") && error.Contains("non-walkable or missing cell (1, 0)")), Is.True);

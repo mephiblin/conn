@@ -458,6 +458,24 @@ namespace Conn.Core.Maps
         private static HashSet<string> BuildCompiledWalkableCellSet(CompiledMap compiled, MapValidationReport report)
         {
             var walkableCells = new HashSet<string>();
+            if (compiled.Width <= 0 || compiled.Height <= 0)
+            {
+                report.Errors.Add($"Compiled map dimensions must be positive, got {compiled.Width}x{compiled.Height}.");
+                return walkableCells;
+            }
+
+            var expectedCount = compiled.Width * compiled.Height;
+            if (compiled.Cells == null || compiled.Cells.Count == 0)
+            {
+                return walkableCells;
+            }
+
+            if (compiled.Cells.Count != expectedCount)
+            {
+                report.Errors.Add($"Compiled map cell count mismatch: expected {expectedCount}, got {compiled.Cells.Count}.");
+            }
+
+            var seen = new bool[compiled.Width, compiled.Height];
             foreach (var cell in compiled.Cells ?? new List<CompiledMapCell>())
             {
                 if (cell.X < 0 || cell.Y < 0 || cell.X >= compiled.Width || cell.Y >= compiled.Height)
@@ -466,9 +484,27 @@ namespace Conn.Core.Maps
                     continue;
                 }
 
+                if (seen[cell.X, cell.Y])
+                {
+                    report.Errors.Add($"Compiled map contains duplicate cell coordinate ({cell.X}, {cell.Y}).");
+                    continue;
+                }
+
+                seen[cell.X, cell.Y] = true;
                 if (cell.Terrain != RoomChunkCellType.Wall && cell.Terrain != RoomChunkCellType.Gap)
                 {
                     walkableCells.Add(CellKey(cell.X, cell.Y));
+                }
+            }
+
+            for (var y = 0; y < compiled.Height; y++)
+            {
+                for (var x = 0; x < compiled.Width; x++)
+                {
+                    if (!seen[x, y])
+                    {
+                        report.Errors.Add($"Compiled map is missing cell coordinate ({x}, {y}).");
+                    }
                 }
             }
 

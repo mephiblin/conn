@@ -1040,6 +1040,10 @@ is partially complete.
 - [x] Decide whether to extend `CompiledMap` or add a dedicated runtime cell-map
   payload.
 - [x] Bake cells to runtime-safe records.
+  - 2026-05-30: compiled cell-map payload validation now rejects duplicate or
+    missing cell coordinates and mismatched cell counts when a compiled map
+    includes cell records, while preserving legacy graph-only compiled map
+    compatibility.
 - [x] Bake objects to runtime-safe records.
 - [x] Bake rooms and zones.
 - [x] Bake sockets and doors.
