@@ -1714,6 +1714,64 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void MaterializationReportUsesDeterministicWeightedSelectionAndFootprints()
+        {
+            var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
+            var floorA = new GameObject("FloorA");
+            var floorB = new GameObject("FloorB");
+
+            try
+            {
+                moduleSet.FloorsA = new[]
+                {
+                    new MapGenModuleEntry
+                    {
+                        Prefab = floorA,
+                        Weight = 1,
+                        Footprint = new Vector2Int(2, 1)
+                    },
+                    new MapGenModuleEntry
+                    {
+                        Prefab = floorB,
+                        Weight = 3,
+                        Footprint = new Vector2Int(2, 1)
+                    }
+                };
+                var cells = new[]
+                {
+                    new MapGenMockupCell
+                    {
+                        State = MapGenCellState.Room,
+                        RegionId = 1,
+                        RoomCategory = MapGenRoomCategory.Start
+                    },
+                    new MapGenMockupCell
+                    {
+                        State = MapGenCellState.Room,
+                        RegionId = 2,
+                        RoomCategory = MapGenRoomCategory.Exit
+                    }
+                };
+                var plan = MapGenMaterializationPlanner.Build(2, 1, 1f, "signature", cells);
+
+                var first = MapGenMockupMaterializer.BuildReport(moduleSet, plan, 1234);
+                var second = MapGenMockupMaterializer.BuildReport(moduleSet, plan, 1234);
+
+                Assert.That(second.SelectedPrefabNames, Is.EqualTo(first.SelectedPrefabNames));
+                Assert.That(first.InstantiableRequests, Is.EqualTo(2));
+                Assert.That(first.FootprintOutOfBoundsRequests, Is.GreaterThan(0));
+                Assert.That(first.FootprintOverlapRequests, Is.GreaterThan(0));
+                Assert.That(first.HasFootprintIssues, Is.True);
+            }
+            finally
+            {
+                Object.DestroyImmediate(floorB);
+                Object.DestroyImmediate(floorA);
+                Object.DestroyImmediate(moduleSet);
+            }
+        }
+
+        [Test]
         public void PropPlacementValidatorRejectsNonNavigableChannel()
         {
             var cells = new[]

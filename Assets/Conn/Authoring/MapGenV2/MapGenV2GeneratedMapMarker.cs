@@ -13,6 +13,7 @@ namespace Conn.MapGenV2.Authoring
         public int MaterializationRequestCount;
         public int MaterializationInstantiatedCount;
         public int MaterializationMissingModuleCount;
+        public int MaterializationFootprintIssueCount;
         public MapGenMockupDraftAsset SourceDraft;
 
         public void PopulateFromDraft(MapGenMockupDraftAsset draft, string generatedUtc)
@@ -32,6 +33,9 @@ namespace Conn.MapGenV2.Authoring
             MaterializationRequestCount = report != null ? report.TotalRequests : 0;
             MaterializationInstantiatedCount = report != null ? report.InstantiableRequests : 0;
             MaterializationMissingModuleCount = report != null ? report.MissingModuleRequests : 0;
+            MaterializationFootprintIssueCount = report != null
+                ? report.FootprintOutOfBoundsRequests + report.FootprintOverlapRequests
+                : 0;
         }
     }
 }

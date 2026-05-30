@@ -708,6 +708,8 @@ Progress note 2026-05-31:
   materialized scene objects receive editor-only source metadata components.
 - Added a materialization report that counts total/instantiable/missing module
   requests and names missing module categories before scene objects are stamped.
+- Materialization preflight now records deterministic weighted prefab selections
+  and detects prefab footprint out-of-bounds/overlap issues.
 
 Goal: turn accepted mockups into readable project-prefab maps.
 
@@ -721,12 +723,12 @@ Tasks:
 - [ ] Classify floors, corridors, straight walls, inside corners, outside
   corners, ceilings, doors, props, and navigation helper objects.
 - [ ] Use `CellSize` consistently for positions.
-- [ ] Respect prefab footprint.
+- [x] Respect prefab footprint in materialization preflight.
 - [ ] Respect allowed rotations and pivot rules.
-- [ ] Deterministically choose weighted module entries.
+- [x] Deterministically choose weighted module entries.
 - [ ] Support whole doors and split door frames/panels.
 - [ ] Support connector-width-aware door openings.
-- [ ] Add overlap detection.
+- [x] Add overlap detection.
 - [x] Add missing-module warnings before instantiation.
 - [ ] Group output hierarchy:
   floors, corridors, walls, ceilings, doors, props, navigation.
@@ -746,7 +748,7 @@ Verification:
 
 - EditMode tests for category classification.
 - EditMode test for materialization plan source metadata.
-- EditMode tests for deterministic weighted selection.
+- EditMode test for deterministic weighted selection and footprint overlap.
 - EditMode test for missing prefab/module reports.
 - Manual Unity check with at least two style sets.
 

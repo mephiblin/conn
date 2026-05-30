@@ -39,7 +39,7 @@ namespace Conn.MapGenV2.Editor
 
             var moduleSet = draft.Profile.StyleSet.ModuleSet;
             var plan = BuildPlan(draft);
-            var report = BuildReport(moduleSet, plan);
+            var report = BuildReport(moduleSet, plan, draft.Seed);
             var targetRoot = ResolveTargetRoot(draft, outputMode, selectedRoot);
             if (targetRoot != null)
             {
@@ -111,7 +111,8 @@ namespace Conn.MapGenV2.Editor
 
         public static MapGenMaterializationReport BuildReport(
             MapGenModuleSetAsset moduleSet,
-            MapGenMaterializationPlan plan)
+            MapGenMaterializationPlan plan,
+            int seed = 0)
         {
             var report = new MapGenMaterializationReport
             {
@@ -119,11 +120,17 @@ namespace Conn.MapGenV2.Editor
             };
 
             var missingCategories = new List<string>();
+            var selectedPrefabNames = new List<string>();
+            var occupied = new HashSet<string>();
+            var rng = new MapGenRandom(seed).Fork("materialize");
             foreach (var request in plan?.Requests ?? Array.Empty<MapGenModuleRequest>())
             {
-                if (HasUsableEntry(moduleSet != null ? moduleSet.GetEntries(request.Category) : null))
+                var entry = PickEntry(moduleSet != null ? moduleSet.GetEntries(request.Category) : null, ref rng);
+                if (entry != null && entry.Prefab != null)
                 {
                     report.InstantiableRequests++;
+                    selectedPrefabNames.Add(entry.Prefab.name);
+                    AddFootprintIssues(report, occupied, plan, request, entry);
                     continue;
                 }
 
@@ -136,6 +143,7 @@ namespace Conn.MapGenV2.Editor
             }
 
             report.MissingModuleCategories = missingCategories.ToArray();
+            report.SelectedPrefabNames = selectedPrefabNames.ToArray();
             return report;
         }
 
@@ -327,17 +335,33 @@ namespace Conn.MapGenV2.Editor
             return null;
         }
 
-        private static bool HasUsableEntry(MapGenModuleEntry[] entries)
+        private static void AddFootprintIssues(
+            MapGenMaterializationReport report,
+            HashSet<string> occupied,
+            MapGenMaterializationPlan plan,
+            MapGenModuleRequest request,
+            MapGenModuleEntry entry)
         {
-            foreach (var entry in entries ?? Array.Empty<MapGenModuleEntry>())
+            var footprint = entry != null ? entry.Footprint : Vector2Int.one;
+            footprint = new Vector2Int(Mathf.Max(1, footprint.x), Mathf.Max(1, footprint.y));
+            for (var y = 0; y < footprint.y; y++)
             {
-                if (entry != null && entry.Prefab != null && entry.Weight > 0)
+                for (var x = 0; x < footprint.x; x++)
                 {
-                    return true;
+                    var coord = new MapGenGridCoord(request.Coord.X + x, request.Coord.Y + y);
+                    if (!coord.IsInBounds(plan.Width, plan.Height))
+                    {
+                        report.FootprintOutOfBoundsRequests++;
+                        continue;
+                    }
+
+                    var key = $"{request.Category}:{coord.X}:{coord.Y}";
+                    if (!occupied.Add(key))
+                    {
+                        report.FootprintOverlapRequests++;
+                    }
                 }
             }
-
-            return false;
         }
 
         private static Vector3 ToWorld(MapGenMockupDraftAsset draft, MapGenGridCoord coord)
