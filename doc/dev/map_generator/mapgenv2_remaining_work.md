@@ -536,7 +536,8 @@ Progress note 2026-05-31:
   issue list.
 - Room template inspector now includes an immediate footprint preview using the
   mockup color language for floor, connector, wall, blocked, and empty cells;
-  generated preview-thumbnail caching remains separate work.
+  generated preview-thumbnail caching now reuses textures until the shape or
+  template preview signature changes.
 
 Goal: make room/chunk shapes editable as real grid assets.
 
@@ -547,7 +548,7 @@ Tasks:
 - [x] Add drag painting.
 - [x] Add dimension resize with data preservation preview.
 - [x] Add connector side warnings next to the grid.
-- [ ] Add generated thumbnail/preview cache.
+- [x] Add generated thumbnail/preview cache.
 - [x] Add rotate/flip preview.
 - [x] Add “create approved variant” actions for rotated/flipped variants.
 - [x] Add template editor that references one or more room shapes.

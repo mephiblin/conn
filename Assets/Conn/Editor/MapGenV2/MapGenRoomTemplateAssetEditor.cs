@@ -8,6 +8,8 @@ namespace Conn.MapGenV2.Editor
     [CustomEditor(typeof(MapGenRoomTemplateAsset))]
     public sealed class MapGenRoomTemplateAssetEditor : UnityEditor.Editor
     {
+        private readonly MapGenV2AuthoringPreviewTextureCache previewCache = new MapGenV2AuthoringPreviewTextureCache();
+
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
@@ -55,6 +57,11 @@ namespace Conn.MapGenV2.Editor
             MapGenValidationReportEditorGUI.Draw(template.Validate(), template, "Room template is valid.");
         }
 
+        private void OnDisable()
+        {
+            previewCache.Dispose();
+        }
+
         private static void DrawValidationSummary(MapGenRoomTemplateAsset template)
         {
             EditorGUILayout.Space();
@@ -70,12 +77,27 @@ namespace Conn.MapGenV2.Editor
             }
         }
 
-        private static void DrawFootprintPreview(MapGenRoomTemplateAsset template)
+        private void DrawFootprintPreview(MapGenRoomTemplateAsset template)
         {
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("풋프린트 미리보기 / Footprint Preview", EditorStyles.boldLabel);
             var width = Mathf.Max(1, template.Footprint.x);
             var height = Mathf.Max(1, template.Footprint.y);
+            var texture = previewCache.GetOrCreate(
+                BuildPreviewKey(template),
+                width,
+                height,
+                (x, y) => ColorForCell(template, new Vector2Int(x, y)),
+                "MapGenV2RoomTemplatePreviewCache");
+            if (texture != null)
+            {
+                var size = Mathf.Clamp(EditorGUIUtility.currentViewWidth * 0.28f, 48f, 96f);
+                GUILayout.Label(texture, GUILayout.Width(size), GUILayout.Height(size));
+                EditorGUILayout.LabelField(
+                    "Cache",
+                    previewCache.LastRequestWasCacheHit ? "Hit / 재사용" : "Rebuilt / 갱신");
+            }
+
             var availableWidth = EditorGUIUtility.currentViewWidth - 36f;
             var cellSize = Mathf.Clamp(availableWidth / width, 12f, 30f);
             var rect = GUILayoutUtility.GetRect(width * cellSize, height * cellSize, GUILayout.ExpandWidth(false));
@@ -147,6 +169,45 @@ namespace Conn.MapGenV2.Editor
             }
 
             return false;
+        }
+
+        private static string BuildPreviewKey(MapGenRoomTemplateAsset template)
+        {
+            return string.Join(
+                "|",
+                template.TemplateId,
+                template.RoomCategory,
+                template.SizeClass,
+                template.Weight,
+                template.Footprint.x,
+                template.Footprint.y,
+                CellsKey("floor", template.FloorCells),
+                CellsKey("wall", template.WallCells),
+                CellsKey("blocked", template.BlockedCells),
+                CellsKey("door", template.DoorHintCells),
+                ConnectorKey(template.Connectors));
+        }
+
+        private static string CellsKey(string label, Vector2Int[] cells)
+        {
+            var key = label;
+            foreach (var cell in cells ?? System.Array.Empty<Vector2Int>())
+            {
+                key += $":{cell.x},{cell.y}";
+            }
+
+            return key;
+        }
+
+        private static string ConnectorKey(MapGenConnector[] connectors)
+        {
+            var key = "connectors";
+            foreach (var connector in connectors ?? System.Array.Empty<MapGenConnector>())
+            {
+                key += $":{connector.LocalCell.x},{connector.LocalCell.y},{connector.Side},{connector.SocketKind},{connector.SocketId},{connector.Width}";
+            }
+
+            return key;
         }
 
         private static int CountUniqueOccupiedCells(MapGenRoomTemplateAsset template)

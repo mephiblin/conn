@@ -18,6 +18,7 @@ namespace Conn.MapGenV2.Editor
         private MapGenCellState brushState = MapGenCellState.Room;
         private MapGenSocketKind socketKind = MapGenSocketKind.Door;
         private string socketId = string.Empty;
+        private readonly MapGenV2AuthoringPreviewTextureCache previewCache = new MapGenV2AuthoringPreviewTextureCache();
 
         public override void OnInspectorGUI()
         {
@@ -29,8 +30,14 @@ namespace Conn.MapGenV2.Editor
             DrawDimensionField(shape);
             DrawTransformActions(shape);
             DrawBrushFields(shape);
+            DrawCachedPreview(shape);
             DrawGrid(shape);
             DrawValidation(shape);
+        }
+
+        private void OnDisable()
+        {
+            previewCache.Dispose();
         }
 
         private void DrawIdentityFields()
@@ -158,6 +165,29 @@ namespace Conn.MapGenV2.Editor
                 MessageType.Info);
         }
 
+        private void DrawCachedPreview(MapGenRoomShapeAsset shape)
+        {
+            shape.EnsureCellArray();
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Generated Preview Cache", EditorStyles.boldLabel);
+            var texture = previewCache.GetOrCreate(
+                BuildPreviewKey(shape),
+                shape.Width,
+                shape.Height,
+                (x, y) => ColorForCell(shape.GetCell(x, y)),
+                "MapGenV2RoomShapePreviewCache");
+            if (texture == null)
+            {
+                return;
+            }
+
+            var size = Mathf.Clamp(EditorGUIUtility.currentViewWidth * 0.28f, 48f, 96f);
+            GUILayout.Label(texture, GUILayout.Width(size), GUILayout.Height(size));
+            EditorGUILayout.LabelField(
+                "Cache",
+                previewCache.LastRequestWasCacheHit ? "Hit / 재사용" : "Rebuilt / 갱신");
+        }
+
         private void DrawGrid(MapGenRoomShapeAsset shape)
         {
             shape.EnsureCellArray();
@@ -255,6 +285,21 @@ namespace Conn.MapGenV2.Editor
             }
 
             return invalid;
+        }
+
+        private static string BuildPreviewKey(MapGenRoomShapeAsset shape)
+        {
+            var key = $"{shape.ShapeId}:{shape.Category}:{shape.Weight}:{shape.Width}x{shape.Height}";
+            for (var y = 0; y < shape.Height; y++)
+            {
+                for (var x = 0; x < shape.Width; x++)
+                {
+                    var cell = shape.GetCell(x, y);
+                    key += $"|{x},{y},{cell.State},{cell.SocketKind},{cell.SocketId}";
+                }
+            }
+
+            return key;
         }
 
         private static MapGenCellState NormalizeBrushState(MapGenCellState state)

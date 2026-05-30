@@ -1363,6 +1363,46 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void AuthoringPreviewTextureCacheReusesAndInvalidatesByKey()
+        {
+            var cache = new MapGenV2AuthoringPreviewTextureCache();
+
+            try
+            {
+                var first = cache.GetOrCreate(
+                    "shape:a",
+                    2,
+                    2,
+                    (x, y) => x == y ? Color.red : Color.blue,
+                    "test_authoring_preview");
+                Assert.That(first, Is.Not.Null);
+                Assert.That(cache.LastRequestWasCacheHit, Is.False);
+
+                var second = cache.GetOrCreate(
+                    "shape:a",
+                    2,
+                    2,
+                    (x, y) => Color.green,
+                    "test_authoring_preview");
+                Assert.That(second, Is.SameAs(first));
+                Assert.That(cache.LastRequestWasCacheHit, Is.True);
+
+                var third = cache.GetOrCreate(
+                    "shape:b",
+                    2,
+                    2,
+                    (x, y) => Color.green,
+                    "test_authoring_preview");
+                Assert.That(third, Is.Not.Null);
+                Assert.That(cache.LastRequestWasCacheHit, Is.False);
+            }
+            finally
+            {
+                cache.Dispose();
+            }
+        }
+
+        [Test]
         public void PreviewTextureCacheReusesAndInvalidatesByDraftSignature()
         {
             var draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();

@@ -361,4 +361,73 @@ namespace Conn.MapGenV2.Editor
             }
         }
     }
+
+    public sealed class MapGenV2AuthoringPreviewTextureCache : IDisposable
+    {
+        private Texture2D texture;
+        private string cacheKey = string.Empty;
+
+        public bool LastRequestWasCacheHit { get; private set; }
+
+        public Texture2D GetOrCreate(
+            string key,
+            int width,
+            int height,
+            Func<int, int, Color> colorForCell,
+            string textureName)
+        {
+            if (width <= 0 || height <= 0 || colorForCell == null)
+            {
+                LastRequestWasCacheHit = false;
+                return null;
+            }
+
+            key = $"{width}x{height}:{key ?? string.Empty}";
+            if (texture != null
+                && cacheKey == key
+                && texture.width == width
+                && texture.height == height)
+            {
+                LastRequestWasCacheHit = true;
+                return texture;
+            }
+
+            LastRequestWasCacheHit = false;
+            if (texture != null)
+            {
+                UnityEngine.Object.DestroyImmediate(texture);
+            }
+
+            texture = new Texture2D(width, height, TextureFormat.RGBA32, false)
+            {
+                name = string.IsNullOrWhiteSpace(textureName) ? "MapGenV2AuthoringPreviewCache" : textureName,
+                filterMode = FilterMode.Point,
+                wrapMode = TextureWrapMode.Clamp
+            };
+
+            for (var y = 0; y < height; y++)
+            {
+                for (var x = 0; x < width; x++)
+                {
+                    texture.SetPixel(x, y, colorForCell(x, y));
+                }
+            }
+
+            texture.Apply(false, false);
+            cacheKey = key;
+            return texture;
+        }
+
+        public void Dispose()
+        {
+            if (texture != null)
+            {
+                UnityEngine.Object.DestroyImmediate(texture);
+                texture = null;
+            }
+
+            cacheKey = string.Empty;
+            LastRequestWasCacheHit = false;
+        }
+    }
 }
