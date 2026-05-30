@@ -955,6 +955,48 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void EditableValidationReportsObjectPaletteMismatches()
+        {
+            var draft = BuildLinearValidationDraft();
+            var objectPalette = ScriptableObject.CreateInstance<MapObjectPaletteAsset>();
+            objectPalette.Objects = new[]
+            {
+                new MapObjectPaletteEntry
+                {
+                    Id = "blocker_palette",
+                    Kind = RoomChunkObjectKind.Blocker,
+                    FootprintWidth = 2,
+                    FootprintDepth = 1,
+                    BlocksMovement = true,
+                    RuntimeReferenceId = "blocker_runtime"
+                }
+            };
+            draft.ObjectPalette = objectPalette;
+            draft.Objects = new[]
+            {
+                new EditableMapObjectPlacement
+                {
+                    Id = "bad_blocker",
+                    PaletteObjectId = "blocker_palette",
+                    Kind = RoomChunkObjectKind.Barrel,
+                    X = 0,
+                    Y = 0,
+                    Width = 1,
+                    Depth = 1,
+                    BlocksMovement = false
+                }
+            };
+
+            var report = EditableMapValidationService.Validate(draft);
+
+            Assert.That(report.Errors.Exists(error => error.Contains("bad_blocker kind Barrel") && error.Contains("kind Blocker")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("bad_blocker footprint 1x1") && error.Contains("footprint 2x1")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("bad_blocker blocking flag False") && error.Contains("blocking flag True")), Is.True);
+
+            Object.DestroyImmediate(objectPalette);
+        }
+
+        [Test]
         public void MapAuthoringValidationReportsDuplicatePaletteIds()
         {
             var tilePalette = ScriptableObject.CreateInstance<MapTilePaletteAsset>();

@@ -126,12 +126,12 @@ namespace Conn.Editor.Maps
                 }
             }
 
-            var objectIds = new HashSet<string>(StringComparer.Ordinal);
+            var objectEntries = new Dictionary<string, MapObjectPaletteEntry>(StringComparer.Ordinal);
             foreach (var entry in draft.ObjectPalette?.Objects ?? Array.Empty<MapObjectPaletteEntry>())
             {
                 if (entry != null && !string.IsNullOrWhiteSpace(entry.Id))
                 {
-                    objectIds.Add(entry.Id);
+                    objectEntries[entry.Id] = entry;
                 }
             }
 
@@ -145,9 +145,31 @@ namespace Conn.Editor.Maps
 
             foreach (var placement in draft.Objects ?? Array.Empty<EditableMapObjectPlacement>())
             {
-                if (!string.IsNullOrWhiteSpace(placement.PaletteObjectId) && objectIds.Count > 0 && !objectIds.Contains(placement.PaletteObjectId))
+                if (string.IsNullOrWhiteSpace(placement.PaletteObjectId) || objectEntries.Count == 0)
+                {
+                    continue;
+                }
+
+                if (!objectEntries.TryGetValue(placement.PaletteObjectId, out var entry))
                 {
                     report.Errors.Add($"Object {placement.Id} references missing object palette id {placement.PaletteObjectId}.");
+                    continue;
+                }
+
+                if (placement.Kind != entry.Kind)
+                {
+                    report.Errors.Add($"Object {placement.Id} kind {placement.Kind} does not match palette {placement.PaletteObjectId} kind {entry.Kind}.");
+                }
+
+                if (Mathf.Max(1, placement.Width) != Mathf.Max(1, entry.FootprintWidth)
+                    || Mathf.Max(1, placement.Depth) != Mathf.Max(1, entry.FootprintDepth))
+                {
+                    report.Errors.Add($"Object {placement.Id} footprint {Mathf.Max(1, placement.Width)}x{Mathf.Max(1, placement.Depth)} does not match palette {placement.PaletteObjectId} footprint {Mathf.Max(1, entry.FootprintWidth)}x{Mathf.Max(1, entry.FootprintDepth)}.");
+                }
+
+                if (placement.BlocksMovement != entry.BlocksMovement)
+                {
+                    report.Errors.Add($"Object {placement.Id} blocking flag {placement.BlocksMovement} does not match palette {placement.PaletteObjectId} blocking flag {entry.BlocksMovement}.");
                 }
             }
         }
