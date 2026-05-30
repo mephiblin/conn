@@ -52,6 +52,41 @@ behaviors:
 - Includes prop placement controls with distribution modes, offsets, channels,
   and related placement constraints.
 
+## User Frame Analysis
+
+The attached frame references clarify the intended workflow:
+
+- The blue/red/black view is a mockup layout state, not the final generated
+  mesh.
+- Blue is the base grid/background domain.
+- Red represents room/chunk masses.
+- Black represents corridor/path/wall separation in the mockup layout.
+- Gray blocks in the WFC/post-processing demonstration appear as blocked or
+  excluded regions.
+- The generator repeatedly changes the internal structure while still in mockup
+  state.
+- The user should inspect and adjust this mockup state first.
+- Only after the user accepts a satisfactory mockup should the workflow advance
+  to the real mesh/prefab layout state.
+- Chunks mode shows that red room masses are backed by inspector-editable room
+  shape assets.
+- The room shape inspector is grid-based: dimensions such as 3x3, 3x5, and 4x4
+  are visible, and each cell can contain a selected room-shape sprite/state or
+  `None`.
+
+This means the project workflow must be two-stage:
+
+```text
+Generate and iterate mockup layout
+  -> user accepts mockup
+  -> materialize selected style/prefabs/meshes
+  -> place props
+  -> bake runtime output
+```
+
+The mockup stage is the primary design loop. Mesh generation is a later
+materialization step, not the first result.
+
 ## Observed Asset Positioning
 
 The Asset Store page and indexed asset descriptions position MoraMapGen as a
@@ -102,8 +137,8 @@ implementation can remain as reference material only.
 - The generator produces connected room/corridor layouts with deterministic seed
   replay.
 - The same abstract layout can be skinned with different visual template sets.
-- The output can be previewed in editor, accepted as an editable draft, and baked
-  into runtime-safe map data.
+- The output first appears as an editable mockup grid, can be iterated until the
+  user accepts it, and only then becomes a styled mesh/prefab layout.
 - Failure reports explain the missing rule, connector, template, or placement
   constraint that blocked generation.
 - The generated output can provide navigation surfaces/data for graph traversal,
@@ -203,6 +238,27 @@ Required fields:
 
 Room templates must support both simple rectangles and custom chunk shapes.
 
+### `MapGenRoomShapeAsset`
+
+Inspector-editable mockup chunk shape used before mesh materialization.
+
+Required fields:
+
+- `shapeId`
+- `dimensions`
+- `cells`
+- `occupiedCells`
+- `connectorCells`
+- `blockedCells`
+- `previewSprite`
+- `category`
+- `weight`
+
+This asset represents the red chunk mass visible in mockup view. It should be
+edited as a small grid, not as a raw array. A room template may reference one or
+more room shapes, and a style set later maps the accepted shape to real
+prefabs/meshes.
+
 ### `MapGenCorridorTemplateAsset`
 
 Reusable authored corridor shape.
@@ -256,37 +312,58 @@ Required fields:
 - `smallRoomRemovalPolicy`
 - `connectivityPolicy`
 
+### `MapGenMockupDraftAsset`
+
+Accepted or in-progress mockup layout before real mesh generation.
+
+Required fields:
+
+- `profile`
+- `seed`
+- `gridSize`
+- `cells`
+- `roomMasses`
+- `corridorPaths`
+- `blockedRegions`
+- `connectivityGraph`
+- `postProcessHistory`
+- `accepted`
+
+This is the first saved output of generation. It is the artifact the user
+iterates on before materialization.
+
 ## Generator Pipeline
 
 ```text
 MapGenProfileAsset
   -> Validate profile and template pools
-  -> Build abstract generation domain
+  -> Build mockup grid domain
   -> Reserve required landmarks
-  -> Solve room/corridor layout with WFC-style constraints
+  -> Solve mockup room/corridor layout with WFC-style constraints
   -> Enforce reachability and graph traversal
-  -> Apply post-processing
-  -> Stamp visual templates
+  -> Apply mockup post-processing
+  -> Produce mockup layout draft
+  -> User iterates seed/rules/chunk shapes/post-process settings
+  -> User accepts mockup draft
+  -> Materialize accepted mockup into visual templates/prefabs/meshes
   -> Place props by channels and distribution rules
-  -> Produce preview draft
-  -> Accept editable draft
-  -> Bake runtime map data
+  -> Bake runtime map data and/or prefab output
 ```
 
 ## Solver Design
 
 ### 1. Domain Initialization
 
-Create a grid of layout cells. Each cell starts with candidate states:
+Create a grid of mockup layout cells. Each cell starts with candidate states:
 
 - empty
-- room template candidate
-- corridor template candidate
+- room shape candidate
+- corridor path candidate
 - reserved connector
 - blocked/out-of-bounds
 
 Candidate states are filtered by map size, profile style, room count range,
-corridor count range, template footprint, and required room categories.
+corridor count range, shape footprint, and required room categories.
 
 ### 2. Required Landmark Reservation
 
@@ -305,7 +382,7 @@ distance requirements.
 
 Collapse the lowest-entropy cell or region first. Entropy should consider:
 
-- number of legal templates
+- number of legal room shapes/corridor states
 - required category pressure
 - connector compatibility
 - path distance constraints
@@ -349,17 +426,20 @@ Each pass must report what it changed.
 
 ### 6. Stamping
 
-Convert the abstract solution into an editable cell draft.
+Convert the accepted mockup solution into a visual map.
 
 Stamping responsibilities:
 
-- place room templates
-- place corridor templates
+- place style-specific room prefabs/meshes from accepted red room masses
+- place style-specific corridor prefabs/meshes from accepted black paths
 - carve connector doors
 - resolve walls between adjacent regions
 - prevent footprint overlap
 - preserve room/corridor identity for later editing
 - attach prop placement channels
+
+Stamping must not be required while the user is still searching for a good
+layout. It runs after mockup acceptance.
 
 ## Prop Placement Plan
 
@@ -389,15 +469,19 @@ Main panels:
 - Profile selection and validation.
 - Map size, seed, room quantity, corridor quantity, and post-process controls.
 - Template pool summary with missing-template warnings.
-- Visual 2D layout preview.
-- Optional 3D scene preview using the selected style set.
+- Mockup grid preview using blue/red/black/blocked-region states.
+- Room shape grid editor for chunk dimensions and occupied cells.
+- Optional materialized 3D scene preview after mockup acceptance.
 - Diagnostics panel for contradictions, retries, connectivity, and template
   usage.
-- Generate, randomize seed, accept draft, validate draft, and bake buttons.
+- Generate mockup, randomize seed, rerun post-process, accept mockup,
+  materialize, validate, and bake buttons.
 
 Debug overlays:
 
 - room/corridor categories
+- mockup cell state
+- accepted vs unaccepted layout state
 - connector sockets
 - reachability graph
 - WFC entropy
@@ -413,9 +497,11 @@ Validation checks:
 
 - profile has a style set.
 - required room categories have at least one legal template.
+- required room categories have at least one legal mockup room shape.
 - corridor pools can connect the required room templates.
 - connector sockets have compatible counterparts.
 - map size can fit the requested room and corridor quantities.
+- room shape dimensions and occupied cells are valid for the grid.
 - post-process rules do not contradict quantity or connectivity rules.
 - prop rules reference valid channels.
 - all runtime-baked data is free of editor-only references.
@@ -465,42 +551,60 @@ Editor-only output:
 ### Milestone 1: Data Contracts
 
 - Add `MapGenV2` runtime namespace and authoring assets.
-- Add profile/style/template/rules/connectors.
+- Add profile/style/template/rules/connectors/mockup draft assets.
+- Add grid-editable room shape assets.
 - Add validators with actionable error reports.
 - No generation yet.
 
 Acceptance:
 
 - A profile can be authored and validated.
-- Missing style, missing templates, and incompatible connectors are reported.
+- Missing style, missing room shapes, missing templates, and incompatible
+  connectors are reported.
 
-### Milestone 2: Abstract Layout Solver
+### Milestone 2: Mockup Layout Solver
 
-- Generate connected abstract room/corridor layouts.
+- Generate connected blue/red/black mockup room/corridor layouts.
 - Support map size, seed, room count, corridor density, required rooms, and
   connector compatibility.
 - Add deterministic retry sequence.
 
 Acceptance:
 
-- Same profile and seed produce the same layout signature.
-- Different seeds produce different connected layouts.
+- Same profile and seed produce the same mockup layout signature.
+- Different seeds produce different connected mockup layouts.
 - Required rooms are present and reachable.
 
-### Milestone 3: Template Stamping
+### Milestone 3: Mockup Iteration And Acceptance
 
-- Stamp room and corridor templates into an editable cell draft.
+- Add mockup draft save/load.
+- Add seed reroll and post-process rerun without materializing meshes.
+- Add user acceptance state.
+- Preserve accepted mockup state for later materialization.
+
+Acceptance:
+
+- A designer can generate multiple mockup variants without creating meshes.
+- A designer can accept one mockup and reopen the accepted draft.
+- Unaccepted mockups cannot be baked as runtime maps.
+
+### Milestone 4: Materialization
+
+- Convert accepted red room masses into style-specific room prefabs/meshes.
+- Convert accepted black corridor paths into style-specific corridor
+  prefabs/meshes.
 - Preserve room/corridor identity and connector metadata.
 - Validate overlap, walls, doors, and reachability.
 
 Acceptance:
 
-- Preview shows actual cell-map output, not only graph boxes.
+- Materialization only runs after mockup acceptance.
+- The materialized scene matches the accepted mockup structure.
 - Doors and corridors connect legal sockets.
 
-### Milestone 4: Post-Processing
+### Milestone 5: Post-Processing
 
-- Implement explicit post-processing passes.
+- Implement explicit mockup post-processing passes.
 - Add per-pass reporting.
 - Keep all navigable output connected.
 
@@ -508,20 +612,21 @@ Acceptance:
 
 - Designers can toggle remove-small-rooms, split-large-rooms, consolidate-paths,
   direct-routes, fill-empty-space, and reduce-dead-ends.
-- The diagnostics panel shows post-process changes.
+- The diagnostics panel shows post-process changes before materialization.
 
-### Milestone 5: Visual Editor
+### Milestone 6: Visual Editor
 
 - Build the new MapGenV2 editor window.
-- Add profile validation, preview generation, seed replay, diagnostics, accept
-  draft, and bake.
+- Add profile validation, mockup generation, seed replay, diagnostics, room
+  shape grid editing, mockup acceptance, materialization, and bake.
 
 Acceptance:
 
-- A designer can create a new profile, assign template pools, generate a map,
-  inspect problems, accept a draft, and bake without using legacy UI.
+- A designer can create a new profile, assign shape/template pools, generate
+  mockups, inspect problems, accept a mockup, materialize it, and bake without
+  using legacy UI.
 
-### Milestone 6: Prop Placement
+### Milestone 7: Prop Placement
 
 - Add prop channels and deterministic prop placement.
 - Support distribution modes, offsets, category filters, and validation.
@@ -531,9 +636,9 @@ Acceptance:
 - Props appear in legal channels without blocking required traversal.
 - Same seed produces the same prop layout.
 
-### Milestone 7: Runtime Adapter
+### Milestone 8: Runtime Adapter
 
-- Bake generated drafts into runtime-safe map data.
+- Bake accepted and materialized drafts into runtime-safe map data.
 - Add a narrow adapter to existing runtime map consumers if needed.
 - Add optional prefab baking for editor-generated output.
 - Add navigation adapters for graph traversal, grid pathfinding, and Unity
@@ -552,15 +657,18 @@ Acceptance:
 Automated tests:
 
 - missing style fails validation.
+- missing required room shape fails validation.
 - missing required room template fails validation.
 - incompatible connectors fail validation.
+- invalid room shape grid fails validation.
 - impossible room quantity fails validation.
-- same seed/profile produces identical abstract layout signature.
-- different seed produces different layout signature.
+- same seed/profile produces identical mockup layout signature.
+- different seed produces different mockup layout signature.
 - every generated room is reachable.
 - required rooms are present.
 - post-processing preserves connectivity.
-- stamping rejects overlap.
+- materialization rejects overlap.
+- unaccepted mockup cannot bake.
 - baked runtime map has no editor-only references.
 - prop placement is deterministic.
 
@@ -568,12 +676,15 @@ Manual Unity checks:
 
 - create a profile from scratch.
 - assign a style set.
-- author simple rectangular room/corridor templates.
+- author simple grid-based room shapes.
+- author simple room/corridor templates for materialization.
 - validate profile.
-- generate several seeds.
+- generate several mockup seeds.
+- adjust room shape grid assets and regenerate mockups.
+- accept one mockup.
 - compare same layout under two style sets.
 - enable/disable post-process passes and inspect the diff overlay.
-- accept a draft.
+- materialize the accepted mockup.
 - bake runtime data.
 - load baked data in a runtime scene.
 
