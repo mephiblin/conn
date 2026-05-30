@@ -78,6 +78,11 @@ namespace Conn.Editor.Maps
                 {
                     report.Errors.Add($"Room {room.Id} bounds leave the draft at ({room.X}, {room.Y}) size {room.Width}x{room.Height}.");
                 }
+
+                if (room.Width > 0 && room.Height > 0 && !RoomContainsWalkableCell(draft, room))
+                {
+                    report.Errors.Add($"Room {room.Id} contains no walkable cells.");
+                }
             }
 
             var zoneIds = new HashSet<string>(StringComparer.Ordinal);
@@ -113,6 +118,27 @@ namespace Conn.Editor.Maps
                     report.Errors.Add($"Cell ({cell.X}, {cell.Y}) references missing zone id {cell.ZoneId}.");
                 }
             }
+        }
+
+        private static bool RoomContainsWalkableCell(EditableMapDraftAsset draft, EditableMapRoom room)
+        {
+            for (var y = room.Y; y < room.Y + room.Height; y++)
+            {
+                for (var x = room.X; x < room.X + room.Width; x++)
+                {
+                    if (!draft.TryGetCell(x, y, out var cell))
+                    {
+                        continue;
+                    }
+
+                    if (cell.Terrain != RoomChunkCellType.Wall && cell.Terrain != RoomChunkCellType.Gap)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
         private static void ValidatePaletteReferences(EditableMapDraftAsset draft, MapValidationReport report)

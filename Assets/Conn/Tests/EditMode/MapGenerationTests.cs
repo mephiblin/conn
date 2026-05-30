@@ -870,8 +870,10 @@ namespace Conn.Tests.EditMode
                 new EditableMapRoom { Id = "start", Role = MapRoomRole.Start, X = 0, Y = 0, Width = 1, Height = 1, ZoneId = "missing_zone" },
                 new EditableMapRoom { Id = "start", Role = MapRoomRole.QuestTarget, X = 1, Y = 0, Width = 1, Height = 1, ZoneId = "zone_a" },
                 new EditableMapRoom { Id = "boss", Role = MapRoomRole.Boss, X = 2, Y = 0, Width = 1, Height = 1, ZoneId = "zone_a" },
-                new EditableMapRoom { Id = "exit", Role = MapRoomRole.Exit, X = 7, Y = 0, Width = 3, Height = 1, ZoneId = "zone_a" }
+                new EditableMapRoom { Id = "exit", Role = MapRoomRole.Exit, X = 7, Y = 0, Width = 3, Height = 1, ZoneId = "zone_a" },
+                new EditableMapRoom { Id = "sealed", Role = MapRoomRole.SideBranch, X = 3, Y = 0, Width = 1, Height = 1, ZoneId = "zone_a" }
             };
+            draft.TrySetCell(new EditableMapCell { X = 3, Y = 0, Terrain = RoomChunkCellType.Wall, Height = 0, Direction = MapDirection.North });
             draft.TrySetCell(new EditableMapCell
             {
                 X = 0,
@@ -890,6 +892,7 @@ namespace Conn.Tests.EditMode
             Assert.That(report.Errors.Exists(error => error.Contains("Duplicate zone id: zone_a")), Is.True);
             Assert.That(report.Errors.Exists(error => error.Contains("Room start references missing zone id missing_zone")), Is.True);
             Assert.That(report.Errors.Exists(error => error.Contains("Room exit bounds leave the draft")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("Room sealed contains no walkable cells")), Is.True);
             Assert.That(report.Errors.Exists(error => error.Contains("Cell (0, 0) references missing room id missing_room")), Is.True);
             Assert.That(report.Errors.Exists(error => error.Contains("Cell (0, 0) references missing zone id missing_cell_zone")), Is.True);
         }

@@ -1006,6 +1006,7 @@ is partially complete.
 - [x] Treat blocking objects as non-walkable across their footprint.
 - [x] Validate all sockets touch walkable cells.
 - [x] Validate room entry sockets can reach required anchors.
+- [x] Validate every room bounds contains at least one walkable cell.
 - [x] Validate start-to-quest route.
 - [x] Validate quest-to-boss route.
 - [x] Validate boss-to-exit route.
