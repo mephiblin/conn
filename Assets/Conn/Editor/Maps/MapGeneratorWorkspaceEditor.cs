@@ -42,6 +42,14 @@ namespace Conn.Editor.Maps
             if (workspace.MapProfile == null)
             {
                 EditorGUILayout.HelpBox("Map Profile is required. Assign a MapProfileAsset before generating a preview.", MessageType.Error);
+                if (GUILayout.Button("Create Chapter 2 Sample Profile Assets"))
+                {
+                    serializedObject.ApplyModifiedProperties();
+                    Undo.RecordObject(workspace, "Create Sample Map Profile");
+                    workspace.MapProfile = MapProfileAuthoringSampleBuilder.CreateChapterTwoSampleProfileAssets();
+                    EditorUtility.SetDirty(workspace);
+                    MarkSceneDirty(workspace);
+                }
             }
 
             using (new EditorGUILayout.HorizontalScope())

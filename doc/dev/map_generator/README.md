@@ -115,6 +115,9 @@ Use these steps after pulling the branch:
    generation rules such as `Room Count Min/Max`, critical path range, side
    branch count, and the room asset pools (`OptionalChunks`,
    `RequiredLandmarkRooms`, and `OptionalLandmarks`).
+   If no profile asset exists yet, click `Create Chapter 2 Sample Profile
+   Assets` to create an explicit sample profile and room chunk pool under
+   `Assets/Conn/Authoring/Maps/Profiles/ChapterTwoFirstSlice`.
 4. In `Preview`, set `Room Spacing Min` and `Room Spacing Max`. Matching values
    produce fixed spacing; different values produce deterministic spacing
    variation for the preview layout.

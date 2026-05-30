@@ -1125,6 +1125,9 @@ is partially complete.
   - 2026-05-30: `MapProfileAsset` now has explicit `Room Count Min/Max`.
     Generation clamps critical path and side branches to stay inside that room
     count range, and the workspace shows selected profile rule/pool summaries.
+  - 2026-05-30: Added `wfc_rooms_corridors_rebuild_plan.md` and explicit sample
+    profile asset generation so the workspace can use real profile/chunk assets
+    instead of hidden hardcoded catalog fallback.
 - [x] Add screenshots or saved sample assets when the first usable version
   exists.
   - 2026-05-30: Chapter 2 saved `CompiledMapAsset` samples are regenerated
