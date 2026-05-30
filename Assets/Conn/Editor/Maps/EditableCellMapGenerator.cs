@@ -50,6 +50,7 @@ namespace Conn.Editor.Maps
             ConnectRooms(draft, random, rooms[2], rooms[7]);
             AddHeightTransitionFeature(draft, rooms[4]);
             CarveWallsAroundFloors(draft);
+            ClassifyWallVariants(draft);
             AddGeneratedObjects(draft, rooms);
             EditableMapDraftMetadataBuilder.BuildPlayableMetadataFromDrawing(draft);
             ApplyGeneratedRoomMetadata(draft, rooms);
@@ -259,6 +260,8 @@ namespace Conn.Editor.Maps
         private static void AddGeneratedObjects(EditableMapDraftAsset draft, List<RectInt> rooms)
         {
             var objects = new List<EditableMapObjectPlacement>();
+            AddDoorObjects(draft, objects);
+
             var sideRoom = rooms[6];
             var sideCenter = RoomCenter(sideRoom);
             objects.Add(new EditableMapObjectPlacement
@@ -327,6 +330,82 @@ namespace Conn.Editor.Maps
                 MaterialId = "barrel"
             });
             draft.Objects = objects.ToArray();
+        }
+
+        private static void AddDoorObjects(EditableMapDraftAsset draft, List<EditableMapObjectPlacement> objects)
+        {
+            var index = 0;
+            foreach (var cell in draft.Cells ?? Array.Empty<EditableMapCell>())
+            {
+                if (cell.MaterialId != "generated_door")
+                {
+                    continue;
+                }
+
+                objects.Add(new EditableMapObjectPlacement
+                {
+                    Id = $"generated_door_{index}",
+                    PaletteObjectId = "door",
+                    Kind = RoomChunkObjectKind.Decor,
+                    X = cell.X,
+                    Y = cell.Y,
+                    Height = cell.Height,
+                    Width = 1,
+                    Depth = 1,
+                    Direction = cell.Direction,
+                    BlocksMovement = false,
+                    RuntimeReferenceId = "door",
+                    MaterialId = "door"
+                });
+                index++;
+            }
+        }
+
+        private static void ClassifyWallVariants(EditableMapDraftAsset draft)
+        {
+            for (var y = 0; y < draft.Height; y++)
+            {
+                for (var x = 0; x < draft.Width; x++)
+                {
+                    if (!draft.TryGetCell(x, y, out var cell) || cell.Terrain != RoomChunkCellType.Wall)
+                    {
+                        continue;
+                    }
+
+                    var north = IsWalkable(draft, x, y + 1);
+                    var east = IsWalkable(draft, x + 1, y);
+                    var south = IsWalkable(draft, x, y - 1);
+                    var west = IsWalkable(draft, x - 1, y);
+                    var adjacent = Count(north, east, south, west);
+                    cell.WallVariantId = adjacent >= 2 ? "wall_corner" : adjacent == 1 ? "wall_edge" : "wall_solid";
+                    cell.MaterialId = $"generated_{cell.WallVariantId}";
+                    draft.TrySetCell(cell);
+                }
+            }
+        }
+
+        private static int Count(params bool[] values)
+        {
+            var count = 0;
+            for (var i = 0; i < values.Length; i++)
+            {
+                if (values[i])
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        private static bool IsWalkable(EditableMapDraftAsset draft, int x, int y)
+        {
+            if (!draft.TryGetCell(x, y, out var cell))
+            {
+                return false;
+            }
+
+            return cell.Terrain != RoomChunkCellType.Gap && cell.Terrain != RoomChunkCellType.Wall;
         }
 
         private static void ApplyGeneratedRoomMetadata(EditableMapDraftAsset draft, List<RectInt> rooms)
