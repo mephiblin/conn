@@ -1,5 +1,7 @@
+using Conn.MapGenV2.Authoring;
 using Conn.MapGenV2.Core;
 using NUnit.Framework;
+using UnityEngine;
 
 namespace Conn.Tests.EditMode
 {
@@ -38,6 +40,25 @@ namespace Conn.Tests.EditMode
             Assert.That(report.IsValid, Is.False);
             Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
                 issue => issue.Code == "room_shape_connector_not_on_edge"));
+        }
+
+        [Test]
+        public void ModuleSetValidatorRequiresBasicFloorAndWallModules()
+        {
+            var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
+
+            try
+            {
+                var report = moduleSet.Validate();
+
+                Assert.That(report.IsValid, Is.False);
+                Assert.That(report.Issues, Has.Exactly(2).Matches<MapGenIssue>(
+                    issue => issue.Code == "module_set_missing_required_category"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(moduleSet);
+            }
         }
     }
 }

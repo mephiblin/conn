@@ -1129,7 +1129,7 @@ be committed and pushed separately.
 - [x] Foundation: asmdefs, folders, core enums, grid coordinate helpers.
 - [x] Room shape authoring: `MapGenRoomShapeAsset`, cell data, custom grid
   inspector, undo/redo, validation.
-- [ ] Module set authoring: `MapGenModuleSetAsset`, weighted prefab entries,
+- [x] Module set authoring: `MapGenModuleSetAsset`, weighted prefab entries,
   prefab grid validation.
 - [ ] Profile/style/rule assets: profile wiring, style set, rule set, creation
   menus, default folders.
