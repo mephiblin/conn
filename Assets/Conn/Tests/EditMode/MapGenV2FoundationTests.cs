@@ -1,6 +1,8 @@
 using Conn.MapGenV2.Authoring;
 using Conn.MapGenV2.Core;
 using Conn.MapGenV2.Editor;
+using Conn.Core.Maps;
+using Conn.Runtime.Maps;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
@@ -2570,6 +2572,216 @@ namespace Conn.Tests.EditMode
                 Object.DestroyImmediate(draft);
                 Object.DestroyImmediate(profile);
                 Object.DestroyImmediate(ruleSet);
+            }
+        }
+
+        [Test]
+        public void RuntimeMapServiceLoadsBakedMapAndExposesQuery()
+        {
+            var baked = ScriptableObject.CreateInstance<MapGenBakedMapAsset>();
+            var host = new GameObject("runtime_map_service_test");
+
+            try
+            {
+                baked.Version = MapGenBakedMapMigration.CurrentVersion;
+                baked.Width = 2;
+                baked.Height = 1;
+                baked.Cells = new[]
+                {
+                    new MapGenBakedCell { Coord = new MapGenGridCoord(0, 0), State = MapGenCellState.Room },
+                    new MapGenBakedCell { Coord = new MapGenGridCoord(1, 0), State = MapGenCellState.Corridor }
+                };
+                baked.TraversalEdges = new[]
+                {
+                    new MapGenTraversalEdge
+                    {
+                        From = new MapGenGridCoord(0, 0),
+                        To = new MapGenGridCoord(1, 0)
+                    }
+                };
+
+                var service = host.AddComponent<MapGenRuntimeMapService>();
+                Assert.That(service.Load(baked), Is.True);
+
+                Assert.That(service.IsLoaded, Is.True);
+                Assert.That(service.TryGetQuery(out var query), Is.True);
+                Assert.That(query.HasTraversalEdge(new MapGenGridCoord(0, 0), new MapGenGridCoord(1, 0)), Is.True);
+                Assert.That(service.LastMigrationReport.IsValid, Is.True);
+            }
+            finally
+            {
+                Object.DestroyImmediate(host);
+                Object.DestroyImmediate(baked);
+            }
+        }
+
+        [Test]
+        public void BakedMapMigrationNormalizesLegacyRuntimeData()
+        {
+            var baked = ScriptableObject.CreateInstance<MapGenBakedMapAsset>();
+
+            try
+            {
+                baked.Version = 0;
+                baked.Cells = null;
+                baked.Regions = null;
+                baked.Connectors = null;
+                baked.TraversalEdges = null;
+                baked.Props = null;
+                baked.SpawnMarkers = null;
+                baked.ObjectiveMarkers = null;
+
+                var report = MapGenBakedMapMigration.MigrateInMemory(baked);
+
+                Assert.That(report.IsValid, Is.True);
+                Assert.That(report.WasMigrated, Is.True);
+                Assert.That(baked.Version, Is.EqualTo(MapGenBakedMapMigration.CurrentVersion));
+                Assert.That(baked.Cells, Is.Empty);
+                Assert.That(baked.Regions, Is.Empty);
+                Assert.That(baked.Connectors, Is.Empty);
+                Assert.That(baked.TraversalEdges, Is.Empty);
+                Assert.That(baked.Props, Is.Empty);
+                Assert.That(baked.SpawnMarkers, Is.Empty);
+                Assert.That(baked.ObjectiveMarkers, Is.Empty);
+            }
+            finally
+            {
+                Object.DestroyImmediate(baked);
+            }
+        }
+
+        [Test]
+        public void RuntimeMapServiceRejectsFutureBakedMapVersion()
+        {
+            var baked = ScriptableObject.CreateInstance<MapGenBakedMapAsset>();
+            var host = new GameObject("runtime_map_service_future_version_test");
+
+            try
+            {
+                baked.Version = MapGenBakedMapMigration.CurrentVersion + 1;
+                var service = host.AddComponent<MapGenRuntimeMapService>();
+
+                Assert.That(service.Load(baked), Is.False);
+                Assert.That(service.IsLoaded, Is.False);
+                Assert.That(service.LastMigrationReport.IsValid, Is.False);
+                Assert.That(service.TryGetQuery(out _), Is.False);
+            }
+            finally
+            {
+                Object.DestroyImmediate(host);
+                Object.DestroyImmediate(baked);
+            }
+        }
+
+        [Test]
+        public void MapGenV2CompiledMapAdapterBuildsLegacyRuntimePlacements()
+        {
+            var baked = ScriptableObject.CreateInstance<MapGenBakedMapAsset>();
+
+            try
+            {
+                baked.Version = MapGenBakedMapMigration.CurrentVersion;
+                baked.ProfileId = "runtime_profile";
+                baked.SourceSignature = "source_signature";
+                baked.Seed = 77;
+                baked.Width = 2;
+                baked.Height = 1;
+                baked.Cells = new[]
+                {
+                    new MapGenBakedCell
+                    {
+                        Coord = new MapGenGridCoord(0, 0),
+                        State = MapGenCellState.Room,
+                        RegionId = 1,
+                        RoomCategory = MapGenRoomCategory.Start
+                    },
+                    new MapGenBakedCell
+                    {
+                        Coord = new MapGenGridCoord(1, 0),
+                        State = MapGenCellState.Room,
+                        RegionId = 2,
+                        RoomCategory = MapGenRoomCategory.Quest
+                    }
+                };
+                baked.Regions = new[]
+                {
+                    new MapGenBakedRegion
+                    {
+                        RegionId = 1,
+                        RoomCategory = MapGenRoomCategory.Start,
+                        CellCount = 1,
+                        SourceTemplateId = "start_template"
+                    },
+                    new MapGenBakedRegion
+                    {
+                        RegionId = 2,
+                        RoomCategory = MapGenRoomCategory.Quest,
+                        CellCount = 1,
+                        SourceTemplateId = "quest_template"
+                    }
+                };
+                baked.Connectors = new[]
+                {
+                    new MapGenBakedConnector
+                    {
+                        Coord = new MapGenGridCoord(1, 0),
+                        RegionId = 2,
+                        SocketId = "door_a",
+                        SocketWidth = 2
+                    }
+                };
+                baked.Props = new[]
+                {
+                    new MapGenBakedPropInstance
+                    {
+                        Coord = new MapGenGridCoord(1, 0),
+                        RegionId = 2,
+                        Channel = "objective",
+                        ChannelKind = "Objective"
+                    }
+                };
+                baked.SpawnMarkers = new[]
+                {
+                    new MapGenBakedMarker
+                    {
+                        MarkerId = "spawn_0",
+                        Coord = new MapGenGridCoord(0, 0),
+                        RegionId = 1,
+                        Channel = "spawn"
+                    }
+                };
+                baked.ObjectiveMarkers = new[]
+                {
+                    new MapGenBakedMarker
+                    {
+                        MarkerId = "objective_0",
+                        Coord = new MapGenGridCoord(1, 0),
+                        RegionId = 2,
+                        Channel = "objective"
+                    }
+                };
+
+                var compiled = MapGenV2CompiledMapAdapter.ToCompiledMap(baked);
+
+                Assert.That(compiled.MapId, Is.EqualTo("source_signature"));
+                Assert.That(compiled.ProfileId, Is.EqualTo("runtime_profile"));
+                Assert.That(compiled.Cells, Has.Count.EqualTo(2));
+                Assert.That(compiled.RoomRecords, Has.Exactly(1).Matches<CompiledMapRoomRecord>(
+                    room => room.Id == "region_1"
+                        && room.Role == MapRoomRole.Start
+                        && room.ChunkId == "start_template"));
+                Assert.That(compiled.Sockets, Has.Exactly(1).Matches<CompiledMapSocketRecord>(
+                    socket => socket.Id == "door_a" && socket.Width == 2 && socket.RoomId == "region_2"));
+                Assert.That(compiled.Objects, Has.Exactly(1).Matches<CompiledMapObjectPlacement>(
+                    prop => prop.Kind == RoomChunkObjectKind.Chest && prop.RuntimeReferenceId == "objective"));
+                Assert.That(compiled.Placements, Has.Exactly(1).Matches<MapPlacement>(
+                    placement => placement.Kind == MapPlacementKind.Monster && placement.Id == "spawn_0"));
+                Assert.That(compiled.Placements, Has.Exactly(1).Matches<MapPlacement>(
+                    placement => placement.Kind == MapPlacementKind.QuestTarget && placement.Id == "objective_0"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(baked);
             }
         }
 

@@ -2,7 +2,8 @@
   "name": "Conn.Runtime",
   "rootNamespace": "Conn.Runtime",
   "references": [
-    "Conn.Core"
+    "Conn.Core",
+    "Conn.MapGenV2.Core"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

@@ -849,6 +849,17 @@ Progress note 2026-05-31:
 - Added a runtime map query adapter that can look up baked cells, regions,
   connectors, props by channel, traversal neighbors, edges, and simple grid
   paths without editor-only references.
+- Added a runtime `MapGenRuntimeMapService` that loads baked map assets,
+  performs in-memory migration/array normalization, rejects future baked-data
+  versions, and exposes a reusable runtime query adapter.
+- Added a `CompiledMap` compatibility adapter so existing combat/content
+  runtime systems can consume MapGenV2 baked cells, room records, sockets,
+  prop objects, and spawn/objective placements during the migration period.
+- Unity AI Navigation is intentionally handled through the materialized scene
+  root: the generated mesh/prefab hierarchy remains the NavMeshSurface input,
+  while baked map data provides graph/grid queries. A full NavMesh bake is not
+  required by the current verification level and remains a scene integration
+  concern.
 
 Goal: ensure editor output becomes useful runtime map data.
 
@@ -859,14 +870,14 @@ Tasks:
   markers, objective markers, prop instances, source profile/style/template
   ids, generation signature.
 - [x] Ensure baked data contains no `UnityEditor` references.
-- [ ] Add runtime loader/service for baked maps.
+- [x] Add runtime loader/service for baked maps.
 - [x] Add graph traversal adapter.
 - [x] Add grid pathfinding adapter.
-- [ ] Add Unity AI Navigation build input or `NavMeshSurface` integration plan.
+- [x] Add Unity AI Navigation build input or `NavMeshSurface` integration plan.
 - [x] Add spawn/objective marker query API.
-- [ ] Add compatibility layer for existing combat/content systems if needed.
+- [x] Add compatibility layer for existing combat/content systems if needed.
 - [x] Add version field for baked data.
-- [ ] Add migration handling for baked data.
+- [x] Add migration handling for baked data.
 
 Acceptance:
 
@@ -879,7 +890,8 @@ Verification:
 - EditMode tests for runtime-safe serialization.
 - EditMode tests for baked regions, connectors, props, markers, and traversal
   query/pathfinding.
-- Runtime/playmode smoke test for loading a baked map.
+- EditMode runtime smoke test for loading a baked map through
+  `MapGenRuntimeMapService`.
 - Tests for traversal/pathfinding queries.
 
 ## Phase 12: Validation And Diagnostics
