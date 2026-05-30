@@ -15,6 +15,8 @@ namespace Conn.MapGenV2.Authoring
         public MapGenStyleSetAsset StyleSet;
         public MapGenRuleSetAsset LayoutRules;
         public MapGenRoomShapeAsset[] RoomShapes = Array.Empty<MapGenRoomShapeAsset>();
+        public MapGenOutputSettings OutputSettings = MapGenOutputSettings.Defaults();
+        public MapGenNavigationAdapterSettings NavigationSettings = MapGenNavigationAdapterSettings.Defaults();
 
         public MapGenValidationReport Validate()
         {
@@ -64,6 +66,7 @@ namespace Conn.MapGenV2.Authoring
             }
 
             ValidateRoomShapes(report);
+            OutputSettings.Validate(report);
             return report;
         }
 
@@ -71,6 +74,20 @@ namespace Conn.MapGenV2.Authoring
         {
             MapSize = new Vector2Int(Mathf.Max(1, MapSize.x), Mathf.Max(1, MapSize.y));
             CellSize = Mathf.Max(0.01f, CellSize);
+            if (string.IsNullOrWhiteSpace(OutputSettings.DraftFolder))
+            {
+                OutputSettings.DraftFolder = MapGenOutputSettings.Defaults().DraftFolder;
+            }
+
+            if (string.IsNullOrWhiteSpace(OutputSettings.MaterializedPrefabFolder))
+            {
+                OutputSettings.MaterializedPrefabFolder = MapGenOutputSettings.Defaults().MaterializedPrefabFolder;
+            }
+
+            if (string.IsNullOrWhiteSpace(OutputSettings.BakedAssetFolder))
+            {
+                OutputSettings.BakedAssetFolder = MapGenOutputSettings.Defaults().BakedAssetFolder;
+            }
         }
 
         private void ValidateRoomShapes(MapGenValidationReport report)

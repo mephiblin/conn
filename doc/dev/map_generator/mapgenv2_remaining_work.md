@@ -412,6 +412,11 @@ Progress note 2026-05-31:
   profiles.
 - Starter setup now creates starter room/corridor template assets and links
   them through the starter style set.
+- Added structured quantity, post-process, prop placement, output, and
+  navigation adapter settings while preserving legacy fields for existing
+  assets.
+- Draft, materialized prefab, and baked asset paths now come from profile output
+  settings with migration-safe defaults.
 
 Goal: close the gap between the planned production data model and current MVP
 assets.
@@ -439,14 +444,14 @@ Tasks:
 - [x] Add `MapGenConnector` with:
   side, local cell, socket id, socket kind, width, required flag, tags.
 - [x] Add explicit template pool rules to profile/style data.
-- [ ] Add quantity rule structs:
+- [x] Add quantity rule structs:
   min/max rooms, min/max corridor cells, required categories, optional
   categories, density targets.
-- [ ] Add post-process rule struct instead of loose bools.
-- [ ] Add prop placement rule struct:
+- [x] Add post-process rule struct instead of loose bools.
+- [x] Add prop placement rule struct:
   channel, prefab pool, distribution mode, spacing, offsets, rotation, blocker
   policy, room/corridor filters.
-- [ ] Add output settings:
+- [x] Add output settings:
   draft folder, materialized prefab folder, baked asset folder, overwrite mode.
 - [x] Add migration-safe defaults for existing starter profiles.
 

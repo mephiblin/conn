@@ -6,8 +6,6 @@ namespace Conn.MapGenV2.Editor
 {
     public static class MapGenRuntimeBakeUtility
     {
-        private const string BakeFolder = "Assets/Conn/Core/MapGenV2/BakedMaps";
-
         public static MapGenBakedMapAsset Bake(MapGenMockupDraftAsset draft)
         {
             if (draft == null || draft.Profile == null || !draft.Accepted || !draft.IsAcceptedSignatureCurrent)
@@ -15,9 +13,12 @@ namespace Conn.MapGenV2.Editor
                 return null;
             }
 
-            EnsureBakeFolder();
+            var bakeFolder = string.IsNullOrWhiteSpace(draft.Profile.OutputSettings.BakedAssetFolder)
+                ? MapGenOutputSettings.Defaults().BakedAssetFolder
+                : draft.Profile.OutputSettings.BakedAssetFolder;
+            MapGenV2AssetFolderUtility.EnsureAssetFolder(bakeFolder);
             var asset = ScriptableObjectUtility.CreateAsset<MapGenBakedMapAsset>(
-                $"{BakeFolder}/{draft.Profile.ProfileId}_{draft.Seed}_BakedMap.asset");
+                $"{bakeFolder}/{draft.Profile.ProfileId}_{draft.Seed}_BakedMap.asset");
             asset.ProfileId = draft.Profile.ProfileId;
             asset.Seed = draft.Seed;
             asset.SourceSignature = draft.AcceptedSignature;
@@ -28,14 +29,6 @@ namespace Conn.MapGenV2.Editor
             EditorUtility.SetDirty(asset);
             AssetDatabase.SaveAssets();
             return asset;
-        }
-
-        private static void EnsureBakeFolder()
-        {
-            if (!AssetDatabase.IsValidFolder("Assets/Conn/Core/MapGenV2/BakedMaps"))
-            {
-                AssetDatabase.CreateFolder("Assets/Conn/Core/MapGenV2", "BakedMaps");
-            }
         }
     }
 }

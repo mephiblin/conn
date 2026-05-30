@@ -63,6 +63,10 @@ namespace Conn.MapGenV2.Editor
             };
             ruleSet.UseDirectRoutes = true;
             ruleSet.ReduceDeadEnds = true;
+            ruleSet.QuantityRules = MapGenQuantityRules.Defaults();
+            ruleSet.PostProcessRules = MapGenPostProcessRules.Defaults();
+            ruleSet.PostProcessRules.UseDirectRoutes = true;
+            ruleSet.PostProcessRules.ReduceDeadEnds = true;
 
             var roomShape = ScriptableObjectUtility.CreateAsset<MapGenRoomShapeAsset>(
                 AssetDatabase.GenerateUniqueAssetPath($"{Root}/RoomShapes/StarterRoomShape.asset"));
@@ -88,6 +92,8 @@ namespace Conn.MapGenV2.Editor
             profile.StyleSet = styleSet;
             profile.LayoutRules = ruleSet;
             profile.RoomShapes = new[] { roomShape };
+            profile.OutputSettings = MapGenOutputSettings.Defaults();
+            profile.NavigationSettings = MapGenNavigationAdapterSettings.Defaults();
 
             var draft = ScriptableObjectUtility.CreateAsset<MapGenMockupDraftAsset>(
                 AssetDatabase.GenerateUniqueAssetPath($"{Root}/Drafts/StarterDraft.asset"));

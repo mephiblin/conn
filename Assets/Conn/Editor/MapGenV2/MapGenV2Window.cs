@@ -11,9 +11,6 @@ namespace Conn.MapGenV2.Editor
         private const string DraftPathKey = "Conn.MapGenV2.Window.DraftPath";
         private const string PreviewCellSizeKey = "Conn.MapGenV2.Window.PreviewCellSize";
         private const string OutputModeKey = "Conn.MapGenV2.Window.OutputMode";
-        private const string DraftFolder = "Assets/Conn/Authoring/MapGenV2/Drafts";
-        private const string MaterializedPrefabFolder = "Assets/Conn/Authoring/MapGenV2/MaterializedPrefabs";
-        private const string BakedMapFolder = "Assets/Conn/Core/MapGenV2/BakedMaps";
         private static readonly Color EmptyColor = new Color(0.04f, 0.08f, 0.9f, 1f);
         private static readonly Color RoomColor = new Color(0.9f, 0f, 0f, 1f);
         private static readonly Color CorridorColor = new Color(0f, 0f, 0f, 1f);
@@ -174,9 +171,9 @@ namespace Conn.MapGenV2.Editor
             EditorGUILayout.LabelField("출력 경로 / Output Paths", EditorStyles.boldLabel);
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
-                EditorGUILayout.LabelField("Draft Folder", DraftFolder);
+                EditorGUILayout.LabelField("Draft Folder", GetDraftFolder());
                 EditorGUILayout.LabelField("Selected Draft", draft != null ? AssetDatabase.GetAssetPath(draft) : "(none)");
-                EditorGUILayout.LabelField("Materialized Prefab Folder", MaterializedPrefabFolder);
+                EditorGUILayout.LabelField("Materialized Prefab Folder", GetMaterializedPrefabFolder());
                 EditorGUILayout.LabelField("Baked Asset", BuildExpectedBakedAssetPath());
             }
         }
@@ -319,7 +316,9 @@ namespace Conn.MapGenV2.Editor
             }
 
             MapGenV2AssetFolderUtility.CreateDefaultFolders();
-            var path = AssetDatabase.GenerateUniqueAssetPath($"{MaterializedPrefabFolder}/{selectedMaterializedRoot.name}.prefab");
+            var prefabFolder = GetMaterializedPrefabFolder();
+            MapGenV2AssetFolderUtility.EnsureAssetFolder(prefabFolder);
+            var path = AssetDatabase.GenerateUniqueAssetPath($"{prefabFolder}/{selectedMaterializedRoot.name}.prefab");
             var prefab = PrefabUtility.SaveAsPrefabAsset(selectedMaterializedRoot, path);
             lastOperationResult = prefab != null
                 ? $"Saved materialized prefab: {path}."
@@ -496,7 +495,9 @@ namespace Conn.MapGenV2.Editor
         private void CreateDraft()
         {
             MapGenV2AssetFolderUtility.CreateDefaultFolders();
-            var path = AssetDatabase.GenerateUniqueAssetPath("Assets/Conn/Authoring/MapGenV2/Drafts/MapGenMockupDraft.asset");
+            var draftFolder = GetDraftFolder();
+            MapGenV2AssetFolderUtility.EnsureAssetFolder(draftFolder);
+            var path = AssetDatabase.GenerateUniqueAssetPath($"{draftFolder}/MapGenMockupDraft.asset");
             draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();
             draft.Profile = profile;
             AssetDatabase.CreateAsset(draft, path);
@@ -509,10 +510,31 @@ namespace Conn.MapGenV2.Editor
         {
             if (draft == null || draft.Profile == null)
             {
-                return BakedMapFolder;
+                return GetBakedAssetFolder();
             }
 
-            return $"{BakedMapFolder}/{draft.Profile.ProfileId}_{draft.Seed}_BakedMap.asset";
+            return $"{GetBakedAssetFolder()}/{draft.Profile.ProfileId}_{draft.Seed}_BakedMap.asset";
+        }
+
+        private string GetDraftFolder()
+        {
+            return profile != null && !string.IsNullOrWhiteSpace(profile.OutputSettings.DraftFolder)
+                ? profile.OutputSettings.DraftFolder
+                : MapGenOutputSettings.Defaults().DraftFolder;
+        }
+
+        private string GetMaterializedPrefabFolder()
+        {
+            return profile != null && !string.IsNullOrWhiteSpace(profile.OutputSettings.MaterializedPrefabFolder)
+                ? profile.OutputSettings.MaterializedPrefabFolder
+                : MapGenOutputSettings.Defaults().MaterializedPrefabFolder;
+        }
+
+        private string GetBakedAssetFolder()
+        {
+            return profile != null && !string.IsNullOrWhiteSpace(profile.OutputSettings.BakedAssetFolder)
+                ? profile.OutputSettings.BakedAssetFolder
+                : MapGenOutputSettings.Defaults().BakedAssetFolder;
         }
 
         private void SaveWindowState()

@@ -172,6 +172,92 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void RuleSetValidatorReportsStructuredQuantityAndPropIssues()
+        {
+            var ruleSet = ScriptableObject.CreateInstance<MapGenRuleSetAsset>();
+
+            try
+            {
+                ruleSet.MinRooms = 2;
+                ruleSet.MaxRooms = 1;
+                ruleSet.QuantityRules = MapGenQuantityRules.Defaults();
+                ruleSet.QuantityRules.TargetRoomDensityPercent = 101;
+                ruleSet.PostProcessRules = MapGenPostProcessRules.Defaults();
+                ruleSet.PostProcessRules.MaxPasses = -1;
+                ruleSet.PropPlacementRules = new[]
+                {
+                    new MapGenPropPlacementRules
+                    {
+                        Channel = string.Empty,
+                        DensityPercent = 125,
+                        MinSpacingCells = -1
+                    }
+                };
+
+                var report = ruleSet.Validate();
+
+                Assert.That(report.IsValid, Is.False);
+                Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "rule_set_invalid_room_range"));
+                Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "rule_set_invalid_room_density"));
+                Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "rule_set_invalid_post_process_passes"));
+                Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "rule_set_prop_rule_missing_channel"));
+                Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "rule_set_prop_rule_invalid_density"));
+                Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "rule_set_prop_rule_invalid_spacing"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(ruleSet);
+            }
+        }
+
+        [Test]
+        public void ProfileValidatorReportsMissingOutputFolders()
+        {
+            var profile = ScriptableObject.CreateInstance<MapGenProfileAsset>();
+            var styleSet = ScriptableObject.CreateInstance<MapGenStyleSetAsset>();
+            var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
+            var ruleSet = ScriptableObject.CreateInstance<MapGenRuleSetAsset>();
+            var roomShape = ScriptableObject.CreateInstance<MapGenRoomShapeAsset>();
+            GameObject floor = null;
+            GameObject wall = null;
+
+            try
+            {
+                PopulateValidWorkflowProfile(profile, styleSet, moduleSet, ruleSet, roomShape, out floor, out wall);
+                profile.OutputSettings = MapGenOutputSettings.Defaults();
+                profile.OutputSettings.DraftFolder = string.Empty;
+                profile.OutputSettings.MaterializedPrefabFolder = string.Empty;
+                profile.OutputSettings.BakedAssetFolder = string.Empty;
+
+                var report = profile.Validate();
+
+                Assert.That(report.IsValid, Is.False);
+                Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "output_settings_missing_draft_folder"));
+                Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "output_settings_missing_materialized_folder"));
+                Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "output_settings_missing_baked_folder"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(profile);
+                Object.DestroyImmediate(styleSet);
+                Object.DestroyImmediate(moduleSet);
+                Object.DestroyImmediate(ruleSet);
+                Object.DestroyImmediate(roomShape);
+                Object.DestroyImmediate(floor);
+                Object.DestroyImmediate(wall);
+            }
+        }
+
+        [Test]
         public void ProfileValidatorRequiresStyleRuleAndRoomShapes()
         {
             var profile = ScriptableObject.CreateInstance<MapGenProfileAsset>();
