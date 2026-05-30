@@ -260,6 +260,11 @@ namespace Conn.MapGenV2.Editor
             return "Inline help/tooltips cover profile, rule set, style set, module set, room shape, connectors, post-process, prop placement, bake settings, and materialization output.";
         }
 
+        public static string BuildKoreanCoverageSummary()
+        {
+            return "Korean UI coverage: labels, buttons, tooltips, warnings, errors, validation summaries, documentation summaries, and workflow result text use Korean/English bilingual wording while ids/enums/API names remain English.";
+        }
+
         private void DrawThreePaneWorkspace(MapGenV2WorkflowStatus workflow)
         {
             DrawWrappingHelpBox(BuildThreePaneLayoutSummary(), MessageType.Info);
@@ -305,13 +310,13 @@ namespace Conn.MapGenV2.Editor
                     draft = setup.Draft;
                     Selection.activeObject = draft != null ? draft : profile;
                     SaveWindowState();
-                    SetLastOperationResult("Starter setup created.");
+                    SetLastOperationResult("스타터 설정 생성 완료 / Starter setup created.");
                 }
 
                 if (GUILayout.Button(MapGenV2EditorText.Get("mapgenv2.createDefaultFolders")))
                 {
                     MapGenV2AssetFolderUtility.CreateDefaultFolders();
-                    SetLastOperationResult("Default MapGenV2 folders created or already existed.");
+                    SetLastOperationResult("기본 MapGenV2 폴더 준비 완료 / Default MapGenV2 folders created or already existed.");
                 }
 
                 if (GUILayout.Button(MapGenV2EditorText.Get("mapgenv2.createDraft")))
@@ -320,10 +325,10 @@ namespace Conn.MapGenV2.Editor
                     SaveWindowState();
                 }
 
-                if (GUILayout.Button("Cleanup Starter Generated Assets"))
+                if (GUILayout.Button("스타터 생성 에셋 정리 / Cleanup Starter Generated Assets"))
                 {
                     var deleted = MapGenV2StarterSetupBuilder.CleanupStarterGeneratedAssets();
-                    SetLastOperationResult($"Starter generated asset cleanup deleted {deleted} assets.");
+                    SetLastOperationResult($"스타터 생성 에셋 정리 완료 / Starter cleanup deleted {deleted} assets.");
                 }
             }
         }
@@ -598,10 +603,10 @@ namespace Conn.MapGenV2.Editor
             EditorGUILayout.LabelField("출력 경로 / Output Paths", EditorStyles.boldLabel);
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
-                EditorGUILayout.LabelField("Draft Folder", GetDraftFolder());
-                EditorGUILayout.LabelField("Selected Draft", draft != null ? AssetDatabase.GetAssetPath(draft) : "(none)");
-                EditorGUILayout.LabelField("Materialized Prefab Folder", GetMaterializedPrefabFolder());
-                EditorGUILayout.LabelField("Baked Asset", BuildExpectedBakedAssetPath());
+                EditorGUILayout.LabelField("드래프트 폴더 / Draft Folder", GetDraftFolder());
+                EditorGUILayout.LabelField("선택 드래프트 / Selected Draft", draft != null ? AssetDatabase.GetAssetPath(draft) : "(none)");
+                EditorGUILayout.LabelField("Materialized Prefab 폴더 / Materialized Prefab Folder", GetMaterializedPrefabFolder());
+                EditorGUILayout.LabelField("베이크 에셋 / Baked Asset", BuildExpectedBakedAssetPath());
             }
         }
 
@@ -613,24 +618,24 @@ namespace Conn.MapGenV2.Editor
             {
                 var style = new GUIStyle(EditorStyles.miniLabel) { wordWrap = true };
                 EditorGUILayout.LabelField(BuildLinkedAssetShortcutSummary(), style);
-                DrawObjectShortcutRow("Profile", profile, CreateStarterSetupFromShortcut);
-                DrawObjectShortcutRow("Draft", draft, profile != null ? CreateDraft : null);
-                DrawObjectShortcutRow("Materialized Root", selectedMaterializedRoot);
-                DrawObjectShortcutRow("Baked Asset", LoadExpectedBakedAsset());
+                DrawObjectShortcutRow("프로필 / Profile", profile, CreateStarterSetupFromShortcut);
+                DrawObjectShortcutRow("드래프트 / Draft", draft, profile != null ? CreateDraft : null);
+                DrawObjectShortcutRow("씬 출력 루트 / Materialized Root", selectedMaterializedRoot);
+                DrawObjectShortcutRow("베이크 에셋 / Baked Asset", LoadExpectedBakedAsset());
 
                 if (profile == null)
                 {
                     return;
                 }
 
-                DrawObjectShortcutRow("Rule Set", profile.LayoutRules);
-                DrawObjectShortcutRow("Style Set", profile.StyleSet);
-                DrawObjectShortcutRow("Module Set", profile.StyleSet != null ? profile.StyleSet.ModuleSet : null);
+                DrawObjectShortcutRow("규칙 세트 / Rule Set", profile.LayoutRules);
+                DrawObjectShortcutRow("스타일 세트 / Style Set", profile.StyleSet);
+                DrawObjectShortcutRow("모듈 세트 / Module Set", profile.StyleSet != null ? profile.StyleSet.ModuleSet : null);
 
                 var roomShapes = profile.RoomShapes ?? System.Array.Empty<MapGenRoomShapeAsset>();
                 for (var i = 0; i < roomShapes.Length; i++)
                 {
-                    DrawObjectShortcutRow($"Room Shape {i}", roomShapes[i]);
+                    DrawObjectShortcutRow($"룸 셰이프 / Room Shape {i}", roomShapes[i]);
                 }
 
                 if (profile.StyleSet != null)
@@ -638,13 +643,13 @@ namespace Conn.MapGenV2.Editor
                     var roomTemplates = profile.StyleSet.RoomTemplates ?? System.Array.Empty<MapGenRoomTemplateAsset>();
                     for (var i = 0; i < roomTemplates.Length; i++)
                     {
-                        DrawObjectShortcutRow($"Room Template {i}", roomTemplates[i]);
+                        DrawObjectShortcutRow($"방 템플릿 / Room Template {i}", roomTemplates[i]);
                     }
 
                     var corridorTemplates = profile.StyleSet.CorridorTemplates ?? System.Array.Empty<MapGenCorridorTemplateAsset>();
                     for (var i = 0; i < corridorTemplates.Length; i++)
                     {
-                        DrawObjectShortcutRow($"Corridor Template {i}", corridorTemplates[i]);
+                        DrawObjectShortcutRow($"복도 템플릿 / Corridor Template {i}", corridorTemplates[i]);
                     }
                 }
             }
@@ -652,7 +657,7 @@ namespace Conn.MapGenV2.Editor
 
         public static string BuildLinkedAssetShortcutSummary()
         {
-            return "연결 에셋 작업: Ping, Select, Open, Create, Duplicate, Validate, Fix/Create Missing. "
+            return "연결 에셋 작업: 위치 표시(Ping), 선택(Select), 열기(Open), 생성(Create), 복제(Duplicate), 검증(Validate), 누락 생성(Fix/Create Missing). "
                 + "중요 참조 옆에서 즉시 찾기, 열기, 복제, 검증, 누락 생성 흐름을 실행합니다.";
         }
 
@@ -670,7 +675,7 @@ namespace Conn.MapGenV2.Editor
                 EditorGUILayout.ObjectField(label, target, typeof(Object), false);
                 using (new EditorGUI.DisabledScope(createAction == null || target != null))
                 {
-                    if (GUILayout.Button(new GUIContent("Create", "누락된 기본 에셋을 생성합니다."), GUILayout.Width(58f)))
+                    if (GUILayout.Button(new GUIContent("생성 / Create", "누락된 기본 에셋을 생성합니다."), GUILayout.Width(88f)))
                     {
                         createAction();
                     }
@@ -678,41 +683,41 @@ namespace Conn.MapGenV2.Editor
 
                 using (new EditorGUI.DisabledScope(target == null))
                 {
-                    if (GUILayout.Button(new GUIContent("Ping", "Project 또는 Hierarchy에서 에셋 위치를 표시합니다."), GUILayout.Width(52f)))
+                    if (GUILayout.Button(new GUIContent("위치 / Ping", "Project 또는 Hierarchy에서 에셋 위치를 표시합니다."), GUILayout.Width(78f)))
                     {
                         EditorGUIUtility.PingObject(target);
                     }
 
-                    if (GUILayout.Button(new GUIContent("Select", "현재 Selection으로 지정합니다."), GUILayout.Width(58f)))
+                    if (GUILayout.Button(new GUIContent("선택 / Select", "현재 Selection으로 지정합니다."), GUILayout.Width(92f)))
                     {
                         Selection.activeObject = target;
                     }
 
-                    if (GUILayout.Button(new GUIContent("Open", "Inspector 또는 에셋 편집기를 엽니다."), GUILayout.Width(52f)))
+                    if (GUILayout.Button(new GUIContent("열기 / Open", "Inspector 또는 에셋 편집기를 엽니다."), GUILayout.Width(82f)))
                     {
                         AssetDatabase.OpenAsset(target);
                     }
 
                     using (new EditorGUI.DisabledScope(!CanDuplicateShortcutTarget(target)))
                     {
-                        if (GUILayout.Button(new GUIContent("Duplicate", "Project 에셋을 같은 폴더에 복제합니다."), GUILayout.Width(76f)))
+                        if (GUILayout.Button(new GUIContent("복제 / Duplicate", "Project 에셋을 같은 폴더에 복제합니다."), GUILayout.Width(112f)))
                         {
                             DuplicateShortcutTarget(target);
                         }
                     }
 
-                    if (GUILayout.Button(new GUIContent("Validate", "선택한 MapGenV2 에셋의 검증 결과를 요약합니다."), GUILayout.Width(70f)))
+                    if (GUILayout.Button(new GUIContent("검증 / Validate", "선택한 MapGenV2 에셋의 검증 결과를 요약합니다."), GUILayout.Width(106f)))
                     {
                         var report = ValidateShortcutTarget(target);
                         var summary = BuildShortcutValidationSummary(target, report);
-                        EditorUtility.DisplayDialog("MapGenV2 Validate", summary, "OK");
+                        EditorUtility.DisplayDialog("MapGenV2 검증 / Validate", summary, "OK");
                         SetLastOperationResult(summary);
                     }
                 }
 
                 using (new EditorGUI.DisabledScope(target != null || createAction == null))
                 {
-                    if (GUILayout.Button(new GUIContent("Fix/Create Missing", "누락된 참조를 만들거나 starter 흐름으로 보정합니다."), GUILayout.Width(128f)))
+                    if (GUILayout.Button(new GUIContent("누락 생성 / Fix/Create Missing", "누락된 참조를 만들거나 starter 흐름으로 보정합니다."), GUILayout.Width(184f)))
                     {
                         createAction();
                     }

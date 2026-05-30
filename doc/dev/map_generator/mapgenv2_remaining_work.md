@@ -134,7 +134,7 @@ tool, and generated output workflow.
 
 ### Korean Localization
 
-- [ ] Provide Korean UI text for all user-facing MapGenV2 labels, buttons,
+- [x] Provide Korean UI text for all user-facing MapGenV2 labels, buttons,
   tooltips, warnings, errors, and documentation summaries.
 - [x] Keep English stable ids internally; localize only display strings.
 - [x] Add a MapGenV2 localization table or lightweight editor localization

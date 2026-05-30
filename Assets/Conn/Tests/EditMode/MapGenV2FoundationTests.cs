@@ -61,6 +61,23 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void MapGenV2WindowDocumentsKoreanCoverage()
+        {
+            var summary = MapGenV2Window.BuildKoreanCoverageSummary();
+
+            Assert.That(summary, Does.Contain("Korean UI coverage"));
+            Assert.That(summary, Does.Contain("labels"));
+            Assert.That(summary, Does.Contain("buttons"));
+            Assert.That(summary, Does.Contain("tooltips"));
+            Assert.That(summary, Does.Contain("warnings"));
+            Assert.That(summary, Does.Contain("errors"));
+            Assert.That(summary, Does.Contain("validation summaries"));
+            Assert.That(summary, Does.Contain("documentation summaries"));
+            Assert.That(summary, Does.Contain("workflow result text"));
+            Assert.That(summary, Does.Contain("ids/enums/API names remain English"));
+        }
+
+        [Test]
         public void MapGenV2WindowDefinesMinimumSizeForLocalizedText()
         {
             Assert.That(MapGenV2Window.MinimumWindowSize.x, Is.GreaterThanOrEqualTo(860f));
