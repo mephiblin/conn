@@ -161,7 +161,7 @@ tool, and generated output workflow.
 - [x] Module set inspector must show category coverage:
   floors, walls, corners, ceilings, doors, blockers, props, missing categories,
   and weights.
-- [ ] Rule set inspector must show designer-language controls before raw values:
+- [x] Rule set inspector must show designer-language controls before raw values:
   room count, corridor density, loops, dead-end policy, blocked regions,
   required categories, post-process pass list.
 - [ ] Draft inspector must show the mockup preview, selected region details,

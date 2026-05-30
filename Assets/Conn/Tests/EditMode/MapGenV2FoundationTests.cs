@@ -217,6 +217,66 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void RuleSetInspectorSummaryReportsDesignerControls()
+        {
+            var ruleSet = ScriptableObject.CreateInstance<MapGenRuleSetAsset>();
+
+            try
+            {
+                ruleSet.MinRooms = 3;
+                ruleSet.MaxRooms = 9;
+                ruleSet.MinCorridorCells = 5;
+                ruleSet.MaxCorridorCells = 21;
+                ruleSet.LoopRate = 35;
+                ruleSet.ReduceDeadEnds = true;
+                ruleSet.RequiredRoomCategories = new[]
+                {
+                    MapGenRoomCategory.Start,
+                    MapGenRoomCategory.Exit,
+                    MapGenRoomCategory.Boss
+                };
+                ruleSet.QuantityRules = MapGenQuantityRules.Defaults();
+                ruleSet.QuantityRules.TargetRoomDensityPercent = 30;
+                ruleSet.QuantityRules.TargetCorridorDensityPercent = 18;
+                ruleSet.DistanceRules = new MapGenDistanceRules
+                {
+                    MinStartToExitDistance = 7,
+                    MinStartToBossDistance = 5,
+                    RequireQuestBeforeBoss = true
+                };
+                ruleSet.PostProcessRules = MapGenPostProcessRules.Defaults();
+                ruleSet.PostProcessRules.ReduceDeadEnds = true;
+                ruleSet.PostProcessRules.AddLoops = true;
+                ruleSet.PostProcessRules.FillReservedMasks = true;
+                ruleSet.PostProcessRules.PassOrder = new[]
+                {
+                    MapGenPostProcessPassKind.ReduceDeadEnds,
+                    MapGenPostProcessPassKind.AddLoops
+                };
+                ruleSet.PropPlacementRules = new[] { MapGenPropPlacementRules.Defaults() };
+                ruleSet.PropPlacementRules[0].Channel = "loot";
+
+                var summary = MapGenRuleSetAssetEditor.BuildDesignerSummary(ruleSet);
+
+                Assert.That(summary, Does.Contain("Rooms 3-9"));
+                Assert.That(summary, Does.Contain("Corridor cells 5-21"));
+                Assert.That(summary, Does.Contain("Density room 30%/corridor 18%"));
+                Assert.That(summary, Does.Contain("Loops 35%/Add loops pass"));
+                Assert.That(summary, Does.Contain("Dead ends Reduce"));
+                Assert.That(summary, Does.Contain("Blocked regions Fill reserved masks"));
+                Assert.That(summary, Does.Contain("Required Start, Exit, Boss"));
+                Assert.That(summary, Does.Contain("Distance start-exit 7, start-boss 5"));
+                Assert.That(summary, Does.Contain("Post passes ReduceDeadEnds > AddLoops"));
+                Assert.That(summary, Does.Contain("Prop rules 1"));
+                Assert.That(summary, Does.Contain("Validation Valid"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(ruleSet);
+            }
+        }
+
+        [Test]
         public void RoomShapeValidatorRejectsConnectorAwayFromEdge()
         {
             var cells = new MapGenShapeCell[9];
