@@ -54,6 +54,7 @@ namespace Conn.MapGenV2.Authoring
         public bool SplitLargeRooms;
         public bool RemoveSmallRooms;
         public bool FillEnclosedEmptySpace;
+        public bool FillReservedMasks;
         public int MaxPasses;
         public MapGenPostProcessPassKind[] PassOrder;
 
@@ -66,6 +67,7 @@ namespace Conn.MapGenV2.Authoring
                 SplitLargeRooms = false,
                 RemoveSmallRooms = false,
                 FillEnclosedEmptySpace = false,
+                FillReservedMasks = false,
                 MaxPasses = 1,
                 PassOrder = Array.Empty<MapGenPostProcessPassKind>()
             };

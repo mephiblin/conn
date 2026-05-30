@@ -214,7 +214,7 @@ namespace Conn.MapGenV2.Editor
 
         public static string ForPostProcess(MapGenPostProcessReport report, string seedLabel)
         {
-            return $"{seedLabel}; PassesRun={report?.PassesRun ?? 0}; Rollbacks={report?.Rollbacks ?? 0}; Cancelled={report != null && report.Cancelled}; DirectRouteCellsAdded={report?.DirectRouteCellsAdded ?? 0}; DeadEndCorridorsRemoved={report?.DeadEndCorridorsRemoved ?? 0}; IsolatedRoomsRemoved={report?.IsolatedRoomsRemoved ?? 0}; EnclosedEmptyCellsFilled={report?.EnclosedEmptyCellsFilled ?? 0}; ConnectivityValid={report == null || report.RequiredConnectivityValid}";
+            return $"{seedLabel}; PassesRun={report?.PassesRun ?? 0}; Rollbacks={report?.Rollbacks ?? 0}; Cancelled={report != null && report.Cancelled}; DirectRouteCellsAdded={report?.DirectRouteCellsAdded ?? 0}; DeadEndCorridorsRemoved={report?.DeadEndCorridorsRemoved ?? 0}; IsolatedRoomsRemoved={report?.IsolatedRoomsRemoved ?? 0}; EnclosedEmptyCellsFilled={report?.EnclosedEmptyCellsFilled ?? 0}; ReservedMaskCellsFilled={report?.ReservedMaskCellsFilled ?? 0}; ConnectivityValid={report == null || report.RequiredConnectivityValid}";
         }
 
         public static string ForMaterialization(MapGenMaterializationReport report, string seedLabel)

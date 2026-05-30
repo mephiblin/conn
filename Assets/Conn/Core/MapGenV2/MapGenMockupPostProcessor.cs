@@ -40,9 +40,12 @@ namespace Conn.MapGenV2.Core
 
                     var beforePass = CopyCells(cells);
                     var beforeSignature = BuildCellStateSignature(beforePass);
-                    ApplyPass(passKind, width, height, cells);
+                    ApplyPass(passKind, width, height, cells, options);
                     var changedCoords = BuildChangedCoords(beforePass, cells, width);
                     var changedCells = changedCoords.Length;
+                    var reservedMaskCells = passKind == MapGenPostProcessPassKind.FillEnclosedEmptySpace
+                        ? CountChangedReservedMasks(beforePass, changedCoords, width)
+                        : 0;
                     changed |= changedCells > 0;
 
                     report.PassesRun++;
@@ -55,7 +58,7 @@ namespace Conn.MapGenV2.Core
                         report.Rollbacks++;
                     }
 
-                    AddPassCount(report, passKind, rolledBack ? 0 : changedCells);
+                    AddPassCount(report, passKind, rolledBack ? 0 : changedCells, rolledBack ? 0 : reservedMaskCells);
                     report.RequiredConnectivityValid = connectivityValid;
                     report.AddPassReport(new MapGenPostProcessPassReport
                     {
@@ -110,7 +113,7 @@ namespace Conn.MapGenV2.Core
                 case MapGenPostProcessPassKind.AddDirectRoutes:
                     return options.UseDirectRoutes;
                 case MapGenPostProcessPassKind.FillEnclosedEmptySpace:
-                    return options.FillEnclosedEmptySpace;
+                    return options.FillEnclosedEmptySpace || options.FillReservedMasks;
                 case MapGenPostProcessPassKind.ReduceDeadEnds:
                     return options.ReduceDeadEnds;
                 case MapGenPostProcessPassKind.RemoveSmallRooms:
@@ -120,14 +123,19 @@ namespace Conn.MapGenV2.Core
             }
         }
 
-        private static int ApplyPass(MapGenPostProcessPassKind passKind, int width, int height, MapGenMockupCell[] cells)
+        private static int ApplyPass(
+            MapGenPostProcessPassKind passKind,
+            int width,
+            int height,
+            MapGenMockupCell[] cells,
+            MapGenPostProcessOptions options)
         {
             switch (passKind)
             {
                 case MapGenPostProcessPassKind.AddDirectRoutes:
                     return AddDirectRoute(width, height, cells);
                 case MapGenPostProcessPassKind.FillEnclosedEmptySpace:
-                    return FillEnclosedEmptySpace(width, height, cells);
+                    return FillEnclosedEmptySpace(width, height, cells, options.FillEnclosedEmptySpace, options.FillReservedMasks);
                 case MapGenPostProcessPassKind.ReduceDeadEnds:
                     return RemoveDeadEndCorridors(width, height, cells);
                 case MapGenPostProcessPassKind.RemoveSmallRooms:
@@ -137,7 +145,11 @@ namespace Conn.MapGenV2.Core
             }
         }
 
-        private static void AddPassCount(MapGenPostProcessReport report, MapGenPostProcessPassKind passKind, int changedCells)
+        private static void AddPassCount(
+            MapGenPostProcessReport report,
+            MapGenPostProcessPassKind passKind,
+            int changedCells,
+            int reservedMaskCells)
         {
             switch (passKind)
             {
@@ -146,6 +158,7 @@ namespace Conn.MapGenV2.Core
                     break;
                 case MapGenPostProcessPassKind.FillEnclosedEmptySpace:
                     report.EnclosedEmptyCellsFilled += changedCells;
+                    report.ReservedMaskCellsFilled += reservedMaskCells;
                     break;
                 case MapGenPostProcessPassKind.ReduceDeadEnds:
                     report.DeadEndCorridorsRemoved += changedCells;
@@ -199,13 +212,31 @@ namespace Conn.MapGenV2.Core
             return report;
         }
 
-        private static int FillEnclosedEmptySpace(int width, int height, MapGenMockupCell[] cells)
+        private static int FillEnclosedEmptySpace(
+            int width,
+            int height,
+            MapGenMockupCell[] cells,
+            bool includeEnclosedEmpty,
+            bool includeReservedMasks)
         {
             var candidates = new bool[cells.Length];
             var count = 0;
             for (var i = 0; i < cells.Length; i++)
             {
-                if (cells[i].State != MapGenCellState.Empty)
+                if (cells[i].State == MapGenCellState.Reserved && includeReservedMasks)
+                {
+                    var reservedCoord = MapGenGridCoord.FromIndex(i, width);
+                    if (CountNavigableNeighbors(width, height, cells, reservedCoord) <= 0)
+                    {
+                        continue;
+                    }
+
+                    candidates[i] = true;
+                    count++;
+                    continue;
+                }
+
+                if (!includeEnclosedEmpty || cells[i].State != MapGenCellState.Empty)
                 {
                     continue;
                 }
@@ -286,6 +317,21 @@ namespace Conn.MapGenV2.Core
 
             Array.Resize(ref changed, count);
             return changed;
+        }
+
+        private static int CountChangedReservedMasks(MapGenMockupCell[] before, MapGenGridCoord[] changedCoords, int width)
+        {
+            var count = 0;
+            foreach (var coord in changedCoords ?? Array.Empty<MapGenGridCoord>())
+            {
+                var index = coord.ToIndex(width);
+                if (index >= 0 && index < (before?.Length ?? 0) && before[index].State == MapGenCellState.Reserved)
+                {
+                    count++;
+                }
+            }
+
+            return count;
         }
 
         private static int AddDirectRoute(int width, int height, MapGenMockupCell[] cells)

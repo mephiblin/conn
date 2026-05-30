@@ -706,7 +706,7 @@ namespace Conn.MapGenV2.Editor
                     0,
                     Mathf.Max(0, (report.PassReports?.Length ?? 1) - 1));
                 EditorUtility.SetDirty(draft);
-                lastOperationResult = $"Post-process complete. Passes {report.PassesRun}, Direct routes +{report.DirectRouteCellsAdded}, dead ends removed {report.DeadEndCorridorsRemoved}, isolated rooms removed {report.IsolatedRoomsRemoved}. Perf {sample.ElapsedMs}ms/{sample.BudgetMs}ms {sample.Target}.";
+                lastOperationResult = $"Post-process complete. Passes {report.PassesRun}, Direct routes +{report.DirectRouteCellsAdded}, reserved masks filled {report.ReservedMaskCellsFilled}, dead ends removed {report.DeadEndCorridorsRemoved}, isolated rooms removed {report.IsolatedRoomsRemoved}. Perf {sample.ElapsedMs}ms/{sample.BudgetMs}ms {sample.Target}.";
             }
             finally
             {
@@ -1549,6 +1549,11 @@ namespace Conn.MapGenV2.Editor
             if (draft.LastEnclosedEmptyCellsFilled > 0)
             {
                 tags.Add($"enclosed-fill {draft.LastEnclosedEmptyCellsFilled}");
+            }
+
+            if (draft.LastReservedMaskCellsFilled > 0)
+            {
+                tags.Add($"reserved-mask-fill {draft.LastReservedMaskCellsFilled}");
             }
 
             return tags.Count > 0 ? string.Join(", ", tags) : "(none)";

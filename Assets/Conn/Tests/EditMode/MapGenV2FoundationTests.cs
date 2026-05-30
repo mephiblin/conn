@@ -2619,6 +2619,34 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void PostProcessorFillsDesignerReservedMasks()
+        {
+            var cells = new MapGenMockupCell[3];
+            for (var i = 0; i < cells.Length; i++)
+            {
+                cells[i] = MapGenMockupCell.Empty;
+            }
+
+            cells[0] = new MapGenMockupCell { State = MapGenCellState.Room, RoomCategory = MapGenRoomCategory.Start };
+            cells[1] = new MapGenMockupCell { State = MapGenCellState.Reserved };
+            cells[2] = new MapGenMockupCell { State = MapGenCellState.Room, RoomCategory = MapGenRoomCategory.Exit };
+
+            var report = MapGenMockupPostProcessor.Apply(3, 1, cells, new MapGenPostProcessOptions
+            {
+                FillReservedMasks = true,
+                MaxPasses = 1
+            });
+
+            Assert.That(report.ReservedMaskCellsFilled, Is.EqualTo(1));
+            Assert.That(report.EnclosedEmptyCellsFilled, Is.EqualTo(1));
+            Assert.That(report.PassReports, Has.Exactly(1).Matches<MapGenPostProcessPassReport>(
+                pass => pass.PassKind == MapGenPostProcessPassKind.FillEnclosedEmptySpace
+                    && pass.ChangedCoords.Length == 1
+                    && pass.ChangedCoords[0] == new MapGenGridCoord(1, 0)));
+            Assert.That(cells[1].State, Is.EqualTo(MapGenCellState.Corridor));
+        }
+
+        [Test]
         public void PostProcessorFillsEnclosedEmptySpace()
         {
             var cells = new MapGenMockupCell[9];

@@ -684,6 +684,9 @@ Progress note 2026-05-31:
 - The MapGenV2 window now shows the latest post-process pass list and can
   overlay changed cells for the selected pass on the mockup preview. Rolled back
   passes use a separate warning overlay.
+- Designer-selected `Reserved` cells can now be used as fill masks; when
+  `FillReservedMasks` is enabled, adjacent reserved mask cells are converted to
+  corridor cells and reported separately from normal enclosed-empty fills.
 
 Goal: make post-processing explicit, configurable, visible, and safe.
 
@@ -695,7 +698,7 @@ Tasks:
   reduce dead ends, add loops, normalize route lengths, widen/clean corridors,
   merge compatible adjacent rooms.
 - [x] Implement enclosed-empty-space fill pass.
-- [ ] Extend fill pass to designer-selected empty-space masks.
+- [x] Extend fill pass to designer-selected empty-space masks.
 - [x] Each pass must report what changed.
 - [x] Add per-pass before/after overlay in preview.
 - [x] Add pass order configuration.
