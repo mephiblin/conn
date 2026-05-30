@@ -25,7 +25,9 @@ namespace Conn.MapGenV2.Core
                 {
                     Category = cell.State == MapGenCellState.Corridor ? MapGenModuleCategory.FloorB : MapGenModuleCategory.FloorA,
                     Coord = coord,
-                    Direction = MapGenGridDirection.North
+                    Direction = MapGenGridDirection.North,
+                    RegionId = cell.RegionId,
+                    SourceTemplateId = cell.SourceTemplateId
                 });
 
                 if (cell.State == MapGenCellState.Room)
@@ -34,7 +36,9 @@ namespace Conn.MapGenV2.Core
                     {
                         Category = MapGenModuleCategory.CeilingInterior,
                         Coord = coord,
-                        Direction = MapGenGridDirection.North
+                        Direction = MapGenGridDirection.North,
+                        RegionId = cell.RegionId,
+                        SourceTemplateId = cell.SourceTemplateId
                     });
                 }
 
@@ -44,7 +48,9 @@ namespace Conn.MapGenV2.Core
                     {
                         Category = MapGenModuleCategory.DoorWhole,
                         Coord = coord,
-                        Direction = MapGenGridDirection.North
+                        Direction = MapGenGridDirection.North,
+                        RegionId = cell.RegionId,
+                        SourceTemplateId = cell.SourceTemplateId
                     });
                 }
 
@@ -54,7 +60,9 @@ namespace Conn.MapGenV2.Core
                     {
                         Category = MapGenModuleCategory.Prop,
                         Coord = coord,
-                        Direction = MapGenGridDirection.North
+                        Direction = MapGenGridDirection.North,
+                        RegionId = cell.RegionId,
+                        SourceTemplateId = cell.SourceTemplateId
                     });
                 }
 
@@ -76,18 +84,20 @@ namespace Conn.MapGenV2.Core
             var south = IsBoundary(width, height, cells, coord, MapGenGridDirection.South);
             var west = IsBoundary(width, height, cells, coord, MapGenGridDirection.West);
 
-            AddWall(requests, coord, MapGenGridDirection.North, north);
-            AddWall(requests, coord, MapGenGridDirection.East, east);
-            AddWall(requests, coord, MapGenGridDirection.South, south);
-            AddWall(requests, coord, MapGenGridDirection.West, west);
-            AddCorner(requests, coord, north && east);
-            AddCorner(requests, coord, east && south);
-            AddCorner(requests, coord, south && west);
-            AddCorner(requests, coord, west && north);
+            AddWall(requests, cells, width, coord, MapGenGridDirection.North, north);
+            AddWall(requests, cells, width, coord, MapGenGridDirection.East, east);
+            AddWall(requests, cells, width, coord, MapGenGridDirection.South, south);
+            AddWall(requests, cells, width, coord, MapGenGridDirection.West, west);
+            AddCorner(requests, cells, width, coord, north && east);
+            AddCorner(requests, cells, width, coord, east && south);
+            AddCorner(requests, cells, width, coord, south && west);
+            AddCorner(requests, cells, width, coord, west && north);
         }
 
         private static void AddWall(
             List<MapGenModuleRequest> requests,
+            MapGenMockupCell[] cells,
+            int width,
             MapGenGridCoord coord,
             MapGenGridDirection direction,
             bool add)
@@ -101,11 +111,18 @@ namespace Conn.MapGenV2.Core
             {
                 Category = MapGenModuleCategory.WallStraight,
                 Coord = coord,
-                Direction = direction
+                Direction = direction,
+                RegionId = cells[coord.ToIndex(width)].RegionId,
+                SourceTemplateId = cells[coord.ToIndex(width)].SourceTemplateId
             });
         }
 
-        private static void AddCorner(List<MapGenModuleRequest> requests, MapGenGridCoord coord, bool add)
+        private static void AddCorner(
+            List<MapGenModuleRequest> requests,
+            MapGenMockupCell[] cells,
+            int width,
+            MapGenGridCoord coord,
+            bool add)
         {
             if (!add)
             {
@@ -116,7 +133,9 @@ namespace Conn.MapGenV2.Core
             {
                 Category = MapGenModuleCategory.WallCornerOutside,
                 Coord = coord,
-                Direction = MapGenGridDirection.North
+                Direction = MapGenGridDirection.North,
+                RegionId = cells[coord.ToIndex(width)].RegionId,
+                SourceTemplateId = cells[coord.ToIndex(width)].SourceTemplateId
             });
         }
 

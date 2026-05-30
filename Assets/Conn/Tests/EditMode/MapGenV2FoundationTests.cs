@@ -1123,7 +1123,8 @@ namespace Conn.Tests.EditMode
                 {
                     State = MapGenCellState.Room,
                     RegionId = 3,
-                    RoomCategory = MapGenRoomCategory.Start
+                    RoomCategory = MapGenRoomCategory.Start,
+                    SourceTemplateId = "start_template"
                 };
                 draft.Accept();
 
@@ -1133,6 +1134,11 @@ namespace Conn.Tests.EditMode
                 Assert.That(firstRoot.GetComponent<MapGenV2GeneratedMapMarker>(), Is.Not.Null);
                 Assert.That(firstRoot.transform.Find("Floors"), Is.Not.Null);
                 Assert.That(MapGenMockupMaterializer.FindExistingMarker(draft).gameObject, Is.SameAs(firstRoot));
+                var moduleMarker = firstRoot.GetComponentInChildren<MapGenV2MaterializedModuleMarker>();
+                Assert.That(moduleMarker, Is.Not.Null);
+                Assert.That(moduleMarker.RegionId, Is.EqualTo(3));
+                Assert.That(moduleMarker.SourceTemplateId, Is.EqualTo("start_template"));
+                Assert.That(moduleMarker.DraftSignature, Is.EqualTo(draft.AcceptedSignature));
 
                 secondRoot = MapGenMockupMaterializer.Materialize(draft, MapGenV2SceneOutputMode.ReplacePreviousRoot);
                 Assert.That(secondRoot, Is.Not.Null);
@@ -1640,15 +1646,25 @@ namespace Conn.Tests.EditMode
         {
             var cells = new[]
             {
-                new MapGenMockupCell { State = MapGenCellState.Room, RoomCategory = MapGenRoomCategory.Start }
+                new MapGenMockupCell
+                {
+                    State = MapGenCellState.Room,
+                    RegionId = 7,
+                    RoomCategory = MapGenRoomCategory.Start,
+                    SourceTemplateId = "start_template"
+                }
             };
 
             var requests = MapGenMaterializationClassifier.Classify(1, 1, cells);
 
             Assert.That(requests, Has.Exactly(1).Matches<MapGenModuleRequest>(
-                request => request.Category == MapGenModuleCategory.FloorA));
+                request => request.Category == MapGenModuleCategory.FloorA
+                    && request.RegionId == 7
+                    && request.SourceTemplateId == "start_template"));
             Assert.That(requests, Has.Exactly(4).Matches<MapGenModuleRequest>(
-                request => request.Category == MapGenModuleCategory.WallStraight));
+                request => request.Category == MapGenModuleCategory.WallStraight
+                    && request.RegionId == 7
+                    && request.SourceTemplateId == "start_template"));
             Assert.That(requests, Has.Exactly(4).Matches<MapGenModuleRequest>(
                 request => request.Category == MapGenModuleCategory.WallCornerOutside));
         }

@@ -38,7 +38,7 @@ namespace Conn.MapGenV2.Editor
             }
 
             var moduleSet = draft.Profile.StyleSet.ModuleSet;
-            var requests = MapGenMaterializationClassifier.Classify(draft.Width, draft.Height, draft.Cells);
+            var plan = BuildPlan(draft);
             var targetRoot = ResolveTargetRoot(draft, outputMode, selectedRoot);
             if (targetRoot != null)
             {
@@ -63,9 +63,9 @@ namespace Conn.MapGenV2.Editor
             CreateStandardGroups(root, groups);
             var rng = new MapGenRandom(draft.Seed).Fork("materialize");
 
-            for (var i = 0; i < requests.Count; i++)
+            for (var i = 0; i < plan.RequestCount; i++)
             {
-                var request = requests[i];
+                var request = plan.Requests[i];
                 var entry = PickEntry(moduleSet.GetEntries(request.Category), ref rng);
                 if (entry == null || entry.Prefab == null)
                 {
@@ -85,10 +85,26 @@ namespace Conn.MapGenV2.Editor
                 instance.transform.SetParent(group, false);
                 instance.transform.position = ToWorld(draft, request.Coord) + entry.Offset;
                 instance.transform.rotation = RotationFor(request.Direction, entry.RotationPolicy);
+                AttachSourceMarker(instance, draft, request, entry.Prefab.name);
             }
 
             EditorUtility.SetDirty(marker);
             return root;
+        }
+
+        public static MapGenMaterializationPlan BuildPlan(MapGenMockupDraftAsset draft)
+        {
+            if (draft == null || draft.Profile == null)
+            {
+                return new MapGenMaterializationPlan();
+            }
+
+            return MapGenMaterializationPlanner.Build(
+                draft.Width,
+                draft.Height,
+                draft.Profile.CellSize,
+                draft.AcceptedSignature,
+                draft.Cells);
         }
 
         public static MapGenV2GeneratedMapMarker FindExistingMarker(MapGenMockupDraftAsset draft)
@@ -225,14 +241,23 @@ namespace Conn.MapGenV2.Editor
             MapGenModuleRequest request,
             string moduleId)
         {
-            var regionId = -1;
-            var index = request.Coord.ToIndex(draft.Width);
-            if (index >= 0 && index < (draft.Cells?.Length ?? 0))
-            {
-                regionId = draft.Cells[index].RegionId;
-            }
+            return $"{request.Category}_{request.Coord.X}_{request.Coord.Y}_R{request.RegionId}_{moduleId}";
+        }
 
-            return $"{request.Category}_{request.Coord.X}_{request.Coord.Y}_R{regionId}_{moduleId}";
+        private static void AttachSourceMarker(
+            GameObject instance,
+            MapGenMockupDraftAsset draft,
+            MapGenModuleRequest request,
+            string prefabName)
+        {
+            var marker = Undo.AddComponent<MapGenV2MaterializedModuleMarker>(instance);
+            marker.DraftSignature = draft != null ? draft.AcceptedSignature : string.Empty;
+            marker.RegionId = request.RegionId;
+            marker.SourceTemplateId = request.SourceTemplateId ?? string.Empty;
+            marker.ModuleCategory = request.Category;
+            marker.PrefabName = prefabName ?? string.Empty;
+            marker.CellCoord = new Vector2Int(request.Coord.X, request.Coord.Y);
+            EditorUtility.SetDirty(marker);
         }
 
         private static MapGenModuleEntry PickEntry(MapGenModuleEntry[] entries, ref MapGenRandom rng)

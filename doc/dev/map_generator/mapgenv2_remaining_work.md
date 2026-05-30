@@ -700,14 +700,21 @@ Verification:
 
 ## Phase 9: Real Module Stamping And Materialization
 
+Progress note 2026-05-31:
+
+- Added a core `MapGenMaterializationPlan` built from accepted draft cells,
+  cell size, source signature, and classified module requests.
+- Module requests now preserve draft region ids and source template ids, and
+  materialized scene objects receive editor-only source metadata components.
+
 Goal: turn accepted mockups into readable project-prefab maps.
 
 Tasks:
 
-- [ ] Build a materialization plan from accepted draft cells and region graph.
-- [ ] Consume the accepted edited mockup exactly; do not rerun the solver during
+- [x] Build a materialization plan from accepted draft cells and region graph.
+- [x] Consume the accepted edited mockup exactly; do not rerun the solver during
   materialization.
-- [ ] Preserve mockup region ids so selected/locked room edits can be traced in
+- [x] Preserve mockup region ids so selected/locked room edits can be traced in
   the materialized output.
 - [ ] Classify floors, corridors, straight walls, inside corners, outside
   corners, ceilings, doors, props, and navigation helper objects.
@@ -721,7 +728,7 @@ Tasks:
 - [ ] Add missing-module warnings before instantiation.
 - [ ] Group output hierarchy:
   floors, corridors, walls, ceilings, doors, props, navigation.
-- [ ] Attach editor-only source metadata to materialized scene objects:
+- [x] Attach editor-only source metadata to materialized scene objects:
   draft id, region id, template id, module category, and selected prefab.
 - [ ] Add materialized output summary.
 
@@ -736,6 +743,7 @@ Acceptance:
 Verification:
 
 - EditMode tests for category classification.
+- EditMode test for materialization plan source metadata.
 - EditMode tests for deterministic weighted selection.
 - EditMode tests for missing prefab failure reports.
 - Manual Unity check with at least two style sets.
