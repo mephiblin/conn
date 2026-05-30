@@ -13,6 +13,7 @@ namespace Conn.MapGenV2.Editor
             EnsureFolder(Root, "Profiles");
             EnsureFolder(Root, "StyleSets");
             EnsureFolder(Root, "ModuleSets");
+            EnsureFolder(Root, "RuleSets");
             EnsureFolder(Root, "RoomShapes");
             EnsureFolder(Root, "Templates");
             EnsureFolder(Root, "Drafts");

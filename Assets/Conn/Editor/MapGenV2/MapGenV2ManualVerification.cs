@@ -31,6 +31,20 @@ namespace Conn.MapGenV2.Editor
             throw new InvalidOperationException(result);
         }
 
+        public static void RunStarterSetupBatch()
+        {
+            var setup = MapGenV2StarterSetupBuilder.CreateStarterProfileSetup();
+            var result = VerifyStarterSetup(setup);
+            WriteResult(result);
+
+            if (result.StartsWith("PASS:", StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            throw new InvalidOperationException(result);
+        }
+
         private static string RunTransientWorkflow()
         {
             var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
@@ -152,6 +166,45 @@ namespace Conn.MapGenV2.Editor
 
                 return writer.ToString();
             }
+        }
+
+        private static string VerifyStarterSetup(MapGenV2StarterSetup setup)
+        {
+            if (setup == null || setup.Profile == null || setup.Draft == null)
+            {
+                return "FAIL: Starter setup did not create profile and draft.";
+            }
+
+            var profileReport = setup.Profile.Validate();
+            if (!profileReport.IsValid)
+            {
+                return BuildFailure("Starter profile validation failed", profileReport);
+            }
+
+            var generationReport = setup.Draft.GenerateFromProfile();
+            if (!generationReport.IsValid)
+            {
+                return BuildFailure("Starter draft generation failed", generationReport);
+            }
+
+            setup.Draft.ApplyPostProcessingFromProfile();
+            setup.Draft.Accept();
+            var root = MapGenMockupMaterializer.Materialize(setup.Draft);
+            var baked = MapGenRuntimeBakeUtility.Bake(setup.Draft);
+            if (root == null || baked == null || baked.Cells.Length == 0 || baked.TraversalEdges.Length == 0)
+            {
+                return "FAIL: Starter setup materialize/bake failed.";
+            }
+
+            UnityEngine.Object.DestroyImmediate(root);
+            return string.Join(Environment.NewLine, new[]
+            {
+                "PASS: MapGenV2 starter setup workflow completed.",
+                $"Profile: {setup.Profile.ProfileId}",
+                $"Signature: {setup.Draft.AcceptedSignature}",
+                $"Baked cells: {baked.Cells.Length}",
+                $"Traversal edges: {baked.TraversalEdges.Length}"
+            });
         }
 
         private static void WriteResult(string result)

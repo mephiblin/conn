@@ -531,6 +531,7 @@ Create one new editor entry point for MapGenV2.
 
 Main panels:
 
+- Starter setup creation for first-time use.
 - Profile selection and validation.
 - Map size, seed, room quantity, corridor quantity, and post-process controls.
 - Template pool summary with missing-template warnings.
@@ -914,6 +915,18 @@ Editor window path:
 Conn/MapGenV2/Map Generator
 ```
 
+Starter setup path:
+
+```text
+Conn/MapGenV2/Create Starter Profile Setup
+```
+
+The starter setup creates a linked `MapGenProfileAsset`, `MapGenRuleSetAsset`,
+`MapGenStyleSetAsset`, `MapGenModuleSetAsset`, `MapGenRoomShapeAsset`, and
+`MapGenMockupDraftAsset`, plus placeholder prefab modules. This is a bootstrap
+authoring path only; production maps should replace the generated placeholder
+prefabs and tune the generated assets.
+
 Do not put new production workflow menus under legacy paths.
 
 ### Default Asset Storage Policy
@@ -924,6 +937,7 @@ Generated and authored assets should have predictable paths.
 Assets/Conn/Authoring/MapGenV2/Profiles/
 Assets/Conn/Authoring/MapGenV2/StyleSets/
 Assets/Conn/Authoring/MapGenV2/ModuleSets/
+Assets/Conn/Authoring/MapGenV2/RuleSets/
 Assets/Conn/Authoring/MapGenV2/RoomShapes/
 Assets/Conn/Authoring/MapGenV2/Templates/
 Assets/Conn/Authoring/MapGenV2/Drafts/

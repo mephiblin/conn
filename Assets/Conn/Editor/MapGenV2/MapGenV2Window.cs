@@ -16,6 +16,14 @@ namespace Conn.MapGenV2.Editor
             GetWindow<MapGenV2Window>("MapGenV2");
         }
 
+        public static void Open(MapGenProfileAsset selectedProfile, MapGenMockupDraftAsset selectedDraft)
+        {
+            var window = GetWindow<MapGenV2Window>("MapGenV2");
+            window.profile = selectedProfile;
+            window.draft = selectedDraft;
+            window.Repaint();
+        }
+
         private void OnGUI()
         {
             scroll = EditorGUILayout.BeginScrollView(scroll);
@@ -25,6 +33,14 @@ namespace Conn.MapGenV2.Editor
 
             using (new EditorGUILayout.HorizontalScope())
             {
+                if (GUILayout.Button("Create Starter Setup"))
+                {
+                    var setup = MapGenV2StarterSetupBuilder.CreateStarterProfileSetup();
+                    profile = setup.Profile;
+                    draft = setup.Draft;
+                    Selection.activeObject = draft != null ? draft : profile;
+                }
+
                 if (GUILayout.Button("Create Default Folders"))
                 {
                     MapGenV2AssetFolderUtility.CreateDefaultFolders();
@@ -86,7 +102,7 @@ namespace Conn.MapGenV2.Editor
                     EditorUtility.SetDirty(draft);
                 }
 
-                if (GUILayout.Button("Accept"))
+                if (GUILayout.Button("Accept Mockup"))
                 {
                     Undo.RecordObject(draft, "Accept Mockup");
                     draft.Accept();
