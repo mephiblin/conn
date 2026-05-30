@@ -60,6 +60,9 @@ MapGenV2 should not be called production-ready until all of these are true:
   understand it, change the seed/rules, accept the mockup, materialize it, and
   bake it without reading source code.
 - `Generate Mockup` immediately shows a blue/red/black/gray grid preview.
+- The user can click generated room/corridor regions in the mockup preview,
+  inspect and edit them, then regenerate or materialize from that edited
+  mockup state.
 - Mockup generation produces meaningful room/corridor layouts, not just a thin
   connected line.
 - Room shapes and corridor templates are actually used by the solver.
@@ -98,6 +101,19 @@ Tasks:
   gray = blocked/reserved.
 - [ ] Show selected/hovered cell coordinate, state, region id, room category,
   socket kind/id, and prop channel.
+- [ ] Allow clicking a generated room/corridor cell to select the owning
+  region, not only the individual grid cell.
+- [ ] Highlight the selected region, its connectors, and adjacent corridor
+  links in the preview.
+- [ ] Add selected-region inspector fields:
+  region id, type, category, template/shape id, lock state, cell count,
+  connectors, post-process tags, and materialization hints.
+- [ ] Add selected-region actions:
+  lock/unlock, change category, reroll shape, delete/regenerate region,
+  reroute connectors, mark blocked/reserved cells, and clear manual override.
+- [ ] Persist selected-region edits in `MapGenMockupDraftAsset`.
+- [ ] Mark accepted/materialized output stale when a selected-region edit
+  changes the draft signature.
 - [ ] Show draft summary:
   profile id, seed, grid size, generated signature, accepted signature,
   accepted/stale state, room cell count, corridor cell count, connector count.
@@ -112,13 +128,20 @@ Acceptance:
 
 - After pressing `Generate Mockup`, the user can see the generated layout in the
   window without checking the inspector or scene hierarchy.
+- The user can click a red room chunk or black corridor chunk and edit that
+  generated region before accepting it.
 - The user can visually decide whether to accept or regenerate the mockup.
 - Same profile and same seed produce the same preview signature.
+- Manual region edits survive save/reload and are the source used by
+  materialization.
 
 Verification:
 
 - EditMode test for preview grid data extraction from a generated draft.
+- EditMode test for selected-region edit persistence in a draft asset.
 - Manual Unity check: generate 3 seeds and confirm visible layout changes.
+- Manual Unity check: select a generated room, change/lock it, regenerate
+  allowed parts, and confirm the locked edit remains.
 - Manual Unity check: accept one mockup and confirm accepted/stale labels.
 
 ## Phase 2: Guided Editor Workflow
@@ -371,6 +394,10 @@ Goal: turn accepted mockups into readable project-prefab maps.
 Tasks:
 
 - [ ] Build a materialization plan from accepted draft cells and region graph.
+- [ ] Consume the accepted edited mockup exactly; do not rerun the solver during
+  materialization.
+- [ ] Preserve mockup region ids so selected/locked room edits can be traced in
+  the materialized output.
 - [ ] Classify floors, corridors, straight walls, inside corners, outside
   corners, ceilings, doors, props, and navigation helper objects.
 - [ ] Use `CellSize` consistently for positions.
@@ -383,11 +410,15 @@ Tasks:
 - [ ] Add missing-module warnings before instantiation.
 - [ ] Group output hierarchy:
   floors, corridors, walls, ceilings, doors, props, navigation.
+- [ ] Attach editor-only source metadata to materialized scene objects:
+  draft id, region id, template id, module category, and selected prefab.
 - [ ] Add materialized output summary.
 
 Acceptance:
 
 - Materialized output visually matches the accepted mockup.
+- Edited/locked mockup rooms and corridors are preserved when converted to
+  mesh/prefab parts.
 - Real project prefabs can be used without code changes.
 - Missing prefab categories produce actionable warnings.
 
@@ -696,6 +727,8 @@ production-critical areas:
 
 - explicit room template asset
 - explicit corridor template asset
+- generated mockup room/corridor region selection and editing
+- preservation of manual mockup edits through materialization and bake
 - connector compatibility model
 - room/corridor pool and quantity rule models
 - post-process pass architecture and rollback
