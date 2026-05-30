@@ -599,9 +599,14 @@ Progress note 2026-05-31:
 - Added required-landmark entropy summaries and changed production room
   placement to collapse the lowest-candidate required landmark first while
   preserving original required-category order for corridor connectivity.
+- Optional branch placement now considers all optional categories for the next
+  branch and collapses the lowest-candidate optional region first.
 - Added candidate-exhaustion diagnostics after already placed
   footprint/connector/blocker cells remove all candidates for a remaining
   required landmark.
+- Placement candidate propagation now treats blocked cells and full connector
+  widths as occupied candidate cells before stamping, preventing later rooms
+  from overwriting blocker or connector reservations.
 - Added bounded deterministic retries for retryable solver contradictions, with
   attempt counts on solver results and an explicit retry-exhausted diagnostic.
 - Added `LoopRate` validation and a deterministic loop-policy corridor pass
@@ -632,10 +637,10 @@ Tasks:
 - [x] Add remaining distance constraints:
   boss near late path, quest before lock, etc.
 - [x] Collapse lowest-entropy required landmarks before room placement.
-- [ ] Collapse lowest-entropy cells/regions beyond required landmarks.
+- [x] Collapse lowest-entropy cells/regions beyond required landmarks.
 - [x] Propagate occupied footprint/connector/blocker cells into remaining
   required-landmark candidate counts.
-- [ ] Propagate footprint, connector, blocked-region, and adjacency
+- [x] Propagate footprint, connector, blocked-region, and adjacency
   constraints beyond occupied-cell candidate filtering.
 - [x] Maintain graph connectivity during solve.
 - [x] Add deterministic retries with detailed contradiction reports for

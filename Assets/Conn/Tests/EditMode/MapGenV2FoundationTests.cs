@@ -2481,6 +2481,122 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void TemplateMockupSolverCollapsesLowestEntropyOptionalBranch()
+        {
+            var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
+            var styleSet = ScriptableObject.CreateInstance<MapGenStyleSetAsset>();
+            var ruleSet = ScriptableObject.CreateInstance<MapGenRuleSetAsset>();
+            var roomShape = ScriptableObject.CreateInstance<MapGenRoomShapeAsset>();
+            var startTemplate = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();
+            var exitTemplate = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();
+            var bossTemplate = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();
+            var sideTemplate = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();
+            var profile = ScriptableObject.CreateInstance<MapGenProfileAsset>();
+            GameObject floor = null;
+            GameObject wall = null;
+
+            try
+            {
+                PopulateValidWorkflowProfile(profile, styleSet, moduleSet, ruleSet, roomShape, out floor, out wall);
+                profile.MapSize = new Vector2Int(18, 6);
+                ruleSet.MinRooms = 3;
+                ruleSet.MaxRooms = 3;
+                ruleSet.RequiredRoomCategories = new[] { MapGenRoomCategory.Start, MapGenRoomCategory.Exit };
+                ruleSet.OptionalRoomCategories = new[] { MapGenRoomCategory.Boss, MapGenRoomCategory.Side };
+                ruleSet.QuantityRules.MinRooms = 3;
+                ruleSet.QuantityRules.MaxRooms = 3;
+                ruleSet.QuantityRules.RequiredCategories = ruleSet.RequiredRoomCategories;
+                ruleSet.QuantityRules.OptionalCategories = ruleSet.OptionalRoomCategories;
+                PopulateRoomTemplate(startTemplate, "start_template", MapGenRoomCategory.Start);
+                PopulateRoomTemplate(exitTemplate, "exit_template", MapGenRoomCategory.Exit);
+                PopulateRoomTemplate(bossTemplate, "boss_template", MapGenRoomCategory.Boss);
+                PopulateRoomTemplate(sideTemplate, "side_template", MapGenRoomCategory.Side);
+                sideTemplate.Footprint = new Vector2Int(4, 3);
+                sideTemplate.FloorCells = new[]
+                {
+                    new Vector2Int(0, 0), new Vector2Int(1, 0), new Vector2Int(2, 0), new Vector2Int(3, 0),
+                    new Vector2Int(0, 1), new Vector2Int(1, 1), new Vector2Int(2, 1), new Vector2Int(3, 1),
+                    new Vector2Int(0, 2), new Vector2Int(1, 2), new Vector2Int(2, 2), new Vector2Int(3, 2)
+                };
+                sideTemplate.Connectors = new MapGenConnector[0];
+                styleSet.RoomTemplates = new[] { startTemplate, exitTemplate, bossTemplate, sideTemplate };
+
+                var result = MapGenTemplateMockupSolver.Generate(profile, 7001);
+
+                Assert.That(result.Success, Is.True);
+                Assert.That(result.Cells, Has.Some.Matches<MapGenMockupCell>(
+                    cell => IsRoomFootprintCell(cell)
+                        && cell.RoomCategory == MapGenRoomCategory.Side
+                        && cell.SourceTemplateId == "side_template"));
+                Assert.That(result.Cells, Has.None.Matches<MapGenMockupCell>(
+                    cell => IsRoomFootprintCell(cell)
+                        && cell.RoomCategory == MapGenRoomCategory.Boss
+                        && cell.SourceTemplateId == "boss_template"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(profile);
+                Object.DestroyImmediate(sideTemplate);
+                Object.DestroyImmediate(bossTemplate);
+                Object.DestroyImmediate(exitTemplate);
+                Object.DestroyImmediate(startTemplate);
+                Object.DestroyImmediate(roomShape);
+                Object.DestroyImmediate(ruleSet);
+                Object.DestroyImmediate(styleSet);
+                Object.DestroyImmediate(moduleSet);
+                Object.DestroyImmediate(floor);
+                Object.DestroyImmediate(wall);
+            }
+        }
+
+        [Test]
+        public void TemplateMockupSolverPropagatesBlockedCellsIntoPlacementCandidates()
+        {
+            var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
+            var styleSet = ScriptableObject.CreateInstance<MapGenStyleSetAsset>();
+            var ruleSet = ScriptableObject.CreateInstance<MapGenRuleSetAsset>();
+            var roomShape = ScriptableObject.CreateInstance<MapGenRoomShapeAsset>();
+            var startTemplate = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();
+            var exitTemplate = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();
+            var profile = ScriptableObject.CreateInstance<MapGenProfileAsset>();
+            GameObject floor = null;
+            GameObject wall = null;
+
+            try
+            {
+                PopulateValidWorkflowProfile(profile, styleSet, moduleSet, ruleSet, roomShape, out floor, out wall);
+                profile.MapSize = new Vector2Int(3, 1);
+                ruleSet.RequiredRoomCategories = new[] { MapGenRoomCategory.Start, MapGenRoomCategory.Exit };
+                ruleSet.QuantityRules.RequiredCategories = ruleSet.RequiredRoomCategories;
+                PopulateRoomTemplate(startTemplate, "start_template", MapGenRoomCategory.Start);
+                PopulateRoomTemplate(exitTemplate, "exit_template", MapGenRoomCategory.Exit);
+                ConfigureOneByTwoBlockingTemplate(startTemplate, MapGenRoomCategory.Start);
+                ConfigureOneByTwoBlockingTemplate(exitTemplate, MapGenRoomCategory.Exit);
+                styleSet.RoomTemplates = new[] { startTemplate, exitTemplate };
+
+                var result = MapGenTemplateMockupSolver.Generate(profile, 7001, maxAttempts: 2);
+
+                Assert.That(result.Success, Is.False);
+                Assert.That(result.Report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "production_solver_no_room_placement_candidates"));
+                Assert.That(result.Report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "production_solver_retry_exhausted"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(profile);
+                Object.DestroyImmediate(exitTemplate);
+                Object.DestroyImmediate(startTemplate);
+                Object.DestroyImmediate(roomShape);
+                Object.DestroyImmediate(ruleSet);
+                Object.DestroyImmediate(styleSet);
+                Object.DestroyImmediate(moduleSet);
+                Object.DestroyImmediate(floor);
+                Object.DestroyImmediate(wall);
+            }
+        }
+
+        [Test]
         public void TemplateMockupSolverReportsIncompatibleCorridorTemplate()
         {
             var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
@@ -4100,6 +4216,17 @@ namespace Conn.Tests.EditMode
                 MapGenConnector.Door(MapGenGridDirection.East, new Vector2Int(1, 0), "main"),
                 MapGenConnector.Door(MapGenGridDirection.West, new Vector2Int(0, 0), "main")
             };
+        }
+
+        private static void ConfigureOneByTwoBlockingTemplate(
+            MapGenRoomTemplateAsset template,
+            MapGenRoomCategory category)
+        {
+            template.RoomCategory = category;
+            template.Footprint = new Vector2Int(2, 1);
+            template.FloorCells = new[] { Vector2Int.zero };
+            template.BlockedCells = new[] { new Vector2Int(1, 0) };
+            template.Connectors = new MapGenConnector[0];
         }
 
         private static void PopulateCorridorTemplate(MapGenCorridorTemplateAsset template, string socketId)

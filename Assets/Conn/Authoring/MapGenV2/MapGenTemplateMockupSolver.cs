@@ -146,8 +146,7 @@ namespace Conn.MapGenV2.Authoring
                     height,
                     out var candidateCount);
                 var category = landmarks[i].Category;
-                var template = PickTemplateForCategory(roomTemplates, category, ref rng);
-                if (template == null)
+                if (!HasTemplateForCategory(roomTemplates, category))
                 {
                     report.Add(new MapGenIssue(
                         MapGenGenerationPhase.SolveMockup,
@@ -158,6 +157,17 @@ namespace Conn.MapGenV2.Authoring
                 }
 
                 if (candidateCount <= 0)
+                {
+                    report.Add(new MapGenIssue(
+                        MapGenGenerationPhase.SolveMockup,
+                        "production_solver_no_room_placement_candidates",
+                        $"No remaining placement candidates can satisfy required category {category}.",
+                        "Increase map size, reduce required rooms, or use smaller templates with non-overlapping footprints/connectors/blockers."));
+                    return Failed(width, height, seed, report, attemptCount);
+                }
+
+                var template = PickTemplateForCategory(roomTemplates, category, cells, width, height, ref rng);
+                if (template == null)
                 {
                     report.Add(new MapGenIssue(
                         MapGenGenerationPhase.SolveMockup,
@@ -279,16 +289,45 @@ namespace Conn.MapGenV2.Authoring
         private static MapGenRoomTemplateAsset PickTemplateForCategory(
             MapGenRoomTemplateAsset[] templates,
             MapGenRoomCategory category,
+            MapGenMockupCell[] cells,
+            int width,
+            int height,
             ref MapGenRandom rng)
         {
-            var exact = PickWeighted(templates, template => template != null && template.RoomCategory == category, ref rng);
+            var exact = PickWeighted(
+                templates,
+                template => template != null
+                    && template.RoomCategory == category
+                    && HasPlacementCandidate(cells, width, height, template),
+                ref rng);
             if (exact != null)
             {
                 return exact;
             }
 
-            var main = PickWeighted(templates, template => template != null && template.RoomCategory == MapGenRoomCategory.Main, ref rng);
+            var main = PickWeighted(
+                templates,
+                template => template != null
+                    && template.RoomCategory == MapGenRoomCategory.Main
+                    && HasPlacementCandidate(cells, width, height, template),
+                ref rng);
             return main;
+        }
+
+        private static bool HasTemplateForCategory(
+            MapGenRoomTemplateAsset[] templates,
+            MapGenRoomCategory category)
+        {
+            foreach (var template in templates ?? Array.Empty<MapGenRoomTemplateAsset>())
+            {
+                if (template != null
+                    && (template.RoomCategory == category || template.RoomCategory == MapGenRoomCategory.Main))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static int PickLowestEntropyLandmarkIndex(
@@ -466,8 +505,15 @@ namespace Conn.MapGenV2.Authoring
         {
             foreach (var local in template.FloorCells ?? Array.Empty<Vector2Int>())
             {
-                var coord = new MapGenGridCoord(origin.X + local.x, origin.Y + local.y);
-                if (cells[coord.ToIndex(width)].State != MapGenCellState.Empty)
+                if (!CanOccupy(cells, width, origin, local))
+                {
+                    return false;
+                }
+            }
+
+            foreach (var local in template.BlockedCells ?? Array.Empty<Vector2Int>())
+            {
+                if (!CanOccupy(cells, width, origin, local))
                 {
                     return false;
                 }
@@ -475,11 +521,61 @@ namespace Conn.MapGenV2.Authoring
 
             foreach (var connector in template.Connectors ?? Array.Empty<MapGenConnector>())
             {
-                var coord = new MapGenGridCoord(origin.X + connector.LocalCell.x, origin.Y + connector.LocalCell.y);
-                if (cells[coord.ToIndex(width)].State != MapGenCellState.Empty)
+                var connectorWidth = Mathf.Max(1, connector.Width);
+                for (var i = 0; i < connectorWidth; i++)
                 {
-                    return false;
+                    if (!CanOccupy(cells, width, origin, connector.LocalCell + ConnectorTangentOffset(connector.Side, i)))
+                    {
+                        return false;
+                    }
                 }
+            }
+
+            return true;
+        }
+
+        private static bool HasPlacementCandidate(
+            MapGenMockupCell[] cells,
+            int width,
+            int height,
+            MapGenRoomTemplateAsset template)
+        {
+            if (template == null || template.Footprint.x <= 0 || template.Footprint.y <= 0)
+            {
+                return false;
+            }
+
+            var maxX = width - template.Footprint.x;
+            var maxY = height - template.Footprint.y;
+            for (var y = 0; y <= maxY; y++)
+            {
+                for (var x = 0; x <= maxX; x++)
+                {
+                    if (CanPlace(cells, width, template, new MapGenGridCoord(x, y)))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static bool CanOccupy(
+            MapGenMockupCell[] cells,
+            int width,
+            MapGenGridCoord origin,
+            Vector2Int local)
+        {
+            var coord = new MapGenGridCoord(origin.X + local.x, origin.Y + local.y);
+            if (!coord.IsInBounds(width, cells.Length / width))
+            {
+                return false;
+            }
+
+            if (cells[coord.ToIndex(width)].State != MapGenCellState.Empty)
+            {
+                return false;
             }
 
             return true;
@@ -613,10 +709,13 @@ namespace Conn.MapGenV2.Authoring
                 placements.Count,
                 Mathf.Max(placements.Count, ruleSet.QuantityRules.MaxRooms));
             var categories = BuildBranchCategories(ruleSet.QuantityRules.OptionalCategories, targetRoomCount - placements.Count);
-            for (var i = 0; i < categories.Count && placements.Count < targetRoomCount; i++)
+            while (categories.Count > 0 && placements.Count < targetRoomCount)
             {
-                var category = categories[i];
-                var template = PickTemplateForCategory(roomTemplates, category, ref rng);
+                var categoryIndex = PickLowestEntropyBranchCategoryIndex(categories, roomTemplates, cells, width, height);
+                var category = categories[categoryIndex];
+                categories.RemoveAt(categoryIndex);
+
+                var template = PickTemplateForCategory(roomTemplates, category, cells, width, height, ref rng);
                 if (template == null)
                 {
                     report.Add(new MapGenIssue(
@@ -668,11 +767,6 @@ namespace Conn.MapGenV2.Authoring
 
             foreach (var category in optionalCategories ?? Array.Empty<MapGenRoomCategory>())
             {
-                if (categories.Count >= desiredCount)
-                {
-                    return categories;
-                }
-
                 categories.Add(category);
             }
 
@@ -682,6 +776,33 @@ namespace Conn.MapGenV2.Authoring
             }
 
             return categories;
+        }
+
+        private static int PickLowestEntropyBranchCategoryIndex(
+            List<MapGenRoomCategory> categories,
+            MapGenRoomTemplateAsset[] roomTemplates,
+            MapGenMockupCell[] cells,
+            int width,
+            int height)
+        {
+            var best = 0;
+            var bestCandidateCount = int.MaxValue;
+            for (var i = 0; i < categories.Count; i++)
+            {
+                var candidateCount = CountPlacementCandidates(roomTemplates, categories[i], cells, width, height);
+                if (candidateCount <= 0)
+                {
+                    continue;
+                }
+
+                if (candidateCount < bestCandidateCount)
+                {
+                    best = i;
+                    bestCandidateCount = candidateCount;
+                }
+            }
+
+            return best;
         }
 
         private static RoomPlacement PickBranchAnchor(List<RoomPlacement> placements, MapGenGridCoord center)
