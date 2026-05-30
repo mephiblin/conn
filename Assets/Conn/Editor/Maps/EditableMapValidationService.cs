@@ -322,15 +322,94 @@ namespace Conn.Editor.Maps
                     report.Errors.Add($"Socket {socket.Id} does not touch a walkable cell at ({socket.X}, {socket.Y}).");
                 }
 
-                if (TryFindRoom(draft, socket.RoomId, out var room) && !IsInsideRoom(socket.X, socket.Y, room))
+                if (TryFindRoom(draft, socket.RoomId, out var room))
                 {
-                    report.Errors.Add($"Socket {socket.Id} is outside its room {socket.RoomId}.");
+                    if (!IsInsideRoom(socket.X, socket.Y, room))
+                    {
+                        report.Errors.Add($"Socket {socket.Id} is outside its room {socket.RoomId}.");
+                    }
+                    else if (!ValidateSocketBoundary(draft, socket, room, walkable, report))
+                    {
+                        continue;
+                    }
                 }
 
                 if (!string.IsNullOrWhiteSpace(socket.TargetRoomId) && !HasReciprocalSocket(draft, socket))
                 {
                     report.Errors.Add($"Socket {socket.Id} from room {socket.RoomId} to {socket.TargetRoomId} has no reciprocal socket.");
                 }
+            }
+        }
+
+        private static bool ValidateSocketBoundary(
+            EditableMapDraftAsset draft,
+            EditableMapSocket socket,
+            EditableMapRoom room,
+            bool[,] walkable,
+            MapValidationReport report)
+        {
+            if (!IsSingleCardinalDirection(socket.Direction))
+            {
+                report.Errors.Add($"Socket {socket.Id} has invalid direction {socket.Direction}.");
+                return false;
+            }
+
+            var width = Mathf.Max(1, socket.Width);
+            for (var i = 0; i < width; i++)
+            {
+                var x = socket.X;
+                var y = socket.Y;
+                if (socket.Direction == MapDirection.North || socket.Direction == MapDirection.South)
+                {
+                    x += i;
+                }
+                else
+                {
+                    y += i;
+                }
+
+                if (!draft.IsInBounds(x, y) || !IsInsideRoom(x, y, room))
+                {
+                    report.Errors.Add($"Socket {socket.Id} width leaves room {socket.RoomId} at ({x}, {y}).");
+                    return false;
+                }
+
+                if (!walkable[x, y])
+                {
+                    report.Errors.Add($"Socket {socket.Id} includes non-walkable cell at ({x}, {y}).");
+                    return false;
+                }
+
+                if (!IsOnSocketBoundary(x, y, socket.Direction, room))
+                {
+                    report.Errors.Add($"Socket {socket.Id} direction {socket.Direction} is not on the matching room boundary at ({x}, {y}).");
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static bool IsSingleCardinalDirection(MapDirection direction)
+        {
+            return direction == MapDirection.North
+                || direction == MapDirection.East
+                || direction == MapDirection.South
+                || direction == MapDirection.West;
+        }
+
+        private static bool IsOnSocketBoundary(int x, int y, MapDirection direction, EditableMapRoom room)
+        {
+            switch (direction)
+            {
+                case MapDirection.East:
+                    return x == room.X + room.Width - 1;
+                case MapDirection.South:
+                    return y == room.Y;
+                case MapDirection.West:
+                    return x == room.X;
+                default:
+                    return y == room.Y + room.Height - 1;
             }
         }
 

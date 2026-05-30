@@ -857,6 +857,24 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void EditableValidationReportsSocketsThatDoNotMatchRoomBoundary()
+        {
+            var draft = BuildWideLinearValidationDraft();
+            var sockets = draft.Sockets.ToList();
+            sockets.Add(new EditableMapSocket { Id = "interior_exit", RoomId = "start", X = 0, Y = 0, Direction = MapDirection.East, Width = 1 });
+            sockets.Add(new EditableMapSocket { Id = "wide_exit", RoomId = "start", X = 1, Y = 1, Direction = MapDirection.East, Width = 2 });
+            sockets.Add(new EditableMapSocket { Id = "flagged_exit", RoomId = "start", X = 1, Y = 0, Direction = MapDirection.North | MapDirection.East, Width = 1 });
+            draft.Sockets = sockets.ToArray();
+
+            var report = EditableMapValidationService.Validate(draft);
+
+            Assert.That(report.Passed, Is.False);
+            Assert.That(report.Errors.Exists(error => error.Contains("interior_exit") && error.Contains("matching room boundary")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("wide_exit") && error.Contains("width leaves room")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("flagged_exit") && error.Contains("invalid direction")), Is.True);
+        }
+
+        [Test]
         public void EditableValidationReportsInvalidRoomAndZoneReferences()
         {
             var draft = BuildLinearValidationDraft();
@@ -1369,6 +1387,52 @@ namespace Conn.Tests.EditMode
                 new EditableMapRoom { Id = "quest", Role = MapRoomRole.QuestTarget, X = 1, Y = 0, Width = 1, Height = 1 },
                 new EditableMapRoom { Id = "boss", Role = MapRoomRole.Boss, X = 2, Y = 0, Width = 1, Height = 1 },
                 new EditableMapRoom { Id = "exit", Role = MapRoomRole.Exit, X = 3, Y = 0, Width = 1, Height = 1 }
+            };
+            return draft;
+        }
+
+        private static EditableMapDraftAsset BuildWideLinearValidationDraft()
+        {
+            var draft = ScriptableObject.CreateInstance<EditableMapDraftAsset>();
+            draft.InitializeBlank(8, 2, 1f, 1f);
+            for (var x = 0; x < 8; x++)
+            {
+                for (var y = 0; y < 2; y++)
+                {
+                    var roomId = x < 2
+                        ? "start"
+                        : x < 4
+                        ? "quest"
+                        : x < 6
+                        ? "boss"
+                        : "exit";
+                    draft.TrySetCell(new EditableMapCell
+                    {
+                        X = x,
+                        Y = y,
+                        RoomId = roomId,
+                        Terrain = RoomChunkCellType.Floor,
+                        Height = 0,
+                        Direction = MapDirection.North
+                    });
+                }
+            }
+
+            draft.Rooms = new[]
+            {
+                new EditableMapRoom { Id = "start", Role = MapRoomRole.Start, X = 0, Y = 0, Width = 2, Height = 2, SocketMask = MapDirection.East },
+                new EditableMapRoom { Id = "quest", Role = MapRoomRole.QuestTarget, X = 2, Y = 0, Width = 2, Height = 2, SocketMask = MapDirection.East | MapDirection.West },
+                new EditableMapRoom { Id = "boss", Role = MapRoomRole.Boss, X = 4, Y = 0, Width = 2, Height = 2, SocketMask = MapDirection.East | MapDirection.West },
+                new EditableMapRoom { Id = "exit", Role = MapRoomRole.Exit, X = 6, Y = 0, Width = 2, Height = 2, SocketMask = MapDirection.West }
+            };
+            draft.Sockets = new[]
+            {
+                new EditableMapSocket { Id = "start_quest", RoomId = "start", X = 1, Y = 0, Direction = MapDirection.East, TargetRoomId = "quest", Width = 1 },
+                new EditableMapSocket { Id = "quest_start", RoomId = "quest", X = 2, Y = 0, Direction = MapDirection.West, TargetRoomId = "start", Width = 1 },
+                new EditableMapSocket { Id = "quest_boss", RoomId = "quest", X = 3, Y = 0, Direction = MapDirection.East, TargetRoomId = "boss", Width = 1 },
+                new EditableMapSocket { Id = "boss_quest", RoomId = "boss", X = 4, Y = 0, Direction = MapDirection.West, TargetRoomId = "quest", Width = 1 },
+                new EditableMapSocket { Id = "boss_exit", RoomId = "boss", X = 5, Y = 0, Direction = MapDirection.East, TargetRoomId = "exit", Width = 1 },
+                new EditableMapSocket { Id = "exit_boss", RoomId = "exit", X = 6, Y = 0, Direction = MapDirection.West, TargetRoomId = "boss", Width = 1 }
             };
             return draft;
         }
