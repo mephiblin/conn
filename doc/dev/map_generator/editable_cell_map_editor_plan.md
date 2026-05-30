@@ -1102,6 +1102,10 @@ is partially complete.
     `MapGeneratorWorkspace` preview root, and EditMode coverage opens the
     checked-in `Assets/Conn/Scenes/Editor/MapGenerator.unity` scene to verify it
     remains the central user-facing hub.
+  - 2026-05-30: `MapGeneratorWorkspace` production controls now follow a
+    candidate-first flow: generate preview, random-seed preview regeneration,
+    then accept the chosen preview to create the editable draft and baked
+    compiled map.
 - [x] Add screenshots or saved sample assets when the first usable version
   exists.
   - 2026-05-30: Chapter 2 saved `CompiledMapAsset` samples are regenerated

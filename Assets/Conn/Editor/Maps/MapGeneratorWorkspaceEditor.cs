@@ -39,31 +39,56 @@ namespace Conn.Editor.Maps
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Production Scene Workflow", EditorStyles.boldLabel);
             EditorGUILayout.HelpBox(
-                "Use this section as the main MapGenerator scene flow: generate or load a draft, build the scene preview from that draft, validate, then bake/save the runtime CompiledMap asset.",
+                "Generate preview candidates in the scene first. When a candidate is acceptable, accept it to save an editable draft and bake the runtime CompiledMap asset.",
                 MessageType.Info);
             using (new EditorGUILayout.HorizontalScope())
             {
-                if (GUILayout.Button("Generate Draft Asset"))
+                if (GUILayout.Button("Generate Preview"))
                 {
                     serializedObject.ApplyModifiedProperties();
-                    GenerateDraftAsset(workspace);
+                    GeneratePreview(workspace);
                 }
 
-                using (new EditorGUI.DisabledScope(workspace.CurrentEditableDraft == null))
+                if (GUILayout.Button("Random Seed + Generate Preview"))
                 {
-                    if (GUILayout.Button("Select Draft Asset"))
-                    {
-                        Selection.activeObject = workspace.CurrentEditableDraft;
-                        EditorGUIUtility.PingObject(workspace.CurrentEditableDraft);
-                    }
+                    serializedObject.ApplyModifiedProperties();
+                    Undo.RecordObject(workspace, "Random Map Preview Seed");
+                    workspace.Seed = UnityEngine.Random.Range(1, int.MaxValue);
+                    GeneratePreview(workspace);
                 }
             }
 
             using (new EditorGUILayout.HorizontalScope())
             {
+                using (new EditorGUI.DisabledScope(workspace.LastEditableDraft == null))
+                {
+                    if (GUILayout.Button("Accept Preview + Bake Map"))
+                    {
+                        serializedObject.ApplyModifiedProperties();
+                        AcceptPreviewAndBakeMap(workspace);
+                    }
+                }
+
+                if (GUILayout.Button("Clear Scene Preview Objects"))
+                {
+                    ClearPreviewWithUndo(workspace, "Clear Map Preview");
+                    MarkSceneDirty(workspace);
+                }
+            }
+
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Accepted Draft Tools", EditorStyles.boldLabel);
+            using (new EditorGUILayout.HorizontalScope())
+            {
                 using (new EditorGUI.DisabledScope(workspace.CurrentEditableDraft == null))
                 {
-                    if (GUILayout.Button("Build Scene Map From Draft"))
+                    if (GUILayout.Button("Select Draft"))
+                    {
+                        Selection.activeObject = workspace.CurrentEditableDraft;
+                        EditorGUIUtility.PingObject(workspace.CurrentEditableDraft);
+                    }
+
+                    if (GUILayout.Button("Build Scene From Draft"))
                     {
                         serializedObject.ApplyModifiedProperties();
                         BuildSceneMapFromCurrentDraft(workspace);
@@ -75,18 +100,6 @@ namespace Conn.Editor.Maps
                         ValidateCurrentDraft(workspace);
                     }
                 }
-            }
-
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                using (new EditorGUI.DisabledScope(workspace.CurrentEditableDraft == null))
-                {
-                    if (GUILayout.Button("Bake + Save Compiled Map"))
-                    {
-                        serializedObject.ApplyModifiedProperties();
-                        BakeAndSaveCurrentDraft(workspace);
-                    }
-                }
 
                 using (new EditorGUI.DisabledScope(workspace.CurrentCompiledMapAsset == null))
                 {
@@ -95,15 +108,6 @@ namespace Conn.Editor.Maps
                         Selection.activeObject = workspace.CurrentCompiledMapAsset;
                         EditorGUIUtility.PingObject(workspace.CurrentCompiledMapAsset);
                     }
-                }
-            }
-
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                if (GUILayout.Button("Clear Scene Preview Objects"))
-                {
-                    ClearPreviewWithUndo(workspace, "Clear Map Preview");
-                    MarkSceneDirty(workspace);
                 }
             }
 
@@ -205,7 +209,7 @@ namespace Conn.Editor.Maps
             Debug.LogException(exception);
         }
 
-        private static void CreateEditableDraftAsset(MapGeneratorWorkspace workspace)
+        private static void AcceptPreviewAndBakeMap(MapGeneratorWorkspace workspace)
         {
             try
             {
@@ -214,18 +218,23 @@ namespace Conn.Editor.Maps
                     : Generate(workspace);
                 var assetPath = EditableMapDraftBuilder.BuildDefaultAssetPath($"{generated.Draft.SourceProfileId}_{generated.Draft.Seed}_draft");
                 var draftAsset = EditableMapDraftBuilder.CreateDraftAssetFromSource(assetPath, generated.Draft);
+                var report = EditableMapValidationService.Validate(draftAsset);
+                var compiled = EditableMapBakeService.Bake(draftAsset);
+                var compiledPath = AssetDatabase.GenerateUniqueAssetPath($"Assets/Conn/Core/Maps/{compiled.MapId}_CompiledMap.asset");
+                var compiledAsset = EditableMapBakeService.SaveCompiledMapAsset(compiled, compiledPath);
 
-                Undo.RecordObject(workspace, "Connect Editable Draft Asset");
+                Undo.RecordObject(workspace, "Accept Preview And Bake Map");
                 workspace.CurrentEditableDraft = draftAsset;
-                workspace.SetGeneratedResult(draftAsset, generated.Compiled, generated.Report);
+                workspace.CurrentCompiledMapAsset = compiledAsset;
+                workspace.SetGeneratedResult(draftAsset, compiled, report);
                 EditorUtility.SetDirty(workspace);
                 MarkSceneDirty(workspace);
-                Selection.activeObject = draftAsset;
-                EditorGUIUtility.PingObject(draftAsset);
+                Selection.activeObject = compiledAsset;
+                EditorGUIUtility.PingObject(compiledAsset);
             }
             catch (Exception exception)
             {
-                Debug.LogException(exception);
+                RecordGenerationException(workspace, "Accept Preview And Bake Map", exception);
             }
         }
 

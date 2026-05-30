@@ -110,30 +110,31 @@ Use these steps after pulling the branch:
 1. Open Unity and let the project recompile.
 2. Open the existing `MapGenerator` editor scene and select the
    `MapGeneratorWorkspace`.
-3. In the `Production Scene Workflow` section, click `Generate Draft Asset`.
-   This creates and connects an `EditableMapDraftAsset` without leaving the
-   scene workflow.
-4. Use `Build Scene Map From Draft`, `Validate Draft`, and
-   `Bake + Save Compiled Map` from the same workspace inspector. The connected
-   draft and compiled map asset fields stay on the workspace. The generated
-   scene preview appears under the workspace `Preview Root`.
-5. Use `Select Draft Asset` only when you need the detailed draft inspector
+3. In the `Production Scene Workflow` section, click `Generate Preview`.
+   This creates a disposable scene preview candidate under the workspace
+   `Preview Root` without saving a draft asset.
+4. Use `Random Seed + Generate Preview` until the generated candidate shape is
+   acceptable.
+5. Click `Accept Preview + Bake Map` to save the selected candidate as an
+   `EditableMapDraftAsset`, validate it, and save the runtime
+   `CompiledMapAsset`.
+6. Use `Select Draft` only when you need the detailed draft inspector
    brush controls.
-6. In the draft inspector, paint directly on the `Map Preview` grid. Choose a
+7. In the draft inspector, paint directly on the `Map Preview` grid. Choose a
    brush mode and terrain/material first, then left-click or drag on the
    preview.
-7. Use `Build Playable From Drawing` to rebuild minimal room, zone, socket, and
+8. Use `Build Playable From Drawing` to rebuild minimal room, zone, socket, and
    required-route metadata from the painted walkable cells.
-8. Use `Build Scene Map` in the draft inspector and confirm that an
+9. Use `Build Scene Map` in the draft inspector and confirm that an
    `Editable Map Preview Root (...)` scene object appears with terrain, wall,
    slope, stair, object, and overlay children.
-9. Use `Validate` and confirm the draft either passes or reports precise
+10. Use `Validate` and confirm the draft either passes or reports precise
    cell/object/socket errors in the inspector.
-10. Use `Bake Runtime Map` or `Save Compiled Map Asset` and confirm the bake only
+11. Use `Bake Runtime Map` or `Save Compiled Map Asset` and confirm the bake only
    succeeds when validation passes.
-11. Use `Clear Preview` and confirm the preview root is deleted while the draft
+12. Use `Clear Preview` and confirm the preview root is deleted while the draft
    asset data remains unchanged.
-12. Build the scene map again to confirm the draft asset is the source of truth
+13. Build the scene map again to confirm the draft asset is the source of truth
    and preview objects are disposable.
 
 Automated coverage now verifies the checked-in `MapGenerator` scene has a
