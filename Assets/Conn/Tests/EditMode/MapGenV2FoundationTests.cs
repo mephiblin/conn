@@ -61,6 +61,13 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void MapGenV2WindowDefinesMinimumSizeForLocalizedText()
+        {
+            Assert.That(MapGenV2Window.MinimumWindowSize.x, Is.GreaterThanOrEqualTo(860f));
+            Assert.That(MapGenV2Window.MinimumWindowSize.y, Is.GreaterThanOrEqualTo(620f));
+        }
+
+        [Test]
         public void RoomShapeValidatorRejectsConnectorAwayFromEdge()
         {
             var cells = new MapGenShapeCell[9];

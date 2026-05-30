@@ -146,7 +146,7 @@ tool, and generated output workflow.
   `Auto`, `한국어`, `English`.
 - [x] Default to Korean labels/help when the editor locale or user setting is
   Korean, but keep asset ids, enum names, and script/API names in English.
-- [ ] Avoid layout breakage from longer Korean text by using flexible widths,
+- [x] Avoid layout breakage from longer Korean text by using flexible widths,
   wrapping help boxes, scroll views, and minimum window sizes.
 - [x] Add pseudo-localization or long-text checks before considering the editor
   UI complete.

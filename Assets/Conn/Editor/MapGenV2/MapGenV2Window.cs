@@ -100,6 +100,7 @@ namespace Conn.MapGenV2.Editor
 
     public sealed class MapGenV2Window : EditorWindow
     {
+        public static readonly Vector2 MinimumWindowSize = new Vector2(860f, 620f);
         private const string ProfilePathKey = "Conn.MapGenV2.Window.ProfilePath";
         private const string DraftPathKey = "Conn.MapGenV2.Window.DraftPath";
         private const string PreviewCellSizeKey = "Conn.MapGenV2.Window.PreviewCellSize";
@@ -156,6 +157,7 @@ namespace Conn.MapGenV2.Editor
 
         private void OnEnable()
         {
+            minSize = MinimumWindowSize;
             previewCellSize = EditorPrefs.GetFloat(PreviewCellSizeKey, previewCellSize);
             outputMode = (MapGenV2SceneOutputMode)EditorPrefs.GetInt(OutputModeKey, (int)outputMode);
             showPropPlacementOverlay = EditorPrefs.GetBool(ShowPropOverlayKey, showPropPlacementOverlay);
@@ -290,9 +292,21 @@ namespace Conn.MapGenV2.Editor
             }
         }
 
+        private static void DrawWrappingHelpBox(string message, MessageType messageType)
+        {
+            var style = new GUIStyle(EditorStyles.helpBox)
+            {
+                wordWrap = true,
+                richText = true
+            };
+            var content = EditorGUIUtility.TrTextContent(message);
+            var height = Mathf.Max(38f, style.CalcHeight(content, Mathf.Max(320f, EditorGUIUtility.currentViewWidth - 36f)));
+            EditorGUILayout.LabelField(content, style, GUILayout.MinHeight(height));
+        }
+
         private void DrawNextAction(MapGenV2WorkflowStatus workflow)
         {
-            EditorGUILayout.HelpBox($"다음 작업 / Next Action: {BuildGuidedNextAction(workflow)}", MessageType.Info);
+            DrawWrappingHelpBox($"다음 작업 / Next Action: {BuildGuidedNextAction(workflow)}", MessageType.Info);
         }
 
         private void DrawProfileValidation()
@@ -485,7 +499,7 @@ namespace Conn.MapGenV2.Editor
                     SaveWindowState();
                 }
 
-                EditorGUILayout.HelpBox(BuildOverwritePolicyHelp(GetOverwriteMode()), MessageType.Info);
+                DrawWrappingHelpBox(BuildOverwritePolicyHelp(GetOverwriteMode()), MessageType.Info);
 
                 DrawMaterializedPrefabFolderField();
 
@@ -535,7 +549,7 @@ namespace Conn.MapGenV2.Editor
 
                 if (!workflow.CanMaterialize)
                 {
-                    EditorGUILayout.HelpBox($"Materialize To Scene is unavailable: {workflow.MaterializeReason}", MessageType.Info);
+                    DrawWrappingHelpBox($"Materialize To Scene is unavailable: {workflow.MaterializeReason}", MessageType.Info);
                 }
             }
         }
@@ -601,7 +615,7 @@ namespace Conn.MapGenV2.Editor
         {
             if (draft == null)
             {
-                EditorGUILayout.HelpBox("Create or assign a draft.", MessageType.Info);
+                DrawWrappingHelpBox("Create or assign a draft.", MessageType.Info);
                 return;
             }
 
@@ -726,17 +740,17 @@ namespace Conn.MapGenV2.Editor
 
             if (!workflow.CanGenerate)
             {
-                EditorGUILayout.HelpBox($"Generate Mockup disabled: {workflow.GenerateReason}", MessageType.Info);
+                DrawWrappingHelpBox($"Generate Mockup disabled: {workflow.GenerateReason}", MessageType.Info);
             }
 
             if (!workflow.CanMaterialize)
             {
-                EditorGUILayout.HelpBox($"Materialize To Scene disabled: {workflow.MaterializeReason}", MessageType.Info);
+                DrawWrappingHelpBox($"Materialize To Scene disabled: {workflow.MaterializeReason}", MessageType.Info);
             }
 
             if (!workflow.CanBakeRuntime)
             {
-                EditorGUILayout.HelpBox($"Bake Runtime Asset disabled: {workflow.BakeRuntimeReason}", MessageType.Info);
+                DrawWrappingHelpBox($"Bake Runtime Asset disabled: {workflow.BakeRuntimeReason}", MessageType.Info);
             }
         }
 
