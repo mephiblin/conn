@@ -145,6 +145,11 @@ namespace Conn.MapGenV2.Authoring
             AcceptedSignature = string.Empty;
         }
 
+        public void Reject()
+        {
+            ClearAcceptance();
+        }
+
         private void ClearPostProcessReport()
         {
             LastDirectRouteCellsAdded = 0;

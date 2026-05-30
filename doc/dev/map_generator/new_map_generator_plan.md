@@ -1142,7 +1142,7 @@ be committed and pushed separately.
   corridor paths.
 - [x] Post-processing MVP: direct route, dead-end reduction, small room removal,
   per-pass report.
-- [ ] Mockup acceptance flow: accept, reject, regenerate, stale detection.
+- [x] Mockup acceptance flow: accept, reject, regenerate, stale detection.
 - [ ] Materialization MVP: floor/wall/corner/ceiling/door module classification
   and deterministic weighted prefab placement.
 - [ ] Prop placement MVP: prop channels, deterministic weighted placement,

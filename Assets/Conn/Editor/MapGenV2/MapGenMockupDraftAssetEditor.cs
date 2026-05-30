@@ -52,10 +52,10 @@ namespace Conn.MapGenV2.Editor
                     EditorUtility.SetDirty(draft);
                 }
 
-                if (GUILayoutButton("Clear Acceptance"))
+                if (GUILayoutButton("Reject Mockup"))
                 {
-                    Undo.RecordObject(draft, "Clear Mockup Acceptance");
-                    draft.ClearAcceptance();
+                    Undo.RecordObject(draft, "Reject Mockup Draft");
+                    draft.Reject();
                     EditorUtility.SetDirty(draft);
                 }
             }
