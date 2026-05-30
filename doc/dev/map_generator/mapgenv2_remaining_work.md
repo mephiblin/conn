@@ -799,6 +799,8 @@ Progress note 2026-05-31:
 - Prop placement channel handling now supports floor, wall, corner, room center,
   corridor edge, entrance, objective, blocker, and custom channel candidates;
   perimeter distribution selects boundary candidates instead of arbitrary cells.
+- Prop channel markers now carry deterministic selection weights, and weighted
+  random distribution uses those weights when selecting placed prop cells.
 
 Goal: support procedural props without breaking traversal.
 
@@ -808,7 +810,7 @@ Tasks:
 - [x] Add placement channels:
   floor, wall, corner, room center, corridor edge, entrance, objective,
   blocker, custom tags.
-- [ ] Add distribution modes:
+- [x] Add distribution modes:
   random, weighted random, grid, perimeter, marker-based, one-per-region,
   required unique.
 - [x] Add min spacing and density limits.
@@ -833,6 +835,7 @@ Verification:
 - EditMode test for room/corridor prop placement filters.
 - EditMode test for draft-driven prop placement preview data.
 - EditMode test for wall/corner/perimeter prop placement channels.
+- EditMode test for weighted-random prop selection using prop marker weights.
 - EditMode test for materialization prop requests using placement rules.
 - Manual Unity check with floor, wall, and blocker props.
 

@@ -27,6 +27,7 @@ namespace Conn.MapGenV2.Core
                     Add(ref hash, cell.SocketId);
                     Add(ref hash, cell.SocketWidth);
                     Add(ref hash, cell.PropChannel);
+                    Add(ref hash, cell.PropWeight);
                     Add(ref hash, cell.SourceTemplateId);
                     Add(ref hash, cell.SourceShapeId);
                 }

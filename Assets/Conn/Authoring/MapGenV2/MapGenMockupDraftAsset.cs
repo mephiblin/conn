@@ -584,6 +584,7 @@ namespace Conn.MapGenV2.Authoring
             cell.SocketId = string.Empty;
             cell.SocketWidth = state == MapGenCellState.Blocked ? 1 : 0;
             cell.PropChannel = string.Empty;
+            cell.PropWeight = 1;
             return cell;
         }
 
@@ -761,6 +762,7 @@ namespace Conn.MapGenV2.Authoring
             foreach (var channel in channels ?? Array.Empty<MapGenTemplatePropChannel>())
             {
                 Add(ref hash, channel.Channel);
+                Add(ref hash, channel.Weight);
                 Add(ref hash, channel.LocalCell.x);
                 Add(ref hash, channel.LocalCell.y);
             }

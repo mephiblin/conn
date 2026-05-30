@@ -124,6 +124,15 @@ namespace Conn.MapGenV2.Authoring
                         $"{ownerId} prop channel {i} is outside the footprint.",
                         "Move the prop channel marker inside the footprint."));
                 }
+
+                if (propChannel.Weight < 0)
+                {
+                    report.Add(new MapGenIssue(
+                        MapGenGenerationPhase.ValidateProfile,
+                        "room_template_prop_channel_invalid_weight",
+                        $"{ownerId} prop channel {i} has invalid weight.",
+                        "Set prop channel weight to zero or higher."));
+                }
             }
         }
 

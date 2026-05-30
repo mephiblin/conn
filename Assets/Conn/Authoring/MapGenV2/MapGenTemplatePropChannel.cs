@@ -8,5 +8,6 @@ namespace Conn.MapGenV2.Authoring
     {
         public Vector2Int LocalCell;
         public string Channel;
+        public int Weight;
     }
 }

@@ -136,7 +136,8 @@ namespace Conn.MapGenV2.Authoring
                     candidates.Add(new PropCandidate(
                         coord,
                         cell.RegionId,
-                        CountBoundaryNeighbors(width, height, cells, coord) > 0));
+                        CountBoundaryNeighbors(width, height, cells, coord) > 0,
+                        Math.Max(1, cell.PropWeight)));
                 }
             }
 
@@ -163,8 +164,9 @@ namespace Conn.MapGenV2.Authoring
                     return ordered.Count == 0
                         ? Array.Empty<MapGenGridCoord>()
                         : PickByDensity(ordered, seed, ruleIndex, rule.DensityPercent <= 0 ? 100 : rule.DensityPercent);
-                case MapGenPropDistributionMode.Random:
                 case MapGenPropDistributionMode.WeightedRandom:
+                    return PickWeightedByDensity(ordered, seed, ruleIndex, rule.DensityPercent <= 0 ? 100 : rule.DensityPercent);
+                case MapGenPropDistributionMode.Random:
                 case MapGenPropDistributionMode.MarkerBased:
                 default:
                     return PickByDensity(ordered, seed, ruleIndex, rule.DensityPercent <= 0 ? 100 : rule.DensityPercent);
@@ -188,6 +190,38 @@ namespace Conn.MapGenV2.Authoring
         {
             var rng = new MapGenRandom(seed).Fork($"props:unique:{ruleIndex}");
             return candidates[rng.NextInt(0, candidates.Count)].Coord;
+        }
+
+        private static MapGenGridCoord[] PickWeightedByDensity(List<PropCandidate> candidates, int seed, int ruleIndex, int densityPercent)
+        {
+            var count = Math.Max(1, (candidates.Count * Math.Min(100, Math.Max(0, densityPercent)) + 99) / 100);
+            var pool = new List<PropCandidate>(candidates);
+            var picked = new List<MapGenGridCoord>();
+            var rng = new MapGenRandom(seed).Fork($"props:weighted:{ruleIndex}");
+            while (picked.Count < count && pool.Count > 0)
+            {
+                var totalWeight = 0;
+                foreach (var candidate in pool)
+                {
+                    totalWeight += Math.Max(1, candidate.Weight);
+                }
+
+                var roll = rng.NextInt(0, totalWeight);
+                for (var i = 0; i < pool.Count; i++)
+                {
+                    roll -= Math.Max(1, pool[i].Weight);
+                    if (roll >= 0)
+                    {
+                        continue;
+                    }
+
+                    picked.Add(pool[i].Coord);
+                    pool.RemoveAt(i);
+                    break;
+                }
+            }
+
+            return picked.ToArray();
         }
 
         private static MapGenGridCoord[] PickGrid(List<PropCandidate> candidates, int step)
@@ -455,12 +489,14 @@ namespace Conn.MapGenV2.Authoring
             public readonly MapGenGridCoord Coord;
             public readonly int RegionId;
             public readonly bool IsPerimeter;
+            public readonly int Weight;
 
-            public PropCandidate(MapGenGridCoord coord, int regionId, bool isPerimeter)
+            public PropCandidate(MapGenGridCoord coord, int regionId, bool isPerimeter, int weight)
             {
                 Coord = coord;
                 RegionId = regionId;
                 IsPerimeter = isPerimeter;
+                Weight = weight;
             }
         }
     }

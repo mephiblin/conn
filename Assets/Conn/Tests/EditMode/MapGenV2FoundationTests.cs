@@ -2337,6 +2337,65 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void PropPlacementPlannerUsesPropChannelWeightsForWeightedRandom()
+        {
+            var cells = new[]
+            {
+                new MapGenMockupCell { State = MapGenCellState.Room, RegionId = 1, PropChannel = "loot", PropWeight = 1000 },
+                new MapGenMockupCell { State = MapGenCellState.Room, RegionId = 1, PropChannel = "loot", PropWeight = 1 }
+            };
+            var rules = new[]
+            {
+                new MapGenPropPlacementRules
+                {
+                    Channel = "loot",
+                    ChannelKind = MapGenPropPlacementChannelKind.Custom,
+                    DistributionMode = MapGenPropDistributionMode.WeightedRandom,
+                    DensityPercent = 50,
+                    MinSpacingCells = 0
+                }
+            };
+
+            var result = MapGenPropPlacementPlanner.Build(2, 1, cells, rules, 3);
+
+            Assert.That(result.Report.IsValid, Is.True);
+            Assert.That(result.PlacedProps, Has.Length.EqualTo(1));
+            Assert.That(result.PlacedProps[0].Coord, Is.EqualTo(new MapGenGridCoord(0, 0)));
+        }
+
+        [Test]
+        public void RoomTemplateValidatorReportsInvalidPropChannelWeight()
+        {
+            var template = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();
+
+            try
+            {
+                template.TemplateId = "weighted_prop_template";
+                template.Footprint = Vector2Int.one;
+                template.FloorCells = new[] { Vector2Int.zero };
+                template.PropChannels = new[]
+                {
+                    new MapGenTemplatePropChannel
+                    {
+                        LocalCell = Vector2Int.zero,
+                        Channel = "loot",
+                        Weight = -1
+                    }
+                };
+
+                var report = template.Validate();
+
+                Assert.That(report.IsValid, Is.False);
+                Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "room_template_prop_channel_invalid_weight"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(template);
+            }
+        }
+
+        [Test]
         public void PropPlacementPlannerReportsBlockerTraversalBreaks()
         {
             var cells = new[]
@@ -2490,7 +2549,7 @@ namespace Conn.Tests.EditMode
                     continue;
                 }
 
-                signature += $"{i}:{cell.State}:{cell.RegionId}:{cell.RoomCategory}:{cell.SocketKind}:{cell.SocketId}:{cell.SocketWidth}:{cell.SourceTemplateId}:{cell.SourceShapeId}|";
+                signature += $"{i}:{cell.State}:{cell.RegionId}:{cell.RoomCategory}:{cell.SocketKind}:{cell.SocketId}:{cell.SocketWidth}:{cell.PropChannel}:{cell.PropWeight}:{cell.SourceTemplateId}:{cell.SourceShapeId}|";
             }
 
             return signature;

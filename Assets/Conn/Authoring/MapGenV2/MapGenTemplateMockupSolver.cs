@@ -451,6 +451,7 @@ namespace Conn.MapGenV2.Authoring
         {
             foreach (var local in template.FloorCells ?? Array.Empty<Vector2Int>())
             {
+                var propChannel = FindPropChannel(template, local);
                 SetCell(cells, width, origin, local, new MapGenMockupCell
                 {
                     State = MapGenCellState.Room,
@@ -458,7 +459,8 @@ namespace Conn.MapGenV2.Authoring
                     RoomCategory = category,
                     SocketKind = MapGenSocketKind.None,
                     SocketId = string.Empty,
-                    PropChannel = FindPropChannel(template, local),
+                    PropChannel = propChannel.Channel,
+                    PropWeight = propChannel.Weight,
                     SourceTemplateId = template.TemplateId,
                     SourceShapeId = string.Empty
                 });
@@ -475,6 +477,7 @@ namespace Conn.MapGenV2.Authoring
                     SocketId = string.Empty,
                     SocketWidth = 1,
                     PropChannel = string.Empty,
+                    PropWeight = 1,
                     SourceTemplateId = template.TemplateId,
                     SourceShapeId = string.Empty
                 });
@@ -494,6 +497,7 @@ namespace Conn.MapGenV2.Authoring
                         SocketId = connector.SocketId ?? string.Empty,
                         SocketWidth = connectorWidth,
                         PropChannel = string.Empty,
+                        PropWeight = 1,
                         SourceTemplateId = template.TemplateId,
                         SourceShapeId = string.Empty
                     });
@@ -729,17 +733,17 @@ namespace Conn.MapGenV2.Authoring
             }
         }
 
-        private static string FindPropChannel(MapGenRoomTemplateAsset template, Vector2Int local)
+        private static PropChannelMarker FindPropChannel(MapGenRoomTemplateAsset template, Vector2Int local)
         {
             foreach (var prop in template.PropChannels ?? Array.Empty<MapGenTemplatePropChannel>())
             {
                 if (prop.LocalCell == local)
                 {
-                    return prop.Channel ?? string.Empty;
+                    return new PropChannelMarker(prop.Channel ?? string.Empty, Mathf.Max(1, prop.Weight));
                 }
             }
 
-            return string.Empty;
+            return new PropChannelMarker(string.Empty, 1);
         }
 
         private static void SetCell(
@@ -849,6 +853,18 @@ namespace Conn.MapGenV2.Authoring
                 Template = template;
                 Origin = origin;
                 Center = center;
+            }
+        }
+
+        private readonly struct PropChannelMarker
+        {
+            public readonly string Channel;
+            public readonly int Weight;
+
+            public PropChannelMarker(string channel, int weight)
+            {
+                Channel = channel;
+                Weight = weight;
             }
         }
     }

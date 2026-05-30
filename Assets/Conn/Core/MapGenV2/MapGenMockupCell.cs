@@ -12,6 +12,7 @@ namespace Conn.MapGenV2.Core
         public string SocketId;
         public int SocketWidth;
         public string PropChannel;
+        public int PropWeight;
         public string SourceTemplateId;
         public string SourceShapeId;
 
@@ -24,6 +25,7 @@ namespace Conn.MapGenV2.Core
             SocketId = string.Empty,
             SocketWidth = 0,
             PropChannel = string.Empty,
+            PropWeight = 1,
             SourceTemplateId = string.Empty,
             SourceShapeId = string.Empty
         };
