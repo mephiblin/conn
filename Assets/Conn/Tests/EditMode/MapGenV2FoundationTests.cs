@@ -1753,6 +1753,57 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void MaterializationClassifierRequestsWholeAndSplitDoorModules()
+        {
+            var cells = new[]
+            {
+                new MapGenMockupCell
+                {
+                    State = MapGenCellState.Connector,
+                    RegionId = 9,
+                    RoomCategory = MapGenRoomCategory.Start,
+                    SocketKind = MapGenSocketKind.Door,
+                    SocketId = "main",
+                    SourceTemplateId = "door_template"
+                }
+            };
+
+            var requests = MapGenMaterializationClassifier.Classify(1, 1, cells);
+
+            Assert.That(requests, Has.Exactly(1).Matches<MapGenModuleRequest>(
+                request => request.Category == MapGenModuleCategory.DoorWhole
+                    && request.RegionId == 9
+                    && request.SourceTemplateId == "door_template"));
+            Assert.That(requests, Has.Exactly(1).Matches<MapGenModuleRequest>(
+                request => request.Category == MapGenModuleCategory.DoorFrameHalf));
+            Assert.That(requests, Has.Exactly(1).Matches<MapGenModuleRequest>(
+                request => request.Category == MapGenModuleCategory.DoorPanelHalf));
+        }
+
+        [Test]
+        public void MaterializationClassifierDoesNotRequestDoorsForCorridorSockets()
+        {
+            var cells = new[]
+            {
+                new MapGenMockupCell
+                {
+                    State = MapGenCellState.Connector,
+                    RegionId = 9,
+                    RoomCategory = MapGenRoomCategory.Start,
+                    SocketKind = MapGenSocketKind.Corridor,
+                    SocketId = "main"
+                }
+            };
+
+            var requests = MapGenMaterializationClassifier.Classify(1, 1, cells);
+
+            Assert.That(requests, Has.None.Matches<MapGenModuleRequest>(
+                request => request.Category == MapGenModuleCategory.DoorWhole
+                    || request.Category == MapGenModuleCategory.DoorFrameHalf
+                    || request.Category == MapGenModuleCategory.DoorPanelHalf));
+        }
+
+        [Test]
         public void MaterializationReportNamesMissingModuleCategories()
         {
             var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();

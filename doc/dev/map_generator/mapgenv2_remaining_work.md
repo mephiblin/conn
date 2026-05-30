@@ -713,6 +713,9 @@ Progress note 2026-05-31:
 - Scene materialization applies profile `CellSize`, module offsets, and
   rotation policies, with materialized module markers preserving request
   direction for inspection.
+- Door connector classification now requests whole-door and split
+  frame/panel module categories, while non-door corridor sockets avoid door
+  requests.
 
 Goal: turn accepted mockups into readable project-prefab maps.
 
@@ -730,7 +733,7 @@ Tasks:
 - [x] Respect allowed rotations and module offsets.
 - [ ] Add explicit pivot-rule validation.
 - [x] Deterministically choose weighted module entries.
-- [ ] Support whole doors and split door frames/panels.
+- [x] Support whole doors and split door frames/panels.
 - [ ] Support connector-width-aware door openings.
 - [x] Add overlap detection.
 - [x] Add missing-module warnings before instantiation.
@@ -754,6 +757,7 @@ Verification:
 - EditMode test for materialization plan source metadata.
 - EditMode test for deterministic weighted selection and footprint overlap.
 - EditMode test for `CellSize`, module offset, and rotation-policy stamping.
+- EditMode tests for whole-door and split-door request classification.
 - EditMode test for missing prefab/module reports.
 - Manual Unity check with at least two style sets.
 

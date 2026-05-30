@@ -42,16 +42,9 @@ namespace Conn.MapGenV2.Core
                     });
                 }
 
-                if (cell.State == MapGenCellState.Connector)
+                if (cell.State == MapGenCellState.Connector && cell.SocketKind == MapGenSocketKind.Door)
                 {
-                    requests.Add(new MapGenModuleRequest
-                    {
-                        Category = MapGenModuleCategory.DoorWhole,
-                        Coord = coord,
-                        Direction = MapGenGridDirection.North,
-                        RegionId = cell.RegionId,
-                        SourceTemplateId = cell.SourceTemplateId
-                    });
+                    AddDoorRequests(requests, cell, coord, PickConnectorDirection(width, height, cells, coord));
                 }
 
                 if (!string.IsNullOrWhiteSpace(cell.PropChannel))
@@ -70,6 +63,34 @@ namespace Conn.MapGenV2.Core
             }
 
             return requests;
+        }
+
+        private static void AddDoorRequests(
+            List<MapGenModuleRequest> requests,
+            MapGenMockupCell cell,
+            MapGenGridCoord coord,
+            MapGenGridDirection direction)
+        {
+            AddRequest(requests, MapGenModuleCategory.DoorWhole, cell, coord, direction);
+            AddRequest(requests, MapGenModuleCategory.DoorFrameHalf, cell, coord, direction);
+            AddRequest(requests, MapGenModuleCategory.DoorPanelHalf, cell, coord, direction);
+        }
+
+        private static void AddRequest(
+            List<MapGenModuleRequest> requests,
+            MapGenModuleCategory category,
+            MapGenMockupCell cell,
+            MapGenGridCoord coord,
+            MapGenGridDirection direction)
+        {
+            requests.Add(new MapGenModuleRequest
+            {
+                Category = category,
+                Coord = coord,
+                Direction = direction,
+                RegionId = cell.RegionId,
+                SourceTemplateId = cell.SourceTemplateId
+            });
         }
 
         private static void AddBoundaryRequests(
@@ -153,6 +174,29 @@ namespace Conn.MapGenV2.Core
             }
 
             return !IsNavigable(cells[neighbor.ToIndex(width)].State);
+        }
+
+        private static MapGenGridDirection PickConnectorDirection(
+            int width,
+            int height,
+            MapGenMockupCell[] cells,
+            MapGenGridCoord coord)
+        {
+            foreach (var direction in new[]
+            {
+                MapGenGridDirection.North,
+                MapGenGridDirection.East,
+                MapGenGridDirection.South,
+                MapGenGridDirection.West
+            })
+            {
+                if (IsBoundary(width, height, cells, coord, direction))
+                {
+                    return direction;
+                }
+            }
+
+            return MapGenGridDirection.North;
         }
 
         private static bool IsNavigable(MapGenCellState state)
