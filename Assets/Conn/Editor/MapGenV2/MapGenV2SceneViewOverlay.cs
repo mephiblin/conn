@@ -1,4 +1,5 @@
 using Conn.MapGenV2.Authoring;
+using Conn.MapGenV2.Core;
 using UnityEditor;
 using UnityEditor.Overlays;
 using UnityEngine;
@@ -35,7 +36,8 @@ namespace Conn.MapGenV2.Editor
 
             var draft = ResolveSelectedDraft();
             var materializedRoot = ResolveSelectedRoot();
-            var summary = new Label(BuildOverlaySummary(draft, materializedRoot, CurrentToolMode))
+            var bakedAsset = ResolveBakedAsset(draft);
+            var summary = new Label(BuildOverlaySummary(draft, materializedRoot, bakedAsset, CurrentToolMode))
             {
                 style = { whiteSpace = WhiteSpace.Normal }
             };
@@ -61,16 +63,40 @@ namespace Conn.MapGenV2.Editor
         public static string BuildOverlaySummary(
             MapGenMockupDraftAsset draft,
             GameObject materializedRoot,
+            MapGenBakedMapAsset bakedAsset,
             string toolMode)
         {
             var draftLabel = draft != null ? draft.name : "(none)";
             var rootLabel = materializedRoot != null ? materializedRoot.name : "(none)";
-            var accepted = draft != null && draft.Accepted
-                ? draft.IsAcceptedSignatureCurrent ? "accepted current" : "accepted stale"
-                : "not accepted";
-            return $"Draft {draftLabel}, Root {rootLabel}, State {accepted}, Tool {toolMode}, "
+            return $"Draft {draftLabel}, Root {rootLabel}, State {BuildSceneStateSummary(draft, materializedRoot, bakedAsset)}, Tool {toolMode}, "
                 + "Actions Generate/Accept/Materialize/Clear/Frame, "
                 + "Toggles Grid/Region IDs/Connectors/Sockets/Blocked/Props/Nav/Bounds/Diagnostics";
+        }
+
+        public static string BuildSceneStateSummary(
+            MapGenMockupDraftAsset draft,
+            GameObject materializedRoot,
+            MapGenBakedMapAsset bakedAsset)
+        {
+            if (draft == null)
+            {
+                return "no selected draft";
+            }
+
+            var mockupState = draft.Accepted
+                ? draft.IsAcceptedSignatureCurrent ? "accepted mockup" : "accepted mockup stale"
+                : "unaccepted mockup";
+            var materializedState = materializedRoot == null
+                ? "no materialized output"
+                : MapGenMockupMaterializer.ValidateExistingOutput(draft, materializedRoot).IsValid
+                    ? "materialized output current"
+                    : "stale materialized output";
+            var bakedState = bakedAsset == null
+                ? "no baked runtime output"
+                : MapGenRuntimeBakeUtility.ValidateConsistency(draft, bakedAsset).IsValid
+                    ? "baked runtime output current"
+                    : "stale baked runtime output";
+            return $"{mockupState}; {materializedState}; {bakedState}";
         }
 
         public static string BuildVisibilityToggleSummary()
@@ -104,6 +130,21 @@ namespace Conn.MapGenV2.Editor
             var root = ResolveSelectedRoot();
             var marker = root != null ? root.GetComponent<MapGenV2GeneratedMapMarker>() : null;
             return marker != null ? marker.SourceDraft : null;
+        }
+
+        private static MapGenBakedMapAsset ResolveBakedAsset(MapGenMockupDraftAsset draft)
+        {
+            if (draft == null || draft.Profile == null)
+            {
+                return null;
+            }
+
+            var outputSettings = draft.Profile.OutputSettings;
+            var folder = string.IsNullOrWhiteSpace(outputSettings.BakedAssetFolder)
+                ? MapGenOutputSettings.Defaults().BakedAssetFolder
+                : outputSettings.BakedAssetFolder;
+            var path = $"{folder}/{draft.Profile.ProfileId}_{draft.Seed}_BakedMap.asset";
+            return AssetDatabase.LoadAssetAtPath<MapGenBakedMapAsset>(path);
         }
 
         private static GameObject ResolveSelectedRoot()

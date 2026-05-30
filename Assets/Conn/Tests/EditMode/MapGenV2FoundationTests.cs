@@ -173,17 +173,51 @@ namespace Conn.Tests.EditMode
                 draft.Accepted = true;
                 draft.AcceptedSignature = draft.ComputeSignature();
 
-                var summary = MapGenV2SceneViewOverlay.BuildOverlaySummary(draft, root, "Move");
+                var summary = MapGenV2SceneViewOverlay.BuildOverlaySummary(draft, root, null, "Move");
 
                 Assert.That(summary, Does.Contain("Draft draft_a"));
                 Assert.That(summary, Does.Contain("Root MapGenV2_profile_2001"));
-                Assert.That(summary, Does.Contain("accepted current"));
+                Assert.That(summary, Does.Contain("accepted mockup"));
                 Assert.That(summary, Does.Contain("Tool Move"));
                 Assert.That(summary, Does.Contain("Generate/Accept/Materialize/Clear/Frame"));
                 Assert.That(summary, Does.Contain("Toggles Grid/Region IDs/Connectors/Sockets/Blocked/Props/Nav/Bounds/Diagnostics"));
             }
             finally
             {
+                Object.DestroyImmediate(root);
+                Object.DestroyImmediate(draft);
+            }
+        }
+
+        [Test]
+        public void SceneViewStateSummaryDistinguishesMockupSceneAndRuntimeStates()
+        {
+            var draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();
+            var root = new GameObject("MapGenV2_profile_2001");
+            var baked = ScriptableObject.CreateInstance<MapGenBakedMapAsset>();
+
+            try
+            {
+                draft.GridSize = Vector2Int.one;
+                draft.EnsureCellArray();
+                draft.Seed = 2001;
+                draft.Accept();
+                var rootMarker = root.AddComponent<MapGenV2GeneratedMapMarker>();
+                rootMarker.DraftSignature = "stale";
+                baked.SourceSignature = "stale_bake";
+
+                var summary = MapGenV2SceneViewOverlay.BuildSceneStateSummary(draft, root, baked);
+
+                Assert.That(summary, Does.Contain("accepted mockup"));
+                Assert.That(summary, Does.Contain("stale materialized output"));
+                Assert.That(summary, Does.Contain("stale baked runtime output"));
+                Assert.That(MapGenV2SceneViewOverlay.BuildSceneStateSummary(draft, null, null), Does.Contain("no materialized output"));
+                draft.ClearAcceptance();
+                Assert.That(MapGenV2SceneViewOverlay.BuildSceneStateSummary(draft, null, null), Does.Contain("unaccepted mockup"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(baked);
                 Object.DestroyImmediate(root);
                 Object.DestroyImmediate(draft);
             }

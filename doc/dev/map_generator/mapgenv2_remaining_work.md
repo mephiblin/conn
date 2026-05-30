@@ -182,7 +182,7 @@ tool, and generated output workflow.
 - [x] Provide separate visibility toggles:
   mockup grid, region ids, connectors, sockets, blocked cells, prop channels,
   nav graph, prefab bounds, and diagnostics.
-- [ ] Scene View must clearly distinguish states:
+- [x] Scene View must clearly distinguish states:
   unaccepted mockup, accepted mockup, materialized output, stale materialized
   output, baked runtime output.
 - [x] Clicking a materialized room object should be able to select its source
