@@ -11,15 +11,24 @@ namespace Conn.Editor.Maps
         public const string TilePalettePath = Folder + "/GeneratedDungeonTilePalette.asset";
         public const string ObjectPalettePath = Folder + "/GeneratedDungeonObjectPalette.asset";
 
-        public static void AssignGeneratedPalettes(EditableMapDraftAsset draft)
+        public static void AssignGeneratedPalettes(EditableMapDraftAsset draft, bool persistAssets = false)
         {
             if (draft == null)
             {
                 return;
             }
 
-            draft.TilePalette = EnsureTilePalette();
-            draft.ObjectPalette = EnsureObjectPalette();
+            draft.TilePalette = persistAssets ? EnsureTilePalette() : CreateTilePalette();
+            draft.ObjectPalette = persistAssets ? EnsureObjectPalette() : CreateObjectPalette();
+        }
+
+        public static bool UsesGeneratedPalettes(EditableMapDraftAsset draft)
+        {
+            return draft != null
+                && draft.TilePalette != null
+                && draft.TilePalette.Id == "generated_dungeon_tiles"
+                && draft.ObjectPalette != null
+                && draft.ObjectPalette.Id == "generated_dungeon_objects";
         }
 
         public static MapTilePaletteAsset EnsureTilePalette()
@@ -32,6 +41,44 @@ namespace Conn.Editor.Maps
                 AssetDatabase.CreateAsset(palette, TilePalettePath);
             }
 
+            PopulateTilePalette(palette);
+            EditorUtility.SetDirty(palette);
+            return palette;
+        }
+
+        public static MapObjectPaletteAsset EnsureObjectPalette()
+        {
+            EnsureFolder();
+            var palette = AssetDatabase.LoadAssetAtPath<MapObjectPaletteAsset>(ObjectPalettePath);
+            if (palette == null)
+            {
+                palette = ScriptableObject.CreateInstance<MapObjectPaletteAsset>();
+                AssetDatabase.CreateAsset(palette, ObjectPalettePath);
+            }
+
+            PopulateObjectPalette(palette);
+            EditorUtility.SetDirty(palette);
+            return palette;
+        }
+
+        private static MapTilePaletteAsset CreateTilePalette()
+        {
+            var palette = ScriptableObject.CreateInstance<MapTilePaletteAsset>();
+            palette.hideFlags = HideFlags.HideAndDontSave;
+            PopulateTilePalette(palette);
+            return palette;
+        }
+
+        private static MapObjectPaletteAsset CreateObjectPalette()
+        {
+            var palette = ScriptableObject.CreateInstance<MapObjectPaletteAsset>();
+            palette.hideFlags = HideFlags.HideAndDontSave;
+            PopulateObjectPalette(palette);
+            return palette;
+        }
+
+        private static void PopulateTilePalette(MapTilePaletteAsset palette)
+        {
             palette.Id = "generated_dungeon_tiles";
             palette.DisplayName = "Generated Dungeon Tile Palette";
             palette.ThemeId = "generated_dungeon";
@@ -48,20 +95,10 @@ namespace Conn.Editor.Maps
                 Tile("generated_wall_edge", RoomChunkCellType.Wall, "generated_wall_edge_runtime", false),
                 Tile("generated_wall_solid", RoomChunkCellType.Wall, "generated_wall_solid_runtime", false)
             };
-            EditorUtility.SetDirty(palette);
-            return palette;
         }
 
-        public static MapObjectPaletteAsset EnsureObjectPalette()
+        private static void PopulateObjectPalette(MapObjectPaletteAsset palette)
         {
-            EnsureFolder();
-            var palette = AssetDatabase.LoadAssetAtPath<MapObjectPaletteAsset>(ObjectPalettePath);
-            if (palette == null)
-            {
-                palette = ScriptableObject.CreateInstance<MapObjectPaletteAsset>();
-                AssetDatabase.CreateAsset(palette, ObjectPalettePath);
-            }
-
             palette.Id = "generated_dungeon_objects";
             palette.DisplayName = "Generated Dungeon Object Palette";
             palette.ThemeId = "generated_dungeon";
@@ -73,8 +110,6 @@ namespace Conn.Editor.Maps
                 Object("torch_wall", RoomChunkObjectKind.Torch, "torch_wall", false),
                 Object("barrel", RoomChunkObjectKind.Barrel, "barrel", false)
             };
-            EditorUtility.SetDirty(palette);
-            return palette;
         }
 
         private static MapTilePaletteEntry Tile(string id, RoomChunkCellType terrainType, string runtimeMaterialId, bool walkable)

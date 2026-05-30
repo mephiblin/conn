@@ -62,6 +62,11 @@ namespace Conn.Editor.Maps
 
             var draft = ScriptableObject.CreateInstance<EditableMapDraftAsset>();
             PopulateFromDraft(draft, sourceDraft);
+            if (GeneratedMapPaletteLibrary.UsesGeneratedPalettes(sourceDraft))
+            {
+                GeneratedMapPaletteLibrary.AssignGeneratedPalettes(draft, persistAssets: true);
+            }
+
             AssetDatabase.CreateAsset(draft, assetPath);
             AssetDatabase.SaveAssets();
             return draft;

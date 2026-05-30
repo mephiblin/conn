@@ -509,6 +509,31 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void GeneratedEditableDraftUsesTransientPalettesUntilSavedAsAsset()
+        {
+            var profile = MapGenerationCatalog.ChapterTwoFirstSliceProfile();
+            var draft = EditableCellMapGenerator.Generate(profile, 2001, 1, 0, 0.5f, 0.25f);
+
+            try
+            {
+                Assert.That(draft.TilePalette, Is.Not.Null);
+                Assert.That(draft.ObjectPalette, Is.Not.Null);
+                Assert.That(EditorUtility.IsPersistent(draft.TilePalette), Is.False);
+                Assert.That(EditorUtility.IsPersistent(draft.ObjectPalette), Is.False);
+
+                var report = EditableMapValidationService.Validate(draft);
+
+                Assert.That(report.Passed, Is.True, string.Join("\n", report.Errors));
+            }
+            finally
+            {
+                Object.DestroyImmediate(draft.TilePalette);
+                Object.DestroyImmediate(draft.ObjectPalette);
+                Object.DestroyImmediate(draft);
+            }
+        }
+
+        [Test]
         public void GeneratedEditableResultUsesCellFirstDungeonLayout()
         {
             var profile = MapGenerationCatalog.ChapterTwoFirstSliceProfile();
