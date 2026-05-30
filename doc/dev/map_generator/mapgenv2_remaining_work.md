@@ -588,6 +588,9 @@ Progress note 2026-05-31:
   landmarks instead of reading the raw category array inline.
 - Added `MapGenDistanceRules.MinStartToExitDistance` and solver diagnostics for
   start-to-exit distance contradictions.
+- Added required-landmark entropy summaries and changed production room
+  placement to collapse the lowest-candidate required landmark first while
+  preserving original required-category order for corridor connectivity.
 
 Goal: replace the current simple connected-cell MVP with a real rooms/corridors
 solver.
@@ -604,7 +607,8 @@ Tasks:
 - [x] Add start-to-exit minimum distance constraint.
 - [ ] Add remaining distance constraints:
   boss near late path, quest before lock, etc.
-- [ ] Collapse lowest-entropy cells/regions.
+- [x] Collapse lowest-entropy required landmarks before room placement.
+- [ ] Collapse lowest-entropy cells/regions beyond required landmarks.
 - [ ] Propagate footprint, connector, blocked-region, and adjacency
   constraints.
 - [x] Maintain graph connectivity during solve.
@@ -624,6 +628,7 @@ Verification:
 - EditMode test for candidate-domain summary from profile/templates/rules.
 - EditMode test for required-landmark reservation ordering and ids.
 - EditMode test for start-to-exit distance contradiction diagnostics.
+- EditMode test for lowest-entropy required-landmark domain summary.
 - Seed sweep across multiple profiles and sizes.
 - Tests for required room presence and reachability.
 - Tests for connector compatibility.

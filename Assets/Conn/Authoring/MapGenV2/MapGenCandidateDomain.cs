@@ -22,6 +22,17 @@ namespace Conn.MapGenV2.Authoring
         public int BlockedTemplateCellCount;
         public int RoomFootprintCandidateCells;
         public int CorridorCandidateCells;
+        public int LowestEntropyLandmarkIndex;
+        public MapGenRoomCategory LowestEntropyLandmarkCategory;
+        public int LowestEntropyLandmarkCandidateCount;
+        public MapGenLandmarkEntropy[] LandmarkEntropies = Array.Empty<MapGenLandmarkEntropy>();
+    }
+
+    public struct MapGenLandmarkEntropy
+    {
+        public int LandmarkIndex;
+        public MapGenRoomCategory Category;
+        public int CandidateCount;
     }
 
     public static class MapGenCandidateDomainBuilder
@@ -38,6 +49,9 @@ namespace Conn.MapGenV2.Authoring
             var corridorTemplates = profile != null && profile.StyleSet != null
                 ? profile.StyleSet.CorridorTemplates ?? Array.Empty<MapGenCorridorTemplateAsset>()
                 : Array.Empty<MapGenCorridorTemplateAsset>();
+
+            var landmarkEntropies = BuildLandmarkEntropies(width, height, quantity.RequiredCategories, roomTemplates);
+            var lowestEntropyIndex = FindLowestEntropyIndex(landmarkEntropies);
 
             return new MapGenCandidateDomain
             {
@@ -56,7 +70,15 @@ namespace Conn.MapGenV2.Authoring
                 TargetCorridorDensityPercent = Mathf.Clamp(quantity.TargetCorridorDensityPercent, 0, 100),
                 BlockedTemplateCellCount = CountBlockedTemplateCells(roomTemplates),
                 RoomFootprintCandidateCells = CountRoomFootprintCandidateCells(width, height, roomTemplates),
-                CorridorCandidateCells = CountCorridorCandidateCells(width, height, corridorTemplates)
+                CorridorCandidateCells = CountCorridorCandidateCells(width, height, corridorTemplates),
+                LowestEntropyLandmarkIndex = lowestEntropyIndex >= 0 ? landmarkEntropies[lowestEntropyIndex].LandmarkIndex : -1,
+                LowestEntropyLandmarkCategory = lowestEntropyIndex >= 0
+                    ? landmarkEntropies[lowestEntropyIndex].Category
+                    : default,
+                LowestEntropyLandmarkCandidateCount = lowestEntropyIndex >= 0
+                    ? landmarkEntropies[lowestEntropyIndex].CandidateCount
+                    : 0,
+                LandmarkEntropies = landmarkEntropies
             };
         }
 
@@ -127,6 +149,75 @@ namespace Conn.MapGenV2.Authoring
             }
 
             return count;
+        }
+
+        private static MapGenLandmarkEntropy[] BuildLandmarkEntropies(
+            int width,
+            int height,
+            MapGenRoomCategory[] categories,
+            MapGenRoomTemplateAsset[] templates)
+        {
+            if (categories == null || categories.Length == 0)
+            {
+                return Array.Empty<MapGenLandmarkEntropy>();
+            }
+
+            var entropies = new MapGenLandmarkEntropy[categories.Length];
+            for (var i = 0; i < categories.Length; i++)
+            {
+                entropies[i] = new MapGenLandmarkEntropy
+                {
+                    LandmarkIndex = i,
+                    Category = categories[i],
+                    CandidateCount = CountCategoryCandidateCells(width, height, templates, categories[i])
+                };
+            }
+
+            return entropies;
+        }
+
+        private static int FindLowestEntropyIndex(MapGenLandmarkEntropy[] entropies)
+        {
+            var best = -1;
+            for (var i = 0; i < (entropies?.Length ?? 0); i++)
+            {
+                if (best < 0 || entropies[i].CandidateCount < entropies[best].CandidateCount)
+                {
+                    best = i;
+                }
+            }
+
+            return best;
+        }
+
+        private static int CountCategoryCandidateCells(
+            int width,
+            int height,
+            MapGenRoomTemplateAsset[] templates,
+            MapGenRoomCategory category)
+        {
+            var exactCount = 0;
+            var mainCount = 0;
+            foreach (var template in templates ?? Array.Empty<MapGenRoomTemplateAsset>())
+            {
+                if (template == null || template.Footprint.x <= 0 || template.Footprint.y <= 0)
+                {
+                    continue;
+                }
+
+                var candidateCount = Mathf.Max(0, width - template.Footprint.x + 1)
+                    * Mathf.Max(0, height - template.Footprint.y + 1);
+                if (template.RoomCategory == category)
+                {
+                    exactCount += candidateCount;
+                }
+                else if (template.RoomCategory == MapGenRoomCategory.Main)
+                {
+                    mainCount += candidateCount;
+                }
+            }
+
+            return exactCount > 0 ? exactCount : mainCount;
         }
     }
 }

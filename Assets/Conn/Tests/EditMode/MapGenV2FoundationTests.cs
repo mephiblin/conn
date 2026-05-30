@@ -402,6 +402,56 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void CandidateDomainReportsLowestEntropyRequiredLandmark()
+        {
+            var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
+            var styleSet = ScriptableObject.CreateInstance<MapGenStyleSetAsset>();
+            var ruleSet = ScriptableObject.CreateInstance<MapGenRuleSetAsset>();
+            var roomShape = ScriptableObject.CreateInstance<MapGenRoomShapeAsset>();
+            var mainTemplate = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();
+            var bossTemplate = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();
+            var profile = ScriptableObject.CreateInstance<MapGenProfileAsset>();
+            GameObject floor = null;
+            GameObject wall = null;
+
+            try
+            {
+                PopulateValidWorkflowProfile(profile, styleSet, moduleSet, ruleSet, roomShape, out floor, out wall);
+                profile.MapSize = new Vector2Int(6, 6);
+                ruleSet.QuantityRules = MapGenQuantityRules.Defaults();
+                ruleSet.QuantityRules.RequiredCategories = new[]
+                {
+                    MapGenRoomCategory.Start,
+                    MapGenRoomCategory.Boss,
+                    MapGenRoomCategory.Exit
+                };
+                PopulateRoomTemplate(mainTemplate, "main_template", MapGenRoomCategory.Main);
+                PopulateRoomTemplate(bossTemplate, "boss_template", MapGenRoomCategory.Boss);
+                bossTemplate.Footprint = new Vector2Int(4, 4);
+                styleSet.RoomTemplates = new[] { mainTemplate, bossTemplate };
+
+                var domain = MapGenCandidateDomainBuilder.Build(profile);
+
+                Assert.That(domain.LandmarkEntropies, Has.Length.EqualTo(3));
+                Assert.That(domain.LowestEntropyLandmarkIndex, Is.EqualTo(1));
+                Assert.That(domain.LowestEntropyLandmarkCategory, Is.EqualTo(MapGenRoomCategory.Boss));
+                Assert.That(domain.LowestEntropyLandmarkCandidateCount, Is.LessThan(domain.LandmarkEntropies[0].CandidateCount));
+            }
+            finally
+            {
+                Object.DestroyImmediate(profile);
+                Object.DestroyImmediate(bossTemplate);
+                Object.DestroyImmediate(mainTemplate);
+                Object.DestroyImmediate(roomShape);
+                Object.DestroyImmediate(ruleSet);
+                Object.DestroyImmediate(styleSet);
+                Object.DestroyImmediate(moduleSet);
+                Object.DestroyImmediate(floor);
+                Object.DestroyImmediate(wall);
+            }
+        }
+
+        [Test]
         public void ProfileValidatorReportsMissingOutputFolders()
         {
             var profile = ScriptableObject.CreateInstance<MapGenProfileAsset>();

@@ -73,10 +73,12 @@ namespace Conn.MapGenV2.Authoring
 
             var cells = CreateEmptyCells(width, height);
             var placements = new RoomPlacement[landmarks.Length];
+            var placed = new bool[landmarks.Length];
             var rng = new MapGenRandom(seed).Fork("template_solver");
 
-            for (var i = 0; i < landmarks.Length; i++)
+            for (var step = 0; step < landmarks.Length; step++)
             {
+                var i = PickLowestEntropyLandmarkIndex(landmarks, placed, roomTemplates, cells, width, height);
                 var category = landmarks[i].Category;
                 var template = PickTemplateForCategory(roomTemplates, category, ref rng);
                 if (template == null)
@@ -100,12 +102,14 @@ namespace Conn.MapGenV2.Authoring
                 }
 
                 placements[i] = placement;
-                if (i > 0)
+                placed[i] = true;
+            }
+
+            for (var i = 1; i < placements.Length; i++)
+            {
+                if (!TryConnectRooms(cells, width, height, placements[i - 1], placements[i], corridorTemplates, report))
                 {
-                    if (!TryConnectRooms(cells, width, height, placements[i - 1], placement, corridorTemplates, report))
-                    {
-                        return Failed(width, height, seed, report);
-                    }
+                    return Failed(width, height, seed, report);
                 }
             }
 
@@ -151,6 +155,90 @@ namespace Conn.MapGenV2.Authoring
 
             var main = PickWeighted(templates, template => template != null && template.RoomCategory == MapGenRoomCategory.Main, ref rng);
             return main;
+        }
+
+        private static int PickLowestEntropyLandmarkIndex(
+            MapGenRequiredLandmark[] landmarks,
+            bool[] placed,
+            MapGenRoomTemplateAsset[] templates,
+            MapGenMockupCell[] cells,
+            int width,
+            int height)
+        {
+            var best = -1;
+            var bestCandidateCount = int.MaxValue;
+            for (var i = 0; i < landmarks.Length; i++)
+            {
+                if (placed[i])
+                {
+                    continue;
+                }
+
+                var candidateCount = CountPlacementCandidates(templates, landmarks[i].Category, cells, width, height);
+                if (best < 0 || candidateCount < bestCandidateCount)
+                {
+                    best = i;
+                    bestCandidateCount = candidateCount;
+                }
+            }
+
+            return best;
+        }
+
+        private static int CountPlacementCandidates(
+            MapGenRoomTemplateAsset[] templates,
+            MapGenRoomCategory category,
+            MapGenMockupCell[] cells,
+            int width,
+            int height)
+        {
+            var exactCount = CountPlacementCandidates(templates, category, false, cells, width, height);
+            return exactCount > 0
+                ? exactCount
+                : CountPlacementCandidates(templates, MapGenRoomCategory.Main, true, cells, width, height);
+        }
+
+        private static int CountPlacementCandidates(
+            MapGenRoomTemplateAsset[] templates,
+            MapGenRoomCategory category,
+            bool requireCategory,
+            MapGenMockupCell[] cells,
+            int width,
+            int height)
+        {
+            var count = 0;
+            foreach (var template in templates ?? Array.Empty<MapGenRoomTemplateAsset>())
+            {
+                if (template == null || template.Footprint.x <= 0 || template.Footprint.y <= 0)
+                {
+                    continue;
+                }
+
+                if (template.RoomCategory != category && requireCategory)
+                {
+                    continue;
+                }
+
+                if (!requireCategory && template.RoomCategory != category)
+                {
+                    continue;
+                }
+
+                var maxX = width - template.Footprint.x;
+                var maxY = height - template.Footprint.y;
+                for (var y = 0; y <= maxY; y++)
+                {
+                    for (var x = 0; x <= maxX; x++)
+                    {
+                        if (CanPlace(cells, width, template, new MapGenGridCoord(x, y)))
+                        {
+                            count++;
+                        }
+                    }
+                }
+            }
+
+            return count;
         }
 
         private static MapGenRoomTemplateAsset PickWeighted(
