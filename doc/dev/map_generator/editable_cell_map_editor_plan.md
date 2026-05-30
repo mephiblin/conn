@@ -1112,6 +1112,9 @@ is partially complete.
   - 2026-05-30: Candidate room previews are simplified to clickable
     `Preview Room - ...` box nodes with edge links; cell-level mesh previews are
     reserved for accepted drafts.
+  - 2026-05-30: Preview room nodes now carry `MapPreviewRoomNode` metadata,
+    `[SelectionBase]`, and enlarged pick colliders for direct Scene View
+    selection.
 - [x] Add screenshots or saved sample assets when the first usable version
   exists.
   - 2026-05-30: Chapter 2 saved `CompiledMapAsset` samples are regenerated

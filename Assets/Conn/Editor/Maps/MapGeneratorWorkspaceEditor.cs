@@ -437,6 +437,12 @@ namespace Conn.Editor.Maps
                 room.transform.SetParent(root, false);
                 room.transform.position = workspace.PreviewRoomPosition(roomSnapshot);
                 room.transform.localScale = new Vector3(1.8f, Mathf.Max(0.05f, workspace.RoomHeight), 1.8f);
+                var node = room.AddComponent<MapPreviewRoomNode>();
+                node.RoomId = roomSnapshot.Id ?? string.Empty;
+                node.Role = roomSnapshot.Role;
+                node.ChunkId = roomSnapshot.ChunkId ?? string.Empty;
+                node.SocketMask = roomSnapshot.SocketMask;
+                ConfigureRoomPickCollider(room, workspace.RoomHeight);
                 room.GetComponent<MeshRenderer>().sharedMaterial = materialCache.ForRole(roomSnapshot.Role);
                 Undo.RegisterCreatedObjectUndo(room, undoName);
 
@@ -460,6 +466,20 @@ namespace Conn.Editor.Maps
                 marker.GetComponent<MeshRenderer>().sharedMaterial = materialCache.ForPlacement(placement.Kind);
                 Undo.RegisterCreatedObjectUndo(marker, undoName);
             }
+        }
+
+        private static void ConfigureRoomPickCollider(GameObject room, float visualHeight)
+        {
+            var boxCollider = room.GetComponent<BoxCollider>();
+            if (boxCollider == null)
+            {
+                boxCollider = room.AddComponent<BoxCollider>();
+            }
+
+            var height = Mathf.Max(0.05f, visualHeight);
+            const float pickHeight = 1.2f;
+            boxCollider.size = new Vector3(1.15f, pickHeight / height, 1.15f);
+            boxCollider.center = new Vector3(0f, (pickHeight - height) * 0.5f / height, 0f);
         }
 
         private static GameObject CreateLabel(Transform root, string text, Vector3 position, float size)

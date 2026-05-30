@@ -113,7 +113,8 @@ Use these steps after pulling the branch:
 3. In the `Production Scene Workflow` section, click `Generate Preview`.
    This creates selectable `Preview Room - ...` box nodes, edge links, and
    placement markers under the workspace `Preview Root` without saving a draft
-   asset.
+   asset. Room nodes include a `MapPreviewRoomNode` component and an enlarged
+   pick collider so they can be selected directly in Scene View.
 4. Use `Random Seed + Generate Preview` until the generated candidate shape is
    acceptable.
 5. Click `Accept Preview + Bake Map` to save the selected candidate as an
