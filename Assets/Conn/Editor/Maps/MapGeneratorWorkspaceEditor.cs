@@ -41,20 +41,28 @@ namespace Conn.Editor.Maps
             EditorGUILayout.HelpBox(
                 "Generate a visual cell-map preview first. When it is acceptable, save it as an editable draft, then validate and bake the runtime CompiledMap asset.",
                 MessageType.Info);
+            if (workspace.MapProfile == null)
+            {
+                EditorGUILayout.HelpBox("Map Profile is required. Assign a MapProfileAsset before generating a preview.", MessageType.Error);
+            }
+
             using (new EditorGUILayout.HorizontalScope())
             {
-                if (GUILayout.Button("Generate Preview"))
+                using (new EditorGUI.DisabledScope(workspace.MapProfile == null))
                 {
-                    serializedObject.ApplyModifiedProperties();
-                    GeneratePreview(workspace);
-                }
+                    if (GUILayout.Button("Generate Preview"))
+                    {
+                        serializedObject.ApplyModifiedProperties();
+                        GeneratePreview(workspace);
+                    }
 
-                if (GUILayout.Button("Random Seed + Generate Preview"))
-                {
-                    serializedObject.ApplyModifiedProperties();
-                    Undo.RecordObject(workspace, "Random Map Preview Seed");
-                    workspace.Seed = UnityEngine.Random.Range(1, int.MaxValue);
-                    GeneratePreview(workspace);
+                    if (GUILayout.Button("Random Seed + Generate Preview"))
+                    {
+                        serializedObject.ApplyModifiedProperties();
+                        Undo.RecordObject(workspace, "Random Map Preview Seed");
+                        workspace.Seed = UnityEngine.Random.Range(1, int.MaxValue);
+                        GeneratePreview(workspace);
+                    }
                 }
             }
 
@@ -342,35 +350,27 @@ namespace Conn.Editor.Maps
 
         private static GeneratedMapResult Generate(MapGeneratorWorkspace workspace)
         {
-            if (workspace.MapProfile != null)
+            if (workspace.MapProfile == null)
             {
-                var snapshot = MapAuthoringValidationService.FindAuthoringAssets();
-                var authoringReport = MapAuthoringValidationService.Validate(snapshot);
-                MapValidationService.ThrowIfFailed(authoringReport);
-                var bundle = RuntimeMapGenerationBundleBuilder.Build(
-                    snapshot,
-                    Mathf.Max(1, workspace.Floor),
-                    Mathf.Max(0, workspace.Difficulty));
-                var entry = bundle.FindProfile(workspace.MapProfile.Id);
-                if (entry == null)
-                {
-                    throw new InvalidOperationException($"Map profile is not in the runtime bundle: {workspace.MapProfile.Id}");
-                }
-
-                return BuildEditableResult(
-                    entry.Profile,
-                    entry.Chunks,
-                    workspace.Seed,
-                    workspace.Floor,
-                    workspace.Difficulty,
-                    workspace.PreviewCellSize);
+                throw new InvalidOperationException("Map Profile is required before generating a map preview.");
             }
 
-            var profile = MapGenerationCatalog.ChapterTwoFirstSliceProfile();
-            var chunks = MapGenerationCatalog.ChapterTwoFirstSliceChunks();
+            var snapshot = MapAuthoringValidationService.FindAuthoringAssets();
+            var authoringReport = MapAuthoringValidationService.Validate(snapshot);
+            MapValidationService.ThrowIfFailed(authoringReport);
+            var bundle = RuntimeMapGenerationBundleBuilder.Build(
+                snapshot,
+                Mathf.Max(1, workspace.Floor),
+                Mathf.Max(0, workspace.Difficulty));
+            var entry = bundle.FindProfile(workspace.MapProfile.Id);
+            if (entry == null)
+            {
+                throw new InvalidOperationException($"Map profile is not in the runtime bundle: {workspace.MapProfile.Id}");
+            }
+
             return BuildEditableResult(
-                profile,
-                chunks,
+                entry.Profile,
+                entry.Chunks,
                 workspace.Seed,
                 workspace.Floor,
                 workspace.Difficulty,

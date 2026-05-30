@@ -1115,6 +1115,9 @@ is partially complete.
   - 2026-05-30: The node/wire candidate editing direction was dropped for
     simplicity. The workspace now starts from a visual cell-map preview, then
     saves the accepted preview as a draft before validation and bake.
+  - 2026-05-30: Removed the hidden Chapter 2 catalog fallback from
+    `MapGeneratorWorkspace`; a `MapProfileAsset` is now required before preview
+    generation.
 - [x] Add screenshots or saved sample assets when the first usable version
   exists.
   - 2026-05-30: Chapter 2 saved `CompiledMapAsset` samples are regenerated
