@@ -209,6 +209,7 @@ Required fields:
 - `floorPalette`
 - `wallPalette`
 - `doorPalette`
+- `moduleSet`
 - `roomTemplatePools`
 - `corridorTemplatePools`
 - `propSets`
@@ -217,6 +218,40 @@ Required fields:
 The style set must be swappable without changing the abstract room/corridor
 layout. It should reference project-owned prefabs and materials; the generator
 must not depend on bundled production art.
+
+### `MapGenModuleSetAsset`
+
+Style-specific prefab module pools used when an accepted mockup is materialized.
+
+Required module categories:
+
+- `floorsA`
+- `floorsB`
+- `wallsStraight`
+- `wallsCornerInside`
+- `wallsCornerOutside`
+- `exteriorCeilings`
+- `interiorCeilings`
+- `wholeDoors`
+- `halfDoorFrames`
+- `halfDoorPanels`
+- `propCategories`
+- `requiredUniqueProps`
+
+Each category should contain weighted prefab entries:
+
+```text
+MapGenModuleEntry
+  prefab
+  weight
+  rotationPolicy
+  offset
+  tags
+```
+
+This matches the observed module definition inspector: each structural category
+has one or more prefab options and a weight. The materializer chooses a prefab
+from the relevant category using deterministic weighted random selection.
 
 ### `MapGenRoomTemplateAsset`
 
@@ -574,6 +609,77 @@ Inspector behavior:
 - The room shape asset should expose a generated thumbnail matching the
   blue/red visual language used by mockup preview.
 
+## Visual Module Authoring Approach
+
+The attached module screenshots show a second authoring layer: the final visual
+map is assembled from reusable prefab modules after the mockup layout is
+accepted.
+
+Technical approach:
+
+- Artists can create modular pieces in Blender or Unity, such as floor pieces,
+  straight walls, inside corners, outside corners, ceilings, door frames, door
+  panels, and prop spots.
+- Unity stores these pieces as prefabs.
+- A `MapGenModuleSetAsset` groups those prefabs by structural category and
+  assigns deterministic selection weights.
+- The accepted mockup layout is scanned cell-by-cell to classify which module
+  category is needed at each position.
+- The materializer instantiates prefab modules under one generated parent
+  `GameObject`, grouped by room/corridor/region for readability.
+
+The module prefab hierarchy visible in the reference should be treated as output
+and library content, not as the procedural layout source of truth. The source of
+truth remains:
+
+```text
+Room shape assets
+  -> accepted mockup draft
+  -> module set weighted prefab pools
+  -> materialized scene/prefab
+```
+
+Module classification rules:
+
+- Mockup room/corridor floor cells become `floorsA` or `floorsB` based on region
+  category, checker/variation rules, or style tags.
+- Boundary edges between navigable and empty cells become `wallsStraight`.
+- Concave navigable corners become `wallsCornerInside`.
+- Convex exterior corners become `wallsCornerOutside`.
+- Covered cells request `interiorCeilings` or `exteriorCeilings` depending on
+  whether the cell belongs to an interior region or outer shell.
+- Connector cells become door modules if the profile/style requests doors.
+- Door openings can use `wholeDoors`, or split `halfDoorFrames` and
+  `halfDoorPanels` if the style supports modular door assembly.
+- Prop marker cells become prop category requests.
+
+Prefab requirements:
+
+- Every structural prefab must align to the generator grid size.
+- Pivot should be consistent, preferably bottom-center or cell-origin based.
+- Prefabs must declare occupied cell footprint if they cover more than one cell.
+- Rotation must be legal only in directions allowed by the module entry.
+- Mesh scale should be normalized so materialization can use grid coordinates
+  without per-prefab correction.
+- Collider/navmesh participation should be configured per prefab or through a
+  module metadata component.
+
+Materialized hierarchy:
+
+```text
+GeneratedMap_<profile>_<seed>
+  MockupReference
+  Floors
+  Walls
+  Ceilings
+  Doors
+  Props
+  Navigation
+```
+
+This hierarchy is for inspection, editing, prefab baking, and runtime scene
+loading. It should be reproducible from the accepted mockup plus module set.
+
 ## Validation Requirements
 
 Profile validation must run before generation.
@@ -581,12 +687,16 @@ Profile validation must run before generation.
 Validation checks:
 
 - profile has a style set.
+- style set has a module set.
 - required room categories have at least one legal template.
 - required room categories have at least one legal mockup room shape.
+- required module categories have at least one prefab when materialization uses
+  that category.
 - corridor pools can connect the required room templates.
 - connector sockets have compatible counterparts.
 - map size can fit the requested room and corridor quantities.
 - room shape dimensions and occupied cells are valid for the grid.
+- module prefabs align to the configured grid size.
 - post-process rules do not contradict quantity or connectivity rules.
 - prop rules reference valid channels.
 - all runtime-baked data is free of editor-only references.
@@ -636,7 +746,7 @@ Editor-only output:
 ### Milestone 1: Data Contracts
 
 - Add `MapGenV2` runtime namespace and authoring assets.
-- Add profile/style/template/rules/connectors/mockup draft assets.
+- Add profile/style/module-set/template/rules/connectors/mockup draft assets.
 - Add grid-editable room shape assets.
 - Add validators with actionable error reports.
 - No generation yet.
@@ -644,8 +754,8 @@ Editor-only output:
 Acceptance:
 
 - A profile can be authored and validated.
-- Missing style, missing room shapes, missing templates, and incompatible
-  connectors are reported.
+- Missing style, missing module set, missing room shapes, missing templates, and
+  incompatible connectors are reported.
 
 ### Milestone 2: Mockup Layout Solver
 
@@ -675,9 +785,12 @@ Acceptance:
 
 ### Milestone 4: Materialization
 
+- Add weighted module set selection.
 - Convert accepted red room masses into style-specific room prefabs/meshes.
 - Convert accepted black corridor paths into style-specific corridor
   prefabs/meshes.
+- Classify mockup cells into floor, straight wall, inside corner, outside
+  corner, ceiling, door, and prop module requests.
 - Preserve room/corridor identity and connector metadata.
 - Validate overlap, walls, doors, and reachability.
 
@@ -685,6 +798,8 @@ Acceptance:
 
 - Materialization only runs after mockup acceptance.
 - The materialized scene matches the accepted mockup structure.
+- Module selection is deterministic for the same accepted mockup, module set,
+  and seed.
 - Doors and corridors connect legal sockets.
 
 ### Milestone 5: Post-Processing
@@ -742,9 +857,12 @@ Acceptance:
 Automated tests:
 
 - missing style fails validation.
+- missing module set fails validation.
+- missing required module prefab fails validation.
 - missing required room shape fails validation.
 - missing required room template fails validation.
 - incompatible connectors fail validation.
+- module prefab grid mismatch fails validation.
 - invalid room shape grid fails validation.
 - impossible room quantity fails validation.
 - same seed/profile produces identical mockup layout signature.
@@ -761,6 +879,7 @@ Manual Unity checks:
 
 - create a profile from scratch.
 - assign a style set.
+- assign a module set with floor, wall, ceiling, and door prefab pools.
 - author simple grid-based room shapes.
 - author simple room/corridor templates for materialization.
 - validate profile.
