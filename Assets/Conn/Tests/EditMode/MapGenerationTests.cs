@@ -384,6 +384,35 @@ namespace Conn.Tests.EditMode
             Object.DestroyImmediate(objectPalette);
         }
 
+        [Test]
+        public void EditableBakeIsDeterministicForUnchangedDraft()
+        {
+            var draft = BuildBakeDraft();
+
+            var first = EditableMapBakeService.Bake(draft);
+            var second = EditableMapBakeService.Bake(draft);
+
+            Assert.That(JsonUtility.ToJson(first), Is.EqualTo(JsonUtility.ToJson(second)));
+        }
+
+        [Test]
+        public void EditableBakeRoundTripLoadsFromCompiledJson()
+        {
+            var draft = BuildBakeDraft();
+
+            var compiled = EditableMapBakeService.Bake(draft);
+            var json = JsonUtility.ToJson(compiled);
+            var loaded = CompiledMapRuntimeLoader.LoadFromJson(json);
+
+            Assert.That(loaded.MapId, Is.EqualTo(compiled.MapId));
+            Assert.That(loaded.Cells.Count, Is.EqualTo(compiled.Cells.Count));
+            Assert.That(loaded.Objects.Count, Is.EqualTo(compiled.Objects.Count));
+            Assert.That(loaded.RoomRecords.Count, Is.EqualTo(compiled.RoomRecords.Count));
+            Assert.That(loaded.Sockets.Count, Is.EqualTo(compiled.Sockets.Count));
+            Assert.That(loaded.Placements.Exists(placement => placement.Kind == MapPlacementKind.Start), Is.True);
+            Assert.That(loaded.Placements.Exists(placement => placement.Kind == MapPlacementKind.Monster), Is.True);
+        }
+
         private static EditableMapDraftAsset BuildLinearValidationDraft()
         {
             var draft = ScriptableObject.CreateInstance<EditableMapDraftAsset>();
@@ -406,6 +435,74 @@ namespace Conn.Tests.EditMode
                 new EditableMapRoom { Id = "quest", Role = MapRoomRole.QuestTarget, X = 1, Y = 0, Width = 1, Height = 1 },
                 new EditableMapRoom { Id = "boss", Role = MapRoomRole.Boss, X = 2, Y = 0, Width = 1, Height = 1 },
                 new EditableMapRoom { Id = "exit", Role = MapRoomRole.Exit, X = 3, Y = 0, Width = 1, Height = 1 }
+            };
+            return draft;
+        }
+
+        private static EditableMapDraftAsset BuildBakeDraft()
+        {
+            var draft = ScriptableObject.CreateInstance<EditableMapDraftAsset>();
+            draft.Id = "bake_probe";
+            draft.SourceProfileId = "profile_probe";
+            draft.Seed = 17;
+            draft.InitializeBlank(4, 2, 1f, 1f);
+            for (var x = 0; x < 4; x++)
+            {
+                for (var y = 0; y < 2; y++)
+                {
+                    draft.TrySetCell(new EditableMapCell
+                    {
+                        X = x,
+                        Y = y,
+                        RoomId = x < 2 ? "start" : "exit",
+                        Terrain = RoomChunkCellType.Floor,
+                        Height = 0,
+                        Direction = MapDirection.North,
+                        MaterialId = "stone_floor"
+                    });
+                }
+            }
+
+            draft.Rooms = new[]
+            {
+                new EditableMapRoom { Id = "start", Role = MapRoomRole.Start, LayoutKind = RoomChunkLayoutKind.Room, X = 0, Y = 0, Width = 1, Height = 1, SocketMask = MapDirection.East },
+                new EditableMapRoom { Id = "quest", Role = MapRoomRole.QuestTarget, LayoutKind = RoomChunkLayoutKind.Room, X = 1, Y = 0, Width = 1, Height = 1, SocketMask = MapDirection.East | MapDirection.West },
+                new EditableMapRoom { Id = "boss", Role = MapRoomRole.Boss, LayoutKind = RoomChunkLayoutKind.Room, X = 2, Y = 0, Width = 1, Height = 1, SocketMask = MapDirection.East | MapDirection.West },
+                new EditableMapRoom { Id = "exit", Role = MapRoomRole.Exit, LayoutKind = RoomChunkLayoutKind.Room, X = 3, Y = 0, Width = 1, Height = 1, SocketMask = MapDirection.West }
+            };
+            draft.Sockets = new[]
+            {
+                new EditableMapSocket { Id = "start_quest", RoomId = "start", X = 0, Y = 0, Direction = MapDirection.East, TargetRoomId = "quest", Width = 1 },
+                new EditableMapSocket { Id = "quest_start", RoomId = "quest", X = 1, Y = 0, Direction = MapDirection.West, TargetRoomId = "start", Width = 1 },
+                new EditableMapSocket { Id = "quest_boss", RoomId = "quest", X = 1, Y = 0, Direction = MapDirection.East, TargetRoomId = "boss", Width = 1 },
+                new EditableMapSocket { Id = "boss_quest", RoomId = "boss", X = 2, Y = 0, Direction = MapDirection.West, TargetRoomId = "quest", Width = 1 },
+                new EditableMapSocket { Id = "boss_exit", RoomId = "boss", X = 2, Y = 0, Direction = MapDirection.East, TargetRoomId = "exit", Width = 1 },
+                new EditableMapSocket { Id = "exit_boss", RoomId = "exit", X = 3, Y = 0, Direction = MapDirection.West, TargetRoomId = "boss", Width = 1 }
+            };
+            draft.Objects = new[]
+            {
+                new EditableMapObjectPlacement
+                {
+                    Id = "spawn_hint",
+                    PaletteObjectId = "spawn_hint",
+                    Kind = RoomChunkObjectKind.SpawnHint,
+                    X = 1,
+                    Y = 1,
+                    Width = 1,
+                    Depth = 1,
+                    RuntimeReferenceId = "spawn_runtime"
+                },
+                new EditableMapObjectPlacement
+                {
+                    Id = "treasure",
+                    PaletteObjectId = "treasure_chest",
+                    Kind = RoomChunkObjectKind.Chest,
+                    X = 3,
+                    Y = 1,
+                    Width = 1,
+                    Depth = 1,
+                    RuntimeReferenceId = "treasure_runtime"
+                }
             };
             return draft;
         }

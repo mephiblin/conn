@@ -228,10 +228,17 @@ namespace Conn.Core.Maps
         public int Seed;
         public int Width;
         public int Height;
+        public float CellSize = 1f;
+        public float HeightStep = 1f;
         public List<RoomGraphNode> Rooms = new List<RoomGraphNode>();
         public List<RoomGraphEdge> Doors = new List<RoomGraphEdge>();
         public List<MapPlacement> Placements = new List<MapPlacement>();
         public List<CompiledEncounterPlacement> EncounterPlacements = new List<CompiledEncounterPlacement>();
+        public List<CompiledMapCell> Cells = new List<CompiledMapCell>();
+        public List<CompiledMapObjectPlacement> Objects = new List<CompiledMapObjectPlacement>();
+        public List<CompiledMapRoomRecord> RoomRecords = new List<CompiledMapRoomRecord>();
+        public List<CompiledMapZoneRecord> Zones = new List<CompiledMapZoneRecord>();
+        public List<CompiledMapSocketRecord> Sockets = new List<CompiledMapSocketRecord>();
     }
 
     [Serializable]
@@ -248,5 +255,75 @@ namespace Conn.Core.Maps
         public int Y;
         public string StateKey = string.Empty;
         public bool RequiredForQuest;
+    }
+
+    [Serializable]
+    public sealed class CompiledMapCell
+    {
+        public int X;
+        public int Y;
+        public string RoomId = string.Empty;
+        public string ZoneId = string.Empty;
+        public RoomChunkCellType Terrain;
+        public int Height;
+        public MapDirection Direction;
+        public string MaterialId = string.Empty;
+        public string FloorVariantId = string.Empty;
+        public string WallVariantId = string.Empty;
+        public int Flags;
+    }
+
+    [Serializable]
+    public sealed class CompiledMapObjectPlacement
+    {
+        public string PlacementId = string.Empty;
+        public string PaletteObjectId = string.Empty;
+        public RoomChunkObjectKind Kind;
+        public int X;
+        public int Y;
+        public int Height;
+        public int Width = 1;
+        public int Depth = 1;
+        public MapDirection Direction;
+        public bool BlocksMovement;
+        public string RuntimeReferenceId = string.Empty;
+    }
+
+    [Serializable]
+    public sealed class CompiledMapRoomRecord
+    {
+        public string Id = string.Empty;
+        public MapRoomRole Role;
+        public RoomChunkLayoutKind LayoutKind = RoomChunkLayoutKind.Room;
+        public int X;
+        public int Y;
+        public int Width;
+        public int Height;
+        public MapDirection SocketMask;
+        public int HeightLevel;
+        public string ZoneId = string.Empty;
+        public string ChunkId = string.Empty;
+    }
+
+    [Serializable]
+    public sealed class CompiledMapZoneRecord
+    {
+        public string Id = string.Empty;
+        public string ThemeId = string.Empty;
+        public int IntendedDifficulty;
+        public string Purpose = string.Empty;
+    }
+
+    [Serializable]
+    public sealed class CompiledMapSocketRecord
+    {
+        public string Id = string.Empty;
+        public string RoomId = string.Empty;
+        public int X;
+        public int Y;
+        public MapDirection Direction;
+        public int Width = 1;
+        public string TargetRoomId = string.Empty;
+        public string LockedDoorKeyId = string.Empty;
     }
 }

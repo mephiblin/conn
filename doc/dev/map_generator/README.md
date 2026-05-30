@@ -32,6 +32,9 @@ As of 2026-05-30, the first draft-backed path is now in the project:
   and object ids for draft authoring, validation, and preview lookup. Drafts
   can reference palette ids instead of raw Unity object references, while the
   editor still resolves preview materials and prefabs from the palette assets.
+- `EditableMapBakeService` now extends `CompiledMap` with runtime-safe cell,
+  object, room, zone, and socket payloads, blocks bake on validation errors,
+  and can save a `CompiledMapAsset` directly from an edited draft.
 - `MapGeneratorWorkspaceEditor` now has a bridge button that saves the current
   generated result as an `EditableMapDraftAsset` without making the workspace a
   required dependency of the new pipeline.
@@ -52,9 +55,13 @@ Use these steps after pulling the branch:
 5. Use `Rebuild Preview` in the draft inspector and confirm that an
    `Editable Map Preview Root (...)` scene object appears with terrain, wall,
    slope, stair, object, and overlay children.
-6. Use `Clear Preview` and confirm the preview root is deleted while the draft
+6. Use `Validate` and confirm the draft either passes or reports precise
+   cell/object/socket errors in the inspector.
+7. Use `Bake Runtime Map` or `Save Compiled Map Asset` and confirm the bake only
+   succeeds when validation passes.
+8. Use `Clear Preview` and confirm the preview root is deleted while the draft
    asset data remains unchanged.
-7. Rebuild the preview again to confirm the draft asset is the source of truth
+9. Rebuild the preview again to confirm the draft asset is the source of truth
    and preview objects are disposable.
 
 ## Purpose

@@ -1007,27 +1007,27 @@ is partially complete.
 - [x] Validate stair direction and height delta.
 - [ ] Report validation failures by cell, object id, room id, socket id, or
   palette id.
-- [ ] Block bake when required validation errors exist.
+- [x] Block bake when required validation errors exist.
 - [x] Add tests for disconnected routes.
 - [x] Add tests for blocking object route cuts.
 - [x] Add tests for invalid slope/stair height connections.
 
 ### Phase 7: Runtime Bake
 
-- [ ] Create `EditableMapBakeService`.
-- [ ] Decide whether to extend `CompiledMap` or add a dedicated runtime cell-map
+- [x] Create `EditableMapBakeService`.
+- [x] Decide whether to extend `CompiledMap` or add a dedicated runtime cell-map
   payload.
-- [ ] Bake cells to runtime-safe records.
-- [ ] Bake objects to runtime-safe records.
-- [ ] Bake rooms and zones.
-- [ ] Bake sockets and doors.
+- [x] Bake cells to runtime-safe records.
+- [x] Bake objects to runtime-safe records.
+- [x] Bake rooms and zones.
+- [x] Bake sockets and doors.
 - [ ] Bake anchors and encounter placements.
-- [ ] Confirm no baked type stores Unity object or editor references.
-- [ ] Save optional `CompiledMapAsset` from an edited draft.
+- [x] Confirm no baked type stores Unity object or editor references.
+- [x] Save optional `CompiledMapAsset` from an edited draft.
 - [ ] Load baked draft data in Dungeon runtime.
 - [ ] Spawn monsters/interactions from baked object/placement data.
-- [ ] Add deterministic bake test for unchanged draft data.
-- [ ] Add runtime load smoke test.
+- [x] Add deterministic bake test for unchanged draft data.
+- [x] Add runtime load smoke test.
 
 ### Documentation And Review Checklist
 

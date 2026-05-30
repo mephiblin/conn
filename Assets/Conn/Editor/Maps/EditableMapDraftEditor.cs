@@ -93,6 +93,36 @@ namespace Conn.Editor.Maps
 
             using (new EditorGUILayout.HorizontalScope())
             {
+                if (GUILayout.Button("Bake Runtime Map"))
+                {
+                    try
+                    {
+                        var compiled = EditableMapBakeService.Bake(draft);
+                        Debug.Log($"Baked editable map draft {draft.name} to runtime payload with {compiled.Cells.Count} cells and {compiled.Objects.Count} objects.");
+                    }
+                    catch (Exception exception)
+                    {
+                        Debug.LogException(exception);
+                    }
+                }
+
+                if (GUILayout.Button("Save Compiled Map Asset"))
+                {
+                    try
+                    {
+                        var asset = EditableMapBakeService.SaveCompiledMapAsset(draft);
+                        Selection.activeObject = asset;
+                        EditorGUIUtility.PingObject(asset);
+                    }
+                    catch (Exception exception)
+                    {
+                        Debug.LogException(exception);
+                    }
+                }
+            }
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
                 if (GUILayout.Button("Clear Preview"))
                 {
                     EditableMapPreviewMeshBuilder.ClearPreview(draft);
