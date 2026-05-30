@@ -591,6 +591,9 @@ Progress note 2026-05-31:
 - Added required-landmark entropy summaries and changed production room
   placement to collapse the lowest-candidate required landmark first while
   preserving original required-category order for corridor connectivity.
+- Added candidate-exhaustion diagnostics after already placed
+  footprint/connector/blocker cells remove all candidates for a remaining
+  required landmark.
 
 Goal: replace the current simple connected-cell MVP with a real rooms/corridors
 solver.
@@ -609,8 +612,10 @@ Tasks:
   boss near late path, quest before lock, etc.
 - [x] Collapse lowest-entropy required landmarks before room placement.
 - [ ] Collapse lowest-entropy cells/regions beyond required landmarks.
+- [x] Propagate occupied footprint/connector/blocker cells into remaining
+  required-landmark candidate counts.
 - [ ] Propagate footprint, connector, blocked-region, and adjacency
-  constraints.
+  constraints beyond occupied-cell candidate filtering.
 - [x] Maintain graph connectivity during solve.
 - [ ] Add deterministic retries with detailed contradiction reports.
 - [ ] Add loop, branch, and dead-end policies.
@@ -629,6 +634,7 @@ Verification:
 - EditMode test for required-landmark reservation ordering and ids.
 - EditMode test for start-to-exit distance contradiction diagnostics.
 - EditMode test for lowest-entropy required-landmark domain summary.
+- EditMode test for candidate exhaustion after footprint propagation.
 - Seed sweep across multiple profiles and sizes.
 - Tests for required room presence and reachability.
 - Tests for connector compatibility.

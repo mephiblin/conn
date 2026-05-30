@@ -78,7 +78,14 @@ namespace Conn.MapGenV2.Authoring
 
             for (var step = 0; step < landmarks.Length; step++)
             {
-                var i = PickLowestEntropyLandmarkIndex(landmarks, placed, roomTemplates, cells, width, height);
+                var i = PickLowestEntropyLandmarkIndex(
+                    landmarks,
+                    placed,
+                    roomTemplates,
+                    cells,
+                    width,
+                    height,
+                    out var candidateCount);
                 var category = landmarks[i].Category;
                 var template = PickTemplateForCategory(roomTemplates, category, ref rng);
                 if (template == null)
@@ -88,6 +95,16 @@ namespace Conn.MapGenV2.Authoring
                         "production_solver_no_template_for_category",
                         $"No room template can satisfy required category {category}.",
                         "Add a matching room template or a Main fallback template."));
+                    return Failed(width, height, seed, report);
+                }
+
+                if (candidateCount <= 0)
+                {
+                    report.Add(new MapGenIssue(
+                        MapGenGenerationPhase.SolveMockup,
+                        "production_solver_no_room_placement_candidates",
+                        $"No remaining placement candidates can satisfy required category {category}.",
+                        "Increase map size, reduce required rooms, or use smaller templates with non-overlapping footprints/connectors/blockers."));
                     return Failed(width, height, seed, report);
                 }
 
@@ -163,7 +180,8 @@ namespace Conn.MapGenV2.Authoring
             MapGenRoomTemplateAsset[] templates,
             MapGenMockupCell[] cells,
             int width,
-            int height)
+            int height,
+            out int candidateCount)
         {
             var best = -1;
             var bestCandidateCount = int.MaxValue;
@@ -174,14 +192,15 @@ namespace Conn.MapGenV2.Authoring
                     continue;
                 }
 
-                var candidateCount = CountPlacementCandidates(templates, landmarks[i].Category, cells, width, height);
-                if (best < 0 || candidateCount < bestCandidateCount)
+                var currentCandidateCount = CountPlacementCandidates(templates, landmarks[i].Category, cells, width, height);
+                if (best < 0 || currentCandidateCount < bestCandidateCount)
                 {
                     best = i;
-                    bestCandidateCount = candidateCount;
+                    bestCandidateCount = currentCandidateCount;
                 }
             }
 
+            candidateCount = bestCandidateCount == int.MaxValue ? 0 : bestCandidateCount;
             return best;
         }
 
