@@ -195,6 +195,7 @@ namespace Conn.MapGenV2.Editor
             if (profile != null)
             {
                 report.AddRange(profile.Validate(), profile);
+                report.AddRange(MapGenProfileGraphValidator.Validate(profile), profile);
             }
 
             if (draft != null && !string.IsNullOrWhiteSpace(draft.LastGeneratedSignature))

@@ -325,6 +325,91 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void ProfileGraphValidatorReportsRequiredPoolAndImpossibleRanges()
+        {
+            var profile = ScriptableObject.CreateInstance<MapGenProfileAsset>();
+            var styleSet = ScriptableObject.CreateInstance<MapGenStyleSetAsset>();
+            var ruleSet = ScriptableObject.CreateInstance<MapGenRuleSetAsset>();
+            var startTemplate = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();
+
+            try
+            {
+                PopulateRoomTemplate(startTemplate, "start_template", MapGenRoomCategory.Start);
+                profile.MapSize = new Vector2Int(2, 2);
+                profile.StyleSet = styleSet;
+                profile.LayoutRules = ruleSet;
+                styleSet.RoomTemplates = new[] { startTemplate };
+                ruleSet.QuantityRules = MapGenQuantityRules.Defaults();
+                ruleSet.QuantityRules.RequiredCategories = new[] { MapGenRoomCategory.Start, MapGenRoomCategory.Exit };
+                ruleSet.QuantityRules.MinRooms = 5;
+                ruleSet.QuantityRules.MaxRooms = 1;
+                ruleSet.QuantityRules.MinCorridorCells = 6;
+                ruleSet.DistanceRules = MapGenDistanceRules.Defaults();
+                ruleSet.DistanceRules.MinStartToExitDistance = 99;
+
+                var report = MapGenProfileGraphValidator.Validate(profile);
+
+                Assert.That(report.IsValid, Is.False);
+                Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "profile_graph_required_categories_exceed_max_rooms"));
+                Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "profile_graph_required_category_has_no_template"
+                        && issue.ContextPath == "StyleSet.RoomTemplates/Exit"));
+                Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "profile_graph_min_rooms_exceeds_map_cells"));
+                Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "profile_graph_min_corridors_exceeds_map_cells"));
+                Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "profile_graph_start_exit_distance_impossible"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(startTemplate);
+                Object.DestroyImmediate(ruleSet);
+                Object.DestroyImmediate(styleSet);
+                Object.DestroyImmediate(profile);
+            }
+        }
+
+        [Test]
+        public void ProfileGraphValidatorReportsConnectorMatrixWithoutCompatibleCorridor()
+        {
+            var profile = ScriptableObject.CreateInstance<MapGenProfileAsset>();
+            var styleSet = ScriptableObject.CreateInstance<MapGenStyleSetAsset>();
+            var ruleSet = ScriptableObject.CreateInstance<MapGenRuleSetAsset>();
+            var roomTemplate = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();
+            var corridorTemplate = ScriptableObject.CreateInstance<MapGenCorridorTemplateAsset>();
+
+            try
+            {
+                PopulateRoomTemplate(roomTemplate, "room_template", MapGenRoomCategory.Start);
+                PopulateCorridorTemplate(corridorTemplate, "different_socket");
+                profile.MapSize = new Vector2Int(6, 6);
+                profile.StyleSet = styleSet;
+                profile.LayoutRules = ruleSet;
+                styleSet.RoomTemplates = new[] { roomTemplate };
+                styleSet.CorridorTemplates = new[] { corridorTemplate };
+                ruleSet.QuantityRules = MapGenQuantityRules.Defaults();
+                ruleSet.QuantityRules.RequiredCategories = new[] { MapGenRoomCategory.Start };
+
+                var report = MapGenProfileGraphValidator.Validate(profile);
+
+                Assert.That(report.IsValid, Is.False);
+                Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "profile_graph_no_compatible_connector_matrix"
+                        && issue.ContextPath == "StyleSet.RoomTemplates/StyleSet.CorridorTemplates"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(corridorTemplate);
+                Object.DestroyImmediate(roomTemplate);
+                Object.DestroyImmediate(ruleSet);
+                Object.DestroyImmediate(styleSet);
+                Object.DestroyImmediate(profile);
+            }
+        }
+
+        [Test]
         public void StyleSetValidatorIncludesExplicitTemplateIssues()
         {
             var styleSet = ScriptableObject.CreateInstance<MapGenStyleSetAsset>();

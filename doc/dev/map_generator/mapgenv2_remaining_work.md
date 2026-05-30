@@ -911,6 +911,9 @@ Progress note 2026-05-31:
   layer semantics are explicit.
 - Added runtime bake consistency validation for stale accepted signatures,
   dimension mismatches, and baked payload count mismatches.
+- Added profile graph diagnostics for required category/template pools,
+  impossible room/corridor/distance ranges, and room-to-corridor connector
+  compatibility matrix issues.
 
 Goal: make failures actionable.
 
@@ -921,9 +924,9 @@ Tasks:
 - [x] Add context object/path/cell coordinate to every issue.
 - [x] Validate profile graph:
   profile -> style -> module set -> templates -> shapes -> rules.
-- [ ] Validate required pools and modules.
-- [ ] Validate connector compatibility matrix.
-- [ ] Validate impossible quantity/range constraints.
+- [x] Validate required pools and modules.
+- [x] Validate connector compatibility matrix.
+- [x] Validate impossible quantity/range constraints.
 - [ ] Validate blocked-region feasibility.
 - [ ] Validate post-process pass safety.
 - [x] Validate materialization coverage before instantiation.
