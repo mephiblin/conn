@@ -16,19 +16,36 @@ namespace Conn.MapGenV2.Core
                 return report;
             }
 
-            if (options.UseDirectRoutes)
+            var maxPasses = Math.Max(1, options.MaxPasses);
+            for (var pass = 0; pass < maxPasses; pass++)
             {
-                report.DirectRouteCellsAdded = AddDirectRoute(width, height, cells);
-            }
+                var changed = false;
+                if (options.UseDirectRoutes)
+                {
+                    var added = AddDirectRoute(width, height, cells);
+                    report.DirectRouteCellsAdded += added;
+                    changed |= added > 0;
+                }
 
-            if (options.ReduceDeadEnds)
-            {
-                report.DeadEndCorridorsRemoved = RemoveDeadEndCorridors(width, height, cells);
-            }
+                if (options.ReduceDeadEnds)
+                {
+                    var removed = RemoveDeadEndCorridors(width, height, cells);
+                    report.DeadEndCorridorsRemoved += removed;
+                    changed |= removed > 0;
+                }
 
-            if (options.RemoveSmallRooms)
-            {
-                report.IsolatedRoomsRemoved = RemoveIsolatedRooms(width, height, cells);
+                if (options.RemoveSmallRooms)
+                {
+                    var removed = RemoveIsolatedRooms(width, height, cells);
+                    report.IsolatedRoomsRemoved += removed;
+                    changed |= removed > 0;
+                }
+
+                report.PassesRun++;
+                if (!changed)
+                {
+                    break;
+                }
             }
 
             return report;

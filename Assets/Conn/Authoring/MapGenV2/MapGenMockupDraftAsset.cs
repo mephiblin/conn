@@ -165,9 +165,11 @@ namespace Conn.MapGenV2.Authoring
             var options = new MapGenPostProcessOptions();
             if (Profile != null && Profile.LayoutRules != null)
             {
-                options.UseDirectRoutes = Profile.LayoutRules.UseDirectRoutes;
-                options.ReduceDeadEnds = Profile.LayoutRules.ReduceDeadEnds;
-                options.RemoveSmallRooms = Profile.LayoutRules.RemoveSmallRooms;
+                var rules = Profile.LayoutRules.PostProcessRules;
+                options.UseDirectRoutes = rules.UseDirectRoutes;
+                options.ReduceDeadEnds = rules.ReduceDeadEnds;
+                options.RemoveSmallRooms = rules.RemoveSmallRooms;
+                options.MaxPasses = rules.MaxPasses;
             }
 
             var report = MapGenMockupPostProcessor.Apply(Width, Height, Cells, options);

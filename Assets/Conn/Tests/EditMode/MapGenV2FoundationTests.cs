@@ -1538,6 +1538,49 @@ namespace Conn.Tests.EditMode
 
             Assert.That(report.DirectRouteCellsAdded, Is.GreaterThan(0));
             Assert.That(report.Changed, Is.True);
+            Assert.That(report.PassesRun, Is.GreaterThanOrEqualTo(1));
+        }
+
+        [Test]
+        public void MockupDraftPostProcessingUsesStructuredRuleSettings()
+        {
+            var draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();
+            var profile = ScriptableObject.CreateInstance<MapGenProfileAsset>();
+            var ruleSet = ScriptableObject.CreateInstance<MapGenRuleSetAsset>();
+
+            try
+            {
+                profile.LayoutRules = ruleSet;
+                ruleSet.UseDirectRoutes = false;
+                ruleSet.PostProcessRules = MapGenPostProcessRules.Defaults();
+                ruleSet.PostProcessRules.UseDirectRoutes = true;
+                ruleSet.PostProcessRules.MaxPasses = 2;
+                draft.Profile = profile;
+                draft.GridSize = new Vector2Int(5, 5);
+                draft.EnsureCellArray();
+                draft.Cells[0] = new MapGenMockupCell
+                {
+                    State = MapGenCellState.Room,
+                    RoomCategory = MapGenRoomCategory.Start
+                };
+                draft.Cells[24] = new MapGenMockupCell
+                {
+                    State = MapGenCellState.Room,
+                    RoomCategory = MapGenRoomCategory.Exit
+                };
+
+                var report = draft.ApplyPostProcessingFromProfile();
+
+                Assert.That(report.DirectRouteCellsAdded, Is.GreaterThan(0));
+                Assert.That(report.PassesRun, Is.EqualTo(2));
+                Assert.That(draft.LastDirectRouteCellsAdded, Is.EqualTo(report.DirectRouteCellsAdded));
+            }
+            finally
+            {
+                Object.DestroyImmediate(draft);
+                Object.DestroyImmediate(profile);
+                Object.DestroyImmediate(ruleSet);
+            }
         }
 
         [Test]

@@ -8,6 +8,8 @@ namespace Conn.MapGenV2.Core
 
         public int IsolatedRoomsRemoved { get; set; }
 
+        public int PassesRun { get; set; }
+
         public bool Changed => DirectRouteCellsAdded > 0
             || DeadEndCorridorsRemoved > 0
             || IsolatedRoomsRemoved > 0;

@@ -656,11 +656,18 @@ Verification:
 
 ## Phase 8: Post-Processing System
 
+Progress note 2026-05-31:
+
+- Draft post-processing now uses structured `MapGenPostProcessRules` instead
+  of the legacy top-level booleans as the execution source.
+- Core post-process options include `MaxPasses`, and reports expose
+  `PassesRun` alongside per-pass change counts.
+
 Goal: make post-processing explicit, configurable, visible, and safe.
 
 Tasks:
 
-- [ ] Convert post-process options into a rule asset/struct.
+- [x] Convert post-process options into a rule asset/struct.
 - [ ] Implement pass list:
   remove small rooms, split large rooms, consolidate paths, add direct routes,
   fill selected empty space, reduce dead ends, add loops, normalize route
@@ -679,6 +686,7 @@ Acceptance:
 
 Verification:
 
+- EditMode test that draft post-processing reads structured rule settings.
 - Tests for every pass.
 - Tests for rollback on invalid pass result.
 - Manual Unity check: toggle each pass and inspect diff overlay.
