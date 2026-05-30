@@ -1175,6 +1175,36 @@ Current verification status:
 - Batch verification produced a deterministic accepted draft signature,
   materialization requests, runtime baked cells, and traversal edges.
 
+Deferred verification:
+
+The MVP implementation is complete for the documented basic implementation
+scope. The checks below are intentionally deferred because they are broader than
+the requested basic implementation/verification pass and should be treated as
+stabilization or production-hardening work.
+
+- Run the full Unity Test Runner EditMode suite from the editor UI after the
+  project is closed/reopened cleanly.
+- Run seed sweep checks across multiple map sizes to catch rare solver
+  contradictions.
+- Verify several designer-authored profiles instead of only the transient
+  verification profile.
+- Verify multiple style sets on the same accepted mockup to confirm abstract
+  layout and visual skinning stay separated.
+- Verify module selection with real floor, wall, ceiling, door, and prop
+  prefabs instead of placeholder transient `GameObject`s.
+- Verify materialized scene output visually in Unity Scene view.
+- Verify saved assets after editor restart: profile, room shape, mockup draft,
+  accepted state, baked map data.
+- Verify runtime scene loading against actual game consumers for traversal,
+  spawn markers, objective markers, and pathfinding queries.
+- Verify prop placement with blocker props and confirm traversal remains valid.
+- Verify undo/redo and inspector editing behavior under repeated room shape
+  grid edits.
+- Verify legacy map generator quarantine boundaries remain intact when both
+  legacy and MapGenV2 assets exist in the project.
+- Verify generated prefab or scene output, if production prefab baking is
+  enabled later.
+
 ### Milestone 1: Data Contracts
 
 - Add `MapGenV2` runtime namespace and authoring assets.
