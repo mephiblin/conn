@@ -60,6 +60,17 @@ namespace Conn.MapGenV2.Editor
                 }
             }
 
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                using (new EditorGUI.DisabledScope(!draft.Accepted || !draft.IsAcceptedSignatureCurrent))
+                {
+                    if (GUILayoutButton("Materialize"))
+                    {
+                        MapGenMockupMaterializer.Materialize(draft);
+                    }
+                }
+            }
+
             if (lastGenerationReport != null)
             {
                 MapGenValidationReportEditorGUI.Draw(lastGenerationReport, draft, "Mockup generated.");

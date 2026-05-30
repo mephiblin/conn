@@ -39,6 +39,37 @@ namespace Conn.MapGenV2.Authoring
             return report;
         }
 
+        public MapGenModuleEntry[] GetEntries(MapGenModuleCategory category)
+        {
+            switch (category)
+            {
+                case MapGenModuleCategory.FloorA:
+                    return FloorsA;
+                case MapGenModuleCategory.FloorB:
+                    return FloorsB;
+                case MapGenModuleCategory.WallStraight:
+                    return WallsStraight;
+                case MapGenModuleCategory.WallCornerInside:
+                    return WallsCornerInside;
+                case MapGenModuleCategory.WallCornerOutside:
+                    return WallsCornerOutside;
+                case MapGenModuleCategory.CeilingInterior:
+                    return InteriorCeilings;
+                case MapGenModuleCategory.CeilingExterior:
+                    return ExteriorCeilings;
+                case MapGenModuleCategory.DoorWhole:
+                    return WholeDoors;
+                case MapGenModuleCategory.DoorFrameHalf:
+                    return HalfDoorFrames;
+                case MapGenModuleCategory.DoorPanelHalf:
+                    return HalfDoorPanels;
+                case MapGenModuleCategory.Prop:
+                    return PropCategories;
+                default:
+                    return Array.Empty<MapGenModuleEntry>();
+            }
+        }
+
         private void OnValidate()
         {
             ClampEntries(FloorsA);

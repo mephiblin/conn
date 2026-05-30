@@ -159,5 +159,23 @@ namespace Conn.Tests.EditMode
             Assert.That(report.DirectRouteCellsAdded, Is.GreaterThan(0));
             Assert.That(report.Changed, Is.True);
         }
+
+        [Test]
+        public void MaterializationClassifierCreatesFloorAndWallRequests()
+        {
+            var cells = new[]
+            {
+                new MapGenMockupCell { State = MapGenCellState.Room, RoomCategory = MapGenRoomCategory.Start }
+            };
+
+            var requests = MapGenMaterializationClassifier.Classify(1, 1, cells);
+
+            Assert.That(requests, Has.Exactly(1).Matches<MapGenModuleRequest>(
+                request => request.Category == MapGenModuleCategory.FloorA));
+            Assert.That(requests, Has.Exactly(4).Matches<MapGenModuleRequest>(
+                request => request.Category == MapGenModuleCategory.WallStraight));
+            Assert.That(requests, Has.Exactly(4).Matches<MapGenModuleRequest>(
+                request => request.Category == MapGenModuleCategory.WallCornerOutside));
+        }
     }
 }
