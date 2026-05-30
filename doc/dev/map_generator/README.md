@@ -57,6 +57,22 @@ validation, first-pass bake/runtime consumption, and initial layout-aware draft
 generation now exist, but richer route validation, deeper generator authoring,
 and full dungeon gameplay integration are still pending.
 
+## Workspace Boundary
+
+`MapGeneratorWorkspace` is still intentionally treated as legacy debug/reference
+UI. It can generate a graph result and bridge that result into a new
+`EditableMapDraftAsset`, but it is not the source of truth once the draft
+exists.
+
+Intentional incompatibilities today:
+
+- Draft painting, validation overlays, bake output, and runtime payloads do not
+  sync back into `MapGeneratorWorkspace`.
+- Workspace preview cubes are still disposable debug output and are not kept in
+  parity with the draft preview mesh.
+- New validation/bake work should target `EditableMapDraftAsset` and
+  `CompiledMap`, not extend the old `GeneratedMapDraft` preview path.
+
 ## Manual Unity Check Steps
 
 Use these steps after pulling the branch:

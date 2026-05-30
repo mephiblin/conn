@@ -30,7 +30,9 @@ namespace Conn.Editor.Maps
             var walkable = BuildWalkabilityMap(draft, report);
             ValidateObjects(draft, report);
             ValidateSockets(draft, walkable, report);
+            ValidateRoomEntrySocketsReachAnchors(draft, walkable, report);
             ValidateRequiredRoutes(draft, walkable, report);
+            ValidateOptionalRoutes(draft, walkable, report);
             ValidateHeightTransitions(draft, report);
             return report;
         }
@@ -208,6 +210,128 @@ namespace Conn.Editor.Maps
             ValidateRoute("boss-to-exit", bossRoom.Id, boss, exitRoom.Id, exit, draft, walkable, report);
         }
 
+        private static void ValidateRoomEntrySocketsReachAnchors(EditableMapDraftAsset draft, bool[,] walkable, MapValidationReport report)
+        {
+            ValidateRequiredRoomEntrySockets(draft, walkable, MapRoomRole.Start, report, requireEntrySocket: false);
+            ValidateRequiredRoomEntrySockets(draft, walkable, MapRoomRole.QuestTarget, report, requireEntrySocket: true);
+            ValidateRequiredRoomEntrySockets(draft, walkable, MapRoomRole.Boss, report, requireEntrySocket: true);
+            ValidateRequiredRoomEntrySockets(draft, walkable, MapRoomRole.Exit, report, requireEntrySocket: true);
+        }
+
+        private static void ValidateRequiredRoomEntrySockets(
+            EditableMapDraftAsset draft,
+            bool[,] walkable,
+            MapRoomRole role,
+            MapValidationReport report,
+            bool requireEntrySocket)
+        {
+            foreach (var room in draft.Rooms ?? Array.Empty<EditableMapRoom>())
+            {
+                if (room.Role != role)
+                {
+                    continue;
+                }
+
+                var sockets = FindRoomSockets(draft, room.Id);
+                if (requireEntrySocket && sockets.Count == 0)
+                {
+                    report.Errors.Add($"Room {room.Id} has no entry socket for required role {role}.");
+                    continue;
+                }
+
+                if (!TryResolveRoomTarget(draft, room, walkable, RoomCenter(room), out var anchor))
+                {
+                    report.Errors.Add($"Room {room.Id} has no walkable anchor cell for required role {role}.");
+                    continue;
+                }
+
+                foreach (var socket in sockets)
+                {
+                    if (!CanReachWithinRoom(new Vector2Int(socket.X, socket.Y), anchor, room, draft, walkable))
+                    {
+                        report.Errors.Add($"Socket {socket.Id} in room {room.Id} cannot reach the required anchor for role {role}.");
+                    }
+                }
+            }
+        }
+
+        private static void ValidateOptionalRoutes(EditableMapDraftAsset draft, bool[,] walkable, MapValidationReport report)
+        {
+            ValidateOptionalDeadEndRooms(draft, walkable, report);
+            ValidateOptionalTreasureRoutes(draft, walkable, report);
+        }
+
+        private static void ValidateOptionalDeadEndRooms(EditableMapDraftAsset draft, bool[,] walkable, MapValidationReport report)
+        {
+            foreach (var room in draft.Rooms ?? Array.Empty<EditableMapRoom>())
+            {
+                if (room.LayoutKind != RoomChunkLayoutKind.DeadEnd)
+                {
+                    continue;
+                }
+
+                var sockets = FindRoomSockets(draft, room.Id);
+                if (sockets.Count == 0)
+                {
+                    report.Errors.Add($"Room {room.Id} is a dead-end but has no entry socket.");
+                    continue;
+                }
+
+                if (!TryResolveRoomTarget(draft, room, walkable, RoomCenter(room), out var target))
+                {
+                    report.Errors.Add($"Room {room.Id} is a dead-end but has no reachable anchor cell.");
+                    continue;
+                }
+
+                foreach (var socket in sockets)
+                {
+                    if (!CanReachWithinRoom(new Vector2Int(socket.X, socket.Y), target, room, draft, walkable))
+                    {
+                        report.Errors.Add($"Socket {socket.Id} in dead-end room {room.Id} cannot reach the optional route target.");
+                    }
+                }
+            }
+        }
+
+        private static void ValidateOptionalTreasureRoutes(EditableMapDraftAsset draft, bool[,] walkable, MapValidationReport report)
+        {
+            foreach (var placement in draft.Objects ?? Array.Empty<EditableMapObjectPlacement>())
+            {
+                if (placement.Kind != RoomChunkObjectKind.Chest)
+                {
+                    continue;
+                }
+
+                var room = FindRoomForPosition(draft, placement.X, placement.Y);
+                if (room == null)
+                {
+                    report.Errors.Add($"Object {placement.Id} is marked as treasure but is not inside a room.");
+                    continue;
+                }
+
+                var sockets = FindRoomSockets(draft, room.Value.Id);
+                if (sockets.Count == 0)
+                {
+                    report.Errors.Add($"Object {placement.Id} is in room {room.Value.Id} with no entry socket.");
+                    continue;
+                }
+
+                if (!TryResolveRoomTarget(draft, room.Value, walkable, new Vector2Int(placement.X, placement.Y), out var target))
+                {
+                    report.Errors.Add($"Object {placement.Id} has no reachable walkable anchor cell in room {room.Value.Id}.");
+                    continue;
+                }
+
+                foreach (var socket in sockets)
+                {
+                    if (!CanReachWithinRoom(new Vector2Int(socket.X, socket.Y), target, room.Value, draft, walkable))
+                    {
+                        report.Errors.Add($"Socket {socket.Id} in room {room.Value.Id} cannot reach optional treasure object {placement.Id}.");
+                    }
+                }
+            }
+        }
+
         private static void ValidateRoute(
             string label,
             string fromRoomId,
@@ -254,6 +378,67 @@ namespace Conn.Editor.Maps
                 {
                     var next = current + offset;
                     if (!draft.IsInBounds(next.x, next.y) || visited[next.x, next.y] || !walkable[next.x, next.y])
+                    {
+                        continue;
+                    }
+
+                    var nextCell = draft.GetCell(next.x, next.y);
+                    if (Mathf.Abs(nextCell.Height - currentCell.Height) > 1)
+                    {
+                        continue;
+                    }
+
+                    visited[next.x, next.y] = true;
+                    queue.Enqueue(next);
+                }
+            }
+
+            return false;
+        }
+
+        private static bool CanReachWithinRoom(
+            Vector2Int start,
+            Vector2Int goal,
+            EditableMapRoom room,
+            EditableMapDraftAsset draft,
+            bool[,] walkable)
+        {
+            if (!draft.IsInBounds(start.x, start.y) || !draft.IsInBounds(goal.x, goal.y))
+            {
+                return false;
+            }
+
+            if (!walkable[start.x, start.y] || !walkable[goal.x, goal.y])
+            {
+                return false;
+            }
+
+            if (!IsInsideRoom(start.x, start.y, room) || !IsInsideRoom(goal.x, goal.y, room))
+            {
+                return false;
+            }
+
+            var visited = new bool[draft.Width, draft.Height];
+            var queue = new Queue<Vector2Int>();
+            queue.Enqueue(start);
+            visited[start.x, start.y] = true;
+
+            while (queue.Count > 0)
+            {
+                var current = queue.Dequeue();
+                if (current == goal)
+                {
+                    return true;
+                }
+
+                var currentCell = draft.GetCell(current.x, current.y);
+                foreach (var offset in CardinalOffsets)
+                {
+                    var next = current + offset;
+                    if (!draft.IsInBounds(next.x, next.y)
+                        || visited[next.x, next.y]
+                        || !walkable[next.x, next.y]
+                        || !IsInsideRoom(next.x, next.y, room))
                     {
                         continue;
                     }
@@ -329,6 +514,84 @@ namespace Conn.Editor.Maps
             center = default;
             room = default;
             return false;
+        }
+
+        private static List<EditableMapSocket> FindRoomSockets(EditableMapDraftAsset draft, string roomId)
+        {
+            var sockets = new List<EditableMapSocket>();
+            foreach (var socket in draft.Sockets ?? Array.Empty<EditableMapSocket>())
+            {
+                if (socket.RoomId == roomId)
+                {
+                    sockets.Add(socket);
+                }
+            }
+
+            return sockets;
+        }
+
+        private static bool TryResolveRoomTarget(
+            EditableMapDraftAsset draft,
+            EditableMapRoom room,
+            bool[,] walkable,
+            Vector2Int preferred,
+            out Vector2Int target)
+        {
+            if (draft.IsInBounds(preferred.x, preferred.y)
+                && IsInsideRoom(preferred.x, preferred.y, room)
+                && walkable[preferred.x, preferred.y])
+            {
+                target = preferred;
+                return true;
+            }
+
+            var bestDistance = int.MaxValue;
+            var best = default(Vector2Int);
+            var found = false;
+            for (var y = room.Y; y < room.Y + room.Height; y++)
+            {
+                for (var x = room.X; x < room.X + room.Width; x++)
+                {
+                    if (!draft.IsInBounds(x, y) || !walkable[x, y])
+                    {
+                        continue;
+                    }
+
+                    var distance = Mathf.Abs(preferred.x - x) + Mathf.Abs(preferred.y - y);
+                    if (!found || distance < bestDistance)
+                    {
+                        found = true;
+                        bestDistance = distance;
+                        best = new Vector2Int(x, y);
+                    }
+                }
+            }
+
+            target = best;
+            return found;
+        }
+
+        private static EditableMapRoom? FindRoomForPosition(EditableMapDraftAsset draft, int x, int y)
+        {
+            foreach (var room in draft.Rooms ?? Array.Empty<EditableMapRoom>())
+            {
+                if (IsInsideRoom(x, y, room))
+                {
+                    return room;
+                }
+            }
+
+            return null;
+        }
+
+        private static Vector2Int RoomCenter(EditableMapRoom room)
+        {
+            return new Vector2Int(room.X + Mathf.Max(0, room.Width / 2), room.Y + Mathf.Max(0, room.Height / 2));
+        }
+
+        private static bool IsInsideRoom(int x, int y, EditableMapRoom room)
+        {
+            return x >= room.X && y >= room.Y && x < room.X + room.Width && y < room.Y + room.Height;
         }
     }
 }

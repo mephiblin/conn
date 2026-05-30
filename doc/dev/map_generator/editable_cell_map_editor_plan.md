@@ -881,7 +881,7 @@ is partially complete.
 
 - [x] Confirm `MapGeneratorWorkspace` is treated as legacy debug/reference UI.
 - [x] Confirm new classes do not require a workspace scene object.
-- [ ] Confirm runtime-facing records contain no `UnityEngine.Object`,
+- [x] Confirm runtime-facing records contain no `UnityEngine.Object`,
   `UnityEditor`, `Conn.Editor`, or `Conn.Authoring` references.
 - [x] Keep existing map generator tests green before adding the new pipeline.
 - [x] Add or update docs when source-of-truth decisions change.
@@ -998,11 +998,11 @@ is partially complete.
 - [x] Treat wall/gap cells as non-walkable.
 - [x] Treat blocking objects as non-walkable across their footprint.
 - [x] Validate all sockets touch walkable cells.
-- [ ] Validate room entry sockets can reach required anchors.
+- [x] Validate room entry sockets can reach required anchors.
 - [x] Validate start-to-quest route.
 - [x] Validate quest-to-boss route.
 - [x] Validate boss-to-exit route.
-- [ ] Validate optional treasure/dead-end routes do not break required routes.
+- [x] Validate optional treasure/dead-end routes do not break required routes.
 - [x] Validate slope direction and height delta.
 - [x] Validate stair direction and height delta.
 - [x] Report validation failures by cell, object id, room id, socket id, or
@@ -1021,7 +1021,7 @@ is partially complete.
 - [x] Bake objects to runtime-safe records.
 - [x] Bake rooms and zones.
 - [x] Bake sockets and doors.
-- [ ] Bake anchors and encounter placements.
+- [x] Bake anchors and encounter placements.
 - [x] Confirm no baked type stores Unity object or editor references.
 - [x] Save optional `CompiledMapAsset` from an edited draft.
 - [x] Load baked draft data in Dungeon runtime.
@@ -1033,7 +1033,7 @@ is partially complete.
 
 - [x] Update this checklist after completing each phase.
 - [x] Update `doc/dev/map_generator/README.md` when workflow changes.
-- [ ] Document any intentional incompatibility with `MapGeneratorWorkspace`.
+- [x] Document any intentional incompatibility with `MapGeneratorWorkspace`.
 - [x] Add manual Unity test steps for new editor tools.
 - [ ] Add screenshots or saved sample assets when the first usable version
   exists.

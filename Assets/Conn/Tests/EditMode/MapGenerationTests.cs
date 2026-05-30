@@ -7,6 +7,7 @@ using Conn.Runtime.Maps;
 using Conn.Runtime.Session;
 using Conn.Runtime.World;
 using NUnit.Framework;
+using System.Reflection;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
@@ -323,6 +324,28 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void EditableValidationReportsSocketThatCannotReachRequiredAnchor()
+        {
+            var draft = BuildRequiredAnchorSocketValidationDraft();
+
+            var report = EditableMapValidationService.Validate(draft);
+
+            Assert.That(report.Passed, Is.False);
+            Assert.That(report.Errors.Exists(error => error.Contains("quest_exit") && error.Contains("required anchor")), Is.True);
+        }
+
+        [Test]
+        public void EditableValidationReportsBlockedOptionalTreasureRoute()
+        {
+            var draft = BuildOptionalTreasureValidationDraft();
+
+            var report = EditableMapValidationService.Validate(draft);
+
+            Assert.That(report.Passed, Is.False);
+            Assert.That(report.Errors.Exists(error => error.Contains("optional treasure object treasure_hidden")), Is.True);
+        }
+
+        [Test]
         public void EditableValidationReportsInvalidSlopeHeightConnection()
         {
             var draft = ScriptableObject.CreateInstance<EditableMapDraftAsset>();
@@ -447,6 +470,41 @@ namespace Conn.Tests.EditMode
             Assert.That(loaded.Sockets.Count, Is.EqualTo(compiled.Sockets.Count));
             Assert.That(loaded.Placements.Exists(placement => placement.Kind == MapPlacementKind.Start), Is.True);
             Assert.That(loaded.Placements.Exists(placement => placement.Kind == MapPlacementKind.Monster), Is.True);
+            Assert.That(loaded.EncounterPlacements.Count, Is.EqualTo(compiled.EncounterPlacements.Count));
+        }
+
+        [Test]
+        public void EditableBakeProducesAnchorAndEncounterPlacements()
+        {
+            var draft = BuildBakeDraft();
+
+            var compiled = EditableMapBakeService.Bake(draft);
+            var questEncounter = CompiledMapRuntimeLoader.FindEncounterPlacement(compiled, "questtarget_quest");
+            var bossEncounter = CompiledMapRuntimeLoader.FindEncounterPlacement(compiled, "boss_boss");
+            var monsterEncounter = CompiledMapRuntimeLoader.FindEncounterPlacement(compiled, "spawn_spawn_hint");
+
+            Assert.That(compiled.Placements.Exists(placement => placement.Kind == MapPlacementKind.Start), Is.True);
+            Assert.That(compiled.Placements.Exists(placement => placement.Kind == MapPlacementKind.QuestTarget), Is.True);
+            Assert.That(compiled.Placements.Exists(placement => placement.Kind == MapPlacementKind.Boss), Is.True);
+            Assert.That(compiled.Placements.Exists(placement => placement.Kind == MapPlacementKind.Exit), Is.True);
+            Assert.That(questEncounter, Is.Not.Null);
+            Assert.That(questEncounter.RequiredForQuest, Is.True);
+            Assert.That(bossEncounter, Is.Not.Null);
+            Assert.That(monsterEncounter, Is.Not.Null);
+            Assert.That(monsterEncounter.SpawnRole, Is.EqualTo("trash"));
+        }
+
+        [Test]
+        public void CompiledRuntimeRecordsContainNoUnityOrEditorReferences()
+        {
+            AssertRuntimeSafeType(typeof(CompiledMap));
+            AssertRuntimeSafeType(typeof(MapPlacement));
+            AssertRuntimeSafeType(typeof(CompiledEncounterPlacement));
+            AssertRuntimeSafeType(typeof(CompiledMapCell));
+            AssertRuntimeSafeType(typeof(CompiledMapObjectPlacement));
+            AssertRuntimeSafeType(typeof(CompiledMapRoomRecord));
+            AssertRuntimeSafeType(typeof(CompiledMapZoneRecord));
+            AssertRuntimeSafeType(typeof(CompiledMapSocketRecord));
         }
 
         [Test]
@@ -627,6 +685,148 @@ namespace Conn.Tests.EditMode
             return draft;
         }
 
+        private static EditableMapDraftAsset BuildRequiredAnchorSocketValidationDraft()
+        {
+            var draft = ScriptableObject.CreateInstance<EditableMapDraftAsset>();
+            draft.InitializeBlank(12, 3, 1f, 1f);
+            for (var x = 0; x < 12; x++)
+            {
+                for (var y = 0; y < 3; y++)
+                {
+                    var roomId = x < 3 ? "start" : x < 6 ? "quest" : x < 9 ? "boss" : "exit";
+                    draft.TrySetCell(new EditableMapCell
+                    {
+                        X = x,
+                        Y = y,
+                        RoomId = roomId,
+                        Terrain = RoomChunkCellType.Floor,
+                        Height = 0,
+                        Direction = MapDirection.North
+                    });
+                }
+            }
+
+            for (var y = 0; y < 3; y++)
+            {
+                draft.TrySetCell(new EditableMapCell
+                {
+                    X = 4,
+                    Y = y,
+                    RoomId = "quest",
+                    Terrain = RoomChunkCellType.Wall,
+                    Height = 0,
+                    Direction = MapDirection.North
+                });
+            }
+
+            draft.Rooms = new[]
+            {
+                new EditableMapRoom { Id = "start", Role = MapRoomRole.Start, X = 0, Y = 0, Width = 3, Height = 3, SocketMask = MapDirection.East },
+                new EditableMapRoom { Id = "quest", Role = MapRoomRole.QuestTarget, X = 3, Y = 0, Width = 3, Height = 3, SocketMask = MapDirection.East | MapDirection.West },
+                new EditableMapRoom { Id = "boss", Role = MapRoomRole.Boss, X = 6, Y = 0, Width = 3, Height = 3, SocketMask = MapDirection.East | MapDirection.West },
+                new EditableMapRoom { Id = "exit", Role = MapRoomRole.Exit, X = 9, Y = 0, Width = 3, Height = 3, SocketMask = MapDirection.West }
+            };
+            draft.Sockets = new[]
+            {
+                new EditableMapSocket { Id = "start_exit", RoomId = "start", X = 2, Y = 1, Direction = MapDirection.East, TargetRoomId = "quest", Width = 1 },
+                new EditableMapSocket { Id = "quest_entry", RoomId = "quest", X = 3, Y = 1, Direction = MapDirection.West, TargetRoomId = "start", Width = 1 },
+                new EditableMapSocket { Id = "quest_exit", RoomId = "quest", X = 5, Y = 1, Direction = MapDirection.East, TargetRoomId = "boss", Width = 1 },
+                new EditableMapSocket { Id = "boss_entry", RoomId = "boss", X = 6, Y = 1, Direction = MapDirection.West, TargetRoomId = "quest", Width = 1 },
+                new EditableMapSocket { Id = "boss_exit", RoomId = "boss", X = 8, Y = 1, Direction = MapDirection.East, TargetRoomId = "exit", Width = 1 },
+                new EditableMapSocket { Id = "exit_entry", RoomId = "exit", X = 9, Y = 1, Direction = MapDirection.West, TargetRoomId = "boss", Width = 1 }
+            };
+            return draft;
+        }
+
+        private static EditableMapDraftAsset BuildOptionalTreasureValidationDraft()
+        {
+            var draft = ScriptableObject.CreateInstance<EditableMapDraftAsset>();
+            draft.InitializeBlank(15, 3, 1f, 1f);
+            for (var x = 0; x < 15; x++)
+            {
+                for (var y = 0; y < 3; y++)
+                {
+                    string roomId;
+                    if (x < 3)
+                    {
+                        roomId = "start";
+                    }
+                    else if (x < 6)
+                    {
+                        roomId = "quest";
+                    }
+                    else if (x < 9)
+                    {
+                        roomId = "boss";
+                    }
+                    else if (x < 12)
+                    {
+                        roomId = "exit";
+                    }
+                    else
+                    {
+                        roomId = "treasure_room";
+                    }
+
+                    draft.TrySetCell(new EditableMapCell
+                    {
+                        X = x,
+                        Y = y,
+                        RoomId = roomId,
+                        Terrain = RoomChunkCellType.Floor,
+                        Height = 0,
+                        Direction = MapDirection.North
+                    });
+                }
+            }
+
+            for (var y = 0; y < 3; y++)
+            {
+                draft.TrySetCell(new EditableMapCell
+                {
+                    X = 13,
+                    Y = y,
+                    RoomId = "treasure_room",
+                    Terrain = RoomChunkCellType.Wall,
+                    Height = 0,
+                    Direction = MapDirection.North
+                });
+            }
+
+            draft.Rooms = new[]
+            {
+                new EditableMapRoom { Id = "start", Role = MapRoomRole.Start, X = 0, Y = 0, Width = 3, Height = 3, SocketMask = MapDirection.East },
+                new EditableMapRoom { Id = "quest", Role = MapRoomRole.QuestTarget, X = 3, Y = 0, Width = 3, Height = 3, SocketMask = MapDirection.East | MapDirection.West },
+                new EditableMapRoom { Id = "boss", Role = MapRoomRole.Boss, X = 6, Y = 0, Width = 3, Height = 3, SocketMask = MapDirection.East | MapDirection.West },
+                new EditableMapRoom { Id = "exit", Role = MapRoomRole.Exit, X = 9, Y = 0, Width = 3, Height = 3, SocketMask = MapDirection.East | MapDirection.West },
+                new EditableMapRoom { Id = "treasure_room", Role = MapRoomRole.SideBranch, LayoutKind = RoomChunkLayoutKind.DeadEnd, X = 12, Y = 0, Width = 3, Height = 3, SocketMask = MapDirection.West }
+            };
+            draft.Sockets = new[]
+            {
+                new EditableMapSocket { Id = "start_exit", RoomId = "start", X = 2, Y = 1, Direction = MapDirection.East, TargetRoomId = "quest", Width = 1 },
+                new EditableMapSocket { Id = "quest_entry", RoomId = "quest", X = 3, Y = 1, Direction = MapDirection.West, TargetRoomId = "start", Width = 1 },
+                new EditableMapSocket { Id = "quest_exit", RoomId = "quest", X = 5, Y = 1, Direction = MapDirection.East, TargetRoomId = "boss", Width = 1 },
+                new EditableMapSocket { Id = "boss_entry", RoomId = "boss", X = 6, Y = 1, Direction = MapDirection.West, TargetRoomId = "quest", Width = 1 },
+                new EditableMapSocket { Id = "boss_exit", RoomId = "boss", X = 8, Y = 1, Direction = MapDirection.East, TargetRoomId = "exit", Width = 1 },
+                new EditableMapSocket { Id = "exit_entry", RoomId = "exit", X = 9, Y = 1, Direction = MapDirection.West, TargetRoomId = "boss", Width = 1 },
+                new EditableMapSocket { Id = "exit_treasure", RoomId = "exit", X = 11, Y = 1, Direction = MapDirection.East, TargetRoomId = "treasure_room", Width = 1 },
+                new EditableMapSocket { Id = "treasure_entry", RoomId = "treasure_room", X = 12, Y = 1, Direction = MapDirection.West, TargetRoomId = "exit", Width = 1 }
+            };
+            draft.Objects = new[]
+            {
+                new EditableMapObjectPlacement
+                {
+                    Id = "treasure_hidden",
+                    Kind = RoomChunkObjectKind.Chest,
+                    X = 14,
+                    Y = 1,
+                    Width = 1,
+                    Depth = 1
+                }
+            };
+            return draft;
+        }
+
         private static EditableMapDraftAsset BuildBakeDraft()
         {
             var profile = MapGenerationCatalog.ChapterTwoFirstSliceProfile();
@@ -635,15 +835,22 @@ namespace Conn.Tests.EditMode
             draft.SourceProfileId = MapGenerationCatalog.ChapterTwoFirstSliceProfileId;
             draft.Seed = 17;
             draft.InitializeBlank(profile.Width, profile.Height, 1f, 1f);
-            for (var x = 0; x < 4; x++)
+            for (var x = 0; x < 8; x++)
             {
                 for (var y = 0; y < 2; y++)
                 {
+                    var roomId = x < 2
+                        ? "start"
+                        : x < 4
+                        ? "quest"
+                        : x < 6
+                        ? "boss"
+                        : "exit";
                     draft.TrySetCell(new EditableMapCell
                     {
                         X = x,
                         Y = y,
-                        RoomId = x < 2 ? "start" : "exit",
+                        RoomId = roomId,
                         Terrain = RoomChunkCellType.Floor,
                         Height = 0,
                         Direction = MapDirection.North,
@@ -654,19 +861,19 @@ namespace Conn.Tests.EditMode
 
             draft.Rooms = new[]
             {
-                new EditableMapRoom { Id = "start", Role = MapRoomRole.Start, LayoutKind = RoomChunkLayoutKind.Room, X = 0, Y = 0, Width = 1, Height = 1, SocketMask = MapDirection.East },
-                new EditableMapRoom { Id = "quest", Role = MapRoomRole.QuestTarget, LayoutKind = RoomChunkLayoutKind.Room, X = 1, Y = 0, Width = 1, Height = 1, SocketMask = MapDirection.East | MapDirection.West },
-                new EditableMapRoom { Id = "boss", Role = MapRoomRole.Boss, LayoutKind = RoomChunkLayoutKind.Room, X = 2, Y = 0, Width = 1, Height = 1, SocketMask = MapDirection.East | MapDirection.West },
-                new EditableMapRoom { Id = "exit", Role = MapRoomRole.Exit, LayoutKind = RoomChunkLayoutKind.Room, X = 3, Y = 0, Width = 1, Height = 1, SocketMask = MapDirection.West }
+                new EditableMapRoom { Id = "start", Role = MapRoomRole.Start, LayoutKind = RoomChunkLayoutKind.Room, X = 0, Y = 0, Width = 2, Height = 2, SocketMask = MapDirection.East },
+                new EditableMapRoom { Id = "quest", Role = MapRoomRole.QuestTarget, LayoutKind = RoomChunkLayoutKind.Room, X = 2, Y = 0, Width = 2, Height = 2, SocketMask = MapDirection.East | MapDirection.West },
+                new EditableMapRoom { Id = "boss", Role = MapRoomRole.Boss, LayoutKind = RoomChunkLayoutKind.Room, X = 4, Y = 0, Width = 2, Height = 2, SocketMask = MapDirection.East | MapDirection.West },
+                new EditableMapRoom { Id = "exit", Role = MapRoomRole.Exit, LayoutKind = RoomChunkLayoutKind.Room, X = 6, Y = 0, Width = 2, Height = 2, SocketMask = MapDirection.West }
             };
             draft.Sockets = new[]
             {
-                new EditableMapSocket { Id = "start_quest", RoomId = "start", X = 0, Y = 0, Direction = MapDirection.East, TargetRoomId = "quest", Width = 1 },
-                new EditableMapSocket { Id = "quest_start", RoomId = "quest", X = 1, Y = 0, Direction = MapDirection.West, TargetRoomId = "start", Width = 1 },
-                new EditableMapSocket { Id = "quest_boss", RoomId = "quest", X = 1, Y = 0, Direction = MapDirection.East, TargetRoomId = "boss", Width = 1 },
-                new EditableMapSocket { Id = "boss_quest", RoomId = "boss", X = 2, Y = 0, Direction = MapDirection.West, TargetRoomId = "quest", Width = 1 },
-                new EditableMapSocket { Id = "boss_exit", RoomId = "boss", X = 2, Y = 0, Direction = MapDirection.East, TargetRoomId = "exit", Width = 1 },
-                new EditableMapSocket { Id = "exit_boss", RoomId = "exit", X = 3, Y = 0, Direction = MapDirection.West, TargetRoomId = "boss", Width = 1 }
+                new EditableMapSocket { Id = "start_quest", RoomId = "start", X = 1, Y = 0, Direction = MapDirection.East, TargetRoomId = "quest", Width = 1 },
+                new EditableMapSocket { Id = "quest_start", RoomId = "quest", X = 2, Y = 0, Direction = MapDirection.West, TargetRoomId = "start", Width = 1 },
+                new EditableMapSocket { Id = "quest_boss", RoomId = "quest", X = 3, Y = 0, Direction = MapDirection.East, TargetRoomId = "boss", Width = 1 },
+                new EditableMapSocket { Id = "boss_quest", RoomId = "boss", X = 4, Y = 0, Direction = MapDirection.West, TargetRoomId = "quest", Width = 1 },
+                new EditableMapSocket { Id = "boss_exit", RoomId = "boss", X = 5, Y = 0, Direction = MapDirection.East, TargetRoomId = "exit", Width = 1 },
+                new EditableMapSocket { Id = "exit_boss", RoomId = "exit", X = 6, Y = 0, Direction = MapDirection.West, TargetRoomId = "boss", Width = 1 }
             };
             draft.Objects = new[]
             {
@@ -675,7 +882,7 @@ namespace Conn.Tests.EditMode
                     Id = "spawn_hint",
                     PaletteObjectId = "spawn_hint",
                     Kind = RoomChunkObjectKind.SpawnHint,
-                    X = 1,
+                    X = 3,
                     Y = 1,
                     Width = 1,
                     Depth = 1,
@@ -686,7 +893,7 @@ namespace Conn.Tests.EditMode
                     Id = "treasure",
                     PaletteObjectId = "treasure_chest",
                     Kind = RoomChunkObjectKind.Chest,
-                    X = 3,
+                    X = 6,
                     Y = 1,
                     Width = 1,
                     Depth = 1,
@@ -694,6 +901,18 @@ namespace Conn.Tests.EditMode
                 }
             };
             return draft;
+        }
+
+        private static void AssertRuntimeSafeType(System.Type type)
+        {
+            foreach (var field in type.GetFields(BindingFlags.Instance | BindingFlags.Public))
+            {
+                var fieldType = field.FieldType;
+                Assert.That(typeof(UnityEngine.Object).IsAssignableFrom(fieldType), Is.False, $"{type.Name}.{field.Name} must not store UnityEngine.Object.");
+                Assert.That((fieldType.Namespace ?? string.Empty).StartsWith("UnityEditor"), Is.False, $"{type.Name}.{field.Name} must not store UnityEditor type.");
+                Assert.That((fieldType.Namespace ?? string.Empty).StartsWith("Conn.Editor"), Is.False, $"{type.Name}.{field.Name} must not store editor type.");
+                Assert.That((fieldType.Namespace ?? string.Empty).StartsWith("Conn.Authoring"), Is.False, $"{type.Name}.{field.Name} must not store authoring type.");
+            }
         }
     }
 }

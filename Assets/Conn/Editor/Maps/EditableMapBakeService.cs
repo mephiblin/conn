@@ -1,4 +1,5 @@
 using Conn.Authoring.Maps;
+using Conn.Core.Combat;
 using Conn.Core.Maps;
 using System;
 using System.Collections.Generic;
@@ -36,6 +37,7 @@ namespace Conn.Editor.Maps
             BakeRooms(draft, compiled);
             BakeSocketsAndDoors(draft, compiled);
             BakeAnchors(draft, compiled);
+            BakeEncounterPlacements(draft, compiled);
             return compiled;
         }
 
@@ -233,6 +235,18 @@ namespace Conn.Editor.Maps
             }
         }
 
+        private static void BakeEncounterPlacements(EditableMapDraftAsset draft, CompiledMap compiled)
+        {
+            var entry = ResolveRuntimeProfileEntry(draft);
+            if (entry != null)
+            {
+                RuntimeMapGenerationService.ApplyEncounterPlacements(entry, compiled);
+                return;
+            }
+
+            BakeFallbackEncounterPlacements(compiled);
+        }
+
         private static string ResolveRoomId(EditableMapDraftAsset draft, int x, int y)
         {
             if (draft.TryGetCell(x, y, out var cell) && !string.IsNullOrWhiteSpace(cell.RoomId))
@@ -276,6 +290,93 @@ namespace Conn.Editor.Maps
                     return true;
                 default:
                     kind = default;
+                    return false;
+            }
+        }
+
+        private static RuntimeMapProfileEntry ResolveRuntimeProfileEntry(EditableMapDraftAsset draft)
+        {
+            if (draft == null || string.IsNullOrWhiteSpace(draft.SourceProfileId))
+            {
+                return null;
+            }
+
+            var bundleAsset = AssetDatabase.LoadAssetAtPath<RuntimeMapGenerationBundleAsset>(RuntimeMapGenerationBundleBuilder.DefaultBundleAssetPath);
+            var savedEntry = bundleAsset?.Bundle?.FindProfile(draft.SourceProfileId);
+            if (savedEntry != null)
+            {
+                return savedEntry;
+            }
+
+            try
+            {
+                var snapshot = MapAuthoringValidationService.FindAuthoringAssets();
+                var builtBundle = RuntimeMapGenerationBundleBuilder.Build(snapshot, draft.Floor, draft.Difficulty);
+                var builtEntry = builtBundle.FindProfile(draft.SourceProfileId);
+                if (builtEntry != null)
+                {
+                    return builtEntry;
+                }
+            }
+            catch (InvalidOperationException)
+            {
+                // Fall back to the catalog/default path when authoring assets are incomplete.
+            }
+
+            if (draft.SourceProfileId == MapGenerationCatalog.ChapterTwoFirstSliceProfileId)
+            {
+                return RuntimeMapGenerationBundleBuilder.BuildChapterTwoCatalogBundle(draft.Floor, draft.Difficulty).FindProfile(draft.SourceProfileId);
+            }
+
+            return null;
+        }
+
+        private static void BakeFallbackEncounterPlacements(CompiledMap compiled)
+        {
+            compiled.EncounterPlacements.Clear();
+            foreach (var placement in compiled.Placements ?? new List<MapPlacement>())
+            {
+                if (!TryFallbackEncounterData(placement.Kind, out var spawnRole, out var requiredForQuest))
+                {
+                    continue;
+                }
+
+                compiled.EncounterPlacements.Add(new CompiledEncounterPlacement
+                {
+                    PlacementId = $"{placement.Id}_encounter",
+                    MapPlacementId = placement.Id,
+                    RoomId = placement.RoomId ?? string.Empty,
+                    EncounterId = EncounterCatalog.TestGuardId,
+                    SpawnSourceId = string.Empty,
+                    PrimaryMonsterId = MonsterCatalog.TestGuardId,
+                    SpawnRole = spawnRole,
+                    X = placement.X,
+                    Y = placement.Y,
+                    StateKey = $"compiled_{compiled.MapId}_{placement.Id}",
+                    RequiredForQuest = requiredForQuest
+                });
+            }
+        }
+
+        private static bool TryFallbackEncounterData(MapPlacementKind kind, out string spawnRole, out bool requiredForQuest)
+        {
+            switch (kind)
+            {
+                case MapPlacementKind.QuestTarget:
+                    spawnRole = "quest_target";
+                    requiredForQuest = true;
+                    return true;
+                case MapPlacementKind.Boss:
+                    spawnRole = "boss";
+                    requiredForQuest = false;
+                    return true;
+                case MapPlacementKind.Monster:
+                    spawnRole = "trash";
+                    requiredForQuest = false;
+                    return true;
+                default:
+                    spawnRole = string.Empty;
+                    requiredForQuest = false;
                     return false;
             }
         }
