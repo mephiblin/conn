@@ -1147,7 +1147,7 @@ be committed and pushed separately.
   and deterministic weighted prefab placement.
 - [x] Prop placement MVP: prop channels, deterministic weighted placement,
   traversal-safe validation.
-- [ ] Runtime bake MVP: runtime-safe grid, regions, doors, traversal graph,
+- [x] Runtime bake MVP: runtime-safe grid, regions, doors, traversal graph,
   markers.
 - [ ] Editor window MVP: profile selection, validation, generate mockup, accept,
   materialize, bake.

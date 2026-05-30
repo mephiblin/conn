@@ -2,7 +2,8 @@ using System;
 
 namespace Conn.MapGenV2.Core
 {
-    public readonly struct MapGenGridCoord : IEquatable<MapGenGridCoord>
+    [Serializable]
+    public struct MapGenGridCoord : IEquatable<MapGenGridCoord>
     {
         public MapGenGridCoord(int x, int y)
         {
@@ -10,9 +11,9 @@ namespace Conn.MapGenV2.Core
             Y = y;
         }
 
-        public int X { get; }
+        public int X;
 
-        public int Y { get; }
+        public int Y;
 
         public static MapGenGridCoord Zero => new MapGenGridCoord(0, 0);
 

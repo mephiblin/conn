@@ -192,5 +192,21 @@ namespace Conn.Tests.EditMode
             Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
                 issue => issue.Code == "prop_channel_on_non_navigable_cell"));
         }
+
+        [Test]
+        public void RuntimeBakeBuilderCreatesTraversalEdges()
+        {
+            var cells = new[]
+            {
+                new MapGenMockupCell { State = MapGenCellState.Room },
+                new MapGenMockupCell { State = MapGenCellState.Corridor }
+            };
+
+            var bakedCells = MapGenRuntimeBakeDataBuilder.BuildCells(2, 1, cells);
+            var edges = MapGenRuntimeBakeDataBuilder.BuildTraversalEdges(2, 1, cells);
+
+            Assert.That(bakedCells, Has.Length.EqualTo(2));
+            Assert.That(edges, Has.Length.EqualTo(1));
+        }
     }
 }

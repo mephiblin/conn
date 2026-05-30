@@ -68,6 +68,11 @@ namespace Conn.MapGenV2.Editor
                     {
                         MapGenMockupMaterializer.Materialize(draft);
                     }
+
+                    if (GUILayoutButton("Bake Runtime"))
+                    {
+                        MapGenRuntimeBakeUtility.Bake(draft);
+                    }
                 }
             }
 
