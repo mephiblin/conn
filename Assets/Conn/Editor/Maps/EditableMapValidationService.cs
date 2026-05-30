@@ -164,8 +164,33 @@ namespace Conn.Editor.Maps
 
         private static void ValidateSockets(EditableMapDraftAsset draft, bool[,] walkable, MapValidationReport report)
         {
+            var socketIds = new HashSet<string>(StringComparer.Ordinal);
+            var roomIds = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var room in draft.Rooms ?? Array.Empty<EditableMapRoom>())
+            {
+                if (!string.IsNullOrWhiteSpace(room.Id))
+                {
+                    roomIds.Add(room.Id);
+                }
+            }
+
             foreach (var socket in draft.Sockets ?? Array.Empty<EditableMapSocket>())
             {
+                if (!string.IsNullOrWhiteSpace(socket.Id) && !socketIds.Add(socket.Id))
+                {
+                    report.Errors.Add($"Duplicate socket id: {socket.Id}.");
+                }
+
+                if (string.IsNullOrWhiteSpace(socket.RoomId) || !roomIds.Contains(socket.RoomId))
+                {
+                    report.Errors.Add($"Socket {socket.Id} references missing room id {socket.RoomId}.");
+                }
+
+                if (!string.IsNullOrWhiteSpace(socket.TargetRoomId) && !roomIds.Contains(socket.TargetRoomId))
+                {
+                    report.Errors.Add($"Socket {socket.Id} references missing target room id {socket.TargetRoomId}.");
+                }
+
                 if (!draft.IsInBounds(socket.X, socket.Y))
                 {
                     report.Errors.Add($"Socket {socket.Id} is outside bounds at ({socket.X}, {socket.Y}).");
@@ -175,6 +200,16 @@ namespace Conn.Editor.Maps
                 if (!walkable[socket.X, socket.Y])
                 {
                     report.Errors.Add($"Socket {socket.Id} does not touch a walkable cell at ({socket.X}, {socket.Y}).");
+                }
+
+                if (TryFindRoom(draft, socket.RoomId, out var room) && !IsInsideRoom(socket.X, socket.Y, room))
+                {
+                    report.Errors.Add($"Socket {socket.Id} is outside its room {socket.RoomId}.");
+                }
+
+                if (!string.IsNullOrWhiteSpace(socket.TargetRoomId) && !HasReciprocalSocket(draft, socket))
+                {
+                    report.Errors.Add($"Socket {socket.Id} from room {socket.RoomId} to {socket.TargetRoomId} has no reciprocal socket.");
                 }
             }
         }
@@ -600,6 +635,34 @@ namespace Conn.Editor.Maps
             }
 
             return null;
+        }
+
+        private static bool TryFindRoom(EditableMapDraftAsset draft, string roomId, out EditableMapRoom room)
+        {
+            foreach (var candidate in draft.Rooms ?? Array.Empty<EditableMapRoom>())
+            {
+                if (candidate.Id == roomId)
+                {
+                    room = candidate;
+                    return true;
+                }
+            }
+
+            room = default;
+            return false;
+        }
+
+        private static bool HasReciprocalSocket(EditableMapDraftAsset draft, EditableMapSocket socket)
+        {
+            foreach (var candidate in draft.Sockets ?? Array.Empty<EditableMapSocket>())
+            {
+                if (candidate.RoomId == socket.TargetRoomId && candidate.TargetRoomId == socket.RoomId)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static Vector2Int RoomCenter(EditableMapRoom room)

@@ -660,6 +660,8 @@ namespace Conn.Tests.EditMode
             Assert.That(draft.Rooms.Any(room => room.Role == MapRoomRole.Boss), Is.True);
             Assert.That(draft.Rooms.Any(room => room.Role == MapRoomRole.Exit), Is.True);
             Assert.That(draft.Sockets.Length, Is.GreaterThanOrEqualTo(7));
+            Assert.That(draft.Sockets.Any(socket => socket.RoomId == "drawn_area" && socket.TargetRoomId == "drawn_start"), Is.True);
+            Assert.That(draft.Sockets.Any(socket => socket.RoomId == "drawn_start" && socket.TargetRoomId == "drawn_area"), Is.True);
             Assert.That(compiled.Placements.Exists(placement => placement.Kind == MapPlacementKind.Start), Is.True);
             Assert.That(compiled.Placements.Exists(placement => placement.Kind == MapPlacementKind.Exit), Is.True);
 
@@ -719,6 +721,27 @@ namespace Conn.Tests.EditMode
 
             Assert.That(report.Passed, Is.False);
             Assert.That(report.Errors.Exists(error => error.Contains("quest_exit") && error.Contains("required anchor")), Is.True);
+        }
+
+        [Test]
+        public void EditableValidationReportsInvalidSocketTopology()
+        {
+            var draft = BuildLinearValidationDraft();
+            draft.Sockets = new[]
+            {
+                new EditableMapSocket { Id = "bad_socket", RoomId = "start", X = 1, Y = 0, Direction = MapDirection.East, TargetRoomId = "missing_room", Width = 1 },
+                new EditableMapSocket { Id = "bad_socket", RoomId = "missing_owner", X = 2, Y = 0, Direction = MapDirection.West, TargetRoomId = "start", Width = 1 },
+                new EditableMapSocket { Id = "outside_room", RoomId = "quest", X = 0, Y = 0, Direction = MapDirection.West, TargetRoomId = "start", Width = 1 }
+            };
+
+            var report = EditableMapValidationService.Validate(draft);
+
+            Assert.That(report.Passed, Is.False);
+            Assert.That(report.Errors.Exists(error => error.Contains("Duplicate socket id: bad_socket")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("missing target room id missing_room")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("missing room id missing_owner")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("outside_room") && error.Contains("outside its room quest")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("bad_socket") && error.Contains("no reciprocal socket")), Is.True);
         }
 
         [Test]

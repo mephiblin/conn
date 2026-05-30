@@ -253,7 +253,8 @@ namespace Conn.Editor.Maps
         {
             var sockets = new List<EditableMapSocket>
             {
-                BuildSocket("drawn_area_entry", areaRoomId, anchors[0], MapDirection.East, "drawn_start")
+                BuildSocket("drawn_area_entry", areaRoomId, anchors[0], MapDirection.East, "drawn_start"),
+                BuildSocket("drawn_start_to_area", "drawn_start", anchors[0], MapDirection.West, areaRoomId)
             };
             AddBidirectionalSockets(sockets, "drawn_start", anchors[0], "drawn_quest", anchors[1]);
             AddBidirectionalSockets(sockets, "drawn_quest", anchors[1], "drawn_boss", anchors[2]);
