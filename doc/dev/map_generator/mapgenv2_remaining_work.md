@@ -593,6 +593,9 @@ Progress note 2026-05-31:
   landmarks instead of reading the raw category array inline.
 - Added `MapGenDistanceRules.MinStartToExitDistance` and solver diagnostics for
   start-to-exit distance contradictions.
+- Added `MapGenDistanceRules.MinStartToBossDistance` and
+  `RequireQuestBeforeBoss` so the production solver reports start-to-boss
+  distance and quest-before-boss ordering contradictions.
 - Added required-landmark entropy summaries and changed production room
   placement to collapse the lowest-candidate required landmark first while
   preserving original required-category order for corridor connectivity.
@@ -626,7 +629,7 @@ Tasks:
 - [x] Reserve required landmarks:
   start, exit, quest, boss, transition, custom required categories.
 - [x] Add start-to-exit minimum distance constraint.
-- [ ] Add remaining distance constraints:
+- [x] Add remaining distance constraints:
   boss near late path, quest before lock, etc.
 - [x] Collapse lowest-entropy required landmarks before room placement.
 - [ ] Collapse lowest-entropy cells/regions beyond required landmarks.

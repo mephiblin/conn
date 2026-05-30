@@ -111,6 +111,15 @@ namespace Conn.MapGenV2.Authoring
                     "Start-to-exit minimum distance cannot be negative.",
                     "Set MinStartToExitDistance to zero or higher."));
             }
+
+            if (DistanceRules.MinStartToBossDistance < 0)
+            {
+                report.Add(new MapGenIssue(
+                    MapGenGenerationPhase.ValidateProfile,
+                    "rule_set_invalid_start_boss_distance",
+                    "Start-to-boss minimum distance cannot be negative.",
+                    "Set MinStartToBossDistance to zero or higher."));
+            }
         }
 
         private void ValidatePostProcessRules(MapGenValidationReport report)

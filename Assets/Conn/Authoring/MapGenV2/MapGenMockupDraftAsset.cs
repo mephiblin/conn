@@ -712,6 +712,8 @@ namespace Conn.MapGenV2.Authoring
             AddCategories(ref hash, ruleSet.QuantityRules.RequiredCategories);
             AddCategories(ref hash, ruleSet.QuantityRules.OptionalCategories);
             Add(ref hash, ruleSet.DistanceRules.MinStartToExitDistance);
+            Add(ref hash, ruleSet.DistanceRules.MinStartToBossDistance);
+            Add(ref hash, ruleSet.DistanceRules.RequireQuestBeforeBoss ? 1 : 0);
             Add(ref hash, ruleSet.PostProcessRules.UseDirectRoutes ? 1 : 0);
             Add(ref hash, ruleSet.PostProcessRules.ReduceDeadEnds ? 1 : 0);
             Add(ref hash, ruleSet.PostProcessRules.SplitLargeRooms ? 1 : 0);

@@ -238,6 +238,7 @@ namespace Conn.MapGenV2.Authoring
             foreach (var issue in report.Issues)
             {
                 if (issue.Code == "production_solver_start_exit_distance_too_short"
+                    || issue.Code == "production_solver_start_boss_distance_too_short"
                     || issue.Code == "production_solver_no_room_placement_candidates"
                     || issue.Code == "production_solver_cannot_place_room"
                     || issue.Code == "production_solver_missing_room_connector"
@@ -767,27 +768,63 @@ namespace Conn.MapGenV2.Authoring
         {
             if (rules.MinStartToExitDistance <= 0)
             {
-                return true;
+                return ValidateBossAndQuestDistanceRules(rules, landmarks, placements, report);
             }
 
-            if (!TryFindPlacement(MapGenRoomCategory.Start, landmarks, placements, out var start)
-                || !TryFindPlacement(MapGenRoomCategory.Exit, landmarks, placements, out var exit))
+            if (TryFindPlacement(MapGenRoomCategory.Start, landmarks, placements, out var start)
+                && TryFindPlacement(MapGenRoomCategory.Exit, landmarks, placements, out var exit))
             {
-                return true;
+                var distance = Distance(start, exit);
+                if (distance < rules.MinStartToExitDistance)
+                {
+                    report.Add(new MapGenIssue(
+                        MapGenGenerationPhase.SolveMockup,
+                        "production_solver_start_exit_distance_too_short",
+                        $"Start-to-exit distance {distance} is shorter than required minimum {rules.MinStartToExitDistance}.",
+                        "Lower MinStartToExitDistance, increase map size, or add placement rules/templates that allow more separation."));
+                    return false;
+                }
             }
 
-            var distance = Mathf.Abs(start.Center.X - exit.Center.X) + Mathf.Abs(start.Center.Y - exit.Center.Y);
-            if (distance >= rules.MinStartToExitDistance)
+            return ValidateBossAndQuestDistanceRules(rules, landmarks, placements, report);
+        }
+
+        private static bool ValidateBossAndQuestDistanceRules(
+            MapGenDistanceRules rules,
+            MapGenRequiredLandmark[] landmarks,
+            RoomPlacement[] placements,
+            MapGenValidationReport report)
+        {
+            if (rules.MinStartToBossDistance > 0
+                && TryFindPlacement(MapGenRoomCategory.Start, landmarks, placements, out var start)
+                && TryFindPlacement(MapGenRoomCategory.Boss, landmarks, placements, out var boss))
             {
-                return true;
+                var distance = Distance(start, boss);
+                if (distance < rules.MinStartToBossDistance)
+                {
+                    report.Add(new MapGenIssue(
+                        MapGenGenerationPhase.SolveMockup,
+                        "production_solver_start_boss_distance_too_short",
+                        $"Start-to-boss distance {distance} is shorter than required minimum {rules.MinStartToBossDistance}.",
+                        "Lower MinStartToBossDistance, increase map size, or place boss later in the required room order."));
+                    return false;
+                }
             }
 
-            report.Add(new MapGenIssue(
-                MapGenGenerationPhase.SolveMockup,
-                "production_solver_start_exit_distance_too_short",
-                $"Start-to-exit distance {distance} is shorter than required minimum {rules.MinStartToExitDistance}.",
-                "Lower MinStartToExitDistance, increase map size, or add placement rules/templates that allow more separation."));
-            return false;
+            if (rules.RequireQuestBeforeBoss
+                && TryFindLandmarkIndex(MapGenRoomCategory.Quest, landmarks, out var questIndex)
+                && TryFindLandmarkIndex(MapGenRoomCategory.Boss, landmarks, out var bossIndex)
+                && questIndex > bossIndex)
+            {
+                report.Add(new MapGenIssue(
+                    MapGenGenerationPhase.SolveMockup,
+                    "production_solver_quest_after_boss",
+                    "Quest room is ordered after the boss room, but the distance rules require quest before boss.",
+                    "Move Quest before Boss in RequiredCategories or disable RequireQuestBeforeBoss."));
+                return false;
+            }
+
+            return true;
         }
 
         private static bool TryFindPlacement(
@@ -806,6 +843,29 @@ namespace Conn.MapGenV2.Authoring
             }
 
             placement = default;
+            return false;
+        }
+
+        private static int Distance(RoomPlacement from, RoomPlacement to)
+        {
+            return Mathf.Abs(from.Center.X - to.Center.X) + Mathf.Abs(from.Center.Y - to.Center.Y);
+        }
+
+        private static bool TryFindLandmarkIndex(
+            MapGenRoomCategory category,
+            MapGenRequiredLandmark[] landmarks,
+            out int index)
+        {
+            for (var i = 0; i < (landmarks?.Length ?? 0); i++)
+            {
+                if (landmarks[i].Category == category)
+                {
+                    index = i;
+                    return true;
+                }
+            }
+
+            index = -1;
             return false;
         }
 

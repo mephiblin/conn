@@ -36,12 +36,16 @@ namespace Conn.MapGenV2.Authoring
     public struct MapGenDistanceRules
     {
         public int MinStartToExitDistance;
+        public int MinStartToBossDistance;
+        public bool RequireQuestBeforeBoss;
 
         public static MapGenDistanceRules Defaults()
         {
             return new MapGenDistanceRules
             {
-                MinStartToExitDistance = 0
+                MinStartToExitDistance = 0,
+                MinStartToBossDistance = 0,
+                RequireQuestBeforeBoss = false
             };
         }
     }

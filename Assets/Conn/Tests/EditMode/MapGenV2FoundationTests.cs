@@ -2166,6 +2166,82 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void TemplateMockupSolverReportsBossAndQuestDistanceContradictions()
+        {
+            var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
+            var styleSet = ScriptableObject.CreateInstance<MapGenStyleSetAsset>();
+            var ruleSet = ScriptableObject.CreateInstance<MapGenRuleSetAsset>();
+            var roomShape = ScriptableObject.CreateInstance<MapGenRoomShapeAsset>();
+            var startTemplate = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();
+            var bossTemplate = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();
+            var questTemplate = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();
+            var exitTemplate = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();
+            var profile = ScriptableObject.CreateInstance<MapGenProfileAsset>();
+            GameObject floor = null;
+            GameObject wall = null;
+
+            try
+            {
+                PopulateValidWorkflowProfile(profile, styleSet, moduleSet, ruleSet, roomShape, out floor, out wall);
+                profile.MapSize = new Vector2Int(12, 6);
+                ruleSet.RequiredRoomCategories = new[]
+                {
+                    MapGenRoomCategory.Start,
+                    MapGenRoomCategory.Boss,
+                    MapGenRoomCategory.Quest,
+                    MapGenRoomCategory.Exit
+                };
+                ruleSet.QuantityRules.RequiredCategories = ruleSet.RequiredRoomCategories;
+                ruleSet.DistanceRules = MapGenDistanceRules.Defaults();
+                ruleSet.DistanceRules.RequireQuestBeforeBoss = true;
+                PopulateRoomTemplate(startTemplate, "start_template", MapGenRoomCategory.Start);
+                PopulateRoomTemplate(bossTemplate, "boss_template", MapGenRoomCategory.Boss);
+                PopulateRoomTemplate(questTemplate, "quest_template", MapGenRoomCategory.Quest);
+                PopulateRoomTemplate(exitTemplate, "exit_template", MapGenRoomCategory.Exit);
+                styleSet.RoomTemplates = new[] { startTemplate, bossTemplate, questTemplate, exitTemplate };
+
+                var orderResult = MapGenTemplateMockupSolver.Generate(profile, 7001);
+
+                Assert.That(orderResult.Success, Is.False);
+                Assert.That(orderResult.Report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "production_solver_quest_after_boss"));
+
+                ruleSet.RequiredRoomCategories = new[]
+                {
+                    MapGenRoomCategory.Start,
+                    MapGenRoomCategory.Quest,
+                    MapGenRoomCategory.Boss,
+                    MapGenRoomCategory.Exit
+                };
+                ruleSet.QuantityRules.RequiredCategories = ruleSet.RequiredRoomCategories;
+                ruleSet.DistanceRules.MinStartToBossDistance = 999;
+
+                var distanceResult = MapGenTemplateMockupSolver.Generate(profile, 7001, maxAttempts: 2);
+
+                Assert.That(distanceResult.Success, Is.False);
+                Assert.That(distanceResult.AttemptCount, Is.EqualTo(2));
+                Assert.That(distanceResult.Report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "production_solver_start_boss_distance_too_short"));
+                Assert.That(distanceResult.Report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "production_solver_retry_exhausted"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(profile);
+                Object.DestroyImmediate(exitTemplate);
+                Object.DestroyImmediate(questTemplate);
+                Object.DestroyImmediate(bossTemplate);
+                Object.DestroyImmediate(startTemplate);
+                Object.DestroyImmediate(roomShape);
+                Object.DestroyImmediate(ruleSet);
+                Object.DestroyImmediate(styleSet);
+                Object.DestroyImmediate(moduleSet);
+                Object.DestroyImmediate(floor);
+                Object.DestroyImmediate(wall);
+            }
+        }
+
+        [Test]
         public void TemplateMockupSolverReportsCandidateExhaustionAfterFootprintPropagation()
         {
             var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
