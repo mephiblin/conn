@@ -12,12 +12,26 @@ Primary reference:
 - Upload date: 2026-02-24
 - Duration: 1:25
 
+Related asset page:
+
+- Asset: [Procedural Rooms & Corridors Dungeon Generator (WFC) | MoraMapGen](https://assetstore.unity.com/packages/tools/level-design/procedural-rooms-corridors-dungeon-generator-wfc-moramapgen-289878)
+- Publisher: BM Ben Mora
+- Category: Tools / Level Design
+- License type: Extension Asset
+- Latest version: 1.0
+- Latest release date: 2026-02-24
+- Original Unity version: 2022.3.7
+- File size: 149.2 MB
+- Asset Store compatibility table: URP compatible for Unity 2022.3.7f1,
+  Built-in and HDRP marked not compatible on the official page.
+
 Video description states that the tool generates unlimited room/corridor maps,
 uses Wave-Function-Collapse and post-processing, and gives control over style,
 map size, room quantity, corridor quantity, and related generation settings.
 
 No captions were available. The notes below are based only on visible video text,
-frames, and the public video description.
+frames, the public video description, and visible Asset Store/search-result
+metadata.
 
 ## Observed Product Shape
 
@@ -37,6 +51,38 @@ behaviors:
 - Uses WFC with post-processing to reach a custom style.
 - Includes prop placement controls with distribution modes, offsets, channels,
   and related placement constraints.
+
+## Observed Asset Positioning
+
+The Asset Store page and indexed asset descriptions position MoraMapGen as a
+tooling package, not an art pack.
+
+Confirmed or indexed claims:
+
+- It is for procedural room-and-corridor dungeon layouts.
+- It uses a custom WFC system designed for room/corridor levels.
+- It supports editor generation and runtime generation.
+- Editor-generated maps can be baked into prefabs.
+- The user supplies their own prefabs, meshes, materials, textures, and shaders.
+- Demo content is URP-oriented, while the generator system is described by
+  indexed text as render-pipeline independent.
+- It supports graph traversal, grid-based pathfinding, and Unity AI Navigation
+  through `NavMeshSurface`.
+- It uses deterministic random generation.
+- It includes procedural prop placement.
+- It is aimed at roguelikes, dungeon crawlers, and games needing unlimited
+  unique procedural levels.
+
+Implications for this project:
+
+- Treat the generator as an authoring/runtime system, not a bundled art content
+  feature.
+- Separate map layout, visual prefab skinning, navigation output, and prop
+  placement.
+- Keep deterministic RNG as a core data contract.
+- Bake editor output into reusable runtime data or prefabs.
+- Provide adapters for graph traversal, grid pathfinding, and Unity navigation
+  instead of binding the generator to only one movement model.
 
 ## Direction For This Project
 
@@ -60,6 +106,8 @@ implementation can remain as reference material only.
   into runtime-safe map data.
 - Failure reports explain the missing rule, connector, template, or placement
   constraint that blocked generation.
+- The generated output can provide navigation surfaces/data for graph traversal,
+  grid pathfinding, and Unity AI Navigation adapters.
 
 ## Non-Goals
 
@@ -132,7 +180,8 @@ Required fields:
 - `lightingPreset`
 
 The style set must be swappable without changing the abstract room/corridor
-layout.
+layout. It should reference project-owned prefabs and materials; the generator
+must not depend on bundled production art.
 
 ### `MapGenRoomTemplateAsset`
 
@@ -396,6 +445,8 @@ Runtime-safe output:
 - regions
 - doors
 - traversal graph
+- grid pathfinding data
+- optional navigation surface build inputs
 - spawn markers
 - prop instances
 - objective markers
@@ -484,12 +535,17 @@ Acceptance:
 
 - Bake generated drafts into runtime-safe map data.
 - Add a narrow adapter to existing runtime map consumers if needed.
+- Add optional prefab baking for editor-generated output.
+- Add navigation adapters for graph traversal, grid pathfinding, and Unity
+  navigation build input.
 
 Acceptance:
 
 - Runtime code can load the baked map without editor references.
-- Existing combat/content systems can query traversal, regions, spawn markers,
-  and objective markers.
+- Existing combat/content systems can query traversal, pathfinding, regions,
+  spawn markers, and objective markers.
+- Editor-generated output can be saved as reusable prefab-backed content when
+  the profile requests it.
 
 ## Test Plan
 
@@ -530,4 +586,3 @@ Manual Unity checks:
 - Keep documentation updated with each implemented milestone.
 - Do not claim feature completion until validation and seed determinism tests
   exist for that feature.
-
