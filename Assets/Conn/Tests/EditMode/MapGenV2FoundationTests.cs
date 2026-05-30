@@ -3,6 +3,7 @@ using Conn.MapGenV2.Core;
 using Conn.MapGenV2.Editor;
 using Conn.Core.Maps;
 using Conn.Runtime.Maps;
+using Conn.Runtime.Scenes;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
@@ -3573,6 +3574,8 @@ namespace Conn.Tests.EditMode
                 Assert.That(compiled.Objects, Has.Exactly(1).Matches<CompiledMapObjectPlacement>(
                     prop => prop.Kind == RoomChunkObjectKind.Chest && prop.RuntimeReferenceId == "objective"));
                 Assert.That(compiled.Placements, Has.Exactly(1).Matches<MapPlacement>(
+                    placement => placement.Kind == MapPlacementKind.Start && placement.Id == "start_1"));
+                Assert.That(compiled.Placements, Has.Exactly(1).Matches<MapPlacement>(
                     placement => placement.Kind == MapPlacementKind.Monster && placement.Id == "spawn_0"));
                 Assert.That(compiled.Placements, Has.Exactly(1).Matches<MapPlacement>(
                     placement => placement.Kind == MapPlacementKind.QuestTarget && placement.Id == "objective_0"));
@@ -3581,6 +3584,115 @@ namespace Conn.Tests.EditMode
             {
                 Object.DestroyImmediate(baked);
             }
+        }
+
+        [Test]
+        public void DungeonRuntimeServiceCanLoadMapGenV2BakedMapForSceneFlow()
+        {
+            var baked = ScriptableObject.CreateInstance<MapGenBakedMapAsset>();
+
+            try
+            {
+                baked.Version = MapGenBakedMapMigration.CurrentVersion;
+                baked.ProfileId = MapGenerationCatalog.ChapterTwoFirstSliceProfileId;
+                baked.SourceSignature = "mapgenv2_scene_flow_signature";
+                baked.Seed = CompiledMapDungeonRuntimeService.DefaultDungeonSeed;
+                baked.Width = 2;
+                baked.Height = 1;
+                baked.Cells = new[]
+                {
+                    new MapGenBakedCell
+                    {
+                        Coord = new MapGenGridCoord(0, 0),
+                        State = MapGenCellState.Room,
+                        RegionId = 1,
+                        RoomCategory = MapGenRoomCategory.Start
+                    },
+                    new MapGenBakedCell
+                    {
+                        Coord = new MapGenGridCoord(1, 0),
+                        State = MapGenCellState.Room,
+                        RegionId = 2,
+                        RoomCategory = MapGenRoomCategory.Quest
+                    }
+                };
+                baked.Regions = new[]
+                {
+                    new MapGenBakedRegion
+                    {
+                        RegionId = 1,
+                        RoomCategory = MapGenRoomCategory.Start,
+                        CellCount = 1,
+                        SourceTemplateId = "start_template"
+                    },
+                    new MapGenBakedRegion
+                    {
+                        RegionId = 2,
+                        RoomCategory = MapGenRoomCategory.Quest,
+                        CellCount = 1,
+                        SourceTemplateId = "quest_template"
+                    }
+                };
+                baked.ObjectiveMarkers = new[]
+                {
+                    new MapGenBakedMarker
+                    {
+                        MarkerId = "objective_0",
+                        Coord = new MapGenGridCoord(1, 0),
+                        RegionId = 2,
+                        Channel = "objective"
+                    }
+                };
+
+                CompiledMapDungeonRuntimeService.SetCompiledMapAssets(System.Array.Empty<CompiledMapAsset>());
+                CompiledMapDungeonRuntimeService.SetRuntimeMapGenerationBundles(System.Array.Empty<RuntimeMapGenerationBundleAsset>());
+                CompiledMapDungeonRuntimeService.SetMapGenV2BakedMaps(new[] { baked });
+
+                var compiled = CompiledMapDungeonRuntimeService.BuildQuestCompiledMap(null);
+
+                Assert.That(compiled.MapId, Is.EqualTo("mapgenv2_scene_flow_signature"));
+                Assert.That(compiled.ProfileId, Is.EqualTo(MapGenerationCatalog.ChapterTwoFirstSliceProfileId));
+                Assert.That(compiled.Placements, Has.Exactly(1).Matches<MapPlacement>(
+                    placement => placement.Kind == MapPlacementKind.Start && placement.RoomId == "region_1"));
+                Assert.That(compiled.Placements, Has.Exactly(1).Matches<MapPlacement>(
+                    placement => placement.Kind == MapPlacementKind.QuestTarget && placement.Id == "objective_0"));
+            }
+            finally
+            {
+                CompiledMapDungeonRuntimeService.SetCompiledMapAssets(System.Array.Empty<CompiledMapAsset>());
+                CompiledMapDungeonRuntimeService.SetRuntimeMapGenerationBundles(System.Array.Empty<RuntimeMapGenerationBundleAsset>());
+                CompiledMapDungeonRuntimeService.SetMapGenV2BakedMaps(System.Array.Empty<MapGenBakedMapAsset>());
+                Object.DestroyImmediate(baked);
+            }
+        }
+
+        [Test]
+        public void SceneBootstrapExposesMapGenV2BakedMapsForSourceControlledScenes()
+        {
+            var host = new GameObject("scene_bootstrap_mapgenv2_contract_test");
+            var baked = ScriptableObject.CreateInstance<MapGenBakedMapAsset>();
+
+            try
+            {
+                var bootstrap = host.AddComponent<SceneBootstrap>();
+                bootstrap.MapGenV2BakedMaps = new[] { baked };
+
+                Assert.That(bootstrap.MapGenV2BakedMaps, Has.Length.EqualTo(1));
+                Assert.That(bootstrap.MapGenV2BakedMaps[0], Is.SameAs(baked));
+            }
+            finally
+            {
+                Object.DestroyImmediate(host);
+                Object.DestroyImmediate(baked);
+            }
+        }
+
+        [Test]
+        public void MapGenV2RuntimeBuildCompatibilityValidationPasses()
+        {
+            var report = MapGenV2BuildValidation.ValidateRuntimeBuildCompatibility();
+
+            Assert.That(report.IsValid, Is.True, MapGenV2BuildValidation.Format(report));
         }
 
         private static void PopulateValidWorkflowProfile(

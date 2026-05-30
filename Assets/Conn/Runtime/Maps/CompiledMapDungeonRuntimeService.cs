@@ -1,6 +1,7 @@
 using Conn.Core.Combat;
 using Conn.Core.Maps;
 using Conn.Core.Session;
+using Conn.MapGenV2.Core;
 using Conn.Runtime.World;
 using System.Collections.Generic;
 
@@ -10,12 +11,18 @@ namespace Conn.Runtime.Maps
     {
         public const int DefaultDungeonSeed = 2001;
         private static CompiledMapAsset[] compiledMapAssets = System.Array.Empty<CompiledMapAsset>();
+        private static MapGenBakedMapAsset[] mapGenV2BakedMaps = System.Array.Empty<MapGenBakedMapAsset>();
         private static RuntimeMapGenerationBundleAsset[] runtimeMapGenerationBundles = System.Array.Empty<RuntimeMapGenerationBundleAsset>();
         private static CompiledMap currentCompiledMap;
 
         public static void SetCompiledMapAssets(CompiledMapAsset[] assets)
         {
             compiledMapAssets = assets ?? System.Array.Empty<CompiledMapAsset>();
+        }
+
+        public static void SetMapGenV2BakedMaps(MapGenBakedMapAsset[] assets)
+        {
+            mapGenV2BakedMaps = assets ?? System.Array.Empty<MapGenBakedMapAsset>();
         }
 
         public static void SetRuntimeMapGenerationBundles(RuntimeMapGenerationBundleAsset[] bundles)
@@ -30,6 +37,13 @@ namespace Conn.Runtime.Maps
             if (compiledAsset != null)
             {
                 currentCompiledMap = CompiledMapRuntimeLoader.LoadAndValidateFromJson(compiledAsset.Json, profile);
+                return currentCompiledMap;
+            }
+
+            var mapGenV2BakedMap = FindMapGenV2BakedMap(profile.ProfileId);
+            if (mapGenV2BakedMap != null)
+            {
+                currentCompiledMap = MapGenV2CompiledMapAdapter.ToCompiledMap(mapGenV2BakedMap);
                 return currentCompiledMap;
             }
 
@@ -257,6 +271,31 @@ namespace Conn.Runtime.Maps
             }
 
             return null;
+        }
+
+        private static MapGenBakedMapAsset FindMapGenV2BakedMap(string profileId)
+        {
+            MapGenBakedMapAsset seedFallback = null;
+            for (var i = 0; i < mapGenV2BakedMaps.Length; i++)
+            {
+                var asset = mapGenV2BakedMaps[i];
+                if (asset == null || !MapGenBakedMapMigration.IsCompatible(asset))
+                {
+                    continue;
+                }
+
+                if (asset.ProfileId == profileId && asset.Seed == DefaultDungeonSeed)
+                {
+                    return asset;
+                }
+
+                if (seedFallback == null && asset.ProfileId == profileId)
+                {
+                    seedFallback = asset;
+                }
+            }
+
+            return seedFallback;
         }
 
         private static RuntimeMapGenerationBundleAsset FindRuntimeMapGenerationBundle(string profileId)

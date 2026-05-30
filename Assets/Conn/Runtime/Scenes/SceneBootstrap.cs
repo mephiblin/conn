@@ -2,6 +2,7 @@ using Conn.Core.Scenes;
 using Conn.Runtime.Combat;
 using Conn.Core.Content;
 using Conn.Core.Maps;
+using Conn.MapGenV2.Core;
 using Conn.Runtime.Content;
 using Conn.Runtime.Maps;
 using Conn.Runtime.Session;
@@ -15,6 +16,7 @@ namespace Conn.Runtime.Scenes
         [SerializeField] private GameSceneId sceneId;
         [SerializeField] private ContentDatabaseDefinition contentDatabase;
         [SerializeField] private CompiledMapAsset[] compiledMaps = System.Array.Empty<CompiledMapAsset>();
+        [SerializeField] private MapGenBakedMapAsset[] mapGenV2BakedMaps = System.Array.Empty<MapGenBakedMapAsset>();
         [SerializeField] private RuntimeMapGenerationBundleAsset[] runtimeMapGenerationBundles = System.Array.Empty<RuntimeMapGenerationBundleAsset>();
 
         public GameSceneId SceneId
@@ -35,6 +37,12 @@ namespace Conn.Runtime.Scenes
             set => compiledMaps = value;
         }
 
+        public MapGenBakedMapAsset[] MapGenV2BakedMaps
+        {
+            get => mapGenV2BakedMaps;
+            set => mapGenV2BakedMaps = value;
+        }
+
         public RuntimeMapGenerationBundleAsset[] RuntimeMapGenerationBundles
         {
             get => runtimeMapGenerationBundles;
@@ -45,6 +53,7 @@ namespace Conn.Runtime.Scenes
         {
             RuntimeContentDatabase.SetActive(contentDatabase);
             CompiledMapDungeonRuntimeService.SetCompiledMapAssets(compiledMaps);
+            CompiledMapDungeonRuntimeService.SetMapGenV2BakedMaps(mapGenV2BakedMaps);
             CompiledMapDungeonRuntimeService.SetRuntimeMapGenerationBundles(runtimeMapGenerationBundles);
             var session = GameSession.Instance;
             session.State.Mode = SceneFlowService.ToMode(sceneId);

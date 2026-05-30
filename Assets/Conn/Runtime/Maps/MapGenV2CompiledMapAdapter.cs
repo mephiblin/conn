@@ -29,6 +29,7 @@ namespace Conn.Runtime.Maps
             AddRegions(compiled, baked);
             AddConnectors(compiled, baked);
             AddProps(compiled, baked);
+            AddRegionAnchors(compiled, baked);
             AddMarkers(compiled, baked.SpawnMarkers, MapPlacementKind.Monster, "spawn");
             AddMarkers(compiled, baked.ObjectiveMarkers, MapPlacementKind.QuestTarget, "objective");
             return compiled;
@@ -107,6 +108,29 @@ namespace Conn.Runtime.Maps
             }
         }
 
+        private static void AddRegionAnchors(CompiledMap compiled, MapGenBakedMapAsset baked)
+        {
+            var representativeCells = BuildRegionRepresentativeCells(baked.Cells);
+            foreach (var region in baked.Regions)
+            {
+                if (!TryGetRegionPlacementKind(region.RoomCategory, out var kind))
+                {
+                    continue;
+                }
+
+                representativeCells.TryGetValue(region.RegionId, out var coord);
+                compiled.Placements.Add(new MapPlacement
+                {
+                    Id = $"{kind.ToString().ToLowerInvariant()}_{region.RegionId}",
+                    Kind = kind,
+                    RoomId = RegionId(region.RegionId),
+                    X = coord.X,
+                    Y = coord.Y,
+                    ReferenceId = region.SourceTemplateId ?? string.Empty
+                });
+            }
+        }
+
         private static void AddMarkers(
             CompiledMap compiled,
             MapGenBakedMarker[] markers,
@@ -163,9 +187,42 @@ namespace Conn.Runtime.Maps
             return RoomChunkObjectKind.Decor;
         }
 
+        private static bool TryGetRegionPlacementKind(MapGenRoomCategory category, out MapPlacementKind kind)
+        {
+            switch (category)
+            {
+                case MapGenRoomCategory.Start:
+                    kind = MapPlacementKind.Start;
+                    return true;
+                case MapGenRoomCategory.Boss:
+                    kind = MapPlacementKind.Boss;
+                    return true;
+                case MapGenRoomCategory.Exit:
+                    kind = MapPlacementKind.Exit;
+                    return true;
+                default:
+                    kind = default;
+                    return false;
+            }
+        }
+
         private static string RegionId(int regionId)
         {
             return regionId >= 0 ? $"region_{regionId}" : string.Empty;
+        }
+
+        private static Dictionary<int, MapGenGridCoord> BuildRegionRepresentativeCells(MapGenBakedCell[] cells)
+        {
+            var representatives = new Dictionary<int, MapGenGridCoord>();
+            foreach (var cell in cells)
+            {
+                if (cell.RegionId >= 0 && !representatives.ContainsKey(cell.RegionId))
+                {
+                    representatives.Add(cell.RegionId, cell.Coord);
+                }
+            }
+
+            return representatives;
         }
 
         private static Dictionary<int, RegionBounds> BuildRegionBounds(MapGenBakedCell[] cells)

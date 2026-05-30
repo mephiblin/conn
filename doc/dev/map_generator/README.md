@@ -126,6 +126,33 @@ Review checklist for shared MapGenV2 assets:
 - No ignored local generated output is staged unless it was intentionally moved
   to `Samples` or `Production`.
 
+## Runtime Integration
+
+Runtime code should reference `MapGenBakedMapAsset`, not editor drafts,
+profiles, module sets, or scene marker components. Use these contracts:
+
+- Direct baked-map query: add `MapGenRuntimeMapService` to a runtime object and
+  assign a `MapGenBakedMapAsset`; runtime systems can read cells, regions,
+  connectors, props, markers, traversal edges, and path queries through
+  `MapGenRuntimeMapQuery`.
+- Existing dungeon scene flow: assign promoted baked maps to
+  `SceneBootstrap.MapGenV2BakedMaps`. `CompiledMapDungeonRuntimeService`
+  selects the matching profile/seed and converts it through
+  `MapGenV2CompiledMapAdapter`.
+- Existing combat/content systems: use the compiled map adapter output for
+  start, boss, exit, monster spawn, objective, prop/interactable, socket/door,
+  and region metadata.
+- Build validation: run
+  `Conn > MapGenV2 > Validate Runtime Build Compatibility` before promoting a
+  production scene or baked map.
+
+Runtime integration priority is:
+
+1. Explicit `CompiledMapAsset` JSON already assigned to the scene.
+2. Promoted `MapGenBakedMapAsset` in `SceneBootstrap.MapGenV2BakedMaps`.
+3. Runtime map generation bundle.
+4. Legacy generated fallback.
+
 ## Troubleshooting
 
 - `Profile has no style set`: assign a `MapGenStyleSetAsset`.

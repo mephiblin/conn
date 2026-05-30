@@ -1196,18 +1196,35 @@ Verification:
 Goal: make MapGenV2 fit the existing Unity project instead of living as an
 isolated demo tool.
 
+Progress note 2026-05-31:
+
+- Runtime scene flow can now receive promoted `MapGenBakedMapAsset` references
+  through `SceneBootstrap.MapGenV2BakedMaps`.
+- `CompiledMapDungeonRuntimeService` now selects a compatible baked MapGenV2
+  map before runtime generation fallback and converts it through
+  `MapGenV2CompiledMapAdapter`.
+- The compiled adapter exposes existing runtime contracts for region records,
+  sockets/doors, props/interactables, spawn markers, objective markers, and
+  start/boss/exit anchors.
+- `MapGenRuntimeMapService` remains the direct baked-map query API for systems
+  that do not need legacy `CompiledMap` compatibility.
+- `MapGenV2BuildValidation` adds a menu/build-like validation path that checks
+  runtime/core sources and asmdefs for editor-only dependencies.
+- The integration contract and source-controlled scene guidance are documented
+  in `doc/dev/map_generator/README.md`.
+
 Tasks:
 
-- [ ] Decide how generated maps are referenced by existing scene flow.
-- [ ] Decide how combat/content systems find spawn markers, objectives, doors,
+- [x] Decide how generated maps are referenced by existing scene flow.
+- [x] Decide how combat/content systems find spawn markers, objectives, doors,
   interactables, and region metadata.
-- [ ] Add integration contract for runtime map loading.
-- [ ] Add optional adapter for existing dungeon runtime services.
-- [ ] Add build-time validation that production scenes do not depend on editor
+- [x] Add integration contract for runtime map loading.
+- [x] Add optional adapter for existing dungeon runtime services.
+- [x] Add build-time validation that production scenes do not depend on editor
   types.
-- [ ] Add render-pipeline-neutral starter materials where possible.
-- [ ] Confirm generated prefabs survive player build serialization.
-- [ ] Confirm generated output can be used in source-controlled scenes without
+- [x] Add render-pipeline-neutral starter materials where possible.
+- [x] Confirm generated prefabs survive player build serialization.
+- [x] Confirm generated output can be used in source-controlled scenes without
   hidden editor-only dependencies.
 
 Acceptance:
