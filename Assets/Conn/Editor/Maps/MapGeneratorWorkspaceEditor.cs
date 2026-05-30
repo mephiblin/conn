@@ -1,6 +1,7 @@
 using Conn.Authoring.Maps;
 using Conn.Core.Maps;
 using System;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -172,12 +173,95 @@ namespace Conn.Editor.Maps
             EditorGUILayout.LabelField("Side Branches", profile.SideBranchCount.ToString());
             EditorGUILayout.LabelField(
                 "Room Asset Pools",
-                $"chunks={Count(profile.OptionalChunks)}, required landmarks={Count(profile.RequiredLandmarkRooms)}, optional landmarks={Count(profile.OptionalLandmarks)}");
+                $"typed pools={Count(profile.RoomPools)}, legacy chunks={Count(profile.OptionalChunks)}, required landmarks={Count(profile.RequiredLandmarkRooms)}, optional landmarks={Count(profile.OptionalLandmarks)}");
+
+            foreach (var pool in GetEffectiveRoomPools(profile))
+            {
+                if (pool == null)
+                {
+                    continue;
+                }
+
+                EditorGUILayout.LabelField(
+                    $"{pool.Role}/{pool.LayoutKind}",
+                    $"required={pool.Required}, min={pool.MinCount}, max={FormatMax(pool.MaxCount)}, weight={pool.Weight}, chunks={Count(pool.AllowedChunks)}");
+            }
         }
 
         private static int Count<T>(T[] values)
         {
             return values?.Length ?? 0;
+        }
+
+        private static string FormatMax(int value)
+        {
+            return value > 0 ? value.ToString() : "-";
+        }
+
+        private static IEnumerable<MapRoomPoolRule> GetEffectiveRoomPools(MapProfileAsset profile)
+        {
+            if (profile.RoomPools != null && profile.RoomPools.Length > 0)
+            {
+                return profile.RoomPools;
+            }
+
+            var pools = new List<MapRoomPoolRule>();
+            AddLegacyBridgePool(pools, profile, MapRoomPoolRole.Start, RoomChunkLayoutKind.Room, 1, 1, true, MapRoomRole.Start, RoomChunkLayoutKind.Room);
+            AddLegacyBridgePool(pools, profile, MapRoomPoolRole.Main, RoomChunkLayoutKind.Room, 1, 0, true, MapRoomRole.MainPath, RoomChunkLayoutKind.Room);
+            AddLegacyBridgePool(pools, profile, MapRoomPoolRole.Corridor, RoomChunkLayoutKind.Corridor, 0, 0, true, MapRoomRole.MainPath, RoomChunkLayoutKind.Corridor);
+            AddLegacyBridgePool(pools, profile, MapRoomPoolRole.Hub, RoomChunkLayoutKind.Hub, 0, 0, true, MapRoomRole.MainPath, RoomChunkLayoutKind.Hub);
+            AddLegacyBridgePool(pools, profile, MapRoomPoolRole.Side, RoomChunkLayoutKind.Room, 0, 0, false, MapRoomRole.SideBranch, RoomChunkLayoutKind.Room);
+            AddLegacyBridgePool(pools, profile, MapRoomPoolRole.DeadEnd, RoomChunkLayoutKind.DeadEnd, 0, 0, false, MapRoomRole.SideBranch, RoomChunkLayoutKind.DeadEnd);
+            AddLegacyBridgePool(pools, profile, MapRoomPoolRole.Quest, RoomChunkLayoutKind.Room, 1, 1, true, MapRoomRole.QuestTarget, RoomChunkLayoutKind.Room);
+            AddLegacyBridgePool(pools, profile, MapRoomPoolRole.Boss, RoomChunkLayoutKind.Room, 1, 1, true, MapRoomRole.Boss, RoomChunkLayoutKind.Room);
+            AddLegacyBridgePool(pools, profile, MapRoomPoolRole.Exit, RoomChunkLayoutKind.Room, 1, 1, true, MapRoomRole.Exit, RoomChunkLayoutKind.Room);
+            AddLegacyBridgePool(pools, profile, MapRoomPoolRole.HeightTransition, RoomChunkLayoutKind.HeightTransition, 0, 0, true, MapRoomRole.MainPath, RoomChunkLayoutKind.HeightTransition);
+            return pools;
+        }
+
+        private static void AddLegacyBridgePool(
+            List<MapRoomPoolRule> pools,
+            MapProfileAsset profile,
+            MapRoomPoolRole poolRole,
+            RoomChunkLayoutKind layoutKind,
+            int minCount,
+            int maxCount,
+            bool required,
+            MapRoomRole chunkRole,
+            RoomChunkLayoutKind chunkLayoutKind)
+        {
+            var chunks = new List<RoomChunkAsset>();
+            foreach (var chunk in profile.OptionalChunks ?? Array.Empty<RoomChunkAsset>())
+            {
+                if (chunk != null && chunk.LayoutKind == chunkLayoutKind && RoleTagsContain(chunk.RoleTags, chunkRole))
+                {
+                    chunks.Add(chunk);
+                }
+            }
+
+            pools.Add(new MapRoomPoolRule
+            {
+                Role = poolRole,
+                LayoutKind = layoutKind,
+                MinCount = minCount,
+                MaxCount = maxCount,
+                Weight = 1,
+                Required = required,
+                AllowedChunks = chunks.ToArray()
+            });
+        }
+
+        private static bool RoleTagsContain(string[] roleTags, MapRoomRole role)
+        {
+            foreach (var tag in roleTags ?? Array.Empty<string>())
+            {
+                if (Enum.TryParse<MapRoomRole>(tag, true, out var parsed) && parsed == role)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static void GeneratePreview(MapGeneratorWorkspace workspace)

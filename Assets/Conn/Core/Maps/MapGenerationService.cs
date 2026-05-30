@@ -202,10 +202,11 @@ namespace Conn.Core.Maps
 
         private static void AssignChunksAndPlacements(GeneratedMapDraft draft, MapProfile profile, IReadOnlyList<ChunkPreset> chunks)
         {
+            var roomPools = ResolveRoomPools(profile, chunks);
             for (var i = 0; i < draft.Graph.Nodes.Count; i++)
             {
                 var node = draft.Graph.Nodes[i];
-                var chunk = FindChunk(chunks, node.Role, node.LayoutKind, node.SocketMask, profile.Theme, profile.RoomWidth, profile.RoomHeight);
+                var chunk = FindChunk(roomPools, chunks, node, profile, draft.Seed);
                 node.ChunkId = chunk.Id;
 
                 if (TryRequiredPlacementKind(node.Role, out var placementKind))
@@ -315,6 +316,224 @@ namespace Conn.Core.Maps
             }
 
             throw new InvalidOperationException($"No chunk supports role {role} with layout {layoutKind} and sockets {sockets}.");
+        }
+
+        private static ChunkPreset FindChunk(
+            IReadOnlyList<RuntimeMapRoomPoolRule> roomPools,
+            IReadOnlyList<ChunkPreset> chunks,
+            RoomGraphNode node,
+            MapProfile profile,
+            int seed)
+        {
+            var poolRole = ResolvePoolRole(node);
+            var matchingPools = new List<RuntimeMapRoomPoolRule>();
+            foreach (var pool in roomPools)
+            {
+                if (pool != null && pool.Role == poolRole && pool.LayoutKind == node.LayoutKind)
+                {
+                    matchingPools.Add(pool);
+                }
+            }
+
+            if (matchingPools.Count == 0)
+            {
+                throw new InvalidOperationException($"No room pool supports role {poolRole} with layout {node.LayoutKind}.");
+            }
+
+            var pool = ChoosePool(matchingPools, seed, node.Id);
+            var candidates = new List<ChunkPreset>();
+            foreach (var chunkId in pool.AllowedChunkIds ?? new List<string>())
+            {
+                var chunk = FindChunkById(chunks, chunkId);
+                if (chunk != null
+                    && chunk.LayoutKind == node.LayoutKind
+                    && SupportsPoolRole(chunk, poolRole, node.Role, node.SocketMask, profile.Theme, profile.RoomWidth, profile.RoomHeight))
+                {
+                    candidates.Add(chunk);
+                }
+            }
+
+            if (candidates.Count == 0)
+            {
+                throw new InvalidOperationException($"Room pool {pool.Role}/{pool.LayoutKind} has no compatible chunk for node {node.Id} sockets {node.SocketMask}.");
+            }
+
+            return candidates[PositiveHash(seed, node.Id, pool.Role.ToString()) % candidates.Count];
+        }
+
+        private static IReadOnlyList<RuntimeMapRoomPoolRule> ResolveRoomPools(MapProfile profile, IReadOnlyList<ChunkPreset> chunks)
+        {
+            if (profile.RoomPools != null && profile.RoomPools.Count > 0)
+            {
+                return profile.RoomPools;
+            }
+
+            return BuildLegacyBridgeRoomPools(chunks);
+        }
+
+        private static List<RuntimeMapRoomPoolRule> BuildLegacyBridgeRoomPools(IReadOnlyList<ChunkPreset> chunks)
+        {
+            return new List<RuntimeMapRoomPoolRule>
+            {
+                CreateLegacyBridgePool(chunks, MapRoomPoolRole.Start, RoomChunkLayoutKind.Room, 1, 1, true, MapRoomRole.Start, RoomChunkLayoutKind.Room),
+                CreateLegacyBridgePool(chunks, MapRoomPoolRole.Main, RoomChunkLayoutKind.Room, 1, 0, true, MapRoomRole.MainPath, RoomChunkLayoutKind.Room),
+                CreateLegacyBridgePool(chunks, MapRoomPoolRole.Corridor, RoomChunkLayoutKind.Corridor, 0, 0, true, MapRoomRole.MainPath, RoomChunkLayoutKind.Corridor),
+                CreateLegacyBridgePool(chunks, MapRoomPoolRole.Hub, RoomChunkLayoutKind.Hub, 0, 0, true, MapRoomRole.MainPath, RoomChunkLayoutKind.Hub),
+                CreateLegacyBridgePool(chunks, MapRoomPoolRole.Side, RoomChunkLayoutKind.Room, 0, 0, false, MapRoomRole.SideBranch, RoomChunkLayoutKind.Room),
+                CreateLegacyBridgePool(chunks, MapRoomPoolRole.DeadEnd, RoomChunkLayoutKind.DeadEnd, 0, 0, false, MapRoomRole.SideBranch, RoomChunkLayoutKind.DeadEnd),
+                CreateLegacyBridgePool(chunks, MapRoomPoolRole.Quest, RoomChunkLayoutKind.Room, 1, 1, true, MapRoomRole.QuestTarget, RoomChunkLayoutKind.Room),
+                CreateLegacyBridgePool(chunks, MapRoomPoolRole.Boss, RoomChunkLayoutKind.Room, 1, 1, true, MapRoomRole.Boss, RoomChunkLayoutKind.Room),
+                CreateLegacyBridgePool(chunks, MapRoomPoolRole.Exit, RoomChunkLayoutKind.Room, 1, 1, true, MapRoomRole.Exit, RoomChunkLayoutKind.Room),
+                CreateLegacyBridgePool(chunks, MapRoomPoolRole.HeightTransition, RoomChunkLayoutKind.HeightTransition, 0, 0, true, MapRoomRole.MainPath, RoomChunkLayoutKind.HeightTransition)
+            };
+        }
+
+        private static RuntimeMapRoomPoolRule CreateLegacyBridgePool(
+            IReadOnlyList<ChunkPreset> chunks,
+            MapRoomPoolRole poolRole,
+            RoomChunkLayoutKind poolLayoutKind,
+            int minCount,
+            int maxCount,
+            bool required,
+            MapRoomRole chunkRole,
+            RoomChunkLayoutKind chunkLayoutKind)
+        {
+            var pool = new RuntimeMapRoomPoolRule
+            {
+                Role = poolRole,
+                LayoutKind = poolLayoutKind,
+                MinCount = minCount,
+                MaxCount = maxCount,
+                Weight = 1,
+                Required = required
+            };
+
+            for (var i = 0; i < chunks.Count; i++)
+            {
+                var chunk = chunks[i];
+                if (chunk != null && chunk.LayoutKind == chunkLayoutKind && chunk.RoleTags.Contains(chunkRole))
+                {
+                    pool.AllowedChunkIds.Add(chunk.Id);
+                }
+            }
+
+            return pool;
+        }
+
+        private static RuntimeMapRoomPoolRule ChoosePool(IReadOnlyList<RuntimeMapRoomPoolRule> pools, int seed, string nodeId)
+        {
+            var totalWeight = 0;
+            for (var i = 0; i < pools.Count; i++)
+            {
+                totalWeight += Math.Max(0, pools[i].Weight);
+            }
+
+            if (totalWeight <= 0)
+            {
+                return pools[0];
+            }
+
+            var roll = PositiveHash(seed, nodeId, "room_pool") % totalWeight;
+            for (var i = 0; i < pools.Count; i++)
+            {
+                var weight = Math.Max(0, pools[i].Weight);
+                if (roll < weight)
+                {
+                    return pools[i];
+                }
+
+                roll -= weight;
+            }
+
+            return pools[0];
+        }
+
+        private static ChunkPreset FindChunkById(IReadOnlyList<ChunkPreset> chunks, string chunkId)
+        {
+            for (var i = 0; i < chunks.Count; i++)
+            {
+                if (chunks[i] != null && chunks[i].Id == chunkId)
+                {
+                    return chunks[i];
+                }
+            }
+
+            return null;
+        }
+
+        private static bool SupportsPoolRole(
+            ChunkPreset chunk,
+            MapRoomPoolRole poolRole,
+            MapRoomRole roomRole,
+            MapDirection sockets,
+            string theme,
+            int width,
+            int height)
+        {
+            return chunk.Width == width
+                && chunk.Height == height
+                && (string.IsNullOrEmpty(chunk.Theme) || chunk.Theme == theme)
+                && (chunk.OpenSides & sockets) == sockets
+                && (chunk.DoorSockets & sockets) == sockets
+                && ChunkSupportsPoolRole(chunk, poolRole, roomRole);
+        }
+
+        private static bool ChunkSupportsPoolRole(ChunkPreset chunk, MapRoomPoolRole poolRole, MapRoomRole roomRole)
+        {
+            switch (poolRole)
+            {
+                case MapRoomPoolRole.Start:
+                    return chunk.RoleTags.Contains(MapRoomRole.Start);
+                case MapRoomPoolRole.Main:
+                case MapRoomPoolRole.Corridor:
+                case MapRoomPoolRole.Hub:
+                case MapRoomPoolRole.HeightTransition:
+                    return chunk.RoleTags.Contains(MapRoomRole.MainPath);
+                case MapRoomPoolRole.Side:
+                case MapRoomPoolRole.DeadEnd:
+                    return chunk.RoleTags.Contains(MapRoomRole.SideBranch);
+                case MapRoomPoolRole.Quest:
+                    return chunk.RoleTags.Contains(MapRoomRole.QuestTarget);
+                case MapRoomPoolRole.Boss:
+                    return chunk.RoleTags.Contains(MapRoomRole.Boss);
+                case MapRoomPoolRole.Exit:
+                    return chunk.RoleTags.Contains(MapRoomRole.Exit);
+                default:
+                    return chunk.RoleTags.Contains(roomRole);
+            }
+        }
+
+        private static MapRoomPoolRole ResolvePoolRole(RoomGraphNode node)
+        {
+            switch (node.Role)
+            {
+                case MapRoomRole.Start:
+                    return MapRoomPoolRole.Start;
+                case MapRoomRole.QuestTarget:
+                    return MapRoomPoolRole.Quest;
+                case MapRoomRole.Boss:
+                    return MapRoomPoolRole.Boss;
+                case MapRoomRole.Exit:
+                    return MapRoomPoolRole.Exit;
+                case MapRoomRole.SideBranch:
+                    return node.LayoutKind == RoomChunkLayoutKind.DeadEnd
+                        ? MapRoomPoolRole.DeadEnd
+                        : MapRoomPoolRole.Side;
+                case MapRoomRole.MainPath:
+                    switch (node.LayoutKind)
+                    {
+                        case RoomChunkLayoutKind.Corridor:
+                            return MapRoomPoolRole.Corridor;
+                        case RoomChunkLayoutKind.Hub:
+                            return MapRoomPoolRole.Hub;
+                        case RoomChunkLayoutKind.HeightTransition:
+                            return MapRoomPoolRole.HeightTransition;
+                        default:
+                            return MapRoomPoolRole.Main;
+                    }
+                default:
+                    throw new InvalidOperationException($"Unsupported room role for pool resolution: {node.Role}");
+            }
         }
 
         private static ChunkAnchor FindAnchor(ChunkPreset chunk, MapAnchorKind kind)
@@ -487,6 +706,32 @@ namespace Conn.Core.Maps
             if (profile.CriticalPathMin < 4 || profile.CriticalPathMax < profile.CriticalPathMin)
             {
                 throw new InvalidOperationException("Map profile requires a critical path of at least 4 rooms.");
+            }
+
+        }
+
+        private static int PositiveHash(int seed, string left, string right)
+        {
+            unchecked
+            {
+                var hash = seed;
+                hash = (hash * 397) ^ StableHash(left);
+                hash = (hash * 397) ^ StableHash(right);
+                return hash == int.MinValue ? 0 : Math.Abs(hash);
+            }
+        }
+
+        private static int StableHash(string value)
+        {
+            unchecked
+            {
+                var hash = 17;
+                for (var i = 0; i < (value?.Length ?? 0); i++)
+                {
+                    hash = hash * 31 + value[i];
+                }
+
+                return hash;
             }
         }
     }

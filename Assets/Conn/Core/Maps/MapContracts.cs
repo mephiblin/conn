@@ -23,6 +23,20 @@ namespace Conn.Core.Maps
         SideBranch = 5
     }
 
+    public enum MapRoomPoolRole
+    {
+        Start = 0,
+        Main = 1,
+        Corridor = 2,
+        Hub = 3,
+        Side = 4,
+        DeadEnd = 5,
+        Quest = 6,
+        Boss = 7,
+        Exit = 8,
+        HeightTransition = 9
+    }
+
     public enum MapAnchorKind
     {
         Start = 0,
@@ -95,11 +109,24 @@ namespace Conn.Core.Maps
         public string ResourceSetId = string.Empty;
         public List<string> RequiredLandmarkRoomIds = new List<string>();
         public List<string> OptionalChunkIds = new List<string>();
+        public List<RuntimeMapRoomPoolRule> RoomPools = new List<RuntimeMapRoomPoolRule>();
         public List<string> OptionalLandmarkRoomIds = new List<string>();
         public List<string> SpawnTableIds = new List<string>();
         public List<string> SpawnTagFilters = new List<string>();
         public List<string> DirectEncounterOverrideIds = new List<string>();
         public string GenerationWeightProfileId = string.Empty;
+    }
+
+    [Serializable]
+    public sealed class RuntimeMapRoomPoolRule
+    {
+        public MapRoomPoolRole Role;
+        public RoomChunkLayoutKind LayoutKind = RoomChunkLayoutKind.Room;
+        public int MinCount;
+        public int MaxCount;
+        public int Weight = 1;
+        public bool Required;
+        public List<string> AllowedChunkIds = new List<string>();
     }
 
     [Serializable]

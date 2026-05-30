@@ -34,7 +34,8 @@ namespace Conn.Core.Maps
                     MapAnchorKind.Exit,
                     MapAnchorKind.Monster,
                     MapAnchorKind.Loot
-                }
+                },
+                RoomPools = BuildChapterTwoFirstSliceRoomPools()
             };
         }
 
@@ -193,6 +194,43 @@ namespace Conn.Core.Maps
                 Anchors = new List<ChunkAnchor>(),
                 Cells = new List<RoomChunkCell>(),
                 Objects = new List<RoomChunkObjectPlacement>()
+            };
+        }
+
+        private static List<RuntimeMapRoomPoolRule> BuildChapterTwoFirstSliceRoomPools()
+        {
+            return new List<RuntimeMapRoomPoolRule>
+            {
+                Pool(MapRoomPoolRole.Start, RoomChunkLayoutKind.Room, 1, 1, true, "ruins_start"),
+                Pool(MapRoomPoolRole.Main, RoomChunkLayoutKind.Room, 1, 0, true, "ruins_main_room"),
+                Pool(MapRoomPoolRole.Corridor, RoomChunkLayoutKind.Corridor, 0, 0, true, "ruins_main_corridor"),
+                Pool(MapRoomPoolRole.Hub, RoomChunkLayoutKind.Hub, 0, 0, true, "ruins_main_hub"),
+                Pool(MapRoomPoolRole.Side, RoomChunkLayoutKind.Room, 0, 0, false, "ruins_side_room"),
+                Pool(MapRoomPoolRole.DeadEnd, RoomChunkLayoutKind.DeadEnd, 0, 0, false, "ruins_side_deadend"),
+                Pool(MapRoomPoolRole.Quest, RoomChunkLayoutKind.Room, 1, 1, true, "ruins_quest_target"),
+                Pool(MapRoomPoolRole.Boss, RoomChunkLayoutKind.Room, 1, 1, true, "ruins_boss"),
+                Pool(MapRoomPoolRole.Exit, RoomChunkLayoutKind.Room, 1, 1, true, "ruins_exit"),
+                Pool(MapRoomPoolRole.HeightTransition, RoomChunkLayoutKind.HeightTransition, 0, 0, true, "ruins_main_transition")
+            };
+        }
+
+        private static RuntimeMapRoomPoolRule Pool(
+            MapRoomPoolRole role,
+            RoomChunkLayoutKind layoutKind,
+            int minCount,
+            int maxCount,
+            bool required,
+            params string[] allowedChunkIds)
+        {
+            return new RuntimeMapRoomPoolRule
+            {
+                Role = role,
+                LayoutKind = layoutKind,
+                MinCount = minCount,
+                MaxCount = maxCount,
+                Weight = 1,
+                Required = required,
+                AllowedChunkIds = new List<string>(allowedChunkIds)
             };
         }
 

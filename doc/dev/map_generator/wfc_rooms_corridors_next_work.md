@@ -48,16 +48,16 @@ graph preview.
 
 ### Tasks
 
-- [ ] Add a typed room pool data structure, e.g. `MapRoomPoolRule`.
-- [ ] Pool rule fields:
+- [x] Add a typed room pool data structure, e.g. `MapRoomPoolRule`.
+- [x] Pool rule fields:
   role, layout kind, min count, max count, weight, required flag, allowed chunks.
-- [ ] Add room pool rules to `MapProfileAsset`.
-- [ ] Keep legacy `OptionalChunks` only as a migration/debug bridge.
-- [ ] Update `MapProfileAuthoringSampleBuilder` to populate typed pools from
+- [x] Add room pool rules to `MapProfileAsset`.
+- [x] Keep legacy `OptionalChunks` only as a migration/debug bridge.
+- [x] Update `MapProfileAuthoringSampleBuilder` to populate typed pools from
   the Chapter 2 sample chunks.
-- [ ] Show pool summary in `MapGeneratorWorkspace`.
-- [ ] Validate each required pool has at least one chunk.
-- [ ] Validate each pool chunk matches profile room size/theme.
+- [x] Show pool summary in `MapGeneratorWorkspace`.
+- [x] Validate each required pool has at least one chunk.
+- [x] Validate each pool chunk matches profile room size/theme.
 
 ### Acceptance
 

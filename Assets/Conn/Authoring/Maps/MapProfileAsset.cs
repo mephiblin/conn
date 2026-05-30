@@ -32,6 +32,7 @@ namespace Conn.Authoring.Maps
         [Header("Authoring Links")]
         public MapResourceSetAsset ResourceSet;
         public LandmarkRoomAsset[] RequiredLandmarkRooms = Array.Empty<LandmarkRoomAsset>();
+        public MapRoomPoolRule[] RoomPools = Array.Empty<MapRoomPoolRule>();
         public RoomChunkAsset[] OptionalChunks = Array.Empty<RoomChunkAsset>();
         public LandmarkRoomAsset[] OptionalLandmarks = Array.Empty<LandmarkRoomAsset>();
         public SpawnTableAsset[] AllowedSpawnTables = Array.Empty<SpawnTableAsset>();
@@ -63,11 +64,127 @@ namespace Conn.Authoring.Maps
                 LockedDoorKeyId = LockedDoorKeyId,
                 RequiredAnchors = new System.Collections.Generic.List<MapAnchorKind>(RequiredAnchors ?? Array.Empty<MapAnchorKind>()),
                 ResourceSetId = ResourceSet != null ? ResourceSet.Id : string.Empty,
+                OptionalChunkIds = ResolveOptionalChunkIds(),
+                RoomPools = ResolveRoomPools(),
                 SpawnTableIds = ResolveSpawnTableIds(),
                 SpawnTagFilters = new System.Collections.Generic.List<string>(SpawnTagFilters ?? Array.Empty<string>()),
                 DirectEncounterOverrideIds = ResolveEncounterOverrideIds(),
                 GenerationWeightProfileId = GenerationWeightProfile != null ? GenerationWeightProfile.Id : string.Empty
             };
+        }
+
+        private System.Collections.Generic.List<RuntimeMapRoomPoolRule> ResolveRoomPools()
+        {
+            var pools = new System.Collections.Generic.List<RuntimeMapRoomPoolRule>();
+            var authoringPools = RoomPools;
+            if (authoringPools == null || authoringPools.Length == 0)
+            {
+                authoringPools = BuildLegacyBridgeRoomPools();
+            }
+
+            foreach (var pool in authoringPools ?? Array.Empty<MapRoomPoolRule>())
+            {
+                if (pool == null)
+                {
+                    continue;
+                }
+
+                var runtimePool = new RuntimeMapRoomPoolRule
+                {
+                    Role = pool.Role,
+                    LayoutKind = pool.LayoutKind,
+                    MinCount = pool.MinCount,
+                    MaxCount = pool.MaxCount,
+                    Weight = pool.Weight,
+                    Required = pool.Required
+                };
+
+                foreach (var chunk in pool.AllowedChunks ?? Array.Empty<RoomChunkAsset>())
+                {
+                    if (chunk != null && !string.IsNullOrWhiteSpace(chunk.Id))
+                    {
+                        runtimePool.AllowedChunkIds.Add(chunk.Id);
+                    }
+                }
+
+                pools.Add(runtimePool);
+            }
+
+            return pools;
+        }
+
+        private System.Collections.Generic.List<string> ResolveOptionalChunkIds()
+        {
+            var ids = new System.Collections.Generic.List<string>();
+            foreach (var chunk in OptionalChunks ?? Array.Empty<RoomChunkAsset>())
+            {
+                if (chunk != null && !string.IsNullOrWhiteSpace(chunk.Id))
+                {
+                    ids.Add(chunk.Id);
+                }
+            }
+
+            return ids;
+        }
+
+        private MapRoomPoolRule[] BuildLegacyBridgeRoomPools()
+        {
+            return new[]
+            {
+                CreateLegacyBridgePool(MapRoomPoolRole.Start, RoomChunkLayoutKind.Room, 1, 1, true, MapRoomRole.Start, RoomChunkLayoutKind.Room),
+                CreateLegacyBridgePool(MapRoomPoolRole.Main, RoomChunkLayoutKind.Room, 1, 0, true, MapRoomRole.MainPath, RoomChunkLayoutKind.Room),
+                CreateLegacyBridgePool(MapRoomPoolRole.Corridor, RoomChunkLayoutKind.Corridor, 0, 0, true, MapRoomRole.MainPath, RoomChunkLayoutKind.Corridor),
+                CreateLegacyBridgePool(MapRoomPoolRole.Hub, RoomChunkLayoutKind.Hub, 0, 0, true, MapRoomRole.MainPath, RoomChunkLayoutKind.Hub),
+                CreateLegacyBridgePool(MapRoomPoolRole.Side, RoomChunkLayoutKind.Room, 0, 0, false, MapRoomRole.SideBranch, RoomChunkLayoutKind.Room),
+                CreateLegacyBridgePool(MapRoomPoolRole.DeadEnd, RoomChunkLayoutKind.DeadEnd, 0, 0, false, MapRoomRole.SideBranch, RoomChunkLayoutKind.DeadEnd),
+                CreateLegacyBridgePool(MapRoomPoolRole.Quest, RoomChunkLayoutKind.Room, 1, 1, true, MapRoomRole.QuestTarget, RoomChunkLayoutKind.Room),
+                CreateLegacyBridgePool(MapRoomPoolRole.Boss, RoomChunkLayoutKind.Room, 1, 1, true, MapRoomRole.Boss, RoomChunkLayoutKind.Room),
+                CreateLegacyBridgePool(MapRoomPoolRole.Exit, RoomChunkLayoutKind.Room, 1, 1, true, MapRoomRole.Exit, RoomChunkLayoutKind.Room),
+                CreateLegacyBridgePool(MapRoomPoolRole.HeightTransition, RoomChunkLayoutKind.HeightTransition, 0, 0, true, MapRoomRole.MainPath, RoomChunkLayoutKind.HeightTransition)
+            };
+        }
+
+        private MapRoomPoolRule CreateLegacyBridgePool(
+            MapRoomPoolRole poolRole,
+            RoomChunkLayoutKind layoutKind,
+            int minCount,
+            int maxCount,
+            bool required,
+            MapRoomRole chunkRole,
+            RoomChunkLayoutKind chunkLayoutKind)
+        {
+            var allowedChunks = new System.Collections.Generic.List<RoomChunkAsset>();
+            foreach (var chunk in OptionalChunks ?? Array.Empty<RoomChunkAsset>())
+            {
+                if (chunk != null && chunk.LayoutKind == chunkLayoutKind && RoleTagsContain(chunk.RoleTags, chunkRole))
+                {
+                    allowedChunks.Add(chunk);
+                }
+            }
+
+            return new MapRoomPoolRule
+            {
+                Role = poolRole,
+                LayoutKind = layoutKind,
+                MinCount = minCount,
+                MaxCount = maxCount,
+                Weight = 1,
+                Required = required,
+                AllowedChunks = allowedChunks.ToArray()
+            };
+        }
+
+        private static bool RoleTagsContain(string[] roleTags, MapRoomRole role)
+        {
+            foreach (var tag in roleTags ?? Array.Empty<string>())
+            {
+                if (Enum.TryParse<MapRoomRole>(tag, true, out var parsed) && parsed == role)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private System.Collections.Generic.List<string> ResolveSpawnTableIds()

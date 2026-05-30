@@ -670,6 +670,7 @@ namespace Conn.Editor.Maps
                 ValidateProfileReferences(profile.Id, "optional landmark", profile.OptionalLandmarks, landmarkIds, report);
                 ValidateProfileReferences(profile.Id, "spawn table", profile.AllowedSpawnTables, spawnTableIds, report);
                 ValidateProfileReferences(profile.Id, "direct encounter override", profile.DirectEncounterOverrides, encounterIds, report);
+                ValidateProfileRoomPools(profile, chunkIds, report);
                 ValidateProfileLandmarks(profile, report);
                 ValidateProfileSpawnCompatibility(profile, snapshot, report);
 
@@ -881,53 +882,143 @@ namespace Conn.Editor.Maps
                 return;
             }
 
-            var chunks = new List<RoomChunkAsset>();
-            chunks.AddRange(profile.OptionalChunks ?? Array.Empty<RoomChunkAsset>());
-            chunks.AddRange(profile.RequiredLandmarkRooms ?? Array.Empty<LandmarkRoomAsset>());
-            chunks.AddRange(profile.OptionalLandmarks ?? Array.Empty<LandmarkRoomAsset>());
-
-            foreach (var chunk in chunks)
+            foreach (var pool in GetEffectiveRoomPools(profile))
             {
-                if (chunk == null)
+                if (pool == null)
                 {
                     continue;
                 }
 
-                if (chunk.Size != profile.RoomSize)
+                foreach (var chunk in pool.AllowedChunks ?? Array.Empty<RoomChunkAsset>())
                 {
-                    report.Errors.Add($"Map profile {profile.Id} chunk {chunk.Id} size {chunk.Size.x}x{chunk.Size.y} does not match profile room size {profile.RoomSize.x}x{profile.RoomSize.y}.");
-                }
-            }
+                    if (chunk == null)
+                    {
+                        continue;
+                    }
 
-            ValidateRoleCoverage(profile, chunks, MapRoomRole.Start, MapDirection.South, report);
-            ValidateRoleCoverage(profile, chunks, MapRoomRole.MainPath, MapDirection.North | MapDirection.South, report);
-            ValidateRoleCoverage(profile, chunks, MapRoomRole.QuestTarget, MapDirection.North | MapDirection.South, report);
-            ValidateRoleCoverage(profile, chunks, MapRoomRole.Boss, MapDirection.North | MapDirection.South, report);
-            ValidateRoleCoverage(profile, chunks, MapRoomRole.Exit, MapDirection.North, report);
-            if (profile.SideBranchCount > 0)
-            {
-                ValidateRoleCoverage(profile, chunks, MapRoomRole.SideBranch, MapDirection.North | MapDirection.East, report);
+                    if (chunk.Size != profile.RoomSize)
+                    {
+                        report.Errors.Add($"Map profile {profile.Id} pool {pool.Role}/{pool.LayoutKind} chunk {chunk.Id} size {chunk.Size.x}x{chunk.Size.y} does not match profile room size {profile.RoomSize.x}x{profile.RoomSize.y}.");
+                    }
+
+                    if (!IsThemeCompatible(profile.ThemeId, chunk.ThemeId, profile.CompatibilityTags))
+                    {
+                        report.Errors.Add($"Map profile {profile.Id} pool {pool.Role}/{pool.LayoutKind} chunk {chunk.Id} theme mismatch: {chunk.ThemeId}, expected {profile.ThemeId}.");
+                    }
+                }
             }
         }
 
-        private static void ValidateRoleCoverage(MapProfileAsset profile, List<RoomChunkAsset> chunks, MapRoomRole role, MapDirection representativeSockets, MapValidationReport report)
+        private static void ValidateProfileRoomPools(MapProfileAsset profile, HashSet<string> chunkIds, MapValidationReport report)
         {
-            foreach (var chunk in chunks)
+            foreach (var pool in GetEffectiveRoomPools(profile))
             {
-                if (chunk == null || chunk.Size != profile.RoomSize || !RoleTagsContain(chunk.RoleTags, role))
+                if (pool == null)
                 {
                     continue;
                 }
 
-                if ((chunk.OpenSides & representativeSockets) == representativeSockets
-                    && (chunk.DoorSockets & representativeSockets) == representativeSockets
-                    && IsThemeCompatible(profile.ThemeId, chunk.ThemeId, profile.CompatibilityTags))
+                if (pool.Required && CountNonNull(pool.AllowedChunks) == 0)
                 {
-                    return;
+                    report.Errors.Add($"Map profile {profile.Id} required room pool {pool.Role}/{pool.LayoutKind} has no allowed chunks.");
+                }
+
+                if (pool.Weight <= 0)
+                {
+                    report.Errors.Add($"Map profile {profile.Id} room pool {pool.Role}/{pool.LayoutKind} weight must be positive.");
+                }
+
+                if (pool.MaxCount > 0 && pool.MaxCount < pool.MinCount)
+                {
+                    report.Errors.Add($"Map profile {profile.Id} room pool {pool.Role}/{pool.LayoutKind} max count must be greater than or equal to min count.");
+                }
+
+                foreach (var chunk in pool.AllowedChunks ?? Array.Empty<RoomChunkAsset>())
+                {
+                    if (chunk == null)
+                    {
+                        report.Errors.Add($"Map profile {profile.Id} room pool {pool.Role}/{pool.LayoutKind} contains a null chunk reference.");
+                        continue;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(chunk.Id) || !chunkIds.Contains(chunk.Id))
+                    {
+                        report.Errors.Add($"Map profile {profile.Id} room pool {pool.Role}/{pool.LayoutKind} references missing chunk {chunk.Id}.");
+                    }
+                }
+            }
+        }
+
+        private static MapRoomPoolRule[] GetEffectiveRoomPools(MapProfileAsset profile)
+        {
+            if (profile.RoomPools != null && profile.RoomPools.Length > 0)
+            {
+                return profile.RoomPools;
+            }
+
+            return BuildLegacyBridgeRoomPools(profile);
+        }
+
+        private static MapRoomPoolRule[] BuildLegacyBridgeRoomPools(MapProfileAsset profile)
+        {
+            return new[]
+            {
+                CreateLegacyBridgePool(profile, MapRoomPoolRole.Start, RoomChunkLayoutKind.Room, 1, 1, true, MapRoomRole.Start, RoomChunkLayoutKind.Room),
+                CreateLegacyBridgePool(profile, MapRoomPoolRole.Main, RoomChunkLayoutKind.Room, 1, 0, true, MapRoomRole.MainPath, RoomChunkLayoutKind.Room),
+                CreateLegacyBridgePool(profile, MapRoomPoolRole.Corridor, RoomChunkLayoutKind.Corridor, 0, 0, true, MapRoomRole.MainPath, RoomChunkLayoutKind.Corridor),
+                CreateLegacyBridgePool(profile, MapRoomPoolRole.Hub, RoomChunkLayoutKind.Hub, 0, 0, true, MapRoomRole.MainPath, RoomChunkLayoutKind.Hub),
+                CreateLegacyBridgePool(profile, MapRoomPoolRole.Side, RoomChunkLayoutKind.Room, 0, 0, false, MapRoomRole.SideBranch, RoomChunkLayoutKind.Room),
+                CreateLegacyBridgePool(profile, MapRoomPoolRole.DeadEnd, RoomChunkLayoutKind.DeadEnd, 0, 0, false, MapRoomRole.SideBranch, RoomChunkLayoutKind.DeadEnd),
+                CreateLegacyBridgePool(profile, MapRoomPoolRole.Quest, RoomChunkLayoutKind.Room, 1, 1, true, MapRoomRole.QuestTarget, RoomChunkLayoutKind.Room),
+                CreateLegacyBridgePool(profile, MapRoomPoolRole.Boss, RoomChunkLayoutKind.Room, 1, 1, true, MapRoomRole.Boss, RoomChunkLayoutKind.Room),
+                CreateLegacyBridgePool(profile, MapRoomPoolRole.Exit, RoomChunkLayoutKind.Room, 1, 1, true, MapRoomRole.Exit, RoomChunkLayoutKind.Room),
+                CreateLegacyBridgePool(profile, MapRoomPoolRole.HeightTransition, RoomChunkLayoutKind.HeightTransition, 0, 0, true, MapRoomRole.MainPath, RoomChunkLayoutKind.HeightTransition)
+            };
+        }
+
+        private static MapRoomPoolRule CreateLegacyBridgePool(
+            MapProfileAsset profile,
+            MapRoomPoolRole poolRole,
+            RoomChunkLayoutKind poolLayoutKind,
+            int minCount,
+            int maxCount,
+            bool required,
+            MapRoomRole chunkRole,
+            RoomChunkLayoutKind chunkLayoutKind)
+        {
+            var chunks = new List<RoomChunkAsset>();
+            foreach (var chunk in profile.OptionalChunks ?? Array.Empty<RoomChunkAsset>())
+            {
+                if (chunk != null && chunk.LayoutKind == chunkLayoutKind && RoleTagsContain(chunk.RoleTags, chunkRole))
+                {
+                    chunks.Add(chunk);
                 }
             }
 
-            report.Errors.Add($"Map profile {profile.Id} has no {role} chunk matching room size, representative sockets {representativeSockets}, and theme {profile.ThemeId}.");
+            return new MapRoomPoolRule
+            {
+                Role = poolRole,
+                LayoutKind = poolLayoutKind,
+                MinCount = minCount,
+                MaxCount = maxCount,
+                Weight = 1,
+                Required = required,
+                AllowedChunks = chunks.ToArray()
+            };
+        }
+
+        private static int CountNonNull<T>(T[] values) where T : class
+        {
+            var count = 0;
+            foreach (var value in values ?? Array.Empty<T>())
+            {
+                if (value != null)
+                {
+                    count++;
+                }
+            }
+
+            return count;
         }
 
         private static bool RoleTagsContain(string[] roleTags, MapRoomRole role)

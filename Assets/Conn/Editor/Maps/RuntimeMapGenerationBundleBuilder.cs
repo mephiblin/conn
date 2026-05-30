@@ -206,6 +206,7 @@ namespace Conn.Editor.Maps
                 typeof(RuntimeEncounterPlacementRule),
                 typeof(RuntimeSpawnEntry),
                 typeof(MapProfile),
+                typeof(RuntimeMapRoomPoolRule),
                 typeof(ChunkPreset),
                 typeof(ChunkAnchor),
                 typeof(RoomChunkCell),
