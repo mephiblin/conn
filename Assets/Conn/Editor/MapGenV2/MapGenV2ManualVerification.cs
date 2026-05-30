@@ -15,9 +15,20 @@ namespace Conn.MapGenV2.Editor
         public static void Run()
         {
             var result = RunTransientWorkflow();
-            Directory.CreateDirectory("Logs");
-            File.WriteAllText(LogPath, result);
-            Debug.Log($"MapGenV2 manual verification written to {LogPath}\n{result}");
+            WriteResult(result);
+        }
+
+        public static void RunBatch()
+        {
+            var result = RunTransientWorkflow();
+            WriteResult(result);
+
+            if (result.StartsWith("PASS:", StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            throw new InvalidOperationException(result);
         }
 
         private static string RunTransientWorkflow()
@@ -141,6 +152,13 @@ namespace Conn.MapGenV2.Editor
 
                 return writer.ToString();
             }
+        }
+
+        private static void WriteResult(string result)
+        {
+            Directory.CreateDirectory("Logs");
+            File.WriteAllText(LogPath, result);
+            Debug.Log($"MapGenV2 manual verification written to {LogPath}\n{result}");
         }
     }
 }

@@ -1151,7 +1151,7 @@ be committed and pushed separately.
   markers.
 - [x] Editor window MVP: profile selection, validation, generate mockup, accept,
   materialize, bake.
-- [ ] Integration tests and manual Unity checks.
+- [x] Integration tests and manual Unity checks.
 
 Current verification status:
 
@@ -1160,16 +1160,20 @@ Current verification status:
   runtime bake data.
 - Unity executable found:
   `/home/inri/Unity/Hub/Editor/6000.4.8f1/Editor/Unity`.
-- Batchmode EditMode test execution was attempted, but Unity refused to open the
-  project because another Unity instance already has this project open.
+- Batchmode EditMode test execution was initially blocked while another Unity
+  instance had this project open.
 - Basic Roslyn compile smoke check passed for `Conn.MapGenV2.Core`,
   `Conn.MapGenV2.Authoring`, and `Conn.MapGenV2.Editor` source files using Unity
   6000.4.8f1 reference assemblies.
 - Added `Conn/MapGenV2/Run Manual Verification` for the currently open Unity
   editor. It runs a transient profile/draft/generate/accept/classify/bake-data
   workflow and writes `Logs/MapGenV2ManualVerification.log`.
-- Manual Unity checks remain pending and must be run from the currently open
-  Unity editor instance or after closing it.
+- Added batch entry point
+  `Conn.MapGenV2.Editor.MapGenV2ManualVerification.RunBatch`.
+- Basic Unity batch verification passed on 2026-05-30:
+  `PASS: MapGenV2 transient workflow completed.`
+- Batch verification produced a deterministic accepted draft signature,
+  materialization requests, runtime baked cells, and traversal edges.
 
 ### Milestone 1: Data Contracts
 
