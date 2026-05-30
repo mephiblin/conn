@@ -11,6 +11,8 @@ namespace Conn.MapGenV2.Core
         public MapGenSocketKind SocketKind;
         public string SocketId;
         public string PropChannel;
+        public string SourceTemplateId;
+        public string SourceShapeId;
 
         public static MapGenMockupCell Empty => new MapGenMockupCell
         {
@@ -19,7 +21,9 @@ namespace Conn.MapGenV2.Core
             RoomCategory = MapGenRoomCategory.Main,
             SocketKind = MapGenSocketKind.None,
             SocketId = string.Empty,
-            PropChannel = string.Empty
+            PropChannel = string.Empty,
+            SourceTemplateId = string.Empty,
+            SourceShapeId = string.Empty
         };
     }
 }

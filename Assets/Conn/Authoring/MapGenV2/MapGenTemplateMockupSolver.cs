@@ -280,7 +280,9 @@ namespace Conn.MapGenV2.Authoring
                     RoomCategory = category,
                     SocketKind = MapGenSocketKind.None,
                     SocketId = string.Empty,
-                    PropChannel = FindPropChannel(template, local)
+                    PropChannel = FindPropChannel(template, local),
+                    SourceTemplateId = template.TemplateId,
+                    SourceShapeId = string.Empty
                 });
             }
 
@@ -293,7 +295,9 @@ namespace Conn.MapGenV2.Authoring
                     RoomCategory = category,
                     SocketKind = MapGenSocketKind.Blocked,
                     SocketId = string.Empty,
-                    PropChannel = string.Empty
+                    PropChannel = string.Empty,
+                    SourceTemplateId = template.TemplateId,
+                    SourceShapeId = string.Empty
                 });
             }
 
@@ -306,7 +310,9 @@ namespace Conn.MapGenV2.Authoring
                     RoomCategory = category,
                     SocketKind = connector.SocketKind,
                     SocketId = connector.SocketId ?? string.Empty,
-                    PropChannel = string.Empty
+                    PropChannel = string.Empty,
+                    SourceTemplateId = template.TemplateId,
+                    SourceShapeId = string.Empty
                 });
             }
         }
@@ -322,7 +328,7 @@ namespace Conn.MapGenV2.Authoring
         {
             if (corridorTemplates == null || corridorTemplates.Length == 0)
             {
-                CarveCorridor(cells, width, height, from.Center, to.Center, 1);
+                CarveCorridor(cells, width, height, from.Center, to.Center, 1, string.Empty);
                 return true;
             }
 
@@ -350,7 +356,7 @@ namespace Conn.MapGenV2.Authoring
                 return false;
             }
 
-            CarveCorridor(cells, width, height, fromCoord, toCoord, Mathf.Max(1, corridor.Width));
+            CarveCorridor(cells, width, height, fromCoord, toCoord, Mathf.Max(1, corridor.Width), corridor.TemplateId);
             return true;
         }
 
@@ -471,36 +477,50 @@ namespace Conn.MapGenV2.Authoring
             int height,
             MapGenGridCoord from,
             MapGenGridCoord to,
-            int corridorWidth)
+            int corridorWidth,
+            string sourceTemplateId)
         {
             var x = from.X;
             var y = from.Y;
             while (x != to.X)
             {
                 x += x < to.X ? 1 : -1;
-                SetCorridor(cells, width, height, x, y, corridorWidth);
+                SetCorridor(cells, width, height, x, y, corridorWidth, sourceTemplateId);
             }
 
             while (y != to.Y)
             {
                 y += y < to.Y ? 1 : -1;
-                SetCorridor(cells, width, height, x, y, corridorWidth);
+                SetCorridor(cells, width, height, x, y, corridorWidth, sourceTemplateId);
             }
         }
 
-        private static void SetCorridor(MapGenMockupCell[] cells, int width, int height, int x, int y, int corridorWidth)
+        private static void SetCorridor(
+            MapGenMockupCell[] cells,
+            int width,
+            int height,
+            int x,
+            int y,
+            int corridorWidth,
+            string sourceTemplateId)
         {
             var radius = Mathf.Max(0, corridorWidth - 1);
             for (var offsetY = -radius; offsetY <= radius; offsetY++)
             {
                 for (var offsetX = -radius; offsetX <= radius; offsetX++)
                 {
-                    SetCorridorCell(cells, width, height, x + offsetX, y + offsetY);
+                    SetCorridorCell(cells, width, height, x + offsetX, y + offsetY, sourceTemplateId);
                 }
             }
         }
 
-        private static void SetCorridorCell(MapGenMockupCell[] cells, int width, int height, int x, int y)
+        private static void SetCorridorCell(
+            MapGenMockupCell[] cells,
+            int width,
+            int height,
+            int x,
+            int y,
+            string sourceTemplateId)
         {
             var coord = new MapGenGridCoord(x, y);
             if (!coord.IsInBounds(width, height))
@@ -513,6 +533,8 @@ namespace Conn.MapGenV2.Authoring
             {
                 cells[index].State = MapGenCellState.Corridor;
                 cells[index].RegionId = -1;
+                cells[index].SourceTemplateId = sourceTemplateId ?? string.Empty;
+                cells[index].SourceShapeId = string.Empty;
             }
         }
 

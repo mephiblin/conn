@@ -772,6 +772,8 @@ namespace Conn.MapGenV2.Editor
             var blockedCount = 0;
             var reservedCount = 0;
             var category = MapGenRoomCategory.Main;
+            var sourceTemplateId = string.Empty;
+            var sourceShapeId = string.Empty;
             var sawCategory = false;
             for (var y = 0; y < previewData.Height; y++)
             {
@@ -787,6 +789,16 @@ namespace Conn.MapGenV2.Editor
                     {
                         category = cell.RoomCategory;
                         sawCategory = true;
+                    }
+
+                    if (string.IsNullOrEmpty(sourceTemplateId) && !string.IsNullOrEmpty(cell.SourceTemplateId))
+                    {
+                        sourceTemplateId = cell.SourceTemplateId;
+                    }
+
+                    if (string.IsNullOrEmpty(sourceShapeId) && !string.IsNullOrEmpty(cell.SourceShapeId))
+                    {
+                        sourceShapeId = cell.SourceShapeId;
                     }
 
                     switch (cell.State)
@@ -828,7 +840,8 @@ namespace Conn.MapGenV2.Editor
                 EditorGUILayout.LabelField(
                     "Override",
                     regionOverride.HasCategoryOverride ? $"Category {regionOverride.CategoryOverride}" : "(none)");
-                EditorGUILayout.LabelField("Template/Shape", "Not stored on draft cells yet / 아직 셀에 저장되지 않음");
+                EditorGUILayout.LabelField("Source Template", string.IsNullOrEmpty(sourceTemplateId) ? "(none)" : sourceTemplateId);
+                EditorGUILayout.LabelField("Source Shape", string.IsNullOrEmpty(sourceShapeId) ? "(none)" : sourceShapeId);
                 EditorGUILayout.LabelField(
                     "Materialization",
                     DescribeMaterializationHint(roomCount, corridorCount, connectorCount, blockedCount, reservedCount));

@@ -54,7 +54,8 @@ namespace Conn.MapGenV2.Authoring
                 return profileReport;
             }
 
-            var result = MapGenTemplateMockupSolver.CanUseTemplates(Profile)
+            var usesTemplates = MapGenTemplateMockupSolver.CanUseTemplates(Profile);
+            var result = usesTemplates
                 ? MapGenTemplateMockupSolver.Generate(Profile, Seed)
                 : MapGenMockupSolver.Generate(
                     Profile.MapSize.x,
@@ -72,6 +73,11 @@ namespace Conn.MapGenV2.Authoring
             var previousOverrides = RegionOverrides ?? Array.Empty<MapGenMockupRegionOverride>();
             GridSize = new Vector2Int(result.Width, result.Height);
             Cells = result.Cells;
+            if (!usesTemplates)
+            {
+                AssignRoomShapeIdsFromProfile();
+            }
+
             var corridorMinimumRegionId = preserveLockedRegions ? MaxRegionId(previousCells) + 1 : 0;
             MapGenMockupRegionUtility.AssignCorridorRegionIds(Width, Height, Cells, false, corridorMinimumRegionId);
             if (preserveLockedRegions)
@@ -404,6 +410,49 @@ namespace Conn.MapGenV2.Authoring
             }
 
             return maxRegionId;
+        }
+
+        private void AssignRoomShapeIdsFromProfile()
+        {
+            if (Profile == null || Profile.RoomShapes == null || Profile.RoomShapes.Length == 0)
+            {
+                return;
+            }
+
+            for (var i = 0; i < Cells.Length; i++)
+            {
+                if (Cells[i].State != MapGenCellState.Room && Cells[i].State != MapGenCellState.Connector)
+                {
+                    continue;
+                }
+
+                Cells[i].SourceShapeId = FindRoomShapeId(Cells[i].RoomCategory);
+                Cells[i].SourceTemplateId = string.Empty;
+            }
+        }
+
+        private string FindRoomShapeId(MapGenRoomCategory category)
+        {
+            var fallback = string.Empty;
+            foreach (var shape in Profile.RoomShapes ?? Array.Empty<MapGenRoomShapeAsset>())
+            {
+                if (shape == null)
+                {
+                    continue;
+                }
+
+                if (string.IsNullOrEmpty(fallback))
+                {
+                    fallback = shape.ShapeId ?? string.Empty;
+                }
+
+                if (shape.Category == category)
+                {
+                    return shape.ShapeId ?? string.Empty;
+                }
+            }
+
+            return fallback;
         }
 
         private static MapGenMockupCell ConvertRegionCell(MapGenMockupCell cell, int regionId, MapGenCellState state)

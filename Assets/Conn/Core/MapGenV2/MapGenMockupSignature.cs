@@ -20,6 +20,8 @@ namespace Conn.MapGenV2.Core
                     Add(ref hash, (int)cell.SocketKind);
                     Add(ref hash, cell.SocketId);
                     Add(ref hash, cell.PropChannel);
+                    Add(ref hash, cell.SourceTemplateId);
+                    Add(ref hash, cell.SourceShapeId);
                 }
 
                 return hash.ToString("x16");

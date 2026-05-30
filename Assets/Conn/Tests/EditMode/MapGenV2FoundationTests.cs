@@ -584,6 +584,8 @@ namespace Conn.Tests.EditMode
 
                 Assert.That(draft.GenerateFromProfile().IsValid, Is.True);
 
+                Assert.That(draft.Cells, Has.Some.Matches<MapGenMockupCell>(
+                    cell => cell.State == MapGenCellState.Room && cell.SourceShapeId == "workflow_shape"));
                 var corridorRegionId = System.Array.Find(
                     draft.Cells,
                     cell => cell.State == MapGenCellState.Corridor).RegionId;
@@ -927,9 +929,13 @@ namespace Conn.Tests.EditMode
                 Assert.That(first.Success, Is.True);
                 Assert.That(second.Signature, Is.EqualTo(first.Signature));
                 Assert.That(first.Cells, Has.Exactly(4).Matches<MapGenMockupCell>(
-                    cell => IsRoomFootprintCell(cell) && cell.RoomCategory == MapGenRoomCategory.Start));
+                    cell => IsRoomFootprintCell(cell)
+                        && cell.RoomCategory == MapGenRoomCategory.Start
+                        && cell.SourceTemplateId == "start_template"));
                 Assert.That(first.Cells, Has.Exactly(4).Matches<MapGenMockupCell>(
-                    cell => IsRoomFootprintCell(cell) && cell.RoomCategory == MapGenRoomCategory.Exit));
+                    cell => IsRoomFootprintCell(cell)
+                        && cell.RoomCategory == MapGenRoomCategory.Exit
+                        && cell.SourceTemplateId == "exit_template"));
                 Assert.That(first.Cells, Has.Some.Matches<MapGenMockupCell>(
                     cell => cell.State == MapGenCellState.Corridor));
             }
@@ -1160,6 +1166,7 @@ namespace Conn.Tests.EditMode
             out GameObject wall)
         {
             PopulateMinimumModuleSet(moduleSet, out floor, out wall);
+            roomShape.ShapeId = "workflow_shape";
             roomShape.Resize(new Vector2Int(3, 3));
             roomShape.SetCell(1, 1, new MapGenShapeCell
             {
@@ -1255,7 +1262,7 @@ namespace Conn.Tests.EditMode
                     continue;
                 }
 
-                signature += $"{i}:{cell.State}:{cell.RegionId}:{cell.RoomCategory}:{cell.SocketKind}:{cell.SocketId}|";
+                signature += $"{i}:{cell.State}:{cell.RegionId}:{cell.RoomCategory}:{cell.SocketKind}:{cell.SocketId}:{cell.SourceTemplateId}:{cell.SourceShapeId}|";
             }
 
             return signature;

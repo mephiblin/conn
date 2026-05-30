@@ -235,6 +235,9 @@ Progress note 2026-05-31:
   acceptance.
 - Focused tests now lock the invariant that mockup generation updates draft data
   only and does not create scene objects.
+- Draft cells now carry source template/shape ids, signatures include those
+  source ids, and the selected-region inspector displays them for later reroll
+  and regeneration actions.
 - Remaining Phase 1 work is fuller selected-region edit coverage:
   reroll/regenerate/reroute actions.
 
