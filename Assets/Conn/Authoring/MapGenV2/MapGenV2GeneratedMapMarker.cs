@@ -9,6 +9,7 @@ namespace Conn.MapGenV2.Authoring
         public int Seed;
         public string DraftSignature = string.Empty;
         public string SourceSignature = string.Empty;
+        public string ModuleSetSignature = string.Empty;
         public string StyleId = string.Empty;
         public string GeneratedUtc = string.Empty;
         public int MaterializationRequestCount;

@@ -959,6 +959,9 @@ Progress note 2026-05-31:
   mockup is regenerated.
 - Materialized root/module markers now store source signatures in addition to
   accepted draft signatures; saved prefabs preserve those markers.
+- Materialized root/module markers now also store module-set signatures, and
+  diagnostics report stale materialized outputs when the accepted draft source
+  or module set no longer matches the selected/previous scene root.
 
 Goal: make generated assets safe to keep in a real project.
 
@@ -967,7 +970,7 @@ Tasks:
 - [x] Add source signature to drafts, materialized roots, prefabs, and baked
   assets.
 - [x] Detect stale drafts when profile/style/rule/template assets change.
-- [ ] Detect stale materialized output when draft or module set changes.
+- [x] Detect stale materialized output when draft or module set changes.
 - [ ] Add `Regenerate`, `Repostprocess`, `Reaccept`, `Rematerialize`,
   `Rebake` workflows.
 - [ ] Add explicit overwrite policy.

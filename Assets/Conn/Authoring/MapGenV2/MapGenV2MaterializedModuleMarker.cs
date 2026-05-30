@@ -7,6 +7,7 @@ namespace Conn.MapGenV2.Authoring
     {
         public string DraftSignature = string.Empty;
         public string SourceSignature = string.Empty;
+        public string ModuleSetSignature = string.Empty;
         public int RegionId = -1;
         public string SourceTemplateId = string.Empty;
         public MapGenModuleCategory ModuleCategory;

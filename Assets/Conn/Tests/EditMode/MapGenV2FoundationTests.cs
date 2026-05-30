@@ -1333,11 +1333,13 @@ namespace Conn.Tests.EditMode
                 draft.Accept();
 
                 firstRoot = MapGenMockupMaterializer.Materialize(draft, MapGenV2SceneOutputMode.ReplacePreviousRoot);
+                var moduleSetSignature = MapGenMockupMaterializer.BuildModuleSetSignature(moduleSet);
                 Assert.That(firstRoot, Is.Not.Null);
                 Assert.That(firstRoot.name, Is.EqualTo("MapGenV2_scene_controls_profile_55"));
                 Assert.That(firstRoot.GetComponent<MapGenV2GeneratedMapMarker>(), Is.Not.Null);
                 Assert.That(firstRoot.GetComponent<MapGenV2GeneratedMapMarker>().MaterializationRequestCount, Is.GreaterThan(0));
                 Assert.That(firstRoot.GetComponent<MapGenV2GeneratedMapMarker>().MaterializationInstantiatedCount, Is.GreaterThan(0));
+                Assert.That(firstRoot.GetComponent<MapGenV2GeneratedMapMarker>().ModuleSetSignature, Is.EqualTo(moduleSetSignature));
                 Assert.That(firstRoot.transform.Find("Floors"), Is.Not.Null);
                 Assert.That(firstRoot.transform.Find("Navigation"), Is.Not.Null);
                 Assert.That(MapGenMockupMaterializer.FindExistingMarker(draft).gameObject, Is.SameAs(firstRoot));
@@ -1348,11 +1350,13 @@ namespace Conn.Tests.EditMode
                 Assert.That(floorMarker.RegionId, Is.EqualTo(3));
                 Assert.That(floorMarker.SourceTemplateId, Is.EqualTo("start_template"));
                 Assert.That(floorMarker.DraftSignature, Is.EqualTo(draft.AcceptedSignature));
+                Assert.That(floorMarker.ModuleSetSignature, Is.EqualTo(moduleSetSignature));
                 Assert.That(navigationMarker, Is.Not.Null);
                 Assert.That(navigationMarker.transform.parent.name, Is.EqualTo("Navigation"));
                 Assert.That(navigationMarker.RegionId, Is.EqualTo(3));
                 Assert.That(navigationMarker.SourceTemplateId, Is.EqualTo("start_template"));
                 Assert.That(navigationMarker.DraftSignature, Is.EqualTo(draft.AcceptedSignature));
+                Assert.That(navigationMarker.ModuleSetSignature, Is.EqualTo(moduleSetSignature));
 
                 secondRoot = MapGenMockupMaterializer.Materialize(draft, MapGenV2SceneOutputMode.ReplacePreviousRoot);
                 Assert.That(secondRoot, Is.Not.Null);
@@ -1373,6 +1377,69 @@ namespace Conn.Tests.EditMode
                 if (secondRoot != null)
                 {
                     Object.DestroyImmediate(secondRoot);
+                }
+
+                AssetDatabase.DeleteAsset(tempFolder);
+                Object.DestroyImmediate(draft);
+                Object.DestroyImmediate(profile);
+                Object.DestroyImmediate(styleSet);
+                Object.DestroyImmediate(moduleSet);
+            }
+        }
+
+        [Test]
+        public void MaterializerReportsStaleMaterializedOutput()
+        {
+            const string tempFolder = "Assets/Conn/Tests/TempMapGenV2MaterializerStale";
+            var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
+            var styleSet = ScriptableObject.CreateInstance<MapGenStyleSetAsset>();
+            var profile = ScriptableObject.CreateInstance<MapGenProfileAsset>();
+            var draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();
+            GameObject root = null;
+
+            try
+            {
+                EnsureTempFolder(tempFolder);
+                var floorPrefab = CreateTempPrefab($"{tempFolder}/Floor.prefab", "Floor");
+                var wallPrefab = CreateTempPrefab($"{tempFolder}/Wall.prefab", "Wall");
+                moduleSet.FloorsA = new[] { new MapGenModuleEntry { Prefab = floorPrefab, Weight = 1, Footprint = Vector2Int.one } };
+                moduleSet.WallsStraight = new[] { new MapGenModuleEntry { Prefab = wallPrefab, Weight = 1, Footprint = Vector2Int.one } };
+                PopulateCompleteMaterializationCoverage(moduleSet, floorPrefab, wallPrefab);
+                styleSet.ModuleSet = moduleSet;
+                profile.ProfileId = "stale_materialized_profile";
+                profile.StyleSet = styleSet;
+                draft.Profile = profile;
+                draft.Seed = 91;
+                draft.GridSize = Vector2Int.one;
+                draft.EnsureCellArray();
+                draft.Cells[0] = new MapGenMockupCell
+                {
+                    State = MapGenCellState.Room,
+                    RegionId = 6,
+                    RoomCategory = MapGenRoomCategory.Start
+                };
+                draft.Accept();
+
+                root = MapGenMockupMaterializer.Materialize(draft);
+                Assert.That(MapGenMockupMaterializer.ValidateExistingOutput(draft, root).IsValid, Is.True);
+
+                var marker = root.GetComponent<MapGenV2GeneratedMapMarker>();
+                marker.DraftSignature = "old_draft_signature";
+                var staleDraftReport = MapGenMockupMaterializer.ValidateExistingOutput(draft, root);
+                Assert.That(staleDraftReport.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "materialized_output_stale_draft_signature"));
+
+                marker.DraftSignature = draft.AcceptedSignature;
+                moduleSet.FloorsA[0].Weight = 7;
+                var staleModuleReport = MapGenMockupMaterializer.ValidateExistingOutput(draft, root);
+                Assert.That(staleModuleReport.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "materialized_output_stale_module_set"));
+            }
+            finally
+            {
+                if (root != null)
+                {
+                    Object.DestroyImmediate(root);
                 }
 
                 AssetDatabase.DeleteAsset(tempFolder);

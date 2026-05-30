@@ -237,6 +237,19 @@ namespace Conn.MapGenV2.Editor
                 report.AddRange(MapGenMockupMaterializer.ValidateCoverage(materializationReport), draft.Profile.StyleSet.ModuleSet);
             }
 
+            if (selectedMaterializedRoot != null)
+            {
+                report.AddRange(MapGenMockupMaterializer.ValidateExistingOutput(draft, selectedMaterializedRoot), selectedMaterializedRoot);
+            }
+            else
+            {
+                var materializedMarker = MapGenMockupMaterializer.FindExistingMarker(draft);
+                if (materializedMarker != null)
+                {
+                    report.AddRange(MapGenMockupMaterializer.ValidateExistingOutput(draft, materializedMarker.gameObject), materializedMarker);
+                }
+            }
+
             var bakedAsset = LoadExpectedBakedAsset();
             if (bakedAsset != null)
             {

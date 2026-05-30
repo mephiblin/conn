@@ -279,4 +279,109 @@ namespace Conn.MapGenV2.Authoring
         public bool RequireIdentityRotation = true;
         public bool RequireUnitScale = true;
     }
+
+    public static class MapGenModuleSetSignature
+    {
+        public static string Build(MapGenModuleSetAsset moduleSet)
+        {
+            unchecked
+            {
+                var hash = 1469598103934665603UL;
+                if (moduleSet == null)
+                {
+                    Add(ref hash, "no_module_set");
+                    return hash.ToString("x16");
+                }
+
+                Add(ref hash, moduleSet.ModuleSetId);
+                AddBoundsContract(ref hash, moduleSet.BoundsContract);
+                AddEntries(ref hash, nameof(MapGenModuleSetAsset.FloorsA), moduleSet.FloorsA);
+                AddEntries(ref hash, nameof(MapGenModuleSetAsset.FloorsB), moduleSet.FloorsB);
+                AddEntries(ref hash, nameof(MapGenModuleSetAsset.WallsStraight), moduleSet.WallsStraight);
+                AddEntries(ref hash, nameof(MapGenModuleSetAsset.WallsCornerInside), moduleSet.WallsCornerInside);
+                AddEntries(ref hash, nameof(MapGenModuleSetAsset.WallsCornerOutside), moduleSet.WallsCornerOutside);
+                AddEntries(ref hash, nameof(MapGenModuleSetAsset.ExteriorCeilings), moduleSet.ExteriorCeilings);
+                AddEntries(ref hash, nameof(MapGenModuleSetAsset.InteriorCeilings), moduleSet.InteriorCeilings);
+                AddEntries(ref hash, nameof(MapGenModuleSetAsset.WholeDoors), moduleSet.WholeDoors);
+                AddEntries(ref hash, nameof(MapGenModuleSetAsset.HalfDoorFrames), moduleSet.HalfDoorFrames);
+                AddEntries(ref hash, nameof(MapGenModuleSetAsset.HalfDoorPanels), moduleSet.HalfDoorPanels);
+                AddEntries(ref hash, nameof(MapGenModuleSetAsset.PropCategories), moduleSet.PropCategories);
+                AddEntries(ref hash, nameof(MapGenModuleSetAsset.RequiredUniqueProps), moduleSet.RequiredUniqueProps);
+                return hash.ToString("x16");
+            }
+        }
+
+        private static void AddBoundsContract(ref ulong hash, MapGenModuleBoundsContract contract)
+        {
+            if (contract == null)
+            {
+                Add(ref hash, "no_bounds_contract");
+                return;
+            }
+
+            Add(ref hash, contract.Enabled ? 1 : 0);
+            Add(ref hash, Mathf.RoundToInt(contract.CellSize * 1000f));
+            Add(ref hash, Mathf.RoundToInt(contract.Height * 1000f));
+            Add(ref hash, (int)contract.PivotMode);
+            Add(ref hash, Mathf.RoundToInt(contract.PivotTolerance * 1000000f));
+            Add(ref hash, contract.RequireIdentityRotation ? 1 : 0);
+            Add(ref hash, contract.RequireUnitScale ? 1 : 0);
+        }
+
+        private static void AddEntries(ref ulong hash, string fieldName, MapGenModuleEntry[] entries)
+        {
+            Add(ref hash, fieldName);
+            Add(ref hash, entries?.Length ?? 0);
+            foreach (var entry in entries ?? Array.Empty<MapGenModuleEntry>())
+            {
+                if (entry == null)
+                {
+                    Add(ref hash, "null_entry");
+                    continue;
+                }
+
+                Add(ref hash, entry.Prefab != null ? entry.Prefab.name : "no_prefab");
+                Add(ref hash, entry.Weight);
+                Add(ref hash, (int)entry.RotationPolicy);
+                Add(ref hash, Mathf.RoundToInt(entry.Offset.x * 1000f));
+                Add(ref hash, Mathf.RoundToInt(entry.Offset.y * 1000f));
+                Add(ref hash, Mathf.RoundToInt(entry.Offset.z * 1000f));
+                Add(ref hash, entry.Footprint.x);
+                Add(ref hash, entry.Footprint.y);
+                AddStrings(ref hash, entry.Tags);
+            }
+        }
+
+        private static void AddStrings(ref ulong hash, string[] values)
+        {
+            Add(ref hash, values?.Length ?? 0);
+            foreach (var value in values ?? Array.Empty<string>())
+            {
+                Add(ref hash, value);
+            }
+        }
+
+        private static void Add(ref ulong hash, int value)
+        {
+            unchecked
+            {
+                hash ^= (uint)value;
+                hash *= 1099511628211UL;
+            }
+        }
+
+        private static void Add(ref ulong hash, string value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                Add(ref hash, 0);
+                return;
+            }
+
+            for (var i = 0; i < value.Length; i++)
+            {
+                Add(ref hash, value[i]);
+            }
+        }
+    }
 }
