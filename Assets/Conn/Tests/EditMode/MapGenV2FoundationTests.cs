@@ -2443,6 +2443,136 @@ namespace Conn.Tests.EditMode
             Assert.That(edges, Has.Length.EqualTo(1));
         }
 
+        [Test]
+        public void RuntimeBakeBuilderCreatesRegionsConnectorsAndQueriesPath()
+        {
+            var cells = new[]
+            {
+                new MapGenMockupCell
+                {
+                    State = MapGenCellState.Room,
+                    RegionId = 1,
+                    RoomCategory = MapGenRoomCategory.Start,
+                    SourceTemplateId = "start_template"
+                },
+                new MapGenMockupCell
+                {
+                    State = MapGenCellState.Connector,
+                    RegionId = 1,
+                    SocketKind = MapGenSocketKind.Door,
+                    SocketId = "main",
+                    SocketWidth = 2,
+                    SourceTemplateId = "door_template"
+                },
+                new MapGenMockupCell
+                {
+                    State = MapGenCellState.Room,
+                    RegionId = 2,
+                    RoomCategory = MapGenRoomCategory.Exit,
+                    SourceTemplateId = "exit_template"
+                }
+            };
+            var baked = ScriptableObject.CreateInstance<MapGenBakedMapAsset>();
+
+            try
+            {
+                baked.Version = 1;
+                baked.Width = 3;
+                baked.Height = 1;
+                baked.Cells = MapGenRuntimeBakeDataBuilder.BuildCells(3, 1, cells);
+                baked.Regions = MapGenRuntimeBakeDataBuilder.BuildRegions(3, 1, cells);
+                baked.Connectors = MapGenRuntimeBakeDataBuilder.BuildConnectors(3, 1, cells);
+                baked.TraversalEdges = MapGenRuntimeBakeDataBuilder.BuildTraversalEdges(3, 1, cells);
+
+                var query = new MapGenRuntimeMapQuery(baked);
+
+                Assert.That(baked.Regions, Has.Exactly(1).Matches<MapGenBakedRegion>(
+                    region => region.RegionId == 1
+                        && region.CellCount == 2
+                        && region.SourceTemplateId == "start_template"));
+                Assert.That(baked.Connectors, Has.Exactly(1).Matches<MapGenBakedConnector>(
+                    connector => connector.SocketKind == MapGenSocketKind.Door
+                        && connector.SocketId == "main"
+                        && connector.SocketWidth == 2));
+                Assert.That(query.TryFindPath(new MapGenGridCoord(0, 0), new MapGenGridCoord(2, 0), out var path), Is.True);
+                Assert.That(path, Has.Length.EqualTo(3));
+                Assert.That(query.HasTraversalEdge(new MapGenGridCoord(0, 0), new MapGenGridCoord(1, 0)), Is.True);
+            }
+            finally
+            {
+                Object.DestroyImmediate(baked);
+            }
+        }
+
+        [Test]
+        public void RuntimeBakeUtilityWritesRuntimeSafePropsAndMarkers()
+        {
+            const string tempFolder = "Assets/Conn/Tests/TempMapGenV2Bake";
+            var ruleSet = ScriptableObject.CreateInstance<MapGenRuleSetAsset>();
+            var profile = ScriptableObject.CreateInstance<MapGenProfileAsset>();
+            var draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();
+            MapGenBakedMapAsset baked = null;
+
+            try
+            {
+                EnsureTempFolder(tempFolder);
+                ruleSet.name = "runtime_rule_set";
+                ruleSet.PropPlacementRules = new[]
+                {
+                    new MapGenPropPlacementRules
+                    {
+                        Channel = "objective",
+                        ChannelKind = MapGenPropPlacementChannelKind.Objective,
+                        DistributionMode = MapGenPropDistributionMode.RequiredUnique,
+                        DensityPercent = 100,
+                        MinSpacingCells = 0,
+                        RequiredUnique = true
+                    }
+                };
+                profile.ProfileId = "runtime_profile";
+                profile.LayoutRules = ruleSet;
+                profile.OutputSettings = MapGenOutputSettings.Defaults();
+                profile.OutputSettings.BakedAssetFolder = tempFolder;
+                draft.Profile = profile;
+                draft.Seed = 404;
+                draft.GridSize = Vector2Int.one;
+                draft.EnsureCellArray();
+                draft.Cells[0] = new MapGenMockupCell
+                {
+                    State = MapGenCellState.Room,
+                    RegionId = 7,
+                    RoomCategory = MapGenRoomCategory.Quest,
+                    PropChannel = "objective",
+                    PropWeight = 1,
+                    SourceTemplateId = "quest_template"
+                };
+                draft.Accept();
+
+                baked = MapGenRuntimeBakeUtility.Bake(draft);
+
+                Assert.That(baked, Is.Not.Null);
+                Assert.That(baked.Version, Is.EqualTo(1));
+                Assert.That(baked.ProfileId, Is.EqualTo("runtime_profile"));
+                Assert.That(baked.RuleSetId, Is.EqualTo("runtime_rule_set"));
+                Assert.That(baked.Props, Has.Exactly(1).Matches<MapGenBakedPropInstance>(
+                    prop => prop.Channel == "objective"
+                        && prop.ChannelKind == nameof(MapGenPropPlacementChannelKind.Objective)
+                        && prop.RegionId == 7));
+                Assert.That(baked.ObjectiveMarkers, Has.Exactly(1).Matches<MapGenBakedMarker>(
+                    marker => marker.Channel == "objective" && marker.RegionId == 7));
+                Assert.That(baked.Regions, Has.Exactly(1).Matches<MapGenBakedRegion>(
+                    region => region.RegionId == 7 && region.SourceTemplateId == "quest_template"));
+            }
+            finally
+            {
+                AssetDatabase.DeleteAsset(tempFolder);
+                Object.DestroyImmediate(baked);
+                Object.DestroyImmediate(draft);
+                Object.DestroyImmediate(profile);
+                Object.DestroyImmediate(ruleSet);
+            }
+        }
+
         private static void PopulateValidWorkflowProfile(
             MapGenProfileAsset profile,
             MapGenStyleSetAsset styleSet,
@@ -2564,7 +2694,8 @@ namespace Conn.Tests.EditMode
 
             if (!AssetDatabase.IsValidFolder(folder))
             {
-                AssetDatabase.CreateFolder("Assets/Conn/Tests", "TempMapGenV2Materializer");
+                var folderName = folder.Substring("Assets/Conn/Tests/".Length);
+                AssetDatabase.CreateFolder("Assets/Conn/Tests", folderName);
             }
         }
 

@@ -55,6 +55,73 @@ namespace Conn.MapGenV2.Core
             return edges.ToArray();
         }
 
+        public static MapGenBakedRegion[] BuildRegions(int width, int height, MapGenMockupCell[] cells)
+        {
+            var regions = new Dictionary<int, MapGenBakedRegion>();
+            if (!MapGenGridCoord.IsValidSize(width, height) || cells == null || cells.Length != width * height)
+            {
+                return System.Array.Empty<MapGenBakedRegion>();
+            }
+
+            foreach (var cell in cells)
+            {
+                if (!IsRuntimeCell(cell.State) || cell.RegionId < 0)
+                {
+                    continue;
+                }
+
+                regions.TryGetValue(cell.RegionId, out var region);
+                region.RegionId = cell.RegionId;
+                region.RoomCategory = cell.RoomCategory;
+                region.CellCount++;
+                if (string.IsNullOrEmpty(region.SourceTemplateId) && !string.IsNullOrEmpty(cell.SourceTemplateId))
+                {
+                    region.SourceTemplateId = cell.SourceTemplateId;
+                }
+
+                if (string.IsNullOrEmpty(region.SourceShapeId) && !string.IsNullOrEmpty(cell.SourceShapeId))
+                {
+                    region.SourceShapeId = cell.SourceShapeId;
+                }
+
+                regions[cell.RegionId] = region;
+            }
+
+            var baked = new List<MapGenBakedRegion>(regions.Values);
+            baked.Sort((left, right) => left.RegionId.CompareTo(right.RegionId));
+            return baked.ToArray();
+        }
+
+        public static MapGenBakedConnector[] BuildConnectors(int width, int height, MapGenMockupCell[] cells)
+        {
+            var connectors = new List<MapGenBakedConnector>();
+            if (!MapGenGridCoord.IsValidSize(width, height) || cells == null || cells.Length != width * height)
+            {
+                return connectors.ToArray();
+            }
+
+            for (var index = 0; index < cells.Length; index++)
+            {
+                var cell = cells[index];
+                if (cell.State != MapGenCellState.Connector)
+                {
+                    continue;
+                }
+
+                connectors.Add(new MapGenBakedConnector
+                {
+                    Coord = MapGenGridCoord.FromIndex(index, width),
+                    RegionId = cell.RegionId,
+                    SocketKind = cell.SocketKind,
+                    SocketId = cell.SocketId ?? string.Empty,
+                    SocketWidth = System.Math.Max(1, cell.SocketWidth),
+                    SourceTemplateId = cell.SourceTemplateId ?? string.Empty
+                });
+            }
+
+            return connectors.ToArray();
+        }
+
         private static void AddEdgeIfNavigable(
             List<MapGenTraversalEdge> edges,
             int width,

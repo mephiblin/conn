@@ -841,22 +841,32 @@ Verification:
 
 ## Phase 11: Runtime Bake And Adapters
 
+Progress note 2026-05-31:
+
+- Baked maps now include a version, source profile/style/rule identifiers,
+  region summaries, connector records, prop instances, spawn markers,
+  objective markers, cells, and traversal edges using runtime-safe data structs.
+- Added a runtime map query adapter that can look up baked cells, regions,
+  connectors, props by channel, traversal neighbors, edges, and simple grid
+  paths without editor-only references.
+
 Goal: ensure editor output becomes useful runtime map data.
 
 Tasks:
 
-- [ ] Expand `MapGenBakedMapAsset` to include:
+- [x] Expand `MapGenBakedMapAsset` to include:
   regions, doors/connectors, traversal graph, grid pathfinding data, spawn
   markers, objective markers, prop instances, source profile/style/template
   ids, generation signature.
-- [ ] Ensure baked data contains no `UnityEditor` references.
+- [x] Ensure baked data contains no `UnityEditor` references.
 - [ ] Add runtime loader/service for baked maps.
-- [ ] Add graph traversal adapter.
-- [ ] Add grid pathfinding adapter.
+- [x] Add graph traversal adapter.
+- [x] Add grid pathfinding adapter.
 - [ ] Add Unity AI Navigation build input or `NavMeshSurface` integration plan.
-- [ ] Add spawn/objective marker query API.
+- [x] Add spawn/objective marker query API.
 - [ ] Add compatibility layer for existing combat/content systems if needed.
-- [ ] Add version field and migration handling for baked data.
+- [x] Add version field for baked data.
+- [ ] Add migration handling for baked data.
 
 Acceptance:
 
@@ -867,6 +877,8 @@ Acceptance:
 Verification:
 
 - EditMode tests for runtime-safe serialization.
+- EditMode tests for baked regions, connectors, props, markers, and traversal
+  query/pathfinding.
 - Runtime/playmode smoke test for loading a baked map.
 - Tests for traversal/pathfinding queries.
 
