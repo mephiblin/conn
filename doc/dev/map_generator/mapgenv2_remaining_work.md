@@ -400,6 +400,19 @@ Verification:
 
 ## Phase 5: Authoring Assets Completion
 
+Progress note 2026-05-31:
+
+- Added explicit `MapGenRoomTemplateAsset` and `MapGenCorridorTemplateAsset`
+  authoring assets with stable ids, footprint/length/weight data, connector
+  arrays, prop channel markers, and validation.
+- Added serializable `MapGenConnector` plus compatibility validation for side,
+  socket kind/id, and connector width.
+- `MapGenStyleSetAsset` now exposes optional room/corridor template pools and
+  validates assigned templates without breaking existing room-shape-only
+  profiles.
+- Starter setup now creates starter room/corridor template assets and links
+  them through the starter style set.
+
 Goal: close the gap between the planned production data model and current MVP
 assets.
 
@@ -417,15 +430,15 @@ Missing or incomplete assets:
 
 Tasks:
 
-- [ ] Add `MapGenRoomTemplateAsset` with:
+- [x] Add `MapGenRoomTemplateAsset` with:
   template id, footprint, room category, size class, connectors, floor cells,
   wall cells, blocked cells, door hints, prop channels, weight.
-- [ ] Add `MapGenCorridorTemplateAsset` with:
+- [x] Add `MapGenCorridorTemplateAsset` with:
   corridor kind, width, turn kind, length range, connectors, prop channels,
   weight.
-- [ ] Add `MapGenConnector` with:
+- [x] Add `MapGenConnector` with:
   side, local cell, socket id, socket kind, width, required flag, tags.
-- [ ] Add explicit template pool rules to profile/style data.
+- [x] Add explicit template pool rules to profile/style data.
 - [ ] Add quantity rule structs:
   min/max rooms, min/max corridor cells, required categories, optional
   categories, density targets.
@@ -435,7 +448,7 @@ Tasks:
   policy, room/corridor filters.
 - [ ] Add output settings:
   draft folder, materialized prefab folder, baked asset folder, overwrite mode.
-- [ ] Add migration-safe defaults for existing starter profiles.
+- [x] Add migration-safe defaults for existing starter profiles.
 
 Acceptance:
 

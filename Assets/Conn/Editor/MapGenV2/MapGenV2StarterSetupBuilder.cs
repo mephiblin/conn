@@ -68,6 +68,17 @@ namespace Conn.MapGenV2.Editor
                 AssetDatabase.GenerateUniqueAssetPath($"{Root}/RoomShapes/StarterRoomShape.asset"));
             PopulateStarterRoomShape(roomShape);
 
+            var roomTemplate = ScriptableObjectUtility.CreateAsset<MapGenRoomTemplateAsset>(
+                AssetDatabase.GenerateUniqueAssetPath($"{Root}/Templates/StarterRoomTemplate.asset"));
+            PopulateStarterRoomTemplate(roomTemplate);
+
+            var corridorTemplate = ScriptableObjectUtility.CreateAsset<MapGenCorridorTemplateAsset>(
+                AssetDatabase.GenerateUniqueAssetPath($"{Root}/Templates/StarterCorridorTemplate.asset"));
+            PopulateStarterCorridorTemplate(corridorTemplate);
+
+            styleSet.RoomTemplates = new[] { roomTemplate };
+            styleSet.CorridorTemplates = new[] { corridorTemplate };
+
             var profile = ScriptableObjectUtility.CreateAsset<MapGenProfileAsset>(
                 AssetDatabase.GenerateUniqueAssetPath($"{Root}/Profiles/StarterProfile.asset"));
             profile.ProfileId = "starter_profile";
@@ -83,7 +94,7 @@ namespace Conn.MapGenV2.Editor
             draft.Profile = profile;
             draft.Seed = profile.Seed;
 
-            MarkDirty(moduleSet, styleSet, ruleSet, roomShape, profile, draft);
+            MarkDirty(moduleSet, styleSet, ruleSet, roomShape, roomTemplate, corridorTemplate, profile, draft);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
 
@@ -163,6 +174,46 @@ namespace Conn.MapGenV2.Editor
                     });
                 }
             }
+        }
+
+        private static void PopulateStarterRoomTemplate(MapGenRoomTemplateAsset template)
+        {
+            template.TemplateId = "starter_room_template";
+            template.Footprint = new Vector2Int(3, 3);
+            template.RoomCategory = MapGenRoomCategory.Main;
+            template.SizeClass = MapGenRoomSizeClass.Medium;
+            template.Weight = 1;
+            template.FloorCells = new[]
+            {
+                new Vector2Int(0, 0),
+                new Vector2Int(1, 0),
+                new Vector2Int(2, 0),
+                new Vector2Int(0, 1),
+                new Vector2Int(1, 1),
+                new Vector2Int(2, 1),
+                new Vector2Int(0, 2),
+                new Vector2Int(1, 2),
+                new Vector2Int(2, 2)
+            };
+            template.Connectors = new[]
+            {
+                MapGenConnector.Door(MapGenGridDirection.North, new Vector2Int(1, 2), "main"),
+                MapGenConnector.Door(MapGenGridDirection.South, new Vector2Int(1, 0), "main")
+            };
+        }
+
+        private static void PopulateStarterCorridorTemplate(MapGenCorridorTemplateAsset template)
+        {
+            template.TemplateId = "starter_corridor_template";
+            template.CorridorKind = MapGenCorridorKind.Straight;
+            template.Width = 1;
+            template.LengthRange = new Vector2Int(2, 6);
+            template.Weight = 1;
+            template.Connectors = new[]
+            {
+                MapGenConnector.Door(MapGenGridDirection.West, new Vector2Int(0, 0), "main"),
+                MapGenConnector.Door(MapGenGridDirection.East, new Vector2Int(5, 0), "main")
+            };
         }
 
         private static void MarkDirty(params Object[] objects)

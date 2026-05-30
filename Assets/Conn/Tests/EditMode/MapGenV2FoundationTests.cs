@@ -64,6 +64,114 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void RoomTemplateValidatorReportsConnectorAndFootprintIssues()
+        {
+            var template = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();
+
+            try
+            {
+                template.TemplateId = "invalid_room_template";
+                template.Footprint = new Vector2Int(2, 2);
+                template.FloorCells = new[] { new Vector2Int(4, 4) };
+                template.Connectors = new[]
+                {
+                    new MapGenConnector
+                    {
+                        Side = MapGenGridDirection.North,
+                        LocalCell = new Vector2Int(0, 0),
+                        SocketKind = MapGenSocketKind.Door,
+                        SocketId = "main",
+                        Width = 1
+                    }
+                };
+
+                var report = template.Validate();
+
+                Assert.That(report.IsValid, Is.False);
+                Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "room_template_cell_out_of_bounds"));
+                Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "template_connector_not_on_side"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(template);
+            }
+        }
+
+        [Test]
+        public void CorridorTemplateValidatorRequiresConnectorsAndLengthRange()
+        {
+            var template = ScriptableObject.CreateInstance<MapGenCorridorTemplateAsset>();
+
+            try
+            {
+                template.TemplateId = "invalid_corridor_template";
+                template.Width = 1;
+                template.LengthRange = new Vector2Int(5, 2);
+                template.Connectors = System.Array.Empty<MapGenConnector>();
+
+                var report = template.Validate();
+
+                Assert.That(report.IsValid, Is.False);
+                Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "corridor_template_invalid_length_range"));
+                Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "corridor_template_missing_connectors"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(template);
+            }
+        }
+
+        [Test]
+        public void ConnectorCompatibilityRequiresOppositeSideSocketAndWidth()
+        {
+            var roomConnector = MapGenConnector.Door(MapGenGridDirection.East, new Vector2Int(2, 1), "main");
+            var matchingCorridorConnector = MapGenConnector.Door(MapGenGridDirection.West, Vector2Int.zero, "main");
+            var wrongSideConnector = MapGenConnector.Door(MapGenGridDirection.North, Vector2Int.zero, "main");
+            var wrongSocketConnector = MapGenConnector.Door(MapGenGridDirection.West, Vector2Int.zero, "side");
+
+            Assert.That(MapGenTemplateValidationUtility.AreCompatible(roomConnector, matchingCorridorConnector), Is.True);
+            Assert.That(MapGenTemplateValidationUtility.AreCompatible(roomConnector, wrongSideConnector), Is.False);
+            Assert.That(MapGenTemplateValidationUtility.AreCompatible(roomConnector, wrongSocketConnector), Is.False);
+        }
+
+        [Test]
+        public void StyleSetValidatorIncludesExplicitTemplateIssues()
+        {
+            var styleSet = ScriptableObject.CreateInstance<MapGenStyleSetAsset>();
+            var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
+            var roomTemplate = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();
+            GameObject floor = null;
+            GameObject wall = null;
+
+            try
+            {
+                PopulateMinimumModuleSet(moduleSet, out floor, out wall);
+                styleSet.ModuleSet = moduleSet;
+                styleSet.RoomTemplates = new[] { roomTemplate };
+
+                var report = styleSet.Validate();
+
+                Assert.That(report.IsValid, Is.False);
+                Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "room_template_missing_id"));
+                Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "room_template_missing_floor_cells"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(styleSet);
+                Object.DestroyImmediate(moduleSet);
+                Object.DestroyImmediate(roomTemplate);
+                Object.DestroyImmediate(floor);
+                Object.DestroyImmediate(wall);
+            }
+        }
+
+        [Test]
         public void ProfileValidatorRequiresStyleRuleAndRoomShapes()
         {
             var profile = ScriptableObject.CreateInstance<MapGenProfileAsset>();
@@ -469,6 +577,27 @@ namespace Conn.Tests.EditMode
             out GameObject floor,
             out GameObject wall)
         {
+            PopulateMinimumModuleSet(moduleSet, out floor, out wall);
+            roomShape.Resize(new Vector2Int(3, 3));
+            roomShape.SetCell(1, 1, new MapGenShapeCell
+            {
+                State = MapGenCellState.Room,
+                SocketKind = MapGenSocketKind.None,
+                SocketId = string.Empty
+            });
+            styleSet.ModuleSet = moduleSet;
+            profile.ProfileId = "workflow_profile";
+            profile.MapSize = new Vector2Int(8, 6);
+            profile.StyleSet = styleSet;
+            profile.LayoutRules = ruleSet;
+            profile.RoomShapes = new[] { roomShape };
+        }
+
+        private static void PopulateMinimumModuleSet(
+            MapGenModuleSetAsset moduleSet,
+            out GameObject floor,
+            out GameObject wall)
+        {
             floor = new GameObject("FloorModule");
             wall = new GameObject("WallModule");
             moduleSet.FloorsA = new[]
@@ -489,19 +618,6 @@ namespace Conn.Tests.EditMode
                     Footprint = Vector2Int.one
                 }
             };
-            roomShape.Resize(new Vector2Int(3, 3));
-            roomShape.SetCell(1, 1, new MapGenShapeCell
-            {
-                State = MapGenCellState.Room,
-                SocketKind = MapGenSocketKind.None,
-                SocketId = string.Empty
-            });
-            styleSet.ModuleSet = moduleSet;
-            profile.ProfileId = "workflow_profile";
-            profile.MapSize = new Vector2Int(8, 6);
-            profile.StyleSet = styleSet;
-            profile.LayoutRules = ruleSet;
-            profile.RoomShapes = new[] { roomShape };
         }
 
         private static void EnsureTempFolder(string folder)
