@@ -598,6 +598,9 @@ Progress note 2026-05-31:
   attempt counts on solver results and an explicit retry-exhausted diagnostic.
 - Added `LoopRate` validation and a deterministic loop-policy corridor pass
   that can add an alternate route between the first and last required rooms.
+- Layout signatures now include profile, rule, room shape, room template, and
+  corridor template source contracts, so accepted/generated mockups become stale
+  when relevant authoring inputs change.
 
 Goal: replace the current simple connected-cell MVP with a real rooms/corridors
 solver.
@@ -626,7 +629,7 @@ Tasks:
 - [ ] Expand deterministic retries to additional retryable contradiction types.
 - [x] Add basic loop policy from `LoopRate`.
 - [ ] Add branch and dead-end policies.
-- [ ] Add layout signatures that include profile/template/rule versions.
+- [x] Add layout signatures that include profile/template/rule versions.
 
 Acceptance:
 
@@ -644,6 +647,7 @@ Verification:
 - EditMode test for candidate exhaustion after footprint propagation.
 - EditMode test for deterministic retry exhaustion diagnostics.
 - EditMode test for loop policy corridor stamping.
+- EditMode test for profile/rule/template-aware layout signatures.
 - Seed sweep across multiple profiles and sizes.
 - Tests for required room presence and reachability.
 - Tests for connector compatibility.

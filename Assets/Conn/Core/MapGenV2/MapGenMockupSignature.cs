@@ -4,12 +4,18 @@ namespace Conn.MapGenV2.Core
     {
         public static string Build(int width, int height, int seed, MapGenMockupCell[] cells)
         {
+            return Build(width, height, seed, cells, string.Empty);
+        }
+
+        public static string Build(int width, int height, int seed, MapGenMockupCell[] cells, string sourceSignature)
+        {
             unchecked
             {
                 var hash = 1469598103934665603UL;
                 Add(ref hash, width);
                 Add(ref hash, height);
                 Add(ref hash, seed);
+                Add(ref hash, sourceSignature);
 
                 for (var i = 0; i < (cells?.Length ?? 0); i++)
                 {

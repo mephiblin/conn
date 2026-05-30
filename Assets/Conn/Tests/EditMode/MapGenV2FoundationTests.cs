@@ -547,6 +547,58 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void MockupDraftSignatureIncludesProfileRuleAndTemplateSources()
+        {
+            var draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();
+            var profile = ScriptableObject.CreateInstance<MapGenProfileAsset>();
+            var styleSet = ScriptableObject.CreateInstance<MapGenStyleSetAsset>();
+            var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
+            var ruleSet = ScriptableObject.CreateInstance<MapGenRuleSetAsset>();
+            var roomShape = ScriptableObject.CreateInstance<MapGenRoomShapeAsset>();
+            var template = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();
+            GameObject floor = null;
+            GameObject wall = null;
+
+            try
+            {
+                PopulateValidWorkflowProfile(profile, styleSet, moduleSet, ruleSet, roomShape, out floor, out wall);
+                PopulateRoomTemplate(template, "source_template", MapGenRoomCategory.Start);
+                styleSet.RoomTemplates = new[] { template };
+                draft.Profile = profile;
+                draft.GridSize = new Vector2Int(2, 2);
+                draft.Seed = 17;
+                draft.EnsureCellArray();
+                draft.Cells[0].State = MapGenCellState.Room;
+
+                var baseSignature = draft.ComputeSignature();
+                template.Weight = 2;
+                var templateSignature = draft.ComputeSignature();
+                template.Weight = 1;
+                ruleSet.LoopRate = 50;
+                var ruleSignature = draft.ComputeSignature();
+                ruleSet.LoopRate = 0;
+                profile.ProfileId = "workflow_profile_changed";
+                var profileSignature = draft.ComputeSignature();
+
+                Assert.That(templateSignature, Is.Not.EqualTo(baseSignature));
+                Assert.That(ruleSignature, Is.Not.EqualTo(baseSignature));
+                Assert.That(profileSignature, Is.Not.EqualTo(baseSignature));
+            }
+            finally
+            {
+                Object.DestroyImmediate(draft);
+                Object.DestroyImmediate(template);
+                Object.DestroyImmediate(roomShape);
+                Object.DestroyImmediate(ruleSet);
+                Object.DestroyImmediate(styleSet);
+                Object.DestroyImmediate(moduleSet);
+                Object.DestroyImmediate(floor);
+                Object.DestroyImmediate(wall);
+                Object.DestroyImmediate(profile);
+            }
+        }
+
+        [Test]
         public void MockupDraftClearRemovesGeneratedAndAcceptedState()
         {
             var draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();

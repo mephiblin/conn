@@ -227,7 +227,7 @@ namespace Conn.MapGenV2.Authoring
 
         public string ComputeSignature()
         {
-            return MapGenMockupSignature.Build(Width, Height, Seed, Cells);
+            return MapGenMockupSignature.Build(Width, Height, Seed, Cells, MapGenMockupSourceSignature.Build(Profile));
         }
 
         public void Accept()
@@ -589,6 +589,237 @@ namespace Conn.MapGenV2.Authoring
             }
 
             return cells;
+        }
+    }
+
+    internal static class MapGenMockupSourceSignature
+    {
+        public static string Build(MapGenProfileAsset profile)
+        {
+            unchecked
+            {
+                var hash = 1469598103934665603UL;
+                if (profile == null)
+                {
+                    Add(ref hash, "no_profile");
+                    return hash.ToString("x16");
+                }
+
+                Add(ref hash, profile.ProfileId);
+                Add(ref hash, profile.MapSize.x);
+                Add(ref hash, profile.MapSize.y);
+                Add(ref hash, Mathf.RoundToInt(profile.CellSize * 1000f));
+                AddStyleSet(ref hash, profile.StyleSet);
+                AddRuleSet(ref hash, profile.LayoutRules);
+                AddRoomShapes(ref hash, profile.RoomShapes);
+                return hash.ToString("x16");
+            }
+        }
+
+        private static void AddStyleSet(ref ulong hash, MapGenStyleSetAsset styleSet)
+        {
+            if (styleSet == null)
+            {
+                Add(ref hash, "no_style");
+                return;
+            }
+
+            Add(ref hash, styleSet.StyleId);
+            Add(ref hash, styleSet.LightingPreset);
+            AddRoomTemplates(ref hash, styleSet.RoomTemplates);
+            AddCorridorTemplates(ref hash, styleSet.CorridorTemplates);
+        }
+
+        private static void AddRuleSet(ref ulong hash, MapGenRuleSetAsset ruleSet)
+        {
+            if (ruleSet == null)
+            {
+                Add(ref hash, "no_rules");
+                return;
+            }
+
+            Add(ref hash, ruleSet.MinRooms);
+            Add(ref hash, ruleSet.MaxRooms);
+            Add(ref hash, ruleSet.MinCorridorCells);
+            Add(ref hash, ruleSet.MaxCorridorCells);
+            Add(ref hash, ruleSet.LoopRate);
+            Add(ref hash, ruleSet.ReduceDeadEnds ? 1 : 0);
+            Add(ref hash, ruleSet.UseDirectRoutes ? 1 : 0);
+            Add(ref hash, ruleSet.SplitLargeRooms ? 1 : 0);
+            Add(ref hash, ruleSet.RemoveSmallRooms ? 1 : 0);
+            AddCategories(ref hash, ruleSet.RequiredRoomCategories);
+            AddCategories(ref hash, ruleSet.OptionalRoomCategories);
+            Add(ref hash, ruleSet.QuantityRules.MinRooms);
+            Add(ref hash, ruleSet.QuantityRules.MaxRooms);
+            Add(ref hash, ruleSet.QuantityRules.MinCorridorCells);
+            Add(ref hash, ruleSet.QuantityRules.MaxCorridorCells);
+            Add(ref hash, ruleSet.QuantityRules.TargetRoomDensityPercent);
+            Add(ref hash, ruleSet.QuantityRules.TargetCorridorDensityPercent);
+            AddCategories(ref hash, ruleSet.QuantityRules.RequiredCategories);
+            AddCategories(ref hash, ruleSet.QuantityRules.OptionalCategories);
+            Add(ref hash, ruleSet.DistanceRules.MinStartToExitDistance);
+            Add(ref hash, ruleSet.PostProcessRules.UseDirectRoutes ? 1 : 0);
+            Add(ref hash, ruleSet.PostProcessRules.ReduceDeadEnds ? 1 : 0);
+            Add(ref hash, ruleSet.PostProcessRules.SplitLargeRooms ? 1 : 0);
+            Add(ref hash, ruleSet.PostProcessRules.RemoveSmallRooms ? 1 : 0);
+            Add(ref hash, ruleSet.PostProcessRules.MaxPasses);
+            AddPropRules(ref hash, ruleSet.PropPlacementRules);
+        }
+
+        private static void AddRoomTemplates(ref ulong hash, MapGenRoomTemplateAsset[] templates)
+        {
+            Add(ref hash, templates?.Length ?? 0);
+            foreach (var template in templates ?? Array.Empty<MapGenRoomTemplateAsset>())
+            {
+                if (template == null)
+                {
+                    Add(ref hash, "null_room_template");
+                    continue;
+                }
+
+                Add(ref hash, template.TemplateId);
+                Add(ref hash, template.Footprint.x);
+                Add(ref hash, template.Footprint.y);
+                Add(ref hash, (int)template.RoomCategory);
+                Add(ref hash, (int)template.SizeClass);
+                Add(ref hash, template.Weight);
+                AddConnectors(ref hash, template.Connectors);
+                AddCells(ref hash, template.FloorCells);
+                AddCells(ref hash, template.WallCells);
+                AddCells(ref hash, template.BlockedCells);
+                AddCells(ref hash, template.DoorHintCells);
+                AddPropChannels(ref hash, template.PropChannels);
+                AddRoomShapes(ref hash, template.SourceRoomShapes);
+            }
+        }
+
+        private static void AddCorridorTemplates(ref ulong hash, MapGenCorridorTemplateAsset[] templates)
+        {
+            Add(ref hash, templates?.Length ?? 0);
+            foreach (var template in templates ?? Array.Empty<MapGenCorridorTemplateAsset>())
+            {
+                if (template == null)
+                {
+                    Add(ref hash, "null_corridor_template");
+                    continue;
+                }
+
+                Add(ref hash, template.TemplateId);
+                Add(ref hash, (int)template.CorridorKind);
+                Add(ref hash, template.Width);
+                Add(ref hash, (int)template.TurnKind);
+                Add(ref hash, template.LengthRange.x);
+                Add(ref hash, template.LengthRange.y);
+                Add(ref hash, template.Weight);
+                AddConnectors(ref hash, template.Connectors);
+                AddPropChannels(ref hash, template.PropChannels);
+            }
+        }
+
+        private static void AddRoomShapes(ref ulong hash, MapGenRoomShapeAsset[] shapes)
+        {
+            Add(ref hash, shapes?.Length ?? 0);
+            foreach (var shape in shapes ?? Array.Empty<MapGenRoomShapeAsset>())
+            {
+                if (shape == null)
+                {
+                    Add(ref hash, "null_shape");
+                    continue;
+                }
+
+                Add(ref hash, shape.ShapeId);
+                Add(ref hash, shape.Width);
+                Add(ref hash, shape.Height);
+            }
+        }
+
+        private static void AddConnectors(ref ulong hash, MapGenConnector[] connectors)
+        {
+            Add(ref hash, connectors?.Length ?? 0);
+            foreach (var connector in connectors ?? Array.Empty<MapGenConnector>())
+            {
+                Add(ref hash, (int)connector.Side);
+                Add(ref hash, connector.LocalCell.x);
+                Add(ref hash, connector.LocalCell.y);
+                Add(ref hash, (int)connector.SocketKind);
+                Add(ref hash, connector.SocketId);
+            }
+        }
+
+        private static void AddPropChannels(ref ulong hash, MapGenTemplatePropChannel[] channels)
+        {
+            Add(ref hash, channels?.Length ?? 0);
+            foreach (var channel in channels ?? Array.Empty<MapGenTemplatePropChannel>())
+            {
+                Add(ref hash, channel.Channel);
+                Add(ref hash, channel.LocalCell.x);
+                Add(ref hash, channel.LocalCell.y);
+            }
+        }
+
+        private static void AddPropRules(ref ulong hash, MapGenPropPlacementRules[] rules)
+        {
+            Add(ref hash, rules?.Length ?? 0);
+            foreach (var rule in rules ?? Array.Empty<MapGenPropPlacementRules>())
+            {
+                Add(ref hash, rule.Channel);
+                AddStrings(ref hash, rule.RoomCategoryFilters);
+                AddStrings(ref hash, rule.CorridorKindFilters);
+                Add(ref hash, rule.DensityPercent);
+                Add(ref hash, rule.MinSpacingCells);
+                Add(ref hash, rule.AllowTraversalBlocking ? 1 : 0);
+            }
+        }
+
+        private static void AddCategories(ref ulong hash, MapGenRoomCategory[] categories)
+        {
+            Add(ref hash, categories?.Length ?? 0);
+            foreach (var category in categories ?? Array.Empty<MapGenRoomCategory>())
+            {
+                Add(ref hash, (int)category);
+            }
+        }
+
+        private static void AddCells(ref ulong hash, Vector2Int[] cells)
+        {
+            Add(ref hash, cells?.Length ?? 0);
+            foreach (var cell in cells ?? Array.Empty<Vector2Int>())
+            {
+                Add(ref hash, cell.x);
+                Add(ref hash, cell.y);
+            }
+        }
+
+        private static void AddStrings(ref ulong hash, string[] values)
+        {
+            Add(ref hash, values?.Length ?? 0);
+            foreach (var value in values ?? Array.Empty<string>())
+            {
+                Add(ref hash, value);
+            }
+        }
+
+        private static void Add(ref ulong hash, int value)
+        {
+            unchecked
+            {
+                hash ^= (uint)value;
+                hash *= 1099511628211UL;
+            }
+        }
+
+        private static void Add(ref ulong hash, string value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                Add(ref hash, 0);
+                return;
+            }
+
+            for (var i = 0; i < value.Length; i++)
+            {
+                Add(ref hash, value[i]);
+            }
         }
     }
 }

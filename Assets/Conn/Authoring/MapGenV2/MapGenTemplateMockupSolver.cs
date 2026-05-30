@@ -60,6 +60,7 @@ namespace Conn.MapGenV2.Authoring
             }
 
             var landmarks = MapGenRequiredLandmarkReservation.Build(profile);
+            var sourceSignature = MapGenMockupSourceSignature.Build(profile);
             var corridorTemplates = profile.StyleSet != null
                 ? profile.StyleSet.CorridorTemplates
                 : Array.Empty<MapGenCorridorTemplateAsset>();
@@ -78,7 +79,7 @@ namespace Conn.MapGenV2.Authoring
             for (var attempt = 0; attempt < maxAttempts; attempt++)
             {
                 var attemptSeed = GetAttemptSeed(seed, attempt);
-                var result = GenerateAttempt(profile, seed, attemptSeed, attempt + 1, width, height, roomTemplates, corridorTemplates, landmarks);
+                var result = GenerateAttempt(profile, seed, attemptSeed, attempt + 1, width, height, sourceSignature, roomTemplates, corridorTemplates, landmarks);
                 if (result.Success)
                 {
                     return result;
@@ -102,6 +103,7 @@ namespace Conn.MapGenV2.Authoring
             int attemptCount,
             int width,
             int height,
+            string sourceSignature,
             MapGenRoomTemplateAsset[] roomTemplates,
             MapGenCorridorTemplateAsset[] corridorTemplates,
             MapGenRequiredLandmark[] landmarks)
@@ -180,6 +182,7 @@ namespace Conn.MapGenV2.Authoring
                 Height = height,
                 Seed = seed,
                 AttemptCount = attemptCount,
+                SourceSignature = sourceSignature,
                 Cells = cells,
                 Report = report
             };

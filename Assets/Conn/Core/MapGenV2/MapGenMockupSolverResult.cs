@@ -12,10 +12,12 @@ namespace Conn.MapGenV2.Core
 
         public int AttemptCount { get; set; }
 
+        public string SourceSignature { get; set; } = string.Empty;
+
         public MapGenMockupCell[] Cells { get; set; }
 
         public MapGenValidationReport Report { get; set; }
 
-        public string Signature => MapGenMockupSignature.Build(Width, Height, Seed, Cells);
+        public string Signature => MapGenMockupSignature.Build(Width, Height, Seed, Cells, SourceSignature);
     }
 }
