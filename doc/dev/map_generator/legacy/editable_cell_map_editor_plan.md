@@ -1091,7 +1091,7 @@ is partially complete.
 ### Documentation And Review Checklist
 
 - [x] Update this checklist after completing each phase.
-- [x] Update `doc/dev/map_generator/README.md` when workflow changes.
+- [x] Update legacy map generator README when workflow changes.
 - [x] Document any intentional incompatibility with `MapGeneratorWorkspace`.
 - [x] Add manual Unity test steps for new editor tools.
   - 2026-05-30: `MapGeneratorWorkspace` now exposes a production scene workflow
