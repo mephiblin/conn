@@ -227,6 +227,9 @@ Progress note 2026-05-31:
 - Generated corridor components now receive selectable region ids, so clicking a
   corridor cell selects and highlights the owning corridor region through the
   same preview path used for rooms.
+- The selected-region inspector now shows region type, state counts,
+  template/shape availability, and materialization hints with Korean/English
+  labels where useful.
 - Remaining Phase 1 work is fuller selected-region edit coverage:
   reroll/regenerate/reroute actions.
 

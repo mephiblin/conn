@@ -753,7 +753,11 @@ namespace Conn.MapGenV2.Editor
             }
 
             var cellCount = 0;
+            var roomCount = 0;
+            var corridorCount = 0;
             var connectorCount = 0;
+            var blockedCount = 0;
+            var reservedCount = 0;
             var category = MapGenRoomCategory.Main;
             var sawCategory = false;
             for (var y = 0; y < previewData.Height; y++)
@@ -772,9 +776,23 @@ namespace Conn.MapGenV2.Editor
                         sawCategory = true;
                     }
 
-                    if (cell.State == MapGenCellState.Connector)
+                    switch (cell.State)
                     {
-                        connectorCount++;
+                        case MapGenCellState.Room:
+                            roomCount++;
+                            break;
+                        case MapGenCellState.Corridor:
+                            corridorCount++;
+                            break;
+                        case MapGenCellState.Connector:
+                            connectorCount++;
+                            break;
+                        case MapGenCellState.Blocked:
+                            blockedCount++;
+                            break;
+                        case MapGenCellState.Reserved:
+                            reservedCount++;
+                            break;
                     }
                 }
             }
@@ -785,12 +803,20 @@ namespace Conn.MapGenV2.Editor
             {
                 EditorGUILayout.LabelField("선택 리전 편집 / Selected Region", EditorStyles.boldLabel);
                 EditorGUILayout.LabelField("Region Id", selectedRegionId.ToString());
+                EditorGUILayout.LabelField("Type / 타입", DescribeRegionType(roomCount, corridorCount, connectorCount, blockedCount, reservedCount));
                 EditorGUILayout.LabelField("Cell Count", cellCount.ToString());
+                EditorGUILayout.LabelField(
+                    "State Counts",
+                    $"Room {roomCount}, Corridor {corridorCount}, Connector {connectorCount}, Blocked {blockedCount}, Reserved {reservedCount}");
                 EditorGUILayout.LabelField("Connector Count", connectorCount.ToString());
                 EditorGUILayout.LabelField("Locked", regionOverride.Locked ? "Yes" : "No");
                 EditorGUILayout.LabelField(
                     "Override",
                     regionOverride.HasCategoryOverride ? $"Category {regionOverride.CategoryOverride}" : "(none)");
+                EditorGUILayout.LabelField("Template/Shape", "Not stored on draft cells yet / 아직 셀에 저장되지 않음");
+                EditorGUILayout.LabelField(
+                    "Materialization",
+                    DescribeMaterializationHint(roomCount, corridorCount, connectorCount, blockedCount, reservedCount));
 
                 EditorGUI.BeginChangeCheck();
                 var newCategory = (MapGenRoomCategory)EditorGUILayout.EnumPopup("Room Category", category);
@@ -840,6 +866,56 @@ namespace Conn.MapGenV2.Editor
                     }
                 }
             }
+        }
+
+        private static string DescribeRegionType(
+            int roomCount,
+            int corridorCount,
+            int connectorCount,
+            int blockedCount,
+            int reservedCount)
+        {
+            if (roomCount > 0)
+            {
+                return connectorCount > 0 ? "Room with connectors / 방+커넥터" : "Room / 방";
+            }
+
+            if (corridorCount > 0)
+            {
+                return "Corridor / 복도";
+            }
+
+            if (blockedCount > 0)
+            {
+                return "Blocked / 차단";
+            }
+
+            if (reservedCount > 0)
+            {
+                return "Reserved / 예약";
+            }
+
+            return "Unknown / 알 수 없음";
+        }
+
+        private static string DescribeMaterializationHint(
+            int roomCount,
+            int corridorCount,
+            int connectorCount,
+            int blockedCount,
+            int reservedCount)
+        {
+            if (roomCount + corridorCount + connectorCount > 0)
+            {
+                return "Navigable cells stamp floors/walls; connectors request doors. / 이동 가능 셀은 바닥/벽, 커넥터는 문 요청";
+            }
+
+            if (blockedCount + reservedCount > 0)
+            {
+                return "Non-navigable; skipped by current materialization/runtime bake. / 현재 출력과 런타임 베이크에서 제외";
+            }
+
+            return "No materialization output expected. / 출력 없음";
         }
 
         private void ChangeSelectedRegionState(MapGenCellState state, string actionLabel)
