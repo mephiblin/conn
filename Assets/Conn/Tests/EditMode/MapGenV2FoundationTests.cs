@@ -646,6 +646,94 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void TemplateMockupSolverPlacesMultiCellRequiredRoomsDeterministically()
+        {
+            var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
+            var styleSet = ScriptableObject.CreateInstance<MapGenStyleSetAsset>();
+            var ruleSet = ScriptableObject.CreateInstance<MapGenRuleSetAsset>();
+            var roomShape = ScriptableObject.CreateInstance<MapGenRoomShapeAsset>();
+            var startTemplate = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();
+            var exitTemplate = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();
+            var profile = ScriptableObject.CreateInstance<MapGenProfileAsset>();
+            GameObject floor = null;
+            GameObject wall = null;
+
+            try
+            {
+                PopulateValidWorkflowProfile(profile, styleSet, moduleSet, ruleSet, roomShape, out floor, out wall);
+                profile.MapSize = new Vector2Int(10, 6);
+                ruleSet.RequiredRoomCategories = new[] { MapGenRoomCategory.Start, MapGenRoomCategory.Exit };
+                ruleSet.QuantityRules.RequiredCategories = ruleSet.RequiredRoomCategories;
+                PopulateRoomTemplate(startTemplate, "start_template", MapGenRoomCategory.Start);
+                PopulateRoomTemplate(exitTemplate, "exit_template", MapGenRoomCategory.Exit);
+                styleSet.RoomTemplates = new[] { startTemplate, exitTemplate };
+
+                var first = MapGenTemplateMockupSolver.Generate(profile, 7001);
+                var second = MapGenTemplateMockupSolver.Generate(profile, 7001);
+
+                Assert.That(first.Success, Is.True);
+                Assert.That(second.Signature, Is.EqualTo(first.Signature));
+                Assert.That(first.Cells, Has.Exactly(4).Matches<MapGenMockupCell>(
+                    cell => IsRoomFootprintCell(cell) && cell.RoomCategory == MapGenRoomCategory.Start));
+                Assert.That(first.Cells, Has.Exactly(4).Matches<MapGenMockupCell>(
+                    cell => IsRoomFootprintCell(cell) && cell.RoomCategory == MapGenRoomCategory.Exit));
+                Assert.That(first.Cells, Has.Some.Matches<MapGenMockupCell>(
+                    cell => cell.State == MapGenCellState.Corridor));
+            }
+            finally
+            {
+                Object.DestroyImmediate(profile);
+                Object.DestroyImmediate(exitTemplate);
+                Object.DestroyImmediate(startTemplate);
+                Object.DestroyImmediate(roomShape);
+                Object.DestroyImmediate(ruleSet);
+                Object.DestroyImmediate(styleSet);
+                Object.DestroyImmediate(moduleSet);
+                Object.DestroyImmediate(floor);
+                Object.DestroyImmediate(wall);
+            }
+        }
+
+        [Test]
+        public void TemplateMockupSolverReportsMissingRequiredCategoryTemplate()
+        {
+            var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
+            var styleSet = ScriptableObject.CreateInstance<MapGenStyleSetAsset>();
+            var ruleSet = ScriptableObject.CreateInstance<MapGenRuleSetAsset>();
+            var roomShape = ScriptableObject.CreateInstance<MapGenRoomShapeAsset>();
+            var startTemplate = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();
+            var profile = ScriptableObject.CreateInstance<MapGenProfileAsset>();
+            GameObject floor = null;
+            GameObject wall = null;
+
+            try
+            {
+                PopulateValidWorkflowProfile(profile, styleSet, moduleSet, ruleSet, roomShape, out floor, out wall);
+                ruleSet.RequiredRoomCategories = new[] { MapGenRoomCategory.Start, MapGenRoomCategory.Exit };
+                ruleSet.QuantityRules.RequiredCategories = ruleSet.RequiredRoomCategories;
+                PopulateRoomTemplate(startTemplate, "start_template", MapGenRoomCategory.Start);
+                styleSet.RoomTemplates = new[] { startTemplate };
+
+                var result = MapGenTemplateMockupSolver.Generate(profile, 7001);
+
+                Assert.That(result.Success, Is.False);
+                Assert.That(result.Report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "production_solver_no_template_for_category"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(profile);
+                Object.DestroyImmediate(startTemplate);
+                Object.DestroyImmediate(roomShape);
+                Object.DestroyImmediate(ruleSet);
+                Object.DestroyImmediate(styleSet);
+                Object.DestroyImmediate(moduleSet);
+                Object.DestroyImmediate(floor);
+                Object.DestroyImmediate(wall);
+            }
+        }
+
+        [Test]
         public void PostProcessorCanAddDirectRoute()
         {
             var cells = new MapGenMockupCell[25];
@@ -765,6 +853,34 @@ namespace Conn.Tests.EditMode
                     Footprint = Vector2Int.one
                 }
             };
+        }
+
+        private static void PopulateRoomTemplate(
+            MapGenRoomTemplateAsset template,
+            string templateId,
+            MapGenRoomCategory category)
+        {
+            template.TemplateId = templateId;
+            template.RoomCategory = category;
+            template.Footprint = new Vector2Int(2, 2);
+            template.Weight = 1;
+            template.FloorCells = new[]
+            {
+                new Vector2Int(0, 0),
+                new Vector2Int(1, 0),
+                new Vector2Int(0, 1),
+                new Vector2Int(1, 1)
+            };
+            template.Connectors = new[]
+            {
+                MapGenConnector.Door(MapGenGridDirection.East, new Vector2Int(1, 0), "main"),
+                MapGenConnector.Door(MapGenGridDirection.West, new Vector2Int(0, 0), "main")
+            };
+        }
+
+        private static bool IsRoomFootprintCell(MapGenMockupCell cell)
+        {
+            return cell.State == MapGenCellState.Room || cell.State == MapGenCellState.Connector;
         }
 
         private static void EnsureTempFolder(string folder)

@@ -43,10 +43,13 @@ namespace Conn.MapGenV2.Authoring
                 return profileReport;
             }
 
-            var requiredCategories = Profile.LayoutRules != null
-                ? Profile.LayoutRules.RequiredRoomCategories
-                : Array.Empty<MapGenRoomCategory>();
-            var result = MapGenMockupSolver.Generate(Profile.MapSize.x, Profile.MapSize.y, Seed, requiredCategories);
+            var result = MapGenTemplateMockupSolver.CanUseTemplates(Profile)
+                ? MapGenTemplateMockupSolver.Generate(Profile, Seed)
+                : MapGenMockupSolver.Generate(
+                    Profile.MapSize.x,
+                    Profile.MapSize.y,
+                    Seed,
+                    Profile.LayoutRules != null ? Profile.LayoutRules.RequiredRoomCategories : Array.Empty<MapGenRoomCategory>());
             if (!result.Success)
             {
                 return result.Report;

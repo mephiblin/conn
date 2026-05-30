@@ -511,6 +511,17 @@ Verification:
 
 ## Phase 7: Production Layout Solver
 
+Progress note 2026-05-31:
+
+- Added `MapGenTemplateMockupSolver`, an authoring-side production mockup
+  solver path that activates when the selected style set has room templates.
+- Template generation now places multi-cell room template footprints for
+  required room categories, preserves connector cells in the draft, carves
+  deterministic corridors between placed rooms, and reports missing required
+  category templates.
+- `MapGenMockupDraftAsset.GenerateFromProfile()` now uses the template solver
+  when template pools exist and keeps the legacy single-cell solver as fallback.
+
 Goal: replace the current simple connected-cell MVP with a real rooms/corridors
 solver.
 
@@ -518,7 +529,7 @@ Tasks:
 
 - [ ] Build a grid candidate domain from profile size, blocked regions,
   room/corridor templates, quantity rules, density targets, and required rooms.
-- [ ] Place multi-cell room shapes, not only single-cell room landmarks.
+- [x] Place multi-cell room shapes, not only single-cell room landmarks.
 - [ ] Place first-class corridor templates.
 - [ ] Enforce connector/socket compatibility between rooms and corridors.
 - [ ] Reserve required landmarks:
@@ -528,7 +539,7 @@ Tasks:
 - [ ] Collapse lowest-entropy cells/regions.
 - [ ] Propagate footprint, connector, blocked-region, and adjacency
   constraints.
-- [ ] Maintain graph connectivity during solve.
+- [x] Maintain graph connectivity during solve.
 - [ ] Add deterministic retries with detailed contradiction reports.
 - [ ] Add loop, branch, and dead-end policies.
 - [ ] Add layout signatures that include profile/template/rule versions.
