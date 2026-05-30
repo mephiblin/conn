@@ -6,7 +6,8 @@
     "Conn.Runtime",
     "Conn.Authoring",
     "Conn.Editor",
-    "Conn.EditorWorkspaces"
+    "Conn.EditorWorkspaces",
+    "Conn.MapGenV2.Core"
   ],
   "includePlatforms": [
     "Editor"
