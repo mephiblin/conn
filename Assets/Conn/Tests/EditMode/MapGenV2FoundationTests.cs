@@ -125,6 +125,40 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void ModuleSetValidatorReportsPrefabBoundsContractIssues()
+        {
+            var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
+            var floor = new GameObject("OffsetFloor");
+            var wall = new GameObject("ScaledWall");
+
+            try
+            {
+                floor.transform.localPosition = new Vector3(0.25f, 0f, 0f);
+                wall.transform.localRotation = Quaternion.Euler(0f, 15f, 0f);
+                wall.transform.localScale = new Vector3(1f, 2f, 1f);
+                moduleSet.BoundsContract.PivotTolerance = 0.01f;
+                moduleSet.FloorsA = new[] { new MapGenModuleEntry { Prefab = floor, Weight = 1, Footprint = Vector2Int.one } };
+                moduleSet.WallsStraight = new[] { new MapGenModuleEntry { Prefab = wall, Weight = 1, Footprint = Vector2Int.one } };
+
+                var report = moduleSet.Validate();
+
+                Assert.That(report.IsValid, Is.False);
+                Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "module_set_prefab_pivot_offset"));
+                Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "module_set_prefab_root_rotation"));
+                Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "module_set_prefab_root_scale"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(wall);
+                Object.DestroyImmediate(floor);
+                Object.DestroyImmediate(moduleSet);
+            }
+        }
+
+        [Test]
         public void RoomTemplateValidatorReportsConnectorAndFootprintIssues()
         {
             var template = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();

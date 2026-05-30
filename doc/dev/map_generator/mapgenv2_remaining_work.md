@@ -720,6 +720,9 @@ Progress note 2026-05-31:
   navigation helper objects. Navigation helpers materialize as marker-bearing
   empty objects under the `Navigation` scene group instead of requiring prefab
   module entries.
+- Module sets now include an explicit module bounds contract for cell size,
+  height, pivot mode, pivot tolerance, root rotation, and root scale. Validation
+  reports prefab root pivot/rotation/scale mismatches before materialization.
 
 Goal: turn accepted mockups into readable project-prefab maps.
 
@@ -736,7 +739,7 @@ Tasks:
 - [x] Use `CellSize` consistently for positions.
 - [x] Respect prefab footprint in materialization preflight.
 - [x] Respect allowed rotations and module offsets.
-- [ ] Add explicit pivot-rule validation.
+- [x] Add explicit pivot-rule validation.
 - [x] Deterministically choose weighted module entries.
 - [x] Support whole doors and split door frames/panels.
 - [ ] Support connector-width-aware door openings.
@@ -765,6 +768,7 @@ Verification:
 - EditMode tests for whole-door and split-door request classification.
 - EditMode tests for inside-corner and navigation-helper classification.
 - EditMode test for navigation-helper scene grouping and source metadata.
+- EditMode test for module bounds contract prefab root validation.
 - EditMode test for missing prefab/module reports.
 - Manual Unity check with at least two style sets.
 
