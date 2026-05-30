@@ -1149,7 +1149,7 @@ be committed and pushed separately.
   traversal-safe validation.
 - [x] Runtime bake MVP: runtime-safe grid, regions, doors, traversal graph,
   markers.
-- [ ] Editor window MVP: profile selection, validation, generate mockup, accept,
+- [x] Editor window MVP: profile selection, validation, generate mockup, accept,
   materialize, bake.
 - [ ] Integration tests and manual Unity checks.
 
