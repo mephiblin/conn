@@ -618,6 +618,7 @@ namespace Conn.Tests.EditMode
                 Assert.That(result.Compiled.Doors.Any(edge => edge.FromNodeId == "treasure_branch" && edge.ToNodeId == "quest"), Is.True);
                 Assert.That(result.Compiled.Cells.Count, Is.EqualTo(result.Draft.Cells.Length));
                 Assert.That(result.Compiled.Cells.Count(cell => cell.WallVariantId == "wall_corner"), Is.EqualTo(wallCornerCount));
+                Assert.That(result.Compiled.Placements.Where(IsRequiredAnchorPlacement).All(placement => IsWalkableCompiledPlacement(result.Compiled, placement)), Is.True);
                 Assert.That(result.Compiled.Objects.Count(placement => placement.RuntimeReferenceId == "door"), Is.GreaterThanOrEqualTo(4));
                 Assert.That(result.Compiled.Objects.Any(placement => placement.Kind == RoomChunkObjectKind.Blocker && placement.BlocksMovement), Is.True);
                 Assert.That(CompiledMapDungeonRuntimeService.CountBlockingObjects(result.Compiled), Is.GreaterThanOrEqualTo(1));
@@ -1626,6 +1627,20 @@ namespace Conn.Tests.EditMode
         private static bool IsGap(EditableMapDraftAsset draft, int x, int y)
         {
             return draft.TryGetCell(x, y, out var cell) && cell.Terrain == RoomChunkCellType.Gap;
+        }
+
+        private static bool IsRequiredAnchorPlacement(MapPlacement placement)
+        {
+            return placement.Kind == MapPlacementKind.Start
+                || placement.Kind == MapPlacementKind.QuestTarget
+                || placement.Kind == MapPlacementKind.Boss
+                || placement.Kind == MapPlacementKind.Exit;
+        }
+
+        private static bool IsWalkableCompiledPlacement(CompiledMap compiled, MapPlacement placement)
+        {
+            var cell = compiled.Cells.FirstOrDefault(candidate => candidate.X == placement.X && candidate.Y == placement.Y);
+            return cell != null && cell.Terrain != RoomChunkCellType.Wall && cell.Terrain != RoomChunkCellType.Gap;
         }
     }
 }

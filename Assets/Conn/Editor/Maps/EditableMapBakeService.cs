@@ -267,17 +267,65 @@ namespace Conn.Editor.Maps
                     continue;
                 }
 
-                var center = new Vector2Int(room.X + Mathf.Max(0, room.Width / 2), room.Y + Mathf.Max(0, room.Height / 2));
+                var anchor = ResolveRoomAnchorCell(draft, room);
                 compiled.Placements.Add(new MapPlacement
                 {
                     Id = $"{kind.ToString().ToLowerInvariant()}_{room.Id}",
                     Kind = kind,
                     RoomId = room.Id ?? string.Empty,
-                    X = center.x,
-                    Y = center.y,
+                    X = anchor.x,
+                    Y = anchor.y,
                     ReferenceId = room.Role.ToString()
                 });
             }
+        }
+
+        private static Vector2Int ResolveRoomAnchorCell(EditableMapDraftAsset draft, EditableMapRoom room)
+        {
+            var preferred = new Vector2Int(room.X + Mathf.Max(0, room.Width / 2), room.Y + Mathf.Max(0, room.Height / 2));
+            if (IsWalkableRoomCell(draft, room, preferred.x, preferred.y))
+            {
+                return preferred;
+            }
+
+            var best = preferred;
+            var bestDistance = int.MaxValue;
+            var found = false;
+            for (var y = room.Y; y < room.Y + room.Height; y++)
+            {
+                for (var x = room.X; x < room.X + room.Width; x++)
+                {
+                    if (!IsWalkableRoomCell(draft, room, x, y))
+                    {
+                        continue;
+                    }
+
+                    var distance = Mathf.Abs(preferred.x - x) + Mathf.Abs(preferred.y - y);
+                    if (!found || distance < bestDistance)
+                    {
+                        found = true;
+                        bestDistance = distance;
+                        best = new Vector2Int(x, y);
+                    }
+                }
+            }
+
+            return best;
+        }
+
+        private static bool IsWalkableRoomCell(EditableMapDraftAsset draft, EditableMapRoom room, int x, int y)
+        {
+            if (x < room.X || y < room.Y || x >= room.X + room.Width || y >= room.Y + room.Height)
+            {
+                return false;
+            }
+
+            if (!draft.TryGetCell(x, y, out var cell))
+            {
+                return false;
+            }
+
+            return cell.Terrain != RoomChunkCellType.Wall && cell.Terrain != RoomChunkCellType.Gap;
         }
 
         private static void BakeEncounterPlacements(EditableMapDraftAsset draft, CompiledMap compiled)

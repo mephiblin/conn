@@ -1026,6 +1026,8 @@ is partially complete.
 - [x] Bake rooms and zones.
 - [x] Bake sockets and doors.
 - [x] Bake anchors and encounter placements.
+  - 2026-05-30: required anchor placements resolve to walkable cells inside
+    the room instead of blindly using rectangular room centers.
 - [x] Confirm no baked type stores Unity object or editor references.
 - [x] Save optional `CompiledMapAsset` from an edited draft.
 - [x] Load baked draft data in Dungeon runtime.
