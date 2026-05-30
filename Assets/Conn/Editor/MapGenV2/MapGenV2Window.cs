@@ -161,7 +161,7 @@ namespace Conn.MapGenV2.Editor
 
         private void DrawNextAction(MapGenV2WorkflowStatus workflow)
         {
-            EditorGUILayout.HelpBox($"다음 작업 / Next Action: {workflow.NextAction}", MessageType.Info);
+            EditorGUILayout.HelpBox($"다음 작업 / Next Action: {BuildGuidedNextAction(workflow)}", MessageType.Info);
         }
 
         private void DrawProfileValidation()
@@ -488,7 +488,10 @@ namespace Conn.MapGenV2.Editor
             {
                 using (new EditorGUI.DisabledScope(!workflow.CanGenerate))
                 {
-                    if (GUILayout.Button("Generate Mockup"))
+                    var generateLabel = workflow.HasGeneratedMockup && !workflow.GeneratedCurrent
+                        ? "Regenerate Mockup / 목업 재생성"
+                        : "Generate Mockup / 목업 생성";
+                    if (GUILayout.Button(generateLabel))
                     {
                         GenerateMockup("Generate Mockup");
                     }
@@ -496,7 +499,7 @@ namespace Conn.MapGenV2.Editor
 
                 using (new EditorGUI.DisabledScope(!workflow.CanGenerate))
                 {
-                    if (GUILayout.Button("Regenerate Same Seed"))
+                    if (GUILayout.Button("Regenerate Same Seed / 같은 시드 재생성"))
                     {
                         GenerateMockup("Regenerate Same Seed", preserveLockedRegions: true);
                     }
@@ -504,7 +507,7 @@ namespace Conn.MapGenV2.Editor
 
                 using (new EditorGUI.DisabledScope(!workflow.CanPostProcess))
                 {
-                    if (GUILayout.Button("Run Post-Process"))
+                    if (GUILayout.Button("Repostprocess Mockup / 후처리 재실행"))
                     {
                         Undo.RecordObject(draft, "Post-Process Mockup");
                         var report = draft.ApplyPostProcessingFromProfile();
@@ -515,7 +518,10 @@ namespace Conn.MapGenV2.Editor
 
                 using (new EditorGUI.DisabledScope(!workflow.CanAccept))
                 {
-                    if (GUILayout.Button("Accept Mockup"))
+                    var acceptLabel = workflow.Accepted
+                        ? "Reaccept Mockup / 목업 재수락"
+                        : "Accept Mockup / 목업 수락";
+                    if (GUILayout.Button(acceptLabel))
                     {
                         Undo.RecordObject(draft, "Accept Mockup");
                         draft.Accept();
@@ -567,7 +573,10 @@ namespace Conn.MapGenV2.Editor
             {
                 using (new EditorGUI.DisabledScope(!workflow.CanMaterialize))
                 {
-                    if (GUILayout.Button("Materialize To Scene"))
+                    var materializeLabel = ShouldRematerialize()
+                        ? "Rematerialize To Scene / 씬 재생성"
+                        : "Materialize To Scene / 씬 생성";
+                    if (GUILayout.Button(materializeLabel))
                     {
                         var root = MapGenMockupMaterializer.Materialize(draft, outputMode, selectedMaterializedRoot);
                         selectedMaterializedRoot = root;
@@ -579,7 +588,10 @@ namespace Conn.MapGenV2.Editor
 
                 using (new EditorGUI.DisabledScope(!workflow.CanBakeRuntime))
                 {
-                    if (GUILayout.Button("Bake Runtime Asset"))
+                    var bakeLabel = ShouldRebake()
+                        ? "Rebake Runtime Asset / 런타임 재베이크"
+                        : "Bake Runtime Asset / 런타임 베이크";
+                    if (GUILayout.Button(bakeLabel))
                     {
                         var bakedAsset = MapGenRuntimeBakeUtility.Bake(draft);
                         lastOperationResult = bakedAsset != null
@@ -626,6 +638,74 @@ namespace Conn.MapGenV2.Editor
             lastOperationResult = report.IsValid
                 ? $"{operationName} complete. Seed {draft.Seed}, Retry 0, Rooms {preview.Summary.RoomCells}, Corridors {preview.Summary.CorridorCells}."
                 : $"{operationName} failed. See validation messages above.";
+        }
+
+        private string BuildGuidedNextAction(MapGenV2WorkflowStatus workflow)
+        {
+            if (!workflow.CanMaterialize)
+            {
+                return workflow.NextAction;
+            }
+
+            var materializedRoot = ResolveMaterializedRoot();
+            if (materializedRoot == null)
+            {
+                return "Materialize To Scene / accepted mockup을 씬 출력으로 생성.";
+            }
+
+            var materializedReport = MapGenMockupMaterializer.ValidateExistingOutput(draft, materializedRoot);
+            if (!materializedReport.IsValid)
+            {
+                return "Rematerialize To Scene / stale materialized root를 현재 accepted mockup과 module set으로 재생성.";
+            }
+
+            if (!workflow.CanBakeRuntime)
+            {
+                return workflow.NextAction;
+            }
+
+            var bakedAsset = LoadExpectedBakedAsset();
+            if (bakedAsset == null)
+            {
+                return "Bake Runtime Asset / runtime-safe baked map asset 생성.";
+            }
+
+            var bakeReport = MapGenRuntimeBakeUtility.ValidateConsistency(draft, bakedAsset);
+            if (!bakeReport.IsValid)
+            {
+                return "Rebake Runtime Asset / stale baked asset을 현재 accepted mockup으로 재생성.";
+            }
+
+            return "Outputs are current / materialized scene output과 runtime bake가 현재 accepted mockup과 일치.";
+        }
+
+        private bool ShouldRematerialize()
+        {
+            var materializedRoot = ResolveMaterializedRoot();
+            return materializedRoot != null
+                && !MapGenMockupMaterializer.ValidateExistingOutput(draft, materializedRoot).IsValid;
+        }
+
+        private bool ShouldRebake()
+        {
+            if (draft == null || !draft.Accepted || !draft.IsAcceptedSignatureCurrent)
+            {
+                return false;
+            }
+
+            var bakedAsset = LoadExpectedBakedAsset();
+            return bakedAsset != null && !MapGenRuntimeBakeUtility.ValidateConsistency(draft, bakedAsset).IsValid;
+        }
+
+        private GameObject ResolveMaterializedRoot()
+        {
+            if (selectedMaterializedRoot != null)
+            {
+                return selectedMaterializedRoot;
+            }
+
+            var marker = MapGenMockupMaterializer.FindExistingMarker(draft);
+            return marker != null ? marker.gameObject : null;
         }
 
         private static int CreateRandomSeed()

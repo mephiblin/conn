@@ -962,6 +962,9 @@ Progress note 2026-05-31:
 - Materialized root/module markers now also store module-set signatures, and
   diagnostics report stale materialized outputs when the accepted draft source
   or module set no longer matches the selected/previous scene root.
+- The editor next-action guide now switches to explicit Regenerate,
+  Repostprocess, Reaccept, Rematerialize, and Rebake actions based on stale
+  draft/materialized/baked state, with matching Korean/English button labels.
 
 Goal: make generated assets safe to keep in a real project.
 
@@ -971,7 +974,7 @@ Tasks:
   assets.
 - [x] Detect stale drafts when profile/style/rule/template assets change.
 - [x] Detect stale materialized output when draft or module set changes.
-- [ ] Add `Regenerate`, `Repostprocess`, `Reaccept`, `Rematerialize`,
+- [x] Add `Regenerate`, `Repostprocess`, `Reaccept`, `Rematerialize`,
   `Rebake` workflows.
 - [ ] Add explicit overwrite policy.
 - [ ] Add asset version fields and migration helpers.
