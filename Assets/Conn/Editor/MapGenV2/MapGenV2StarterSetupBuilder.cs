@@ -23,6 +23,13 @@ namespace Conn.MapGenV2.Editor
             MapGenV2Window.Open(setup.Profile, setup.Draft);
         }
 
+        [MenuItem("Conn/MapGenV2/Cleanup Starter Generated Assets")]
+        public static void CleanupStarterGeneratedAssetsFromMenu()
+        {
+            var deleted = CleanupStarterGeneratedAssets();
+            Debug.Log($"MapGenV2 starter cleanup deleted {deleted} generated assets.");
+        }
+
         public static MapGenV2StarterSetup CreateStarterProfileSetup()
         {
             MapGenV2AssetFolderUtility.CreateDefaultFolders();
@@ -115,6 +122,115 @@ namespace Conn.MapGenV2.Editor
                 Profile = profile,
                 Draft = draft
             };
+        }
+
+        public static int CleanupStarterGeneratedAssets()
+        {
+            return CleanupGeneratedAssets(Root);
+        }
+
+        public static int CleanupGeneratedAssets(string root)
+        {
+            if (string.IsNullOrWhiteSpace(root) || !AssetDatabase.IsValidFolder(root))
+            {
+                return 0;
+            }
+
+            var paths = new System.Collections.Generic.HashSet<string>();
+            AddMatchingAssets(paths, root, "t:MapGenProfileAsset", asset =>
+            {
+                var profile = asset as MapGenProfileAsset;
+                return profile != null && profile.ProfileId == "starter_profile";
+            });
+            AddMatchingAssets(paths, root, "t:MapGenMockupDraftAsset", asset =>
+            {
+                var draft = asset as MapGenMockupDraftAsset;
+                return draft != null
+                    && (draft.Profile != null && draft.Profile.ProfileId == "starter_profile"
+                        || asset.name.StartsWith("StarterDraft", System.StringComparison.Ordinal));
+            });
+            AddMatchingAssets(paths, root, "t:MapGenStyleSetAsset", asset =>
+            {
+                var styleSet = asset as MapGenStyleSetAsset;
+                return styleSet != null && styleSet.StyleId == "starter_style";
+            });
+            AddMatchingAssets(paths, root, "t:MapGenModuleSetAsset", asset =>
+            {
+                var moduleSet = asset as MapGenModuleSetAsset;
+                return moduleSet != null && moduleSet.ModuleSetId == "starter_module_set";
+            });
+            AddMatchingAssets(paths, root, "t:MapGenRoomShapeAsset", asset =>
+            {
+                var shape = asset as MapGenRoomShapeAsset;
+                return shape != null && shape.ShapeId == "starter_room_shape";
+            });
+            AddMatchingAssets(paths, root, "t:MapGenRoomTemplateAsset", asset =>
+            {
+                var template = asset as MapGenRoomTemplateAsset;
+                return template != null && template.TemplateId == "starter_room_template";
+            });
+            AddMatchingAssets(paths, root, "t:MapGenCorridorTemplateAsset", asset =>
+            {
+                var template = asset as MapGenCorridorTemplateAsset;
+                return template != null && template.TemplateId == "starter_corridor_template";
+            });
+            AddMatchingAssets(paths, root, "t:GameObject", asset => IsStarterGeneratedName(asset.name));
+            AddMatchingAssets(paths, root, "t:Material", asset => IsStarterGeneratedName(asset.name));
+
+            var deleted = 0;
+            foreach (var path in paths)
+            {
+                if (AssetDatabase.DeleteAsset(path))
+                {
+                    deleted++;
+                }
+            }
+
+            if (deleted > 0)
+            {
+                AssetDatabase.SaveAssets();
+                AssetDatabase.Refresh();
+            }
+
+            return deleted;
+        }
+
+        private static void AddMatchingAssets(
+            System.Collections.Generic.HashSet<string> paths,
+            string root,
+            string filter,
+            System.Func<Object, bool> predicate)
+        {
+            foreach (var guid in AssetDatabase.FindAssets(filter, new[] { root }))
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                if (string.IsNullOrWhiteSpace(path))
+                {
+                    continue;
+                }
+
+                var asset = AssetDatabase.LoadMainAssetAtPath(path);
+                if (asset != null && predicate(asset))
+                {
+                    paths.Add(path);
+                }
+            }
+        }
+
+        private static bool IsStarterGeneratedName(string assetName)
+        {
+            if (string.IsNullOrWhiteSpace(assetName))
+            {
+                return false;
+            }
+
+            return assetName.StartsWith("StarterFloor", System.StringComparison.Ordinal)
+                || assetName.StartsWith("StarterCorridorFloor", System.StringComparison.Ordinal)
+                || assetName.StartsWith("StarterWall", System.StringComparison.Ordinal)
+                || assetName.StartsWith("StarterCorner", System.StringComparison.Ordinal)
+                || assetName.StartsWith("StarterCeiling", System.StringComparison.Ordinal)
+                || assetName.StartsWith("StarterDoor", System.StringComparison.Ordinal)
+                || assetName.StartsWith("StarterProp", System.StringComparison.Ordinal);
         }
 
         private static GameObject CreatePrimitivePrefab(

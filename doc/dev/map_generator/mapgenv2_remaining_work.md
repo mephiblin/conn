@@ -972,6 +972,9 @@ Progress note 2026-05-31:
   `MapGenV2AuthoringAssetMigration` normalizes legacy/null arrays, output
   defaults, dimensions, weights, bounds contracts, and draft grid defaults while
   rejecting unsupported future versions.
+- Starter setup now has a safe cleanup command/button that deletes only assets
+  matching known starter ids or starter placeholder prefab/material names; tests
+  verify non-starter assets in the same folder are preserved.
 
 Goal: make generated assets safe to keep in a real project.
 
@@ -985,7 +988,7 @@ Tasks:
   `Rebake` workflows.
 - [x] Add explicit overwrite policy.
 - [x] Add asset version fields and migration helpers.
-- [ ] Add safe cleanup for generated assets created by starter setup or tests.
+- [x] Add safe cleanup for generated assets created by starter setup or tests.
 - [x] Add changelog/notes field for generated drafts.
 
 Acceptance:

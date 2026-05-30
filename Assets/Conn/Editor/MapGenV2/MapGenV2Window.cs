@@ -103,6 +103,16 @@ namespace Conn.MapGenV2.Editor
                 }
             }
 
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                GUILayout.FlexibleSpace();
+                if (GUILayout.Button("Cleanup Starter Generated Assets", GUILayout.Width(240f)))
+                {
+                    var deleted = MapGenV2StarterSetupBuilder.CleanupStarterGeneratedAssets();
+                    lastOperationResult = $"Starter generated asset cleanup deleted {deleted} assets.";
+                }
+            }
+
             workflow = MapGenV2WorkflowStatus.From(profile, draft);
             DrawNextAction(workflow);
             DrawProfileValidation();

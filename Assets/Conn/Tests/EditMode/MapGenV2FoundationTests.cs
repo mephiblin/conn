@@ -1373,6 +1373,72 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void CleanupGeneratedAssetsDeletesOnlyStarterTaggedAssets()
+        {
+            const string tempFolder = "Assets/Conn/Tests/TempMapGenV2Cleanup";
+            var starterProfilePath = $"{tempFolder}/StarterProfile.asset";
+            var keepProfilePath = $"{tempFolder}/ProductionProfile.asset";
+            var starterDraftPath = $"{tempFolder}/StarterDraft.asset";
+            var starterStylePath = $"{tempFolder}/StarterStyleSet.asset";
+            var starterModuleSetPath = $"{tempFolder}/StarterModuleSet.asset";
+            var starterRoomShapePath = $"{tempFolder}/StarterRoomShape.asset";
+            var starterRoomTemplatePath = $"{tempFolder}/StarterRoomTemplate.asset";
+            var starterCorridorTemplatePath = $"{tempFolder}/StarterCorridorTemplate.asset";
+            var starterPrefabPath = $"{tempFolder}/StarterFloor.prefab";
+            var keepPrefabPath = $"{tempFolder}/ProductionFloor.prefab";
+
+            try
+            {
+                EnsureTempFolder(tempFolder);
+                var starterProfile = ScriptableObject.CreateInstance<MapGenProfileAsset>();
+                starterProfile.ProfileId = "starter_profile";
+                AssetDatabase.CreateAsset(starterProfile, starterProfilePath);
+                var keepProfile = ScriptableObject.CreateInstance<MapGenProfileAsset>();
+                keepProfile.ProfileId = "production_profile";
+                AssetDatabase.CreateAsset(keepProfile, keepProfilePath);
+                var starterDraft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();
+                starterDraft.Profile = starterProfile;
+                AssetDatabase.CreateAsset(starterDraft, starterDraftPath);
+                var starterStyle = ScriptableObject.CreateInstance<MapGenStyleSetAsset>();
+                starterStyle.StyleId = "starter_style";
+                AssetDatabase.CreateAsset(starterStyle, starterStylePath);
+                var starterModuleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
+                starterModuleSet.ModuleSetId = "starter_module_set";
+                AssetDatabase.CreateAsset(starterModuleSet, starterModuleSetPath);
+                var starterShape = ScriptableObject.CreateInstance<MapGenRoomShapeAsset>();
+                starterShape.ShapeId = "starter_room_shape";
+                AssetDatabase.CreateAsset(starterShape, starterRoomShapePath);
+                var starterRoomTemplate = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();
+                starterRoomTemplate.TemplateId = "starter_room_template";
+                AssetDatabase.CreateAsset(starterRoomTemplate, starterRoomTemplatePath);
+                var starterCorridorTemplate = ScriptableObject.CreateInstance<MapGenCorridorTemplateAsset>();
+                starterCorridorTemplate.TemplateId = "starter_corridor_template";
+                AssetDatabase.CreateAsset(starterCorridorTemplate, starterCorridorTemplatePath);
+                CreateTempPrefab(starterPrefabPath, "StarterFloor");
+                CreateTempPrefab(keepPrefabPath, "ProductionFloor");
+                AssetDatabase.SaveAssets();
+
+                var deleted = MapGenV2StarterSetupBuilder.CleanupGeneratedAssets(tempFolder);
+
+                Assert.That(deleted, Is.EqualTo(8));
+                Assert.That(AssetDatabase.LoadAssetAtPath<MapGenProfileAsset>(starterProfilePath), Is.Null);
+                Assert.That(AssetDatabase.LoadAssetAtPath<MapGenMockupDraftAsset>(starterDraftPath), Is.Null);
+                Assert.That(AssetDatabase.LoadAssetAtPath<MapGenStyleSetAsset>(starterStylePath), Is.Null);
+                Assert.That(AssetDatabase.LoadAssetAtPath<MapGenModuleSetAsset>(starterModuleSetPath), Is.Null);
+                Assert.That(AssetDatabase.LoadAssetAtPath<MapGenRoomShapeAsset>(starterRoomShapePath), Is.Null);
+                Assert.That(AssetDatabase.LoadAssetAtPath<MapGenRoomTemplateAsset>(starterRoomTemplatePath), Is.Null);
+                Assert.That(AssetDatabase.LoadAssetAtPath<MapGenCorridorTemplateAsset>(starterCorridorTemplatePath), Is.Null);
+                Assert.That(AssetDatabase.LoadAssetAtPath<GameObject>(starterPrefabPath), Is.Null);
+                Assert.That(AssetDatabase.LoadAssetAtPath<MapGenProfileAsset>(keepProfilePath), Is.Not.Null);
+                Assert.That(AssetDatabase.LoadAssetAtPath<GameObject>(keepPrefabPath), Is.Not.Null);
+            }
+            finally
+            {
+                AssetDatabase.DeleteAsset(tempFolder);
+            }
+        }
+
+        [Test]
         public void GeneratedMapMarkerStoresDraftSourceData()
         {
             var styleSet = ScriptableObject.CreateInstance<MapGenStyleSetAsset>();
