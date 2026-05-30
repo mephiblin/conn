@@ -35,6 +35,70 @@ namespace Conn.MapGenV2.Authoring
             return GenerateFromProfile(true);
         }
 
+        public MapGenValidationReport RegenerateRegionFromProfile(int regionId)
+        {
+            if (regionId < 0)
+            {
+                var report = new MapGenValidationReport();
+                report.Add(new MapGenIssue(
+                    MapGenGenerationPhase.SolveMockup,
+                    "mockup_draft_invalid_region_regenerate",
+                    "Cannot regenerate a region without a valid region id.",
+                    "Select a generated room or corridor region first."));
+                return report;
+            }
+
+            if (Profile == null)
+            {
+                var report = new MapGenValidationReport();
+                report.Add(new MapGenIssue(
+                    MapGenGenerationPhase.SolveMockup,
+                    "mockup_draft_missing_profile",
+                    "Mockup draft has no profile.",
+                    "Assign a MapGenProfileAsset before generating."));
+                return report;
+            }
+
+            var profileReport = Profile.Validate();
+            if (!profileReport.IsValid)
+            {
+                return profileReport;
+            }
+
+            var previousWidth = Width;
+            var previousHeight = Height;
+            var previousCells = Cells ?? Array.Empty<MapGenMockupCell>();
+            var previousOverrides = RegionOverrides ?? Array.Empty<MapGenMockupRegionOverride>();
+            var usesTemplates = MapGenTemplateMockupSolver.CanUseTemplates(Profile);
+            var result = usesTemplates
+                ? MapGenTemplateMockupSolver.Generate(Profile, Seed)
+                : MapGenMockupSolver.Generate(
+                    Profile.MapSize.x,
+                    Profile.MapSize.y,
+                    Seed,
+                    Profile.LayoutRules != null ? Profile.LayoutRules.RequiredRoomCategories : Array.Empty<MapGenRoomCategory>());
+            if (!result.Success)
+            {
+                return result.Report;
+            }
+
+            GridSize = new Vector2Int(result.Width, result.Height);
+            Cells = result.Cells;
+            if (!usesTemplates)
+            {
+                AssignRoomShapeIdsFromProfile();
+            }
+
+            MapGenMockupRegionUtility.AssignCorridorRegionIds(Width, Height, Cells, false, MaxRegionId(previousCells) + 1);
+            PreserveRegionsExcept(previousWidth, previousHeight, previousCells, regionId);
+            Accepted = false;
+            AcceptedSignature = string.Empty;
+            LastGeneratedSignature = ComputeSignature();
+            RegionOverrides = CopyOverridesExcept(previousOverrides, regionId);
+            ClearPostProcessReport();
+            return result.Report;
+        }
+
         private MapGenValidationReport GenerateFromProfile(bool preserveLockedRegions)
         {
             if (Profile == null)
@@ -379,6 +443,33 @@ namespace Conn.MapGenV2.Authoring
             }
         }
 
+        private void PreserveRegionsExcept(
+            int previousWidth,
+            int previousHeight,
+            MapGenMockupCell[] previousCells,
+            int excludedRegionId)
+        {
+            for (var y = 0; y < Mathf.Min(previousHeight, Height); y++)
+            {
+                for (var x = 0; x < Mathf.Min(previousWidth, Width); x++)
+                {
+                    var previousIndex = (y * previousWidth) + x;
+                    if (previousIndex < 0 || previousIndex >= previousCells.Length)
+                    {
+                        continue;
+                    }
+
+                    var previousCell = previousCells[previousIndex];
+                    if (previousCell.RegionId < 0 || previousCell.RegionId == excludedRegionId)
+                    {
+                        continue;
+                    }
+
+                    Cells[(y * Width) + x] = previousCell;
+                }
+            }
+        }
+
         private static MapGenMockupRegionOverride[] CopyLockedOverrides(MapGenMockupRegionOverride[] source)
         {
             var copied = new MapGenMockupRegionOverride[source?.Length ?? 0];
@@ -386,6 +477,25 @@ namespace Conn.MapGenV2.Authoring
             foreach (var regionOverride in source ?? Array.Empty<MapGenMockupRegionOverride>())
             {
                 if (!regionOverride.Locked)
+                {
+                    continue;
+                }
+
+                copied[count] = regionOverride;
+                count++;
+            }
+
+            Array.Resize(ref copied, count);
+            return copied;
+        }
+
+        private static MapGenMockupRegionOverride[] CopyOverridesExcept(MapGenMockupRegionOverride[] source, int excludedRegionId)
+        {
+            var copied = new MapGenMockupRegionOverride[source?.Length ?? 0];
+            var count = 0;
+            foreach (var regionOverride in source ?? Array.Empty<MapGenMockupRegionOverride>())
+            {
+                if (regionOverride.RegionId == excludedRegionId)
                 {
                     continue;
                 }

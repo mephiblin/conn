@@ -562,6 +562,65 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void MockupDraftRegenerateRegionPreservesOtherRegionsAndOverrides()
+        {
+            var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
+            var styleSet = ScriptableObject.CreateInstance<MapGenStyleSetAsset>();
+            var ruleSet = ScriptableObject.CreateInstance<MapGenRuleSetAsset>();
+            var roomShape = ScriptableObject.CreateInstance<MapGenRoomShapeAsset>();
+            var startTemplate = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();
+            var exitTemplate = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();
+            var profile = ScriptableObject.CreateInstance<MapGenProfileAsset>();
+            var draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();
+            GameObject floor = null;
+            GameObject wall = null;
+
+            try
+            {
+                PopulateValidWorkflowProfile(profile, styleSet, moduleSet, ruleSet, roomShape, out floor, out wall);
+                profile.MapSize = new Vector2Int(10, 6);
+                ruleSet.RequiredRoomCategories = new[] { MapGenRoomCategory.Start, MapGenRoomCategory.Exit };
+                ruleSet.QuantityRules.RequiredCategories = ruleSet.RequiredRoomCategories;
+                PopulateRoomTemplate(startTemplate, "start_template", MapGenRoomCategory.Start);
+                PopulateRoomTemplate(exitTemplate, "exit_template", MapGenRoomCategory.Exit);
+                styleSet.RoomTemplates = new[] { startTemplate, exitTemplate };
+                draft.Profile = profile;
+                draft.Seed = 123;
+
+                Assert.That(draft.GenerateFromProfile().IsValid, Is.True);
+                draft.SetRegionLocked(1, true);
+                draft.SetRegionCategory(1, MapGenRoomCategory.Boss);
+                draft.Accept();
+                var preservedRegion = CopyRegionCells(draft, 1);
+                draft.Seed = 456;
+
+                Assert.That(draft.RegenerateRegionFromProfile(0).IsValid, Is.True);
+
+                Assert.That(CopyRegionCells(draft, 1), Is.EqualTo(preservedRegion));
+                Assert.That(draft.TryGetRegionOverride(1, out var preservedOverride), Is.True);
+                Assert.That(preservedOverride.Locked, Is.True);
+                Assert.That(preservedOverride.CategoryOverride, Is.EqualTo(MapGenRoomCategory.Boss));
+                Assert.That(draft.TryGetRegionOverride(0, out _), Is.False);
+                Assert.That(draft.Accepted, Is.False);
+                Assert.That(draft.Cells, Has.Some.Matches<MapGenMockupCell>(
+                    cell => cell.RegionId == 0 && cell.SourceTemplateId == "start_template"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(draft);
+                Object.DestroyImmediate(profile);
+                Object.DestroyImmediate(exitTemplate);
+                Object.DestroyImmediate(startTemplate);
+                Object.DestroyImmediate(roomShape);
+                Object.DestroyImmediate(ruleSet);
+                Object.DestroyImmediate(styleSet);
+                Object.DestroyImmediate(moduleSet);
+                Object.DestroyImmediate(floor);
+                Object.DestroyImmediate(wall);
+            }
+        }
+
+        [Test]
         public void MockupDraftGenerationAssignsSelectableCorridorRegions()
         {
             var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();

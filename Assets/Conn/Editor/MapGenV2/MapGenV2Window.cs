@@ -900,6 +900,14 @@ namespace Conn.MapGenV2.Editor
 
                 using (new EditorGUILayout.HorizontalScope())
                 {
+                    using (new EditorGUI.DisabledScope(regionOverride.Locked || roomCount <= 0))
+                    {
+                        if (GUILayout.Button("Regenerate Room / 방 재생성"))
+                        {
+                            RegenerateSelectedRoomRegion();
+                        }
+                    }
+
                     if (GUILayout.Button("Delete Region / 삭제"))
                     {
                         ChangeSelectedRegionState(MapGenCellState.Empty, "Deleted");
@@ -917,6 +925,24 @@ namespace Conn.MapGenV2.Editor
                     }
                 }
             }
+        }
+
+        private void RegenerateSelectedRoomRegion()
+        {
+            if (draft == null || selectedRegionId < 0)
+            {
+                return;
+            }
+
+            Undo.RecordObject(draft, "Regenerate MapGen Room Region");
+            draft.Seed = CreateRandomSeed();
+            var report = draft.RegenerateRegionFromProfile(selectedRegionId);
+            EditorUtility.SetDirty(draft);
+            var preview = MapGenMockupPreviewData.FromDraft(draft);
+            lastOperationResult = report.IsValid
+                ? $"Regenerated room region {selectedRegionId}. Seed {draft.Seed}, Rooms {preview.Summary.RoomCells}, Corridors {preview.Summary.CorridorCells}."
+                : $"Regenerate region failed: {report.Issues[0].Message}";
+            Repaint();
         }
 
         private static string DescribeRegionType(

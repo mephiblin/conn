@@ -238,8 +238,10 @@ Progress note 2026-05-31:
 - Draft cells now carry source template/shape ids, signatures include those
   source ids, and the selected-region inspector displays them for later reroll
   and regeneration actions.
+- Selected room regions can now be regenerated from the current profile with a
+  new seed while preserving other region cells and their override metadata.
 - Remaining Phase 1 work is fuller selected-region edit coverage:
-  reroll/regenerate/reroute actions.
+  corridor reroute and fuller shape/template reroll actions.
 
 Goal: make the mockup stage obvious and usable.
 
@@ -293,6 +295,8 @@ Verification:
 - EditMode test for selected-region delete/block/reserve state edits.
 - EditMode test for generated corridor cells receiving selectable region ids.
 - EditMode test that mockup generation does not create scene objects.
+- EditMode test for selected-room regeneration preserving other regions and
+  overrides.
 - Manual Unity check: generate 3 seeds and confirm visible layout changes.
 - Manual Unity check: select a generated room, change/lock it, regenerate
   allowed parts, and confirm the locked edit remains.
