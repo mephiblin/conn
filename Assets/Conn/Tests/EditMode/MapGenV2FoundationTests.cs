@@ -115,6 +115,39 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void MockupDraftClearRemovesGeneratedAndAcceptedState()
+        {
+            var draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();
+
+            try
+            {
+                draft.GridSize = new Vector2Int(2, 2);
+                draft.Seed = 17;
+                draft.EnsureCellArray();
+                draft.Cells[0].State = MapGenCellState.Room;
+                draft.LastGeneratedSignature = draft.ComputeSignature();
+                draft.LastDirectRouteCellsAdded = 2;
+                draft.LastDeadEndCorridorsRemoved = 1;
+                draft.LastIsolatedRoomsRemoved = 1;
+                draft.Accept();
+
+                draft.ClearDraft();
+
+                Assert.That(draft.LastGeneratedSignature, Is.Empty);
+                Assert.That(draft.Accepted, Is.False);
+                Assert.That(draft.AcceptedSignature, Is.Empty);
+                Assert.That(draft.LastDirectRouteCellsAdded, Is.Zero);
+                Assert.That(draft.LastDeadEndCorridorsRemoved, Is.Zero);
+                Assert.That(draft.LastIsolatedRoomsRemoved, Is.Zero);
+                Assert.That(draft.Cells, Has.All.Matches<MapGenMockupCell>(cell => cell.State == MapGenCellState.Empty));
+            }
+            finally
+            {
+                Object.DestroyImmediate(draft);
+            }
+        }
+
+        [Test]
         public void MockupPreviewDataExtractsCellsAndSummary()
         {
             var draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();

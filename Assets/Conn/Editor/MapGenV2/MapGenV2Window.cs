@@ -352,14 +352,15 @@ namespace Conn.MapGenV2.Editor
                 {
                     if (GUILayout.Button("Generate Mockup"))
                     {
-                        Undo.RecordObject(draft, "Generate Mockup");
-                        var report = draft.GenerateFromProfile();
-                        ClearSelection();
-                        EditorUtility.SetDirty(draft);
-                        var preview = MapGenMockupPreviewData.FromDraft(draft);
-                        lastOperationResult = report.IsValid
-                            ? $"Generated mockup. Seed {draft.Seed}, Retry 0, Rooms {preview.Summary.RoomCells}, Corridors {preview.Summary.CorridorCells}."
-                            : "Generate Mockup failed. See validation messages above.";
+                        GenerateMockup("Generate Mockup");
+                    }
+                }
+
+                using (new EditorGUI.DisabledScope(!workflow.CanGenerate))
+                {
+                    if (GUILayout.Button("Regenerate Same Seed"))
+                    {
+                        GenerateMockup("Regenerate Same Seed");
                     }
                 }
 
@@ -382,6 +383,44 @@ namespace Conn.MapGenV2.Editor
                         draft.Accept();
                         EditorUtility.SetDirty(draft);
                         lastOperationResult = $"Accepted mockup signature {draft.AcceptedSignature}.";
+                    }
+                }
+            }
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                using (new EditorGUI.DisabledScope(draft == null))
+                {
+                    if (GUILayout.Button("Randomize Seed"))
+                    {
+                        Undo.RecordObject(draft, "Randomize MapGen Seed");
+                        draft.Seed = CreateRandomSeed();
+                        draft.ClearDraft();
+                        ClearSelection();
+                        EditorUtility.SetDirty(draft);
+                        lastOperationResult = $"Randomized seed to {draft.Seed}. Generate Mockup to preview it.";
+                    }
+                }
+
+                using (new EditorGUI.DisabledScope(!workflow.CanGenerate))
+                {
+                    if (GUILayout.Button("Randomize Seed + Generate"))
+                    {
+                        Undo.RecordObject(draft, "Randomize Seed And Generate Mockup");
+                        draft.Seed = CreateRandomSeed();
+                        GenerateMockup("Randomize Seed + Generate", recordUndo: false);
+                    }
+                }
+
+                using (new EditorGUI.DisabledScope(draft == null))
+                {
+                    if (GUILayout.Button("Clear Draft"))
+                    {
+                        Undo.RecordObject(draft, "Clear MapGen Draft");
+                        draft.ClearDraft();
+                        ClearSelection();
+                        EditorUtility.SetDirty(draft);
+                        lastOperationResult = "Cleared draft cells, generated signature, post-process report, and acceptance.";
                     }
                 }
             }
@@ -426,6 +465,32 @@ namespace Conn.MapGenV2.Editor
             {
                 EditorGUILayout.HelpBox($"Bake Runtime Asset disabled: {workflow.BakeRuntimeReason}", MessageType.Info);
             }
+        }
+
+        private void GenerateMockup(string operationName, bool recordUndo = true)
+        {
+            if (draft == null)
+            {
+                return;
+            }
+
+            if (recordUndo)
+            {
+                Undo.RecordObject(draft, operationName);
+            }
+
+            var report = draft.GenerateFromProfile();
+            ClearSelection();
+            EditorUtility.SetDirty(draft);
+            var preview = MapGenMockupPreviewData.FromDraft(draft);
+            lastOperationResult = report.IsValid
+                ? $"{operationName} complete. Seed {draft.Seed}, Retry 0, Rooms {preview.Summary.RoomCells}, Corridors {preview.Summary.CorridorCells}."
+                : $"{operationName} failed. See validation messages above.";
+        }
+
+        private static int CreateRandomSeed()
+        {
+            return System.Guid.NewGuid().GetHashCode() & 0x7fffffff;
         }
 
         private void CreateDraft()

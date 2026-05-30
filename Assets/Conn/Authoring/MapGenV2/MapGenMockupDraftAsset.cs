@@ -150,6 +150,14 @@ namespace Conn.MapGenV2.Authoring
             ClearAcceptance();
         }
 
+        public void ClearDraft()
+        {
+            Cells = CreateEmptyCells(Width, Height);
+            LastGeneratedSignature = string.Empty;
+            ClearPostProcessReport();
+            ClearAcceptance();
+        }
+
         private void ClearPostProcessReport()
         {
             LastDirectRouteCellsAdded = 0;

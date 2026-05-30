@@ -214,6 +214,8 @@ Progress note 2026-05-31:
   room regions.
 - `MapGenMockupPreviewData` provides testable draft preview extraction and
   summary counts for the editor UI.
+- Seed controls now support randomize, randomize-and-generate, regenerate with
+  the same seed, and clearing draft generated/accepted state.
 - Remaining Phase 1 work is the interactive edit/lock/regenerate workflow and
   persistence of manual region overrides.
 
@@ -244,9 +246,9 @@ Tasks:
 - [x] Show draft summary:
   profile id, seed, grid size, generated signature, accepted signature,
   accepted/stale state, room cell count, corridor cell count, connector count.
-- [ ] Add `Randomize Seed` and `Randomize Seed + Generate`.
-- [ ] Add `Regenerate Same Seed`.
-- [ ] Add `Clear Draft`.
+- [x] Add `Randomize Seed` and `Randomize Seed + Generate`.
+- [x] Add `Regenerate Same Seed`.
+- [x] Add `Clear Draft`.
 - [ ] Keep mockup preview editor-only; do not create scene objects on
   `Generate Mockup`.
 - [x] Add screenshot-friendly preview sizing and scroll/zoom for large grids.
