@@ -358,6 +358,9 @@ Progress note 2026-05-31:
   doors, and prop markers.
 - Materialized scene object names now include module category, grid coordinate,
   region id, and prefab/module id, so placeholder output is easier to inspect.
+- Starter profiles now include authoring notes explaining that generated
+  placeholder prefabs are learning aids, how to read their colors/categories,
+  and when mockup/materialize/bake steps should be used.
 
 Goal: starter output should be visually understandable even before real art is
 plugged in.
@@ -371,7 +374,7 @@ Tasks:
 - [x] Ensure starter prefabs have consistent pivots and cell-size alignment.
 - [ ] Ensure starter materialization does not produce z-fighting or overlapping
   unreadable blocks.
-- [ ] Add starter profile notes explaining placeholder content.
+- [x] Add starter profile notes explaining placeholder content.
 - [x] Keep generated starter assets under `Assets/Conn/Authoring/MapGenV2/`
   and do not commit user-generated starter outputs by default.
 

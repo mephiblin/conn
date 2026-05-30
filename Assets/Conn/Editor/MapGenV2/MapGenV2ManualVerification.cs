@@ -181,6 +181,12 @@ namespace Conn.MapGenV2.Editor
                 return BuildFailure("Starter profile validation failed", profileReport);
             }
 
+            if (string.IsNullOrWhiteSpace(setup.Profile.AuthoringNotes)
+                || !setup.Profile.AuthoringNotes.Contains("placeholder prefabs"))
+            {
+                return "FAIL: Starter profile notes do not explain placeholder content.";
+            }
+
             var generationReport = setup.Draft.GenerateFromProfile();
             if (!generationReport.IsValid)
             {

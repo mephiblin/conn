@@ -87,6 +87,11 @@ namespace Conn.MapGenV2.Editor
                 AssetDatabase.GenerateUniqueAssetPath($"{Root}/Profiles/StarterProfile.asset"));
             profile.ProfileId = "starter_profile";
             profile.DisplayName = "Starter Profile";
+            profile.AuthoringNotes =
+                "Starter MapGenV2 profile for learning the production workflow.\n"
+                + "- Uses generated placeholder prefabs only; replace the module set with real project prefabs for production.\n"
+                + "- Red floor modules are rooms, black floor modules are corridors, blue blocks are walls/corners, pale slabs are ceilings, yellow blocks are doors, and green spheres are prop markers.\n"
+                + "- Generate Mockup is editor-only. Accept the mockup before Materialize To Scene or Bake Runtime Asset.";
             profile.MapSize = new Vector2Int(10, 8);
             profile.Seed = 2001;
             profile.StyleSet = styleSet;

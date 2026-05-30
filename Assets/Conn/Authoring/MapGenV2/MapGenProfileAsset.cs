@@ -9,6 +9,8 @@ namespace Conn.MapGenV2.Authoring
     {
         public string ProfileId = string.Empty;
         public string DisplayName = string.Empty;
+        [TextArea(3, 8)]
+        public string AuthoringNotes = string.Empty;
         public Vector2Int MapSize = new Vector2Int(32, 32);
         public float CellSize = 1f;
         public int Seed;
