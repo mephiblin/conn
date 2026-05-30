@@ -33,6 +33,16 @@ checks.
   `https://dungen-docs.aegongames.com/2.19/advanced-features/connection-rules/`
 - WFC overview:
   `https://www.gridbugs.org/wave-function-collapse/`
+- Unity UI Toolkit custom editor window documentation:
+  `https://docs.unity.cn/Manual/UIE-HowTo-CreateEditorWindow.html`
+- Unity UI Toolkit custom inspector documentation:
+  `https://docs.unity.cn/2021.3/Documentation/Manual/UIE-HowTo-CreateCustomInspector.html`
+- Unity Scene View custom overlays documentation:
+  `https://docs.unity3d.com/2021.3/Manual/overlays-custom.html`
+- Unity `Handles` Scene View drawing/editing API:
+  `https://docs.unity3d.com/ScriptReference/Handles.html`
+- Unity Localization package documentation:
+  `https://docs.unity.cn/Manual/com.unity.localization.html`
 
 ## Already Covered In Current Documents
 
@@ -200,6 +210,66 @@ Possible override kinds:
 Reason: regeneration can then preserve designer edits intentionally instead of
 accidentally keeping stale grid cells.
 
+### 9. Editor UX Should Be Treated As Product Work
+
+Unity's UI Toolkit documentation positions custom editor windows and custom
+inspectors as normal ways to build user-friendly editor tooling. MapGenV2 should
+therefore not be implemented as a thin row of buttons above raw object fields.
+
+Required UX direction:
+
+- Use a structured editor window:
+  setup/assets, visual preview, selected item details, diagnostics.
+- Prefer custom inspectors for profile, room shape, module set, rule set,
+  draft, and baked map assets.
+- Make every disabled action explain why it is disabled.
+- Add context-sensitive help, quick-create buttons, ping/select/open buttons,
+  and validation summaries next to the data they affect.
+- Keep raw serialized arrays behind debug/advanced foldouts.
+- Preserve Undo/Redo and dirty-state behavior for asset edits.
+
+Reason: the reference tool is presented as a production level-design workflow,
+not as a debug API surface.
+
+### 10. Korean Localization Is A First-Class UX Requirement
+
+Unity's Localization package supports string localization, asset localization,
+pseudo-localization, and import/export flows. MapGenV2 editor UI should be ready
+for Korean users instead of shipping English-only editor labels.
+
+Required localization direction:
+
+- Keep internal ids, enum names, asset ids, and code symbols in English.
+- Localize user-visible labels, tooltips, warnings, errors, summaries, and help
+  boxes.
+- Add `Auto`, `한국어`, and `English` language modes in the MapGenV2 window.
+- Use flexible layouts and wrapping help boxes so Korean text does not clip.
+- Add a missing-localization diagnostic for MapGenV2 UI strings.
+
+Reason: the user-facing authoring workflow is complex enough that Korean labels
+and explanations materially affect usability.
+
+### 11. Scene View Should Explain Generated Output
+
+Unity Scene View overlays and `Handles` allow tools to expose contextual actions,
+visual guides, and custom editing controls directly in the Scene View. MapGenV2
+should use these only as an inspection/materialization aid, not as a replacement
+for the main mockup preview.
+
+Required Scene View direction:
+
+- Add a MapGenV2 overlay for common actions and visibility toggles.
+- Draw handles/gizmos for grid bounds, selected region outlines, connectors,
+  sockets, door/blocker markers, prop channels, nav bounds, and diagnostics.
+- Clearly show whether the scene content is an unaccepted mockup, accepted
+  mockup, materialized output, stale materialized output, or baked output.
+- Name generated scene roots and child groups predictably.
+- Let selected materialized objects point back to draft id, region id, template
+  id, and module id.
+
+Reason: after materialization, designers need to understand what came from which
+part of the accepted mockup and whether the scene output is still current.
+
 ## Problems To Watch For
 
 - Treating `Generate Mockup` as scene-object creation will slow iteration and
@@ -216,6 +286,11 @@ accidentally keeping stale grid cells.
 - Baking runtime data from scene objects only, instead of from the accepted draft
   and materialization plan, can create silent drift between editor preview and
   runtime behavior.
+- Shipping English-only labels and terse error codes will make the tool hard to
+  use in the current project workflow.
+- Letting Scene View output be the only visible feedback repeats the current MVP
+  problem where `Generate Mockup` appears to do nothing until the user performs a
+  later action.
 
 ## Reference-Driven Additions Recommended For `mapgenv2_remaining_work.md`
 
@@ -229,4 +304,7 @@ Add or keep explicit tasks for:
 6. Optional sector/streaming partition metadata.
 7. WFC candidate/contradiction diagnostics visible in the preview.
 8. Explicit `MapGenMockupOverride` records for user edits.
-
+9. UI Toolkit-based editor windows/custom inspectors with guided workflow UX.
+10. Korean localization for all user-visible editor strings.
+11. Scene View overlay/handles for inspecting materialized output and source
+    metadata.

@@ -88,6 +88,117 @@ MapGenV2 should not be called production-ready until all of these are true:
 - Do not make runtime generation the main target until editor generation and
   bake are stable.
 
+## Cross-Cutting UX, UI, And Localization Requirements
+
+These requirements apply to every MapGenV2 editor window, inspector, Scene View
+tool, and generated output workflow.
+
+### User-Centered Editor UX
+
+- [ ] Use UI Toolkit for new editor windows and complex custom inspectors unless
+  an existing IMGUI path is simpler to maintain.
+- [ ] Use a consistent three-pane authoring layout where possible:
+  left = setup/assets, center = visual preview, right = selected item/details.
+- [ ] Every primary action must show:
+  what it will change, why it is enabled/disabled, and where the output will be
+  created.
+- [ ] Add a persistent top status strip:
+  current profile, draft, seed, validation state, accepted/stale state,
+  materialized root, and baked asset.
+- [ ] Add clear next-step guidance after each action:
+  after starter setup, after mockup generation, after post-process, after accept,
+  after materialize, and after bake.
+- [ ] Add inline help text and tooltips for profile, rule set, style set,
+  module set, room shape, connector, post-process, prop placement, and bake
+  settings.
+- [ ] Group advanced settings under foldouts so a first-time user is not forced
+  to understand every low-level field before generating a map.
+- [ ] Avoid raw serialized arrays in the primary UX. Arrays may remain visible in
+  debug/advanced foldouts only.
+- [ ] Add `Ping`, `Select`, `Open`, `Create`, `Duplicate`, `Validate`, and
+  `Fix/Create Missing` buttons beside important asset references.
+- [ ] Support Undo/Redo for all editor mutations:
+  asset edits, room-shape painting, selected-region edits, materialization, and
+  clear/replace operations.
+- [ ] Persist editor window state:
+  last selected assets, preview zoom/pan, visible overlays, language, and
+  advanced/debug foldout state.
+- [ ] Use stable icons/colors for:
+  valid, warning, error, stale, accepted, generated, manual override, locked,
+  missing reference, and runtime-safe.
+
+### Korean Localization
+
+- [ ] Provide Korean UI text for all user-facing MapGenV2 labels, buttons,
+  tooltips, warnings, errors, and documentation summaries.
+- [ ] Keep English stable ids internally; localize only display strings.
+- [ ] Add a MapGenV2 localization table or lightweight editor localization
+  dictionary with keys such as:
+  `mapgenv2.generateMockup`, `mapgenv2.acceptMockup`,
+  `mapgenv2.materializeToScene`, `mapgenv2.bakeRuntimeAsset`,
+  `mapgenv2.profileMissing`, `mapgenv2.draftStale`.
+- [ ] Add a language selector in the MapGenV2 window:
+  `Auto`, `한국어`, `English`.
+- [ ] Default to Korean labels/help when the editor locale or user setting is
+  Korean, but keep asset ids, enum names, and script/API names in English.
+- [ ] Avoid layout breakage from longer Korean text by using flexible widths,
+  wrapping help boxes, scroll views, and minimum window sizes.
+- [ ] Add pseudo-localization or long-text checks before considering the editor
+  UI complete.
+
+### Inspector UX
+
+- [ ] Profile inspector must show a high-level summary first:
+  map size, seed policy, style, rule set, template pools, required room
+  categories, validation result.
+- [ ] Room shape inspector must show the editable grid first, with dimensions,
+  paint tools, connector tools, rotate/flip, and validation next to the grid.
+- [ ] Module set inspector must show category coverage:
+  floors, walls, corners, ceilings, doors, blockers, props, missing categories,
+  and weights.
+- [ ] Rule set inspector must show designer-language controls before raw values:
+  room count, corridor density, loops, dead-end policy, blocked regions,
+  required categories, post-process pass list.
+- [ ] Draft inspector must show the mockup preview, selected region details,
+  manual overrides, accept/stale status, and materialization readiness.
+- [ ] Baked map inspector must show runtime-safe summary only:
+  grid bounds, regions, connectors, traversal graph, nav data availability,
+  and source signatures.
+
+### Scene View UX
+
+- [ ] Add a MapGenV2 Scene View overlay with:
+  selected draft/root, generate, accept, materialize, clear, frame, overlay
+  visibility toggles, and current tool mode.
+- [ ] Add Scene View handles/gizmos for:
+  generated bounds, cell grid, selected region outline, room id, connector
+  arrows, door/blocker markers, prop channels, stale materialized root, and
+  nav/build bounds.
+- [ ] Provide separate visibility toggles:
+  mockup grid, region ids, connectors, sockets, blocked cells, prop channels,
+  nav graph, prefab bounds, and diagnostics.
+- [ ] Scene View must clearly distinguish states:
+  unaccepted mockup, accepted mockup, materialized output, stale materialized
+  output, baked runtime output.
+- [ ] Clicking a materialized room object should be able to select its source
+  mockup region or show source metadata in the inspector.
+- [ ] Scene output hierarchy should be predictable:
+  `MapGenV2_<Profile>_<Seed>`
+  with child groups `Floors`, `Corridors`, `Walls`, `Ceilings`, `Doors`,
+  `Blockers`, `Props`, `Navigation`, `Debug`.
+- [ ] Generated scene objects should have clear names:
+  category, grid coordinate, region id, template id, and module id where
+  practical.
+- [ ] Materialized output should use real prefabs when available and readable
+  placeholder meshes/materials when not.
+- [ ] Materialized output must visually match the accepted mockup:
+  red room masses become floors/walls/ceilings/doors/props, black corridors
+  become corridor floors/walls/doors, gray blocked cells become reserved or
+  blocker output, and blue background remains empty/non-instantiated space.
+- [ ] The Scene View should not be required for mockup iteration; it is a
+  secondary inspection/materialization view. The editor window preview remains
+  the primary mockup UX.
+
 ## Phase 1: Visible Mockup Workflow
 
 Goal: make the mockup stage obvious and usable.
