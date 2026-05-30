@@ -1,0 +1,51 @@
+namespace Conn.MapGenV2.Core
+{
+    public static class MapGenMockupSignature
+    {
+        public static string Build(int width, int height, int seed, MapGenMockupCell[] cells)
+        {
+            unchecked
+            {
+                var hash = 1469598103934665603UL;
+                Add(ref hash, width);
+                Add(ref hash, height);
+                Add(ref hash, seed);
+
+                for (var i = 0; i < (cells?.Length ?? 0); i++)
+                {
+                    var cell = cells[i];
+                    Add(ref hash, (int)cell.State);
+                    Add(ref hash, cell.RegionId);
+                    Add(ref hash, (int)cell.RoomCategory);
+                    Add(ref hash, (int)cell.SocketKind);
+                    Add(ref hash, cell.SocketId);
+                }
+
+                return hash.ToString("x16");
+            }
+        }
+
+        private static void Add(ref ulong hash, int value)
+        {
+            unchecked
+            {
+                hash ^= (uint)value;
+                hash *= 1099511628211UL;
+            }
+        }
+
+        private static void Add(ref ulong hash, string value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                Add(ref hash, 0);
+                return;
+            }
+
+            for (var i = 0; i < value.Length; i++)
+            {
+                Add(ref hash, value[i]);
+            }
+        }
+    }
+}

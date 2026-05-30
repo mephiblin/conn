@@ -1135,7 +1135,7 @@ be committed and pushed separately.
   menus, default folders.
 - [x] Validation reports: structured issue codes, suggested fixes, context
   objects, editor display.
-- [ ] Mockup draft model: cells, regions, signatures, accepted/stale state,
+- [x] Mockup draft model: cells, regions, signatures, accepted/stale state,
   save/load.
 - [ ] Mockup preview: blue/red/black/gray grid renderer and overlays.
 - [ ] Solver MVP: deterministic connected mockup layout with required rooms and

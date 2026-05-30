@@ -83,5 +83,33 @@ namespace Conn.Tests.EditMode
                 Object.DestroyImmediate(profile);
             }
         }
+
+        [Test]
+        public void MockupDraftAcceptanceStoresCurrentSignature()
+        {
+            var draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();
+
+            try
+            {
+                draft.GridSize = new Vector2Int(2, 2);
+                draft.Seed = 17;
+                draft.EnsureCellArray();
+                draft.Cells[0].State = MapGenCellState.Room;
+
+                draft.Accept();
+
+                Assert.That(draft.Accepted, Is.True);
+                Assert.That(draft.AcceptedSignature, Is.EqualTo(draft.ComputeSignature()));
+                Assert.That(draft.IsAcceptedSignatureCurrent, Is.True);
+
+                draft.Cells[1].State = MapGenCellState.Corridor;
+
+                Assert.That(draft.IsAcceptedSignatureCurrent, Is.False);
+            }
+            finally
+            {
+                Object.DestroyImmediate(draft);
+            }
+        }
     }
 }
