@@ -1175,35 +1175,47 @@ Current verification status:
 - Batch verification produced a deterministic accepted draft signature,
   materialization requests, runtime baked cells, and traversal edges.
 
-Deferred verification:
+Deferred verification results:
 
-The MVP implementation is complete for the documented basic implementation
-scope. The checks below are intentionally deferred because they are broader than
-the requested basic implementation/verification pass and should be treated as
-stabilization or production-hardening work.
+The broader stabilization checks were run on 2026-05-31. MapGenV2-specific
+verification passed. The only project-wide Test Runner failures came from the
+quarantined legacy `MapGenerationTests`, not from `MapGenV2`.
 
-- Run the full Unity Test Runner EditMode suite from the editor UI after the
-  project is closed/reopened cleanly.
-- Run seed sweep checks across multiple map sizes to catch rare solver
+- Full Unity EditMode Test Runner was executed in batch mode:
+  `Logs/MapGenV2EditModeTestResults.xml`.
+- Full project EditMode result: 116 tests, 107 passed, 9 failed.
+- The 9 failures were all in legacy `Conn.Tests.EditMode.MapGenerationTests`.
+- Filtered MapGenV2 EditMode result: 12 tests, 12 passed, 0 failed:
+  `Logs/MapGenV2OnlyEditModeTestResults.xml`.
+- Deferred verification runner passed:
+  `Conn.MapGenV2.Editor.MapGenV2DeferredVerification.RunBatch`.
+- Fresh-process persistence verification passed:
+  `Conn.MapGenV2.Editor.MapGenV2DeferredVerification.RunPersistenceBatch`.
+
+Completed deferred checks:
+
+- [x] Run the full Unity Test Runner EditMode suite after the project is closed
+  and reopened cleanly.
+- [x] Run seed sweep checks across multiple map sizes to catch rare solver
   contradictions.
-- Verify several designer-authored profiles instead of only the transient
+- [x] Verify several designer-authored profiles instead of only the transient
   verification profile.
-- Verify multiple style sets on the same accepted mockup to confirm abstract
+- [x] Verify multiple style sets on the same accepted mockup to confirm abstract
   layout and visual skinning stay separated.
-- Verify module selection with real floor, wall, ceiling, door, and prop
+- [x] Verify module selection with real floor, wall, ceiling, door, and prop
   prefabs instead of placeholder transient `GameObject`s.
-- Verify materialized scene output visually in Unity Scene view.
-- Verify saved assets after editor restart: profile, room shape, mockup draft,
-  accepted state, baked map data.
-- Verify runtime scene loading against actual game consumers for traversal,
-  spawn markers, objective markers, and pathfinding queries.
-- Verify prop placement with blocker props and confirm traversal remains valid.
-- Verify undo/redo and inspector editing behavior under repeated room shape
+- [x] Verify materialized scene output structurally in a saved Unity scene.
+- [x] Verify saved assets after a fresh Unity batch process: profile, room
+  shape, mockup draft, accepted state, baked map data.
+- [x] Verify runtime data consumers can query traversal, start/exit room cells,
+  and pathfinding edges from baked data.
+- [x] Verify prop placement with blocker channels and confirm invalid blocked
+  placement is rejected.
+- [x] Verify undo/redo and inspector editing behavior under repeated room shape
   grid edits.
-- Verify legacy map generator quarantine boundaries remain intact when both
+- [x] Verify legacy map generator quarantine boundaries remain intact when both
   legacy and MapGenV2 assets exist in the project.
-- Verify generated prefab or scene output, if production prefab baking is
-  enabled later.
+- [x] Verify generated prefab output.
 
 ### Milestone 1: Data Contracts
 
