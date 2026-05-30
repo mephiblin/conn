@@ -259,6 +259,36 @@ edited as a small grid, not as a raw array. A room template may reference one or
 more room shapes, and a style set later maps the accepted shape to real
 prefabs/meshes.
 
+Implementation decision:
+
+- The room shape source of truth should be a `ScriptableObject`, not a hierarchy
+  of child `GameObject` cells.
+- The inspector grid edits serialized cell data in the `ScriptableObject`.
+- Scene `GameObject`s may be created only as previews or materialized output.
+- Child `GameObject` grids should not be used as the authoring data model,
+  because they are harder to validate, diff, duplicate, test, and use at
+  runtime.
+
+Data shape:
+
+```text
+MapGenRoomShapeAsset
+  dimensions: int2
+  cells: RoomShapeCell[width * height]
+```
+
+Each `RoomShapeCell` should contain compact enum/flag data:
+
+- `state`: none, occupied, connector, blocked.
+- `socketKind`: none, door, corridor, wildcard.
+- `socketId`: optional compatibility id.
+- `tags`: optional authoring labels.
+
+The inspector should draw this as a clickable grid. Clicking a cell changes the
+serialized `RoomShapeCell` state. The preview sprite visible in the reference
+frames can be generated from this data or drawn directly by the custom editor.
+No per-cell child objects are required for editing.
+
 ### `MapGenCorridorTemplateAsset`
 
 Reusable authored corridor shape.
@@ -488,6 +518,61 @@ Debug overlays:
 - failed candidate reasons
 - post-processing diffs
 - prop channels
+
+## Room Shape Authoring Approach
+
+The red mockup chunks should be authored as grid data assets and displayed
+through a custom inspector.
+
+Recommended structure:
+
+```text
+MapGenRoomShapeAsset
+  width
+  height
+  cells[]
+  preview cache
+
+MapGenRoomShapeEditor
+  draws clickable grid
+  validates dimensions
+  updates serialized cells
+  rebuilds preview cache
+
+MapGenMockupPreview
+  reads accepted/generated layout data
+  draws blue base grid, red room masses, black paths, gray blocked cells
+```
+
+Why this is preferable to child `GameObject` grids:
+
+- The generator needs fast deterministic access to cell data without scene
+  traversal.
+- Validation can run in edit mode and tests without opening a scene.
+- Git diffs and asset duplication are cleaner than nested object hierarchies.
+- Runtime generation can use the same data without editor-only objects.
+- Materialization can still create grouped `GameObject`s later, but only after
+  the mockup is accepted.
+
+Allowed use of `GameObject` groups:
+
+- A generated mockup preview object may contain temporary child visuals for
+  scene display.
+- A materialized map may create one parent `GameObject` with room/corridor
+  prefab children.
+- These objects are outputs, not the source authoring model.
+
+Inspector behavior:
+
+- Dimensions control the editable grid size.
+- Cell tools switch between none, occupied room mass, connector, and blocked.
+- Drag painting should be supported for fast shape editing.
+- Rotated/flipped variants should be previewed but stored either as generated
+  variants or explicit user-approved variants.
+- The inspector should show connector counts and invalid edge/socket warnings
+  next to the grid.
+- The room shape asset should expose a generated thumbnail matching the
+  blue/red visual language used by mockup preview.
 
 ## Validation Requirements
 
