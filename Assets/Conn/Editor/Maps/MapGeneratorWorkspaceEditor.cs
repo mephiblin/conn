@@ -23,13 +23,10 @@ namespace Conn.Editor.Maps
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.Difficulty)));
 
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Visualization", EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.RoomSpacing)));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.RoomHeight)));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.UseCellPreviewWhenAvailable)));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.UseTestCellPreviewGrid)));
+            EditorGUILayout.LabelField("Preview", EditorStyles.boldLabel);
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.RoomSpacingMin)));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.RoomSpacingMax)));
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.PreviewCellSize)));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.PreviewWallHeight)));
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.ClearBeforePreview)));
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.DrawSceneGizmos)));
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.PreviewRoot)));

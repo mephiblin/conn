@@ -15,7 +15,8 @@ namespace Conn.Editor.Maps
         public int Seed = 2001;
         public int Floor = 1;
         public int Difficulty;
-        public float RoomSpacing = 3f;
+        public float RoomSpacingMin = 3f;
+        public float RoomSpacingMax = 3f;
         public float RoomHeight = 0.18f;
         public bool UseCellPreviewWhenAvailable = true;
         public bool UseTestCellPreviewGrid;
@@ -141,7 +142,21 @@ namespace Conn.Editor.Maps
 
         public Vector3 LocalPreviewRoomPosition(PreviewRoom room)
         {
-            return new Vector3(room.GridX * RoomSpacing, 0f, room.GridY * RoomSpacing);
+            return new Vector3(room.GridX * ResolveRoomSpacing(room.GridX, true), 0f, room.GridY * ResolveRoomSpacing(room.GridY, false));
+        }
+
+        private float ResolveRoomSpacing(int coordinate, bool horizontal)
+        {
+            var min = Mathf.Max(0.1f, Mathf.Min(RoomSpacingMin, RoomSpacingMax));
+            var max = Mathf.Max(min, Mathf.Max(RoomSpacingMin, RoomSpacingMax));
+            if (Mathf.Approximately(min, max))
+            {
+                return min;
+            }
+
+            var hash = Mathf.Abs((coordinate * 73856093) ^ (horizontal ? 19349663 : 83492791));
+            var t = (hash % 1000) / 999f;
+            return Mathf.Lerp(min, max, t);
         }
 
         private void CapturePreviewSnapshot(EditableMapDraftAsset draft, CompiledMap compiled)
