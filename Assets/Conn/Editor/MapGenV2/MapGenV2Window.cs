@@ -262,6 +262,8 @@ namespace Conn.MapGenV2.Editor
                     SaveWindowState();
                 }
 
+                DrawMaterializedPrefabFolderField();
+
                 using (new EditorGUILayout.HorizontalScope())
                 {
                     if (GUILayout.Button("Find Previous Root"))
@@ -309,6 +311,32 @@ namespace Conn.MapGenV2.Editor
                 if (!workflow.CanMaterialize)
                 {
                     EditorGUILayout.HelpBox($"Materialize To Scene is unavailable: {workflow.MaterializeReason}", MessageType.Info);
+                }
+            }
+        }
+
+        private void DrawMaterializedPrefabFolderField()
+        {
+            using (new EditorGUI.DisabledScope(profile == null))
+            {
+                var currentFolder = GetMaterializedPrefabFolder();
+                EditorGUI.BeginChangeCheck();
+                var newFolder = EditorGUILayout.TextField("Materialized Prefab Folder", currentFolder);
+                if (EditorGUI.EndChangeCheck() && profile != null)
+                {
+                    Undo.RecordObject(profile, "Change MapGen Materialized Prefab Folder");
+                    profile.OutputSettings.MaterializedPrefabFolder = newFolder;
+                    EditorUtility.SetDirty(profile);
+                }
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    GUILayout.FlexibleSpace();
+                    if (GUILayout.Button("Ensure Prefab Folder", GUILayout.Width(170f)))
+                    {
+                        MapGenV2AssetFolderUtility.EnsureAssetFolder(GetMaterializedPrefabFolder());
+                        lastOperationResult = $"Materialized prefab folder ready: {GetMaterializedPrefabFolder()}.";
+                    }
                 }
             }
         }

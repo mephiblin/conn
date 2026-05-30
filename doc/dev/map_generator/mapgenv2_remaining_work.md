@@ -405,6 +405,8 @@ Progress note 2026-05-31:
 - `MapGenV2Window` now exposes scene output controls to find/select/frame/clear
   the previous root, choose create/replace/update output mode, and save the
   selected materialized root as a prefab.
+- Scene output controls now expose the profile's materialized prefab folder and
+  an `Ensure Prefab Folder` action before saving generated roots as prefabs.
 
 Goal: make scene materialization manageable instead of dumping duplicate roots.
 
@@ -420,7 +422,7 @@ Tasks:
 - [x] Add output mode:
   create new root, replace previous root, or update selected root.
 - [x] Add `Save Materialized As Prefab`.
-- [ ] Add configurable materialized prefab folder.
+- [x] Add configurable materialized prefab folder.
 - [x] Avoid duplicate roots unless explicitly requested.
 - [x] Add undo support for materialization and clear operations.
 
