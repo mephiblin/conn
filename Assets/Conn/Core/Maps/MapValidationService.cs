@@ -52,10 +52,11 @@ namespace Conn.Core.Maps
             }
 
             ExpectCompiledHeader(profile, compiled, report);
-            ExpectCompiledPlacements(profile, compiled, report);
+            var walkableCells = BuildCompiledWalkableCellSet(compiled, report);
+            ExpectCompiledPlacements(profile, compiled, walkableCells, report);
             ExpectCompiledEncounterPlacements(compiled, report);
             ExpectCompiledDoors(compiled, report);
-            ExpectCompiledCellsAndObjects(compiled, report);
+            ExpectCompiledCellsAndObjects(compiled, walkableCells, report);
             return report;
         }
 
@@ -172,7 +173,11 @@ namespace Conn.Core.Maps
             }
         }
 
-        private static void ExpectCompiledPlacements(MapProfile profile, CompiledMap compiled, MapValidationReport report)
+        private static void ExpectCompiledPlacements(
+            MapProfile profile,
+            CompiledMap compiled,
+            HashSet<string> walkableCells,
+            MapValidationReport report)
         {
             for (var i = 0; i < profile.RequiredAnchors.Count; i++)
             {
@@ -210,6 +215,10 @@ namespace Conn.Core.Maps
                 {
                     report.Errors.Add($"Compiled map placement {placement.Id} is outside map bounds.");
                 }
+                else if (compiled.Cells.Count > 0 && !walkableCells.Contains(CellKey(placement.X, placement.Y)))
+                {
+                    report.Errors.Add($"Compiled map placement {placement.Id} is on a non-walkable or missing cell ({placement.X}, {placement.Y}).");
+                }
             }
         }
 
@@ -227,7 +236,10 @@ namespace Conn.Core.Maps
             }
         }
 
-        private static void ExpectCompiledCellsAndObjects(CompiledMap compiled, MapValidationReport report)
+        private static void ExpectCompiledCellsAndObjects(
+            CompiledMap compiled,
+            HashSet<string> walkableCells,
+            MapValidationReport report)
         {
             var roomIds = new HashSet<string>();
             for (var i = 0; i < compiled.Rooms.Count; i++)
@@ -247,15 +259,8 @@ namespace Conn.Core.Maps
                 }
             }
 
-            var walkableCells = new HashSet<string>();
             foreach (var cell in compiled.Cells ?? new List<CompiledMapCell>())
             {
-                if (cell.X < 0 || cell.Y < 0 || cell.X >= compiled.Width || cell.Y >= compiled.Height)
-                {
-                    report.Errors.Add($"Compiled map cell ({cell.X}, {cell.Y}) is outside map bounds.");
-                    continue;
-                }
-
                 if (!string.IsNullOrWhiteSpace(cell.RoomId) && !roomIds.Contains(cell.RoomId))
                 {
                     report.Errors.Add($"Compiled map cell ({cell.X}, {cell.Y}) references missing room {cell.RoomId}.");
@@ -266,10 +271,6 @@ namespace Conn.Core.Maps
                     report.Errors.Add($"Compiled map cell ({cell.X}, {cell.Y}) references missing zone {cell.ZoneId}.");
                 }
 
-                if (cell.Terrain != RoomChunkCellType.Wall && cell.Terrain != RoomChunkCellType.Gap)
-                {
-                    walkableCells.Add(CellKey(cell.X, cell.Y));
-                }
             }
 
             var objectIds = new HashSet<string>();
@@ -314,6 +315,26 @@ namespace Conn.Core.Maps
                     }
                 }
             }
+        }
+
+        private static HashSet<string> BuildCompiledWalkableCellSet(CompiledMap compiled, MapValidationReport report)
+        {
+            var walkableCells = new HashSet<string>();
+            foreach (var cell in compiled.Cells ?? new List<CompiledMapCell>())
+            {
+                if (cell.X < 0 || cell.Y < 0 || cell.X >= compiled.Width || cell.Y >= compiled.Height)
+                {
+                    report.Errors.Add($"Compiled map cell ({cell.X}, {cell.Y}) is outside map bounds.");
+                    continue;
+                }
+
+                if (cell.Terrain != RoomChunkCellType.Wall && cell.Terrain != RoomChunkCellType.Gap)
+                {
+                    walkableCells.Add(CellKey(cell.X, cell.Y));
+                }
+            }
+
+            return walkableCells;
         }
 
         private static void ExpectCompiledEncounterPlacements(CompiledMap compiled, MapValidationReport report)
