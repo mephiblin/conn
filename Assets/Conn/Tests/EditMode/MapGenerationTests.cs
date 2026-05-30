@@ -433,6 +433,28 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void GeneratedEditableDraftUsesUniqueObjectIdsAndWalkableSockets()
+        {
+            var profile = MapGenerationCatalog.ChapterTwoFirstSliceProfile();
+            var chunks = MapGenerationCatalog.ChapterTwoFirstSliceChunks();
+            var draft = EditableMapDraftBuilder.BuildGeneratedDraft(profile, chunks, 2001, 1, 0, 0.5f, 0.25f);
+
+            try
+            {
+                var validation = EditableMapValidationService.Validate(draft);
+                var duplicateObjectErrors = validation.Errors.Where(error => error.Contains("Duplicate object id")).ToArray();
+                var socketWalkabilityErrors = validation.Errors.Where(error => error.Contains("does not touch a walkable cell")).ToArray();
+
+                Assert.That(duplicateObjectErrors, Is.Empty, string.Join("\n", validation.Errors));
+                Assert.That(socketWalkabilityErrors, Is.Empty, string.Join("\n", validation.Errors));
+            }
+            finally
+            {
+                Object.DestroyImmediate(draft);
+            }
+        }
+
+        [Test]
         public void EditablePreviewBuilderRebuildsWithoutWorkspaceDependency()
         {
             var draft = ScriptableObject.CreateInstance<EditableMapDraftAsset>();
