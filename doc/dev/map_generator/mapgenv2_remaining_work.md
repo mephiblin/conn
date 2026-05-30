@@ -153,7 +153,7 @@ tool, and generated output workflow.
 
 ### Inspector UX
 
-- [ ] Profile inspector must show a high-level summary first:
+- [x] Profile inspector must show a high-level summary first:
   map size, seed policy, style, rule set, template pools, required room
   categories, validation result.
 - [ ] Room shape inspector must show the editable grid first, with dimensions,

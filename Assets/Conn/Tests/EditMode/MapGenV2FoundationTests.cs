@@ -99,6 +99,54 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void ProfileInspectorSummaryIncludesAuthoringReadiness()
+        {
+            var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
+            var styleSet = ScriptableObject.CreateInstance<MapGenStyleSetAsset>();
+            var ruleSet = ScriptableObject.CreateInstance<MapGenRuleSetAsset>();
+            var roomShape = ScriptableObject.CreateInstance<MapGenRoomShapeAsset>();
+            var startTemplate = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();
+            var corridorTemplate = ScriptableObject.CreateInstance<MapGenCorridorTemplateAsset>();
+            var profile = ScriptableObject.CreateInstance<MapGenProfileAsset>();
+            GameObject floor = null;
+            GameObject wall = null;
+
+            try
+            {
+                PopulateValidWorkflowProfile(profile, styleSet, moduleSet, ruleSet, roomShape, out floor, out wall);
+                profile.MapSize = new Vector2Int(12, 8);
+                profile.Seed = 42;
+                styleSet.StyleId = "ruins";
+                PopulateRoomTemplate(startTemplate, "start_template", MapGenRoomCategory.Start);
+                PopulateCorridorTemplate(corridorTemplate, "main");
+                styleSet.RoomTemplates = new[] { startTemplate };
+                styleSet.CorridorTemplates = new[] { corridorTemplate };
+                ruleSet.QuantityRules.RequiredCategories = new[] { MapGenRoomCategory.Start, MapGenRoomCategory.Exit };
+
+                var summary = MapGenProfileAssetEditor.BuildSummary(profile);
+
+                Assert.That(summary, Does.Contain("Map 12x8"));
+                Assert.That(summary, Does.Contain("Seed 42"));
+                Assert.That(summary, Does.Contain("Style ruins"));
+                Assert.That(summary, Does.Contain("Templates room 1/corridor 1"));
+                Assert.That(summary, Does.Contain("Required Start, Exit"));
+                Assert.That(summary, Does.Contain("Validation Valid"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(profile);
+                Object.DestroyImmediate(corridorTemplate);
+                Object.DestroyImmediate(startTemplate);
+                Object.DestroyImmediate(roomShape);
+                Object.DestroyImmediate(ruleSet);
+                Object.DestroyImmediate(styleSet);
+                Object.DestroyImmediate(moduleSet);
+                Object.DestroyImmediate(floor);
+                Object.DestroyImmediate(wall);
+            }
+        }
+
+        [Test]
         public void RoomShapeValidatorRejectsConnectorAwayFromEdge()
         {
             var cells = new MapGenShapeCell[9];
