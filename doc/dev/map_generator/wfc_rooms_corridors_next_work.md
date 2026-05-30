@@ -86,15 +86,15 @@ graph preview.
 
 ### Tasks
 
-- [ ] Replace `MapGenerationService.Generate` path-first placement with a grid
+- [x] Replace `MapGenerationService.Generate` path-first placement with a grid
   candidate solver.
-- [ ] Candidate cell state includes allowed pool rules/chunks.
-- [ ] Collapse cells by lowest entropy.
-- [ ] Propagate socket constraints to neighbors.
-- [ ] Enforce room count min/max.
-- [ ] Enforce required rooms: start, quest, boss, exit.
-- [ ] Enforce corridor connectivity.
-- [ ] Retry with deterministic seed sequence when contradictions occur.
+- [x] Candidate cell state includes allowed pool rules/chunks.
+- [x] Collapse cells by lowest entropy.
+- [x] Propagate socket constraints to neighbors.
+- [x] Enforce room count min/max.
+- [x] Enforce required rooms: start, quest, boss, exit.
+- [x] Enforce corridor connectivity.
+- [x] Retry with deterministic seed sequence when contradictions occur.
 
 ### Acceptance
 
