@@ -10,7 +10,9 @@ using NUnit.Framework;
 using System.Reflection;
 using System.Linq;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace Conn.Tests.EditMode
 {
@@ -569,7 +571,7 @@ namespace Conn.Tests.EditMode
                 var loadedDraft = AssetDatabase.LoadAssetAtPath<EditableMapDraftAsset>(draftPath);
                 workspace.CurrentEditableDraft = loadedDraft;
 
-                var preview = EditableMapPreviewMeshBuilder.RebuildPreview(workspace.CurrentEditableDraft);
+                var preview = EditableMapPreviewMeshBuilder.RebuildPreview(workspace.CurrentEditableDraft, workspace.ResolvePreviewRoot());
                 var report = EditableMapValidationService.Validate(workspace.CurrentEditableDraft);
                 var compiled = EditableMapBakeService.Bake(workspace.CurrentEditableDraft);
                 var compiledAsset = EditableMapBakeService.SaveCompiledMapAsset(workspace.CurrentEditableDraft, compiledPath);
@@ -577,13 +579,15 @@ namespace Conn.Tests.EditMode
                 workspace.SetGeneratedResult(workspace.CurrentEditableDraft, compiled, report);
 
                 Assert.That(preview, Is.Not.Null);
+                Assert.That(preview.transform.parent, Is.SameAs(previewRoot));
                 Assert.That(preview.transform.childCount, Is.GreaterThan(0));
                 Assert.That(report.Passed, Is.True, string.Join("\n", report.Errors.ToArray()));
                 Assert.That(compiled.Cells.Count, Is.EqualTo(workspace.CurrentEditableDraft.Width * workspace.CurrentEditableDraft.Height));
                 Assert.That(workspace.CurrentCompiledMapAsset, Is.Not.Null);
                 Assert.That(AssetDatabase.LoadAssetAtPath<CompiledMapAsset>(compiledPath), Is.Not.Null);
 
-                EditableMapPreviewMeshBuilder.ClearPreview(workspace.CurrentEditableDraft);
+                EditableMapPreviewMeshBuilder.ClearPreview(workspace.CurrentEditableDraft, workspace.ResolvePreviewRoot());
+                Assert.That(previewRoot.childCount, Is.EqualTo(0));
                 Assert.That(workspace.CurrentEditableDraft.Cells.Length, Is.EqualTo(loadedDraft.Width * loadedDraft.Height));
             }
             finally
@@ -591,6 +595,45 @@ namespace Conn.Tests.EditMode
                 UnityEngine.Object.DestroyImmediate(workspaceObject);
                 AssetDatabase.DeleteAsset(draftPath);
                 AssetDatabase.DeleteAsset(compiledPath);
+            }
+        }
+
+        [Test]
+        public void MapGeneratorSceneAssetIsCentralWorkspaceHub()
+        {
+            const string scenePath = "Assets/Conn/Scenes/Editor/MapGenerator.unity";
+            var previousScene = SceneManager.GetActiveScene();
+            var previousPath = previousScene.path;
+            var scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
+
+            try
+            {
+                var workspaces = Object.FindObjectsOfType<MapGeneratorWorkspace>();
+                var cameras = Object.FindObjectsOfType<Camera>();
+                var lights = Object.FindObjectsOfType<Light>();
+
+                Assert.That(scene.path, Is.EqualTo(scenePath));
+                Assert.That(workspaces.Length, Is.EqualTo(1));
+                var workspace = workspaces[0];
+                Assert.That(workspace.PreviewRoot, Is.Not.Null);
+                Assert.That(workspace.PreviewRoot.parent, Is.SameAs(workspace.transform));
+                Assert.That(workspace.Seed, Is.GreaterThan(0));
+                Assert.That(workspace.Floor, Is.GreaterThanOrEqualTo(1));
+                Assert.That(workspace.Difficulty, Is.GreaterThanOrEqualTo(0));
+                Assert.That(workspace.ClearBeforePreview, Is.True);
+                Assert.That(cameras.Any(camera => camera.CompareTag("MainCamera")), Is.True);
+                Assert.That(lights.Any(light => light.type == LightType.Directional), Is.True);
+            }
+            finally
+            {
+                if (!string.IsNullOrEmpty(previousPath))
+                {
+                    EditorSceneManager.OpenScene(previousPath, OpenSceneMode.Single);
+                }
+                else
+                {
+                    EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+                }
             }
         }
 

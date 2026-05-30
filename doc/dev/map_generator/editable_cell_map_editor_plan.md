@@ -1098,6 +1098,10 @@ is partially complete.
     for generating a connected draft asset, rebuilding preview from that draft,
     validating it, and baking/saving the compiled map without forcing users to
     reason about separate asset-first steps.
+  - 2026-05-30: Workspace scene previews are now parented under the
+    `MapGeneratorWorkspace` preview root, and EditMode coverage opens the
+    checked-in `Assets/Conn/Scenes/Editor/MapGenerator.unity` scene to verify it
+    remains the central user-facing hub.
 - [x] Add screenshots or saved sample assets when the first usable version
   exists.
   - 2026-05-30: Chapter 2 saved `CompiledMapAsset` samples are regenerated

@@ -19,7 +19,58 @@ namespace Conn.Editor.Maps
                 throw new ArgumentNullException(nameof(draft));
             }
 
-            var root = GetOrCreatePreviewRoot(draft);
+            var root = GetOrCreatePreviewRoot(draft, null);
+            RebuildPreviewIntoRoot(draft, root);
+            return root;
+        }
+
+        public static GameObject RebuildPreview(EditableMapDraftAsset draft, Transform ownerRoot)
+        {
+            if (draft == null)
+            {
+                throw new ArgumentNullException(nameof(draft));
+            }
+
+            if (ownerRoot == null)
+            {
+                return RebuildPreview(draft);
+            }
+
+            var root = GetOrCreatePreviewRoot(draft, ownerRoot);
+            RebuildPreviewIntoRoot(draft, root);
+            return root;
+        }
+
+        public static void ClearPreview(EditableMapDraftAsset draft)
+        {
+            var root = FindPreviewRoot(draft, null);
+            if (root == null)
+            {
+                return;
+            }
+
+            UnityEngine.Object.DestroyImmediate(root);
+        }
+
+        public static void ClearPreview(EditableMapDraftAsset draft, Transform ownerRoot)
+        {
+            if (ownerRoot == null)
+            {
+                ClearPreview(draft);
+                return;
+            }
+
+            var root = FindPreviewRoot(draft, ownerRoot);
+            if (root == null)
+            {
+                return;
+            }
+
+            UnityEngine.Object.DestroyImmediate(root);
+        }
+
+        private static void RebuildPreviewIntoRoot(EditableMapDraftAsset draft, GameObject root)
+        {
             ClearChildren(root.transform);
 
             var terrainRoot = CreateChild(root.transform, "Terrain Mesh");
@@ -60,35 +111,42 @@ namespace Conn.Editor.Maps
             BuildMeshObjects(slopeRoot.transform, slopeMeshes, draft);
             BuildMeshObjects(stairRoot.transform, stairMeshes, draft);
             BuildObjectPreview(objectRoot.transform, draft);
-
-            return root;
         }
 
-        public static void ClearPreview(EditableMapDraftAsset draft)
+        private static GameObject FindPreviewRoot(EditableMapDraftAsset draft, Transform ownerRoot)
         {
-            var root = FindPreviewRoot(draft);
-            if (root == null)
+            if (ownerRoot == null)
             {
-                return;
+                return GameObject.Find(BuildRootName(draft));
             }
 
-            UnityEngine.Object.DestroyImmediate(root);
+            var name = BuildRootName(draft);
+            for (var i = 0; i < ownerRoot.childCount; i++)
+            {
+                var child = ownerRoot.GetChild(i);
+                if (child.name == name)
+                {
+                    return child.gameObject;
+                }
+            }
+
+            return null;
         }
 
-        private static GameObject FindPreviewRoot(EditableMapDraftAsset draft)
+        private static GameObject GetOrCreatePreviewRoot(EditableMapDraftAsset draft, Transform ownerRoot)
         {
-            return GameObject.Find(BuildRootName(draft));
-        }
-
-        private static GameObject GetOrCreatePreviewRoot(EditableMapDraftAsset draft)
-        {
-            var root = FindPreviewRoot(draft);
+            var root = FindPreviewRoot(draft, ownerRoot);
             if (root != null)
             {
                 return root;
             }
 
             root = new GameObject(BuildRootName(draft));
+            if (ownerRoot != null)
+            {
+                root.transform.SetParent(ownerRoot, false);
+            }
+
             Undo.RegisterCreatedObjectUndo(root, "Create Editable Map Preview Root");
             return root;
         }

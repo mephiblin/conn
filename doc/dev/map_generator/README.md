@@ -115,7 +115,8 @@ Use these steps after pulling the branch:
    scene workflow.
 4. Use `Build Scene Map From Draft`, `Validate Draft`, and
    `Bake + Save Compiled Map` from the same workspace inspector. The connected
-   draft and compiled map asset fields stay on the workspace.
+   draft and compiled map asset fields stay on the workspace. The generated
+   scene preview appears under the workspace `Preview Root`.
 5. Use `Select Draft Asset` only when you need the detailed draft inspector
    brush controls.
 6. In the draft inspector, paint directly on the `Map Preview` grid. Choose a
@@ -130,10 +131,15 @@ Use these steps after pulling the branch:
    cell/object/socket errors in the inspector.
 10. Use `Bake Runtime Map` or `Save Compiled Map Asset` and confirm the bake only
    succeeds when validation passes.
-10. Use `Clear Preview` and confirm the preview root is deleted while the draft
+11. Use `Clear Preview` and confirm the preview root is deleted while the draft
    asset data remains unchanged.
-11. Build the scene map again to confirm the draft asset is the source of truth
+12. Build the scene map again to confirm the draft asset is the source of truth
    and preview objects are disposable.
+
+Automated coverage now verifies the checked-in `MapGenerator` scene has a
+single `MapGeneratorWorkspace` with a workspace-owned preview root, camera, and
+directional light. It also verifies draft preview meshes can be rebuilt under
+that workspace root without mutating the draft asset.
 
 ## Purpose
 

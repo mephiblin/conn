@@ -205,10 +205,10 @@ namespace Conn.Editor.Maps
                 if (workspace.ClearBeforePreview)
                 {
                     ClearPreviewWithUndo(workspace, "Generate Map Preview");
-                    EditableMapPreviewMeshBuilder.ClearPreview(generated.Draft);
+                    EditableMapPreviewMeshBuilder.ClearPreview(generated.Draft, workspace.ResolvePreviewRoot());
                 }
 
-                EditableMapPreviewMeshBuilder.RebuildPreview(generated.Draft);
+                EditableMapPreviewMeshBuilder.RebuildPreview(generated.Draft, workspace.ResolvePreviewRoot());
                 MarkSceneDirty(workspace);
             }
             catch (Exception exception)
@@ -244,10 +244,10 @@ namespace Conn.Editor.Maps
             if (workspace.ClearBeforePreview)
             {
                 ClearPreviewWithUndo(workspace, "Build Map Scene Preview");
-                EditableMapPreviewMeshBuilder.ClearPreview(workspace.LastEditableDraft);
+                EditableMapPreviewMeshBuilder.ClearPreview(workspace.LastEditableDraft, workspace.ResolvePreviewRoot());
             }
 
-            EditableMapPreviewMeshBuilder.RebuildPreview(workspace.LastEditableDraft);
+            EditableMapPreviewMeshBuilder.RebuildPreview(workspace.LastEditableDraft, workspace.ResolvePreviewRoot());
             MarkSceneDirty(workspace);
         }
 
@@ -307,10 +307,10 @@ namespace Conn.Editor.Maps
                 if (workspace.ClearBeforePreview)
                 {
                     ClearPreviewWithUndo(workspace, "Generate Connected Editable Draft");
-                    EditableMapPreviewMeshBuilder.ClearPreview(draftAsset);
+                    EditableMapPreviewMeshBuilder.ClearPreview(draftAsset, workspace.ResolvePreviewRoot());
                 }
 
-                EditableMapPreviewMeshBuilder.RebuildPreview(draftAsset);
+                EditableMapPreviewMeshBuilder.RebuildPreview(draftAsset, workspace.ResolvePreviewRoot());
             }
             catch (Exception exception)
             {
@@ -328,10 +328,10 @@ namespace Conn.Editor.Maps
             if (workspace.ClearBeforePreview)
             {
                 ClearPreviewWithUndo(workspace, "Build Scene Map From Draft");
-                EditableMapPreviewMeshBuilder.ClearPreview(workspace.CurrentEditableDraft);
+                EditableMapPreviewMeshBuilder.ClearPreview(workspace.CurrentEditableDraft, workspace.ResolvePreviewRoot());
             }
 
-            EditableMapPreviewMeshBuilder.RebuildPreview(workspace.CurrentEditableDraft);
+            EditableMapPreviewMeshBuilder.RebuildPreview(workspace.CurrentEditableDraft, workspace.ResolvePreviewRoot());
             var report = EditableMapValidationService.Validate(workspace.CurrentEditableDraft);
             CompiledMap compiled = null;
             if (report.Passed)
@@ -354,7 +354,7 @@ namespace Conn.Editor.Maps
 
             var report = EditableMapValidationService.Validate(workspace.CurrentEditableDraft);
             Undo.RecordObject(workspace, "Validate Connected Draft");
-            workspace.SetGeneratedResult(workspace.CurrentEditableDraft, null, report);
+            workspace.SetGeneratedResult(workspace.CurrentEditableDraft, workspace.LastCompiled, report);
             EditorUtility.SetDirty(workspace);
             MarkSceneDirty(workspace);
         }
@@ -370,7 +370,8 @@ namespace Conn.Editor.Maps
             {
                 var compiled = EditableMapBakeService.Bake(workspace.CurrentEditableDraft);
                 var report = EditableMapValidationService.Validate(workspace.CurrentEditableDraft);
-                var asset = EditableMapBakeService.SaveCompiledMapAsset(workspace.CurrentEditableDraft);
+                var assetPath = AssetDatabase.GenerateUniqueAssetPath($"Assets/Conn/Core/Maps/{compiled.MapId}_CompiledMap.asset");
+                var asset = EditableMapBakeService.SaveCompiledMapAsset(compiled, assetPath);
 
                 Undo.RecordObject(workspace, "Bake Connected Draft");
                 workspace.CurrentCompiledMapAsset = asset;
