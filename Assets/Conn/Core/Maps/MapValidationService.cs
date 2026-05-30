@@ -59,6 +59,7 @@ namespace Conn.Core.Maps
             ExpectCompiledEncounterPlacements(compiled, report);
             ExpectCompiledSocketsAndDoors(compiled, walkableCells, report);
             ExpectCompiledCellsAndObjects(compiled, walkableCells, report);
+            ExpectCompiledHeightTransitions(compiled, report);
             return report;
         }
 
@@ -596,6 +597,52 @@ namespace Conn.Core.Maps
             return walkableCells;
         }
 
+        private static void ExpectCompiledHeightTransitions(CompiledMap compiled, MapValidationReport report)
+        {
+            if (compiled.Cells == null || compiled.Cells.Count == 0)
+            {
+                return;
+            }
+
+            var cells = new Dictionary<string, CompiledMapCell>();
+            foreach (var cell in compiled.Cells)
+            {
+                if (cell.X < 0 || cell.Y < 0 || cell.X >= compiled.Width || cell.Y >= compiled.Height)
+                {
+                    continue;
+                }
+
+                cells[CellKey(cell.X, cell.Y)] = cell;
+            }
+
+            foreach (var cell in compiled.Cells)
+            {
+                if (cell.Terrain != RoomChunkCellType.Slope && cell.Terrain != RoomChunkCellType.Stair)
+                {
+                    continue;
+                }
+
+                if (!IsSingleCardinalDirection(cell.Direction))
+                {
+                    report.Errors.Add($"Compiled map {cell.Terrain} cell at ({cell.X}, {cell.Y}) has invalid direction {cell.Direction}.");
+                    continue;
+                }
+
+                var next = ForwardCell(cell.X, cell.Y, cell.Direction);
+                if (next.x < 0 || next.y < 0 || next.x >= compiled.Width || next.y >= compiled.Height)
+                {
+                    report.Errors.Add($"Compiled map {cell.Terrain} cell at ({cell.X}, {cell.Y}) points outside bounds.");
+                    continue;
+                }
+
+                if (!cells.TryGetValue(CellKey(next.x, next.y), out var nextCell)
+                    || nextCell.Height - cell.Height != 1)
+                {
+                    report.Errors.Add($"Compiled map {cell.Terrain} cell at ({cell.X}, {cell.Y}) requires a +1 height step toward {cell.Direction}.");
+                }
+            }
+        }
+
         private static void ExpectCompiledEncounterPlacements(CompiledMap compiled, MapValidationReport report)
         {
             var ids = new HashSet<string>();
@@ -749,6 +796,21 @@ namespace Conn.Core.Maps
                 || direction == MapDirection.East
                 || direction == MapDirection.South
                 || direction == MapDirection.West;
+        }
+
+        private static (int x, int y) ForwardCell(int x, int y, MapDirection direction)
+        {
+            switch (direction)
+            {
+                case MapDirection.East:
+                    return (x + 1, y);
+                case MapDirection.South:
+                    return (x, y - 1);
+                case MapDirection.West:
+                    return (x - 1, y);
+                default:
+                    return (x, y + 1);
+            }
         }
 
         private static MapDirection OppositeDirection(MapDirection direction)

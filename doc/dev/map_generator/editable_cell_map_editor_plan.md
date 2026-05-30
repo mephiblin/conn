@@ -1062,6 +1062,9 @@ is partially complete.
     the room instead of blindly using rectangular room centers.
 - [x] Validate compiled map placements remain on walkable cells before runtime
   load.
+  - 2026-05-30: compiled cell-map validation now rejects slope/stair cells with
+    invalid directions, out-of-bounds forward targets, or missing `+1` height
+    transitions before runtime load.
 - [x] Confirm no baked type stores Unity object or editor references.
 - [x] Save optional `CompiledMapAsset` from an edited draft.
 - [x] Load baked draft data in Dungeon runtime.

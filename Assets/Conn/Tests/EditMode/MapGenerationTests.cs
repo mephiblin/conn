@@ -220,6 +220,47 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void CompiledValidationReportsInvalidHeightTransitions()
+        {
+            var profile = new MapProfile { ProfileId = "compiled_height_probe", Width = 3, Height = 2 };
+            var compiled = new CompiledMap
+            {
+                MapId = "compiled_height_probe",
+                ProfileId = profile.ProfileId,
+                Width = profile.Width,
+                Height = profile.Height,
+                CellSize = 1f,
+                HeightStep = 1f
+            };
+            for (var x = 0; x < profile.Width; x++)
+            {
+                for (var y = 0; y < profile.Height; y++)
+                {
+                    compiled.Cells.Add(new CompiledMapCell
+                    {
+                        X = x,
+                        Y = y,
+                        Terrain = RoomChunkCellType.Floor,
+                        Height = 0,
+                        Direction = MapDirection.North
+                    });
+                }
+            }
+
+            compiled.Cells[0].Terrain = RoomChunkCellType.Slope;
+            compiled.Cells[0].Direction = MapDirection.East;
+            compiled.Cells[1].Height = 0;
+            compiled.Cells[2].Terrain = RoomChunkCellType.Stair;
+            compiled.Cells[2].Direction = MapDirection.North | MapDirection.East;
+
+            var report = MapValidationService.ValidateCompiled(profile, compiled);
+
+            Assert.That(report.Passed, Is.False);
+            Assert.That(report.Errors.Exists(error => error.Contains("Slope cell at (0, 0)") && error.Contains("+1 height step")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("Stair cell at (1, 0)") && error.Contains("invalid direction")), Is.True);
+        }
+
+        [Test]
         public void ChunkPresetCellGridSurvivesUnityJsonSerialization()
         {
             var preset = new ChunkPreset
