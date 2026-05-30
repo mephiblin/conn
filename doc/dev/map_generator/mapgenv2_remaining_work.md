@@ -1004,23 +1004,30 @@ Verification:
 
 ## Phase 14: Documentation And User Workflow
 
+Progress note 2026-05-31:
+
+- `doc/dev/map_generator/README.md` now contains a quick user guide,
+  production authoring guide, troubleshooting guide, mockup/hierarchy visual
+  examples, glossary, verification commands, and a warning that legacy map
+  generator tests are not MapGenV2 completion gates.
+
 Goal: make the tool usable in a new session without oral explanation.
 
 Tasks:
 
-- [ ] Add concise user guide:
+- [x] Add concise user guide:
   create starter setup, generate mockup, accept, materialize, bake.
-- [ ] Add production authoring guide:
+- [x] Add production authoring guide:
   create real module set, room templates, corridor templates, prop rules.
-- [ ] Add troubleshooting guide:
+- [x] Add troubleshooting guide:
   common validation errors and fixes.
-- [ ] Add visual examples/screenshots for mockup and materialized output.
-- [ ] Add glossary:
+- [x] Add visual examples/screenshots for mockup and materialized output.
+- [x] Add glossary:
   profile, style set, module set, room shape, template, connector, draft,
   materialization, bake.
-- [ ] Add verification commands:
+- [x] Add verification commands:
   focused MapGenV2 EditMode tests, starter setup batch, deferred verification.
-- [ ] Add warning that legacy map generator tests are not MapGenV2 completion
+- [x] Add warning that legacy map generator tests are not MapGenV2 completion
   gates.
 
 Acceptance:
