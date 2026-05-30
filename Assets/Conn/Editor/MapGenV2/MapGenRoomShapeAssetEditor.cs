@@ -28,7 +28,7 @@ namespace Conn.MapGenV2.Editor
             serializedObject.ApplyModifiedProperties();
             DrawDimensionField(shape);
             DrawTransformActions(shape);
-            DrawBrushFields();
+            DrawBrushFields(shape);
             DrawGrid(shape);
             DrawValidation(shape);
         }
@@ -128,7 +128,7 @@ namespace Conn.MapGenV2.Editor
             Selection.activeObject = variant;
         }
 
-        private void DrawBrushFields()
+        private void DrawBrushFields(MapGenRoomShapeAsset shape)
         {
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Grid Brush", EditorStyles.boldLabel);
@@ -138,6 +138,24 @@ namespace Conn.MapGenV2.Editor
                 socketKind = (MapGenSocketKind)EditorGUILayout.EnumPopup("Socket Kind", socketKind);
                 socketId = EditorGUILayout.TextField("Socket Id", socketId);
             }
+
+            DrawConnectorSideWarning(shape);
+        }
+
+        private static void DrawConnectorSideWarning(MapGenRoomShapeAsset shape)
+        {
+            var invalidConnectors = CountInvalidConnectorCells(shape);
+            if (invalidConnectors > 0)
+            {
+                EditorGUILayout.HelpBox(
+                    $"커넥터는 외곽 셀에만 배치할 수 있습니다. / Connectors must be on an outer edge. Invalid connectors: {invalidConnectors}.",
+                    MessageType.Warning);
+                return;
+            }
+
+            EditorGUILayout.HelpBox(
+                "커넥터 브러시는 외곽 셀에 문/복도 소켓을 표시할 때 사용합니다. / Use Connector only on edge cells for door/corridor sockets.",
+                MessageType.Info);
         }
 
         private void DrawGrid(MapGenRoomShapeAsset shape)
@@ -209,6 +227,34 @@ namespace Conn.MapGenV2.Editor
         {
             EditorGUILayout.Space();
             MapGenValidationReportEditorGUI.Draw(shape.Validate(), shape, "Room shape is valid.");
+        }
+
+        private static int CountInvalidConnectorCells(MapGenRoomShapeAsset shape)
+        {
+            if (shape == null)
+            {
+                return 0;
+            }
+
+            var invalid = 0;
+            for (var y = 0; y < shape.Height; y++)
+            {
+                for (var x = 0; x < shape.Width; x++)
+                {
+                    var cell = shape.GetCell(x, y);
+                    if (cell.State != MapGenCellState.Connector)
+                    {
+                        continue;
+                    }
+
+                    if (x > 0 && y > 0 && x < shape.Width - 1 && y < shape.Height - 1)
+                    {
+                        invalid++;
+                    }
+                }
+            }
+
+            return invalid;
         }
 
         private static MapGenCellState NormalizeBrushState(MapGenCellState state)

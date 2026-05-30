@@ -519,6 +519,8 @@ Progress note 2026-05-31:
   variant buttons for rotated/flipped shape assets.
 - Existing paint room/connector/blocked/erase-style behavior and drag painting
   remain available in the grid editor.
+- The room shape editor now shows connector edge warnings beside the brush/grid
+  controls, including a count of connector cells that are not on an outer edge.
 
 Goal: make room/chunk shapes editable as real grid assets.
 
@@ -528,7 +530,7 @@ Tasks:
   paint room, paint connector, paint blocked, erase.
 - [x] Add drag painting.
 - [x] Add dimension resize with data preservation preview.
-- [ ] Add connector side warnings next to the grid.
+- [x] Add connector side warnings next to the grid.
 - [ ] Add generated thumbnail/preview cache.
 - [x] Add rotate/flip preview.
 - [x] Add “create approved variant” actions for rotated/flipped variants.
