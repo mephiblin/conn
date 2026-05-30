@@ -41,6 +41,142 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void DifferentSeedsProduceDifferentLayoutSignatures()
+        {
+            var profile = MapGenerationCatalog.ChapterTwoFirstSliceProfile();
+            var chunks = MapGenerationCatalog.ChapterTwoFirstSliceChunks();
+
+            var first = MapGenerationService.Generate(profile, chunks, 2001);
+            var second = MapGenerationService.Generate(profile, chunks, 2112);
+
+            Assert.That(BuildGraphSignature(second), Is.Not.EqualTo(BuildGraphSignature(first)));
+        }
+
+        [Test]
+        public void ProfileWithMissingStartPoolFailsValidation()
+        {
+            var chunk = ScriptableObject.CreateInstance<RoomChunkAsset>();
+            var profile = ScriptableObject.CreateInstance<MapProfileAsset>();
+            var resourceSet = ScriptableObject.CreateInstance<MapResourceSetAsset>();
+            var weights = ScriptableObject.CreateInstance<GenerationWeightProfileAsset>();
+
+            try
+            {
+                PopulateBaseRoomChunk(chunk, "main_only_chunk", MapRoomRole.MainPath, RoomChunkLayoutKind.Room);
+                resourceSet.Id = "missing_start_pool_resources";
+                resourceSet.DisplayName = "Missing Start Pool Resources";
+                resourceSet.ThemeId = "probe";
+                weights.Id = "missing_start_pool_weights";
+                weights.DisplayName = "Missing Start Pool Weights";
+                weights.MapProfileId = "missing_start_pool_profile";
+
+                PopulateBaseProfile(profile, resourceSet, weights, "missing_start_pool_profile");
+                profile.RoomPools = new[]
+                {
+                    new MapRoomPoolRule
+                    {
+                        Role = MapRoomPoolRole.Start,
+                        LayoutKind = RoomChunkLayoutKind.Room,
+                        MinCount = 1,
+                        MaxCount = 1,
+                        Weight = 1,
+                        Required = true,
+                        AllowedChunks = System.Array.Empty<RoomChunkAsset>()
+                    },
+                    new MapRoomPoolRule
+                    {
+                        Role = MapRoomPoolRole.Main,
+                        LayoutKind = RoomChunkLayoutKind.Room,
+                        MinCount = 1,
+                        MaxCount = 0,
+                        Weight = 1,
+                        Required = true,
+                        AllowedChunks = new[] { chunk }
+                    }
+                };
+
+                var report = MapAuthoringValidationService.Validate(new MapAuthoringSnapshot
+                {
+                    Profiles = new[] { profile },
+                    ResourceSets = new[] { resourceSet },
+                    RoomChunks = new[] { chunk },
+                    WeightProfiles = new[] { weights }
+                });
+
+                Assert.That(report.Passed, Is.False);
+                Assert.That(report.Errors.Exists(error => error.Contains("required room pool Start/Room has no allowed chunks")), Is.True);
+            }
+            finally
+            {
+                Object.DestroyImmediate(chunk);
+                Object.DestroyImmediate(profile);
+                Object.DestroyImmediate(resourceSet);
+                Object.DestroyImmediate(weights);
+            }
+        }
+
+        [Test]
+        public void ProfileWithIncompatibleSocketsFailsValidation()
+        {
+            var startChunk = ScriptableObject.CreateInstance<RoomChunkAsset>();
+            var mainChunk = ScriptableObject.CreateInstance<RoomChunkAsset>();
+            var questChunk = ScriptableObject.CreateInstance<RoomChunkAsset>();
+            var bossChunk = ScriptableObject.CreateInstance<RoomChunkAsset>();
+            var exitChunk = ScriptableObject.CreateInstance<RoomChunkAsset>();
+            var resourceSet = ScriptableObject.CreateInstance<MapResourceSetAsset>();
+            var weights = ScriptableObject.CreateInstance<GenerationWeightProfileAsset>();
+            var profile = ScriptableObject.CreateInstance<MapProfileAsset>();
+
+            try
+            {
+                PopulateBaseRoomChunk(startChunk, "socket_start", MapRoomRole.Start, RoomChunkLayoutKind.Room, new[] { Socket(MapDirection.East, RoomChunkSocketType.Door, "start_only") });
+                PopulateBaseRoomChunk(mainChunk, "socket_main", MapRoomRole.MainPath, RoomChunkLayoutKind.Room, new[] { Socket(MapDirection.West, RoomChunkSocketType.Door, "main_only"), Socket(MapDirection.East, RoomChunkSocketType.Door, "main_only") });
+                PopulateBaseRoomChunk(questChunk, "socket_quest", MapRoomRole.QuestTarget, RoomChunkLayoutKind.Room, new[] { Socket(MapDirection.West, RoomChunkSocketType.Door, "quest_only"), Socket(MapDirection.East, RoomChunkSocketType.Door, "quest_only") });
+                PopulateBaseRoomChunk(bossChunk, "socket_boss", MapRoomRole.Boss, RoomChunkLayoutKind.Room, new[] { Socket(MapDirection.West, RoomChunkSocketType.Door, "boss_only"), Socket(MapDirection.East, RoomChunkSocketType.Door, "boss_only") });
+                PopulateBaseRoomChunk(exitChunk, "socket_exit", MapRoomRole.Exit, RoomChunkLayoutKind.Room, new[] { Socket(MapDirection.West, RoomChunkSocketType.Door, "exit_only") });
+
+                resourceSet.Id = "incompatible_socket_resources";
+                resourceSet.DisplayName = "Incompatible Socket Resources";
+                resourceSet.ThemeId = "probe";
+                weights.Id = "incompatible_socket_weights";
+                weights.DisplayName = "Incompatible Socket Weights";
+                weights.MapProfileId = "incompatible_socket_profile";
+
+                PopulateBaseProfile(profile, resourceSet, weights, "incompatible_socket_profile");
+                profile.RoomPools = new[]
+                {
+                    RequiredPool(MapRoomPoolRole.Start, startChunk),
+                    RequiredPool(MapRoomPoolRole.Main, mainChunk),
+                    RequiredPool(MapRoomPoolRole.Quest, questChunk),
+                    RequiredPool(MapRoomPoolRole.Boss, bossChunk),
+                    RequiredPool(MapRoomPoolRole.Exit, exitChunk)
+                };
+
+                var report = MapAuthoringValidationService.Validate(new MapAuthoringSnapshot
+                {
+                    Profiles = new[] { profile },
+                    ResourceSets = new[] { resourceSet },
+                    RoomChunks = new[] { startChunk, mainChunk, questChunk, bossChunk, exitChunk },
+                    WeightProfiles = new[] { weights }
+                });
+
+                Assert.That(report.Passed, Is.False);
+                Assert.That(report.Errors.Exists(error => error.Contains("no legal socket connection")), Is.True);
+            }
+            finally
+            {
+                Object.DestroyImmediate(startChunk);
+                Object.DestroyImmediate(mainChunk);
+                Object.DestroyImmediate(questChunk);
+                Object.DestroyImmediate(bossChunk);
+                Object.DestroyImmediate(exitChunk);
+                Object.DestroyImmediate(profile);
+                Object.DestroyImmediate(resourceSet);
+                Object.DestroyImmediate(weights);
+            }
+        }
+
+        [Test]
         public void FirstSliceGuaranteesRequiredAnchorsAndCompiles()
         {
             var profile = MapGenerationCatalog.ChapterTwoFirstSliceProfile();
@@ -60,6 +196,29 @@ namespace Conn.Tests.EditMode
             Assert.That(compiled.Placements.Exists(p => p.Kind == MapPlacementKind.Loot), Is.True);
             Assert.That(compiled.Rooms.Count, Is.EqualTo(draft.Graph.Nodes.Count));
             Assert.That(compiled.Doors.Count, Is.EqualTo(draft.Graph.Edges.Count));
+        }
+
+        [Test]
+        public void GeneratedDraftAlwaysIncludesRequiredRoomRoles()
+        {
+            var profile = MapGenerationCatalog.ChapterTwoFirstSliceProfile();
+            var chunks = MapGenerationCatalog.ChapterTwoFirstSliceChunks();
+
+            for (var seed = 2001; seed < 2006; seed++)
+            {
+                var draft = MapGenerationService.Generate(profile, chunks, seed);
+
+                Assert.That(draft.Graph.Nodes.Any(node => node.Role == MapRoomRole.Start), Is.True, $"seed={seed}");
+                Assert.That(draft.Graph.Nodes.Any(node => node.Role == MapRoomRole.QuestTarget), Is.True, $"seed={seed}");
+                Assert.That(draft.Graph.Nodes.Any(node => node.Role == MapRoomRole.Boss), Is.True, $"seed={seed}");
+                Assert.That(draft.Graph.Nodes.Any(node => node.Role == MapRoomRole.Exit), Is.True, $"seed={seed}");
+            }
+        }
+
+        [Test]
+        public void RuntimeCompiledMapBundleIsRuntimeSafe()
+        {
+            Assert.DoesNotThrow(() => RuntimeMapGenerationBundleBuilder.VerifyRuntimeGenerationFromBundle());
         }
 
         [Test]
@@ -2251,6 +2410,120 @@ namespace Conn.Tests.EditMode
             }
 
             return false;
+        }
+
+        private static string BuildGraphSignature(GeneratedMapDraft draft)
+        {
+            return string.Join(
+                "|",
+                draft.Graph.Nodes
+                    .OrderBy(node => node.Id)
+                    .Select(node => $"{node.Id}:{node.GridX},{node.GridY}:{node.Role}:{node.LayoutKind}:{node.SocketMask}:{node.ChunkId}"));
+        }
+
+        private static void PopulateBaseProfile(
+            MapProfileAsset profile,
+            MapResourceSetAsset resourceSet,
+            GenerationWeightProfileAsset weights,
+            string profileId)
+        {
+            profile.Id = profileId;
+            profile.DisplayName = profileId;
+            profile.MapKind = "probe_kind";
+            profile.ThemeId = "probe";
+            profile.GridSize = new Vector2Int(4, 4);
+            profile.RoomSize = new Vector2Int(4, 4);
+            profile.RoomCountMin = 4;
+            profile.RoomCountMax = 6;
+            profile.CriticalPathMin = 4;
+            profile.CriticalPathMax = 4;
+            profile.SideBranchCount = 0;
+            profile.ResourceSet = resourceSet;
+            profile.RequiredAnchors = new[] { MapAnchorKind.Start, MapAnchorKind.QuestTarget, MapAnchorKind.Boss, MapAnchorKind.Exit };
+            profile.GenerationWeightProfile = weights;
+            profile.RequiredLandmarkRooms = System.Array.Empty<LandmarkRoomAsset>();
+            profile.OptionalChunks = System.Array.Empty<RoomChunkAsset>();
+            profile.OptionalLandmarks = System.Array.Empty<LandmarkRoomAsset>();
+            profile.AllowedSpawnTables = System.Array.Empty<SpawnTableAsset>();
+            profile.DirectEncounterOverrides = System.Array.Empty<EncounterDefinitionAsset>();
+        }
+
+        private static void PopulateBaseRoomChunk(
+            RoomChunkAsset chunk,
+            string id,
+            MapRoomRole role,
+            RoomChunkLayoutKind layoutKind,
+            RoomChunkSocketDefinition[] sockets = null)
+        {
+            chunk.Id = id;
+            chunk.DisplayName = id;
+            chunk.ThemeId = "probe";
+            chunk.Size = new Vector2Int(4, 4);
+            chunk.LayoutKind = layoutKind;
+            chunk.RoleTags = new[] { role.ToString() };
+            chunk.CorridorLength = layoutKind == RoomChunkLayoutKind.Corridor ? 4 : 0;
+            chunk.CorridorWidth = layoutKind == RoomChunkLayoutKind.Corridor ? 1 : 0;
+            chunk.DeadEndDepth = layoutKind == RoomChunkLayoutKind.DeadEnd ? 1 : 0;
+            chunk.SocketDefinitions = sockets ?? new[]
+            {
+                Socket(MapDirection.North, RoomChunkSocketType.Blocked, string.Empty),
+                Socket(MapDirection.East, RoomChunkSocketType.Blocked, string.Empty),
+                Socket(MapDirection.South, RoomChunkSocketType.Blocked, string.Empty),
+                Socket(MapDirection.West, RoomChunkSocketType.Blocked, string.Empty)
+            };
+            chunk.OpenSides = ResolveOpenSides(chunk.SocketDefinitions);
+            chunk.DoorSockets = chunk.OpenSides;
+            chunk.Anchors = role switch
+            {
+                MapRoomRole.Start => new[] { new AuthoringChunkAnchor { Id = "start", Kind = MapAnchorKind.Start, Cell = new Vector2Int(1, 1) } },
+                MapRoomRole.QuestTarget => new[] { new AuthoringChunkAnchor { Id = "quest", Kind = MapAnchorKind.QuestTarget, Cell = new Vector2Int(1, 1) } },
+                MapRoomRole.Boss => new[] { new AuthoringChunkAnchor { Id = "boss", Kind = MapAnchorKind.Boss, Cell = new Vector2Int(1, 1) } },
+                MapRoomRole.Exit => new[] { new AuthoringChunkAnchor { Id = "exit", Kind = MapAnchorKind.Exit, Cell = new Vector2Int(1, 1) } },
+                _ => System.Array.Empty<AuthoringChunkAnchor>()
+            };
+            chunk.Cells = new[]
+            {
+                new RoomChunkCell { X = 0, Y = 0, Type = RoomChunkCellType.Floor, Height = 0, Direction = MapDirection.North, MaterialId = "probe_floor" }
+            };
+            chunk.Objects = System.Array.Empty<RoomChunkObjectPlacement>();
+        }
+
+        private static MapRoomPoolRule RequiredPool(MapRoomPoolRole role, RoomChunkAsset chunk)
+        {
+            return new MapRoomPoolRule
+            {
+                Role = role,
+                LayoutKind = chunk.LayoutKind,
+                MinCount = 1,
+                MaxCount = role == MapRoomPoolRole.Main ? 0 : 1,
+                Weight = 1,
+                Required = true,
+                AllowedChunks = new[] { chunk }
+            };
+        }
+
+        private static RoomChunkSocketDefinition Socket(MapDirection side, RoomChunkSocketType type, string socketId)
+        {
+            return new RoomChunkSocketDefinition
+            {
+                Side = side,
+                SocketType = type,
+                SocketId = socketId ?? string.Empty
+            };
+        }
+
+        private static MapDirection ResolveOpenSides(RoomChunkSocketDefinition[] sockets)
+        {
+            var sides = MapDirection.None;
+            foreach (var socket in sockets ?? System.Array.Empty<RoomChunkSocketDefinition>())
+            {
+                if (RoomChunkSocketRules.AllowsConnection(socket))
+                {
+                    sides |= socket.Side;
+                }
+            }
+
+            return sides;
         }
     }
 }
