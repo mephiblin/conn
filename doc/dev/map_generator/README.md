@@ -23,11 +23,15 @@ As of 2026-05-30, the first draft-backed path is now in the project:
 - `EditableMapPreviewMeshBuilder` rebuilds a disposable scene preview directly
   from the draft asset instead of relying on `MapGeneratorWorkspace` room cubes.
 - `EditableMapDraftEditor` adds first-pass draft actions for blank grid reset,
-  preview rebuild, preview clear, coordinate brush edits, fill/clear, and
-  draft validation.
-- `EditableMapDraftEditor` now also hooks Scene View painting: hovered cell
-  picking, left-click paint, drag paint across cells, and validation overlays
-  for failed cells/objects/sockets.
+  direct preview drawing, scene map build, preview clear, coordinate brush
+  edits, fill/clear, and draft validation.
+- `EditableMapDraftEditor` now lets designers paint directly on the inspector
+  `Map Preview` grid. It also keeps Scene View painting available for the scene
+  preview mesh: hovered cell picking, left-click paint, drag paint across cells,
+  and validation overlays for failed cells/objects/sockets.
+- `EditableMapDraftMetadataBuilder` can rebuild minimal playable room, zone,
+  socket, and required-route metadata from a drawn walkable cell map so a
+  painted draft can validate and bake instead of remaining only a picture.
 - `EditableMapValidationService` now validates walkability, blocking object
   footprints, socket legality, required room-to-room routes, and slope/stair
   height transitions for editable drafts.
@@ -95,16 +99,20 @@ Use these steps after pulling the branch:
 3. In a `MapGeneratorWorkspace` inspector, generate or capture a layout, then
    click `Create Editable Draft Asset`.
 4. Select the new draft asset in `Assets/Conn/Authoring/Maps/Drafts`.
-5. Use `Rebuild Preview` in the draft inspector and confirm that an
+5. Paint directly on the inspector `Map Preview` grid. Choose a brush mode and
+   terrain/material first, then left-click or drag on the preview.
+6. Use `Build Playable From Drawing` to rebuild minimal room, zone, socket, and
+   required-route metadata from the painted walkable cells.
+7. Use `Build Scene Map` in the draft inspector and confirm that an
    `Editable Map Preview Root (...)` scene object appears with terrain, wall,
    slope, stair, object, and overlay children.
-6. Use `Validate` and confirm the draft either passes or reports precise
+8. Use `Validate` and confirm the draft either passes or reports precise
    cell/object/socket errors in the inspector.
-7. Use `Bake Runtime Map` or `Save Compiled Map Asset` and confirm the bake only
+9. Use `Bake Runtime Map` or `Save Compiled Map Asset` and confirm the bake only
    succeeds when validation passes.
-8. Use `Clear Preview` and confirm the preview root is deleted while the draft
+10. Use `Clear Preview` and confirm the preview root is deleted while the draft
    asset data remains unchanged.
-9. Rebuild the preview again to confirm the draft asset is the source of truth
+11. Build the scene map again to confirm the draft asset is the source of truth
    and preview objects are disposable.
 
 ## Purpose

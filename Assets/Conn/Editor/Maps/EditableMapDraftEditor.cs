@@ -192,13 +192,31 @@ namespace Conn.Editor.Maps
             EditorGUILayout.LabelField("Draft Actions", EditorStyles.boldLabel);
             using (new EditorGUILayout.HorizontalScope())
             {
+                if (GUILayout.Button("Build Playable From Drawing"))
+                {
+                    try
+                    {
+                        Undo.RecordObject(draft, "Build Playable Editable Map Metadata");
+                        EditableMapDraftMetadataBuilder.BuildPlayableMetadataFromDrawing(draft);
+                        EditorUtility.SetDirty(draft);
+                        ValidateDraft(draft);
+                    }
+                    catch (Exception exception)
+                    {
+                        Debug.LogException(exception);
+                    }
+                }
+
                 if (GUILayout.Button("Reinitialize Blank Grid"))
                 {
                     Undo.RecordObject(draft, "Reinitialize Editable Map Draft");
                     draft.InitializeBlank(draft.Width, draft.Height, draft.CellSize, draft.HeightStep);
                     EditorUtility.SetDirty(draft);
                 }
+            }
 
+            using (new EditorGUILayout.HorizontalScope())
+            {
                 if (GUILayout.Button("Build Scene Map"))
                 {
                     EditableMapPreviewMeshBuilder.RebuildPreview(draft);

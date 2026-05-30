@@ -545,6 +545,43 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void DrawnEditableDraftCanBuildPlayableMetadataValidateAndBake()
+        {
+            var draft = ScriptableObject.CreateInstance<EditableMapDraftAsset>();
+            draft.Id = "drawn_probe";
+            draft.SourceProfileId = MapGenerationCatalog.ChapterTwoFirstSliceProfileId;
+            draft.InitializeBlank(12, 5, 1f, 1f);
+            for (var x = 1; x <= 10; x++)
+            {
+                draft.TrySetCell(new EditableMapCell
+                {
+                    X = x,
+                    Y = 2,
+                    Terrain = RoomChunkCellType.Floor,
+                    Height = 0,
+                    Direction = MapDirection.East,
+                    MaterialId = "drawn_floor"
+                });
+            }
+
+            EditableMapDraftMetadataBuilder.BuildPlayableMetadataFromDrawing(draft);
+
+            var report = EditableMapValidationService.Validate(draft);
+            var compiled = EditableMapBakeService.Bake(draft);
+
+            Assert.That(report.Passed, Is.True, string.Join("\n", report.Errors));
+            Assert.That(draft.Rooms.Any(room => room.Role == MapRoomRole.Start), Is.True);
+            Assert.That(draft.Rooms.Any(room => room.Role == MapRoomRole.QuestTarget), Is.True);
+            Assert.That(draft.Rooms.Any(room => room.Role == MapRoomRole.Boss), Is.True);
+            Assert.That(draft.Rooms.Any(room => room.Role == MapRoomRole.Exit), Is.True);
+            Assert.That(draft.Sockets.Length, Is.GreaterThanOrEqualTo(7));
+            Assert.That(compiled.Placements.Exists(placement => placement.Kind == MapPlacementKind.Start), Is.True);
+            Assert.That(compiled.Placements.Exists(placement => placement.Kind == MapPlacementKind.Exit), Is.True);
+
+            Object.DestroyImmediate(draft);
+        }
+
+        [Test]
         public void EditableValidationReportsBlockedRequiredRoute()
         {
             var draft = ScriptableObject.CreateInstance<EditableMapDraftAsset>();
