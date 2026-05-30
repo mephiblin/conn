@@ -263,6 +263,7 @@ namespace Conn.Tests.EditMode
             {
                 ruleSet.MinRooms = 2;
                 ruleSet.MaxRooms = 1;
+                ruleSet.LoopRate = 125;
                 ruleSet.QuantityRules = MapGenQuantityRules.Defaults();
                 ruleSet.QuantityRules.TargetRoomDensityPercent = 101;
                 ruleSet.DistanceRules = MapGenDistanceRules.Defaults();
@@ -288,6 +289,8 @@ namespace Conn.Tests.EditMode
                     issue => issue.Code == "rule_set_invalid_room_density"));
                 Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
                     issue => issue.Code == "rule_set_invalid_start_exit_distance"));
+                Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "rule_set_invalid_loop_rate"));
                 Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
                     issue => issue.Code == "rule_set_invalid_post_process_passes"));
                 Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
@@ -1354,6 +1357,59 @@ namespace Conn.Tests.EditMode
                 Object.DestroyImmediate(profile);
                 Object.DestroyImmediate(corridorTemplate);
                 Object.DestroyImmediate(exitTemplate);
+                Object.DestroyImmediate(startTemplate);
+                Object.DestroyImmediate(roomShape);
+                Object.DestroyImmediate(ruleSet);
+                Object.DestroyImmediate(styleSet);
+                Object.DestroyImmediate(moduleSet);
+                Object.DestroyImmediate(floor);
+                Object.DestroyImmediate(wall);
+            }
+        }
+
+        [Test]
+        public void TemplateMockupSolverAppliesLoopPolicyWhenLoopRateIsCertain()
+        {
+            var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
+            var styleSet = ScriptableObject.CreateInstance<MapGenStyleSetAsset>();
+            var ruleSet = ScriptableObject.CreateInstance<MapGenRuleSetAsset>();
+            var roomShape = ScriptableObject.CreateInstance<MapGenRoomShapeAsset>();
+            var startTemplate = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();
+            var questTemplate = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();
+            var exitTemplate = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();
+            var profile = ScriptableObject.CreateInstance<MapGenProfileAsset>();
+            GameObject floor = null;
+            GameObject wall = null;
+
+            try
+            {
+                PopulateValidWorkflowProfile(profile, styleSet, moduleSet, ruleSet, roomShape, out floor, out wall);
+                profile.MapSize = new Vector2Int(12, 8);
+                ruleSet.LoopRate = 100;
+                ruleSet.RequiredRoomCategories = new[]
+                {
+                    MapGenRoomCategory.Start,
+                    MapGenRoomCategory.Quest,
+                    MapGenRoomCategory.Exit
+                };
+                ruleSet.QuantityRules.RequiredCategories = ruleSet.RequiredRoomCategories;
+                PopulateRoomTemplate(startTemplate, "start_template", MapGenRoomCategory.Start);
+                PopulateRoomTemplate(questTemplate, "quest_template", MapGenRoomCategory.Quest);
+                PopulateRoomTemplate(exitTemplate, "exit_template", MapGenRoomCategory.Exit);
+                styleSet.RoomTemplates = new[] { startTemplate, questTemplate, exitTemplate };
+
+                var result = MapGenTemplateMockupSolver.Generate(profile, 7001);
+
+                Assert.That(result.Success, Is.True);
+                Assert.That(result.Cells, Has.Some.Matches<MapGenMockupCell>(
+                    cell => cell.State == MapGenCellState.Corridor
+                        && cell.SourceTemplateId == "loop_policy"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(profile);
+                Object.DestroyImmediate(exitTemplate);
+                Object.DestroyImmediate(questTemplate);
                 Object.DestroyImmediate(startTemplate);
                 Object.DestroyImmediate(roomShape);
                 Object.DestroyImmediate(ruleSet);

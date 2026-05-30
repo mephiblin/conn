@@ -34,6 +34,7 @@ namespace Conn.MapGenV2.Authoring
             SyncStructuredRulesFromLegacyFields();
             ValidateQuantityRules(report);
             ValidateDistanceRules(report);
+            ValidateTopologyRules(report);
             ValidatePostProcessRules(report);
             ValidatePropPlacementRules(report);
             return report;
@@ -118,6 +119,18 @@ namespace Conn.MapGenV2.Authoring
                     "rule_set_invalid_post_process_passes",
                     "Post-process max passes cannot be negative.",
                     "Set MaxPasses to zero or higher."));
+            }
+        }
+
+        private void ValidateTopologyRules(MapGenValidationReport report)
+        {
+            if (LoopRate < 0 || LoopRate > 100)
+            {
+                report.Add(new MapGenIssue(
+                    MapGenGenerationPhase.ValidateProfile,
+                    "rule_set_invalid_loop_rate",
+                    "Loop rate must be between 0 and 100.",
+                    "Set LoopRate within 0..100."));
             }
         }
 

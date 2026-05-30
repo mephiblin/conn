@@ -596,6 +596,8 @@ Progress note 2026-05-31:
   required landmark.
 - Added bounded deterministic retries for retryable solver contradictions, with
   attempt counts on solver results and an explicit retry-exhausted diagnostic.
+- Added `LoopRate` validation and a deterministic loop-policy corridor pass
+  that can add an alternate route between the first and last required rooms.
 
 Goal: replace the current simple connected-cell MVP with a real rooms/corridors
 solver.
@@ -622,7 +624,8 @@ Tasks:
 - [x] Add deterministic retries with detailed contradiction reports for
   retryable distance contradictions.
 - [ ] Expand deterministic retries to additional retryable contradiction types.
-- [ ] Add loop, branch, and dead-end policies.
+- [x] Add basic loop policy from `LoopRate`.
+- [ ] Add branch and dead-end policies.
 - [ ] Add layout signatures that include profile/template/rule versions.
 
 Acceptance:
@@ -640,6 +643,7 @@ Verification:
 - EditMode test for lowest-entropy required-landmark domain summary.
 - EditMode test for candidate exhaustion after footprint propagation.
 - EditMode test for deterministic retry exhaustion diagnostics.
+- EditMode test for loop policy corridor stamping.
 - Seed sweep across multiple profiles and sizes.
 - Tests for required room presence and reachability.
 - Tests for connector compatibility.

@@ -166,6 +166,8 @@ namespace Conn.MapGenV2.Authoring
                 }
             }
 
+            ApplyLoopPolicy(profile.LayoutRules, cells, width, height, placements, ref rng);
+
             if (!ValidateDistanceRules(profile.LayoutRules.DistanceRules, landmarks, placements, report))
             {
                 return Failed(width, height, seed, report, attemptCount);
@@ -531,6 +533,54 @@ namespace Conn.MapGenV2.Authoring
 
             CarveCorridor(cells, width, height, fromCoord, toCoord, Mathf.Max(1, corridor.Width), corridor.TemplateId);
             return true;
+        }
+
+        private static void ApplyLoopPolicy(
+            MapGenRuleSetAsset ruleSet,
+            MapGenMockupCell[] cells,
+            int width,
+            int height,
+            RoomPlacement[] placements,
+            ref MapGenRandom rng)
+        {
+            if (ruleSet == null || ruleSet.LoopRate <= 0 || placements == null || placements.Length < 3)
+            {
+                return;
+            }
+
+            if (ruleSet.LoopRate < 100 && rng.NextInt(0, 100) >= ruleSet.LoopRate)
+            {
+                return;
+            }
+
+            var from = placements[0].Center;
+            var to = placements[placements.Length - 1].Center;
+            var offsetY = PickLoopOffsetY(from, to, height);
+            if (offsetY == from.Y && offsetY == to.Y)
+            {
+                return;
+            }
+
+            CarveCorridor(cells, width, height, from, new MapGenGridCoord(from.X, offsetY), 1, "loop_policy");
+            CarveCorridor(cells, width, height, new MapGenGridCoord(from.X, offsetY), new MapGenGridCoord(to.X, offsetY), 1, "loop_policy");
+            CarveCorridor(cells, width, height, new MapGenGridCoord(to.X, offsetY), to, 1, "loop_policy");
+        }
+
+        private static int PickLoopOffsetY(MapGenGridCoord from, MapGenGridCoord to, int height)
+        {
+            var above = Mathf.Max(from.Y, to.Y) + 2;
+            if (above < height)
+            {
+                return above;
+            }
+
+            var below = Mathf.Min(from.Y, to.Y) - 2;
+            if (below >= 0)
+            {
+                return below;
+            }
+
+            return Mathf.Clamp(from.Y + 1, 0, Mathf.Max(0, height - 1));
         }
 
         private static bool ValidateDistanceRules(
