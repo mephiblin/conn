@@ -509,6 +509,35 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void GeneratedEditableResultUsesCellFirstDungeonLayout()
+        {
+            var profile = MapGenerationCatalog.ChapterTwoFirstSliceProfile();
+            var chunks = MapGenerationCatalog.ChapterTwoFirstSliceChunks();
+
+            var result = EditableMapGeneratedResultBuilder.Build(profile, chunks, 2001, 1, 0, 0.5f, 0.25f);
+
+            try
+            {
+                var floorCount = result.Draft.Cells.Count(cell => cell.Terrain == RoomChunkCellType.Floor);
+                var wallCount = result.Draft.Cells.Count(cell => cell.Terrain == RoomChunkCellType.Wall);
+                var gapCount = result.Draft.Cells.Count(cell => cell.Terrain == RoomChunkCellType.Gap);
+
+                Assert.That(result.Report.Passed, Is.True, string.Join("\n", result.Report.Errors));
+                Assert.That(result.Compiled, Is.Not.Null);
+                Assert.That(floorCount, Is.GreaterThan(80));
+                Assert.That(wallCount, Is.GreaterThan(40));
+                Assert.That(gapCount, Is.GreaterThan(40));
+                Assert.That(result.Draft.Objects.Any(placement => placement.Kind == RoomChunkObjectKind.Chest), Is.True);
+                Assert.That(result.Draft.Objects.Any(placement => placement.Kind == RoomChunkObjectKind.SpawnHint), Is.True);
+                Assert.That(result.Compiled.Cells.Count, Is.EqualTo(result.Draft.Cells.Length));
+            }
+            finally
+            {
+                Object.DestroyImmediate(result.Draft);
+            }
+        }
+
+        [Test]
         public void EditablePreviewBuilderRebuildsWithoutWorkspaceDependency()
         {
             var draft = ScriptableObject.CreateInstance<EditableMapDraftAsset>();
