@@ -26,9 +26,12 @@ namespace Conn.MapGenV2.Editor
             {
                 var issue = authoringIssue.Issue;
                 var cellText = issue.Cell.HasValue ? $" Cell {issue.Cell.Value}." : string.Empty;
+                var contextText = !string.IsNullOrWhiteSpace(issue.ContextPath)
+                    ? $"Context: {issue.ContextPath}\n"
+                    : string.Empty;
                 EditorGUILayout.HelpBox(
-                    $"{issue.Code}\n{issue.Message}{cellText}\nFix: {issue.SuggestedFix}",
-                    MessageType.Warning);
+                    $"[{issue.Severity}] {issue.Code}\n{contextText}{issue.Message}{cellText}\nFix: {issue.SuggestedFix}",
+                    ToMessageType(issue.Severity));
 
                 if (authoringIssue.Context != null)
                 {
@@ -37,6 +40,22 @@ namespace Conn.MapGenV2.Editor
                         EditorGUILayout.ObjectField("Context", authoringIssue.Context, typeof(Object), false);
                     }
                 }
+            }
+        }
+
+        private static MessageType ToMessageType(MapGenIssueSeverity severity)
+        {
+            switch (severity)
+            {
+                case MapGenIssueSeverity.Info:
+                    return MessageType.Info;
+                case MapGenIssueSeverity.Warning:
+                    return MessageType.Warning;
+                case MapGenIssueSeverity.Fatal:
+                case MapGenIssueSeverity.Error:
+                    return MessageType.Error;
+                default:
+                    return MessageType.None;
             }
         }
     }

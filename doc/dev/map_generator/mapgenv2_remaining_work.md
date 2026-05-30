@@ -896,14 +896,24 @@ Verification:
 
 ## Phase 12: Validation And Diagnostics
 
+Progress note 2026-05-31:
+
+- Added structured issue severity (`Info`, `Warning`, `Error`, `Fatal`) with
+  blocking validity based on error/fatal issues.
+- Added issue context paths and profile graph propagation for profile -> style
+  -> module set/templates and profile -> rules/room shapes.
+- Added a diagnostics section in `MapGenV2Window` that aggregates profile,
+  generated draft prop validation, and baked asset compatibility diagnostics
+  with severity counts.
+
 Goal: make failures actionable.
 
 Tasks:
 
-- [ ] Add structured issue severity:
+- [x] Add structured issue severity:
   info, warning, error, fatal.
-- [ ] Add context object/path/cell coordinate to every issue.
-- [ ] Validate profile graph:
+- [x] Add context object/path/cell coordinate to every issue.
+- [x] Validate profile graph:
   profile -> style -> module set -> templates -> shapes -> rules.
 - [ ] Validate required pools and modules.
 - [ ] Validate connector compatibility matrix.
@@ -912,7 +922,7 @@ Tasks:
 - [ ] Validate post-process pass safety.
 - [ ] Validate materialization coverage before instantiation.
 - [ ] Validate runtime bake consistency after materialization.
-- [ ] Add diagnostics panel in `MapGenV2Window`.
+- [x] Add diagnostics panel in `MapGenV2Window`.
 
 Acceptance:
 
@@ -922,7 +932,8 @@ Acceptance:
 
 Verification:
 
-- Tests for each validation error class.
+- EditMode tests for severity, context propagation, and existing validation
+  error classes.
 - Manual Unity check with intentionally broken profiles.
 
 ## Phase 13: Persistence, Versioning, And Regeneration

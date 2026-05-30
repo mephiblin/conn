@@ -23,11 +23,12 @@ namespace Conn.MapGenV2.Authoring
                     MapGenGenerationPhase.ValidateProfile,
                     "style_set_missing_module_set",
                     "Style set has no module set.",
-                    "Assign a MapGenModuleSetAsset."));
+                    "Assign a MapGenModuleSetAsset.",
+                    contextPath: nameof(ModuleSet)));
             }
             else
             {
-                report.AddRange(ModuleSet.Validate());
+                report.AddRange(ModuleSet.Validate(), $"{nameof(ModuleSet)}:{ModuleSet.name}");
             }
 
             ValidateRoomTemplates(report);
@@ -46,11 +47,12 @@ namespace Conn.MapGenV2.Authoring
                         MapGenGenerationPhase.ValidateProfile,
                         "style_set_null_room_template",
                         $"Style set room template slot {i} is empty.",
-                        "Remove the empty slot or assign a room template."));
+                        "Remove the empty slot or assign a room template.",
+                        contextPath: $"{nameof(RoomTemplates)}[{i}]"));
                     continue;
                 }
 
-                report.AddRange(template.Validate());
+                report.AddRange(template.Validate(), $"{nameof(RoomTemplates)}[{i}]:{template.name}");
             }
         }
 
@@ -65,11 +67,12 @@ namespace Conn.MapGenV2.Authoring
                         MapGenGenerationPhase.ValidateProfile,
                         "style_set_null_corridor_template",
                         $"Style set corridor template slot {i} is empty.",
-                        "Remove the empty slot or assign a corridor template."));
+                        "Remove the empty slot or assign a corridor template.",
+                        contextPath: $"{nameof(CorridorTemplates)}[{i}]"));
                     continue;
                 }
 
-                report.AddRange(template.Validate());
+                report.AddRange(template.Validate(), $"{nameof(CorridorTemplates)}[{i}]:{template.name}");
             }
         }
     }

@@ -73,6 +73,39 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void ValidationReportTracksSeverityAndContextPath()
+        {
+            var report = new MapGenValidationReport();
+            report.Add(new MapGenIssue(
+                MapGenGenerationPhase.ValidateProfile,
+                "diagnostic_warning",
+                "Warning only.",
+                "No blocking fix required.",
+                severity: MapGenIssueSeverity.Warning,
+                contextPath: "Profile.Warning"));
+
+            Assert.That(report.IsValid, Is.True);
+            Assert.That(report.WarningCount, Is.EqualTo(1));
+            Assert.That(report.ErrorCount, Is.Zero);
+
+            var child = new MapGenValidationReport();
+            child.Add(new MapGenIssue(
+                MapGenGenerationPhase.ValidateProfile,
+                "diagnostic_error",
+                "Error.",
+                "Fix the child asset.",
+                contextPath: "ModuleSet"));
+            report.AddRange(child, "Profile.StyleSet");
+
+            Assert.That(report.IsValid, Is.False);
+            Assert.That(report.ErrorCount, Is.EqualTo(1));
+            Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                issue => issue.Code == "diagnostic_error"
+                    && issue.ContextPath == "Profile.StyleSet/ModuleSet"
+                    && issue.BlocksGeneration));
+        }
+
+        [Test]
         public void RoomShapeRotateAndFlipPreserveCellPayloads()
         {
             var roomShape = ScriptableObject.CreateInstance<MapGenRoomShapeAsset>();
@@ -576,11 +609,15 @@ namespace Conn.Tests.EditMode
 
                 Assert.That(report.IsValid, Is.False);
                 Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
-                    issue => issue.Code == "profile_missing_style_set"));
+                    issue => issue.Code == "profile_missing_style_set"
+                        && issue.ContextPath == nameof(MapGenProfileAsset.StyleSet)
+                        && issue.Severity == MapGenIssueSeverity.Error));
                 Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
-                    issue => issue.Code == "profile_missing_rule_set"));
+                    issue => issue.Code == "profile_missing_rule_set"
+                        && issue.ContextPath == nameof(MapGenProfileAsset.LayoutRules)));
                 Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
-                    issue => issue.Code == "profile_missing_room_shapes"));
+                    issue => issue.Code == "profile_missing_room_shapes"
+                        && issue.ContextPath == nameof(MapGenProfileAsset.RoomShapes)));
             }
             finally
             {

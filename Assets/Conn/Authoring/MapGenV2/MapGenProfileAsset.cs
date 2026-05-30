@@ -29,7 +29,8 @@ namespace Conn.MapGenV2.Authoring
                     MapGenGenerationPhase.ValidateProfile,
                     "profile_invalid_map_size",
                     "Map size must be positive.",
-                    "Set both map size axes to at least 1."));
+                    "Set both map size axes to at least 1.",
+                    contextPath: nameof(MapSize)));
             }
 
             if (CellSize <= 0f)
@@ -38,7 +39,8 @@ namespace Conn.MapGenV2.Authoring
                     MapGenGenerationPhase.ValidateProfile,
                     "profile_invalid_cell_size",
                     "Cell size must be positive.",
-                    "Set CellSize above zero."));
+                    "Set CellSize above zero.",
+                    contextPath: nameof(CellSize)));
             }
 
             if (StyleSet == null)
@@ -47,11 +49,12 @@ namespace Conn.MapGenV2.Authoring
                     MapGenGenerationPhase.ValidateProfile,
                     "profile_missing_style_set",
                     "Profile has no style set.",
-                    "Assign a MapGenStyleSetAsset."));
+                    "Assign a MapGenStyleSetAsset.",
+                    contextPath: nameof(StyleSet)));
             }
             else
             {
-                report.AddRange(StyleSet.Validate());
+                report.AddRange(StyleSet.Validate(), $"{nameof(StyleSet)}:{StyleSet.name}");
             }
 
             if (LayoutRules == null)
@@ -60,11 +63,12 @@ namespace Conn.MapGenV2.Authoring
                     MapGenGenerationPhase.ValidateProfile,
                     "profile_missing_rule_set",
                     "Profile has no rule set.",
-                    "Assign a MapGenRuleSetAsset."));
+                    "Assign a MapGenRuleSetAsset.",
+                    contextPath: nameof(LayoutRules)));
             }
             else
             {
-                report.AddRange(LayoutRules.Validate());
+                report.AddRange(LayoutRules.Validate(), $"{nameof(LayoutRules)}:{LayoutRules.name}");
             }
 
             ValidateRoomShapes(report);
@@ -100,23 +104,26 @@ namespace Conn.MapGenV2.Authoring
                     MapGenGenerationPhase.ValidateProfile,
                     "profile_missing_room_shapes",
                     "Profile has no room shapes.",
-                    "Assign at least one MapGenRoomShapeAsset."));
+                    "Assign at least one MapGenRoomShapeAsset.",
+                    contextPath: nameof(RoomShapes)));
                 return;
             }
 
-            foreach (var shape in RoomShapes)
+            for (var i = 0; i < RoomShapes.Length; i++)
             {
+                var shape = RoomShapes[i];
                 if (shape == null)
                 {
                     report.Add(new MapGenIssue(
                         MapGenGenerationPhase.ValidateProfile,
                         "profile_null_room_shape",
                         "Profile contains an empty room shape slot.",
-                        "Remove the empty slot or assign a room shape."));
+                        "Remove the empty slot or assign a room shape.",
+                        contextPath: $"{nameof(RoomShapes)}[{i}]"));
                     continue;
                 }
 
-                report.AddRange(shape.Validate());
+                report.AddRange(shape.Validate(), $"{nameof(RoomShapes)}[{i}]:{shape.name}");
             }
         }
     }

@@ -12,6 +12,14 @@ namespace Conn.MapGenV2.Authoring
 
         public IReadOnlyList<MapGenAuthoringIssue> Issues => issues;
 
+        public int ErrorCount => CountBySeverity(MapGenIssueSeverity.Error);
+
+        public int FatalCount => CountBySeverity(MapGenIssueSeverity.Fatal);
+
+        public int WarningCount => CountBySeverity(MapGenIssueSeverity.Warning);
+
+        public int InfoCount => CountBySeverity(MapGenIssueSeverity.Info);
+
         public void AddRange(MapGenValidationReport report, Object context)
         {
             if (report == null)
@@ -23,6 +31,20 @@ namespace Conn.MapGenV2.Authoring
             {
                 issues.Add(new MapGenAuthoringIssue(issue, context));
             }
+        }
+
+        private int CountBySeverity(MapGenIssueSeverity severity)
+        {
+            var count = 0;
+            foreach (var issue in issues)
+            {
+                if (issue.Issue.Severity == severity)
+                {
+                    count++;
+                }
+            }
+
+            return count;
         }
     }
 }

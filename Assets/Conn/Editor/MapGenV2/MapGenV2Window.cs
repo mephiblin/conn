@@ -106,6 +106,7 @@ namespace Conn.MapGenV2.Editor
             workflow = MapGenV2WorkflowStatus.From(profile, draft);
             DrawNextAction(workflow);
             DrawProfileValidation();
+            DrawDiagnosticsPanel();
             DrawDraftActions(workflow);
             DrawOutputPaths();
             DrawLinkedAssetShortcuts();
@@ -172,6 +173,54 @@ namespace Conn.MapGenV2.Editor
             }
 
             MapGenValidationReportEditorGUI.Draw(profile.Validate(), profile, "Profile is valid.");
+        }
+
+        private void DrawDiagnosticsPanel()
+        {
+            EditorGUILayout.Space(4f);
+            EditorGUILayout.LabelField("진단 / Diagnostics", EditorStyles.boldLabel);
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                var report = BuildDiagnosticsReport();
+                EditorGUILayout.LabelField(
+                    "Summary",
+                    $"Fatal {report.FatalCount}, Error {report.ErrorCount}, Warning {report.WarningCount}, Info {report.InfoCount}");
+                MapGenValidationReportEditorGUI.Draw(report, "No diagnostics for the current MapGenV2 selection.");
+            }
+        }
+
+        private MapGenAuthoringValidationReport BuildDiagnosticsReport()
+        {
+            var report = new MapGenAuthoringValidationReport();
+            if (profile != null)
+            {
+                report.AddRange(profile.Validate(), profile);
+            }
+
+            if (draft != null && !string.IsNullOrWhiteSpace(draft.LastGeneratedSignature))
+            {
+                report.AddRange(MapGenPropPlacementValidator.Validate(draft.Width, draft.Height, draft.Cells), draft);
+            }
+
+            var bakedAsset = LoadExpectedBakedAsset();
+            if (bakedAsset != null)
+            {
+                var migration = MapGenBakedMapMigration.MigrateInMemory(bakedAsset);
+                if (!migration.IsValid)
+                {
+                    var bakedReport = new MapGenValidationReport();
+                    bakedReport.Add(new MapGenIssue(
+                        MapGenGenerationPhase.BakeRuntime,
+                        "baked_map_version_incompatible",
+                        migration.Message,
+                        "Rebake the runtime asset with the current MapGenV2 runtime.",
+                        severity: MapGenIssueSeverity.Fatal,
+                        contextPath: AssetDatabase.GetAssetPath(bakedAsset)));
+                    report.AddRange(bakedReport, bakedAsset);
+                }
+            }
+
+            return report;
         }
 
         private void DrawOutputPaths()
