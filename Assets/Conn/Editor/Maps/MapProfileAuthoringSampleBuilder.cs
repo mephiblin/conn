@@ -87,8 +87,9 @@ namespace Conn.Editor.Maps
             asset.CorridorLength = chunk.CorridorLength;
             asset.CorridorWidth = chunk.CorridorWidth;
             asset.DeadEndDepth = chunk.DeadEndDepth;
-            asset.OpenSides = MapDirection.North | MapDirection.East | MapDirection.South | MapDirection.West;
-            asset.DoorSockets = MapDirection.North | MapDirection.East | MapDirection.South | MapDirection.West;
+            asset.OpenSides = chunk.OpenSides;
+            asset.DoorSockets = chunk.DoorSockets;
+            asset.SocketDefinitions = ToSocketDefinitions(chunk).ToArray();
             asset.PopulationAllowed = chunk.PopulationAllowed;
             asset.RoleTags = ToRoleTags(chunk.RoleTags);
             asset.Anchors = ToAuthoringAnchors(chunk.Anchors);
@@ -182,6 +183,46 @@ namespace Conn.Editor.Maps
             }
 
             return values;
+        }
+
+        private static List<RoomChunkSocketDefinition> ToSocketDefinitions(ChunkPreset chunk)
+        {
+            var sockets = new List<RoomChunkSocketDefinition>();
+            foreach (var side in RoomChunkSocketRules.EnumerateSides(
+                MapDirection.North | MapDirection.East | MapDirection.South | MapDirection.West))
+            {
+                var isOpen = (chunk.OpenSides & side) != MapDirection.None;
+                sockets.Add(new RoomChunkSocketDefinition
+                {
+                    Side = side,
+                    SocketType = ResolveSocketType(chunk.LayoutKind, isOpen),
+                    SocketId = ResolveSocketId(chunk.LayoutKind, isOpen)
+                });
+            }
+
+            return sockets;
+        }
+
+        private static RoomChunkSocketType ResolveSocketType(RoomChunkLayoutKind layoutKind, bool isOpen)
+        {
+            if (!isOpen)
+            {
+                return RoomChunkSocketType.Blocked;
+            }
+
+            return layoutKind == RoomChunkLayoutKind.Corridor
+                ? RoomChunkSocketType.Corridor
+                : RoomChunkSocketType.Door;
+        }
+
+        private static string ResolveSocketId(RoomChunkLayoutKind layoutKind, bool isOpen)
+        {
+            if (!isOpen)
+            {
+                return string.Empty;
+            }
+
+            return layoutKind == RoomChunkLayoutKind.Corridor ? "corridor" : "door";
         }
 
         private static T LoadOrCreate<T>(string path) where T : ScriptableObject

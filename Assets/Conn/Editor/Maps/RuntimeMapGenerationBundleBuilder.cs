@@ -208,6 +208,7 @@ namespace Conn.Editor.Maps
                 typeof(MapProfile),
                 typeof(RuntimeMapRoomPoolRule),
                 typeof(ChunkPreset),
+                typeof(RoomChunkSocketDefinition),
                 typeof(ChunkAnchor),
                 typeof(RoomChunkCell),
                 typeof(RoomChunkObjectPlacement)
@@ -735,6 +736,22 @@ namespace Conn.Editor.Maps
                 });
             }
 
+            var socketDefinitions = new List<RoomChunkSocketDefinition>();
+            foreach (var socket in ResolveSocketDefinitions(asset))
+            {
+                if (socket == null)
+                {
+                    continue;
+                }
+
+                socketDefinitions.Add(new RoomChunkSocketDefinition
+                {
+                    Side = socket.Side,
+                    SocketType = socket.SocketType,
+                    SocketId = socket.SocketId
+                });
+            }
+
             return new ChunkPreset
             {
                 Id = asset.Id,
@@ -748,6 +765,7 @@ namespace Conn.Editor.Maps
                 DeadEndDepth = asset.DeadEndDepth,
                 OpenSides = asset.OpenSides,
                 DoorSockets = asset.DoorSockets,
+                SocketDefinitions = socketDefinitions,
                 VariantGroup = asset is LandmarkRoomAsset landmark ? landmark.LandmarkRole : string.Empty,
                 PopulationAllowed = asset.PopulationAllowed,
                 RoleTags = roleTags,
@@ -756,6 +774,37 @@ namespace Conn.Editor.Maps
                 Cells = cells,
                 Objects = objects
             };
+        }
+
+        private static IReadOnlyList<RoomChunkSocketDefinition> ResolveSocketDefinitions(RoomChunkAsset asset)
+        {
+            if (asset.SocketDefinitions != null && asset.SocketDefinitions.Length > 0)
+            {
+                return asset.SocketDefinitions;
+            }
+
+            var sockets = new List<RoomChunkSocketDefinition>();
+            foreach (var side in RoomChunkSocketRules.EnumerateSides(
+                MapDirection.North | MapDirection.East | MapDirection.South | MapDirection.West))
+            {
+                var isOpen = (asset.OpenSides & side) != MapDirection.None;
+                sockets.Add(new RoomChunkSocketDefinition
+                {
+                    Side = side,
+                    SocketType = !isOpen
+                        ? RoomChunkSocketType.Blocked
+                        : asset.LayoutKind == RoomChunkLayoutKind.Corridor
+                            ? RoomChunkSocketType.Corridor
+                            : RoomChunkSocketType.Door,
+                    SocketId = !isOpen
+                        ? string.Empty
+                        : asset.LayoutKind == RoomChunkLayoutKind.Corridor
+                            ? "corridor"
+                            : "door"
+                });
+            }
+
+            return sockets;
         }
 
         private static void EnsureFolderForAsset(string assetPath)

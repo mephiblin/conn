@@ -189,12 +189,39 @@ namespace Conn.Core.Maps
                 LayoutKind = layoutKind,
                 OpenSides = openSides,
                 DoorSockets = openSides,
+                SocketDefinitions = BuildSocketDefinitions(openSides, layoutKind),
                 VariantGroup = layoutKind.ToString(),
                 RoleTags = new List<MapRoomRole> { role },
                 Anchors = new List<ChunkAnchor>(),
                 Cells = new List<RoomChunkCell>(),
                 Objects = new List<RoomChunkObjectPlacement>()
             };
+        }
+
+        private static List<RoomChunkSocketDefinition> BuildSocketDefinitions(MapDirection openSides, RoomChunkLayoutKind layoutKind)
+        {
+            var sockets = new List<RoomChunkSocketDefinition>();
+            foreach (var side in RoomChunkSocketRules.EnumerateSides(
+                MapDirection.North | MapDirection.East | MapDirection.South | MapDirection.West))
+            {
+                var isOpen = (openSides & side) != MapDirection.None;
+                sockets.Add(new RoomChunkSocketDefinition
+                {
+                    Side = side,
+                    SocketType = !isOpen
+                        ? RoomChunkSocketType.Blocked
+                        : layoutKind == RoomChunkLayoutKind.Corridor
+                            ? RoomChunkSocketType.Corridor
+                            : RoomChunkSocketType.Door,
+                    SocketId = !isOpen
+                        ? string.Empty
+                        : layoutKind == RoomChunkLayoutKind.Corridor
+                            ? "corridor"
+                            : "door"
+                });
+            }
+
+            return sockets;
         }
 
         private static List<RuntimeMapRoomPoolRule> BuildChapterTwoFirstSliceRoomPools()

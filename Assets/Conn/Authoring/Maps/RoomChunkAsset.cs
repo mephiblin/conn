@@ -17,6 +17,7 @@ namespace Conn.Authoring.Maps
         public int DeadEndDepth;
         public MapDirection OpenSides;
         public MapDirection DoorSockets;
+        public RoomChunkSocketDefinition[] SocketDefinitions = Array.Empty<RoomChunkSocketDefinition>();
         public bool PopulationAllowed = true;
         public string[] RoleTags = Array.Empty<string>();
         public AuthoringChunkAnchor[] Anchors = Array.Empty<AuthoringChunkAnchor>();

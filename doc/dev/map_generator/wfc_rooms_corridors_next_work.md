@@ -69,12 +69,12 @@ graph preview.
 
 ### Tasks
 
-- [ ] Add explicit room socket definitions for each chunk side.
-- [ ] Add socket type/id, not only direction.
-- [ ] Add compatibility rules:
+- [x] Add explicit room socket definitions for each chunk side.
+- [x] Add socket type/id, not only direction.
+- [x] Add compatibility rules:
   same socket id, wildcard socket, blocked side, door side, corridor side.
-- [ ] Add validation for incompatible socket pairs.
-- [ ] Add generation failure report that names the missing socket/pool.
+- [x] Add validation for incompatible socket pairs.
+- [x] Add generation failure report that names the missing socket/pool.
 
 ### Acceptance
 

@@ -75,6 +75,14 @@ namespace Conn.Core.Maps
         HeightTransition = 4
     }
 
+    public enum RoomChunkSocketType
+    {
+        Blocked = 0,
+        Door = 1,
+        Corridor = 2,
+        Wildcard = 3
+    }
+
     public enum MapPlacementKind
     {
         Start = 0,
@@ -166,6 +174,14 @@ namespace Conn.Core.Maps
     }
 
     [Serializable]
+    public sealed class RoomChunkSocketDefinition
+    {
+        public MapDirection Side;
+        public RoomChunkSocketType SocketType;
+        public string SocketId = string.Empty;
+    }
+
+    [Serializable]
     public sealed class ChunkPreset
     {
         public string Id = string.Empty;
@@ -179,6 +195,7 @@ namespace Conn.Core.Maps
         public int DeadEndDepth;
         public MapDirection OpenSides;
         public MapDirection DoorSockets;
+        public List<RoomChunkSocketDefinition> SocketDefinitions = new List<RoomChunkSocketDefinition>();
         public string VariantGroup = string.Empty;
         public bool PopulationAllowed = true;
         public List<MapRoomRole> RoleTags = new List<MapRoomRole>();
@@ -192,9 +209,104 @@ namespace Conn.Core.Maps
             return Width == width
                 && Height == height
                 && (string.IsNullOrEmpty(Theme) || Theme == theme)
-                && (OpenSides & sockets) == sockets
-                && (DoorSockets & sockets) == sockets
+                && SupportsRequiredSockets(sockets)
                 && RoleTags.Contains(role);
+        }
+
+        public RoomChunkSocketDefinition FindSocket(MapDirection side)
+        {
+            foreach (var socket in SocketDefinitions)
+            {
+                if (socket != null && socket.Side == side)
+                {
+                    return socket;
+                }
+            }
+
+            return null;
+        }
+
+        public bool SupportsRequiredSockets(MapDirection requiredSides)
+        {
+            foreach (var side in RoomChunkSocketRules.EnumerateSides(requiredSides))
+            {
+                if (!RoomChunkSocketRules.AllowsConnection(FindSocket(side)))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+    }
+
+    public static class RoomChunkSocketRules
+    {
+        public static bool AreCompatible(RoomChunkSocketDefinition first, RoomChunkSocketDefinition second)
+        {
+            if (!AllowsConnection(first) || !AllowsConnection(second))
+            {
+                return false;
+            }
+
+            if (IsWildcard(first) || IsWildcard(second))
+            {
+                return true;
+            }
+
+            if (!string.IsNullOrWhiteSpace(first.SocketId)
+                && !string.IsNullOrWhiteSpace(second.SocketId)
+                && string.Equals(first.SocketId, second.SocketId, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            if (first.SocketType == RoomChunkSocketType.Door && second.SocketType == RoomChunkSocketType.Door)
+            {
+                return true;
+            }
+
+            if (first.SocketType == RoomChunkSocketType.Corridor && second.SocketType == RoomChunkSocketType.Corridor)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        public static bool AllowsConnection(RoomChunkSocketDefinition socket)
+        {
+            return socket != null && socket.Side != MapDirection.None && socket.SocketType != RoomChunkSocketType.Blocked;
+        }
+
+        public static bool IsWildcard(RoomChunkSocketDefinition socket)
+        {
+            return socket != null
+                && (socket.SocketType == RoomChunkSocketType.Wildcard
+                    || string.Equals(socket.SocketId, "*", StringComparison.Ordinal));
+        }
+
+        public static IEnumerable<MapDirection> EnumerateSides(MapDirection sides)
+        {
+            if ((sides & MapDirection.North) != MapDirection.None)
+            {
+                yield return MapDirection.North;
+            }
+
+            if ((sides & MapDirection.East) != MapDirection.None)
+            {
+                yield return MapDirection.East;
+            }
+
+            if ((sides & MapDirection.South) != MapDirection.None)
+            {
+                yield return MapDirection.South;
+            }
+
+            if ((sides & MapDirection.West) != MapDirection.None)
+            {
+                yield return MapDirection.West;
+            }
         }
     }
 

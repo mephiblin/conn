@@ -355,10 +355,40 @@ namespace Conn.Core.Maps
 
             if (candidates.Count == 0)
             {
-                throw new InvalidOperationException($"Room pool {pool.Role}/{pool.LayoutKind} has no compatible chunk for node {node.Id} sockets {node.SocketMask}.");
+                throw new InvalidOperationException(
+                    $"Room pool {pool.Role}/{pool.LayoutKind} has no compatible chunk for node {node.Id} sockets {node.SocketMask}. chunks={DescribePoolChunks(pool, chunks)}");
             }
 
             return candidates[PositiveHash(seed, node.Id, pool.Role.ToString()) % candidates.Count];
+        }
+
+        private static string DescribePoolChunks(RuntimeMapRoomPoolRule pool, IReadOnlyList<ChunkPreset> chunks)
+        {
+            var values = new List<string>();
+            foreach (var chunkId in pool.AllowedChunkIds ?? new List<string>())
+            {
+                var chunk = FindChunkById(chunks, chunkId);
+                if (chunk != null)
+                {
+                    values.Add($"{chunk.Id}:{DescribeChunkSockets(chunk)}");
+                }
+            }
+
+            return values.Count > 0 ? string.Join(" | ", values) : "(none)";
+        }
+
+        private static string DescribeChunkSockets(ChunkPreset chunk)
+        {
+            var values = new List<string>();
+            foreach (var socket in chunk.SocketDefinitions ?? new List<RoomChunkSocketDefinition>())
+            {
+                if (socket != null)
+                {
+                    values.Add($"{socket.Side}:{socket.SocketType}:{socket.SocketId}");
+                }
+            }
+
+            return string.Join("/", values);
         }
 
         private static IReadOnlyList<RuntimeMapRoomPoolRule> ResolveRoomPools(MapProfile profile, IReadOnlyList<ChunkPreset> chunks)
@@ -473,8 +503,7 @@ namespace Conn.Core.Maps
             return chunk.Width == width
                 && chunk.Height == height
                 && (string.IsNullOrEmpty(chunk.Theme) || chunk.Theme == theme)
-                && (chunk.OpenSides & sockets) == sockets
-                && (chunk.DoorSockets & sockets) == sockets
+                && chunk.SupportsRequiredSockets(sockets)
                 && ChunkSupportsPoolRole(chunk, poolRole, roomRole);
         }
 

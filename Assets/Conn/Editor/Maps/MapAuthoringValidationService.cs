@@ -330,6 +330,7 @@ namespace Conn.Editor.Maps
                     report.Errors.Add($"Room chunk {chunk.Id} door sockets must include every open side.");
                 }
 
+                ValidateChunkSockets(chunk, report);
                 ValidateChunkLayout(chunk, report);
 
                 if (IsEmpty(chunk.RoleTags))
@@ -448,7 +449,7 @@ namespace Conn.Editor.Maps
 
         private static void ValidateChunkLayout(RoomChunkAsset chunk, MapValidationReport report)
         {
-            var openSideCount = CountOpenSides(chunk.OpenSides);
+            var openSideCount = CountOpenSides(ResolveOpenSides(chunk));
             if (chunk.LayoutKind == RoomChunkLayoutKind.Hub && openSideCount < 3)
             {
                 report.Errors.Add($"Room chunk {chunk.Id} layout Hub must have at least three open sides.");
@@ -501,6 +502,96 @@ namespace Conn.Editor.Maps
                     report.Errors.Add($"Room chunk {chunk.Id} layout HeightTransition must include slope, stair, or varied cell heights.");
                 }
             }
+        }
+
+        private static void ValidateChunkSockets(RoomChunkAsset chunk, MapValidationReport report)
+        {
+            var sockets = ResolveSocketDefinitions(chunk);
+            var seenSides = new HashSet<MapDirection>();
+            foreach (var socket in sockets)
+            {
+                if (socket == null)
+                {
+                    report.Errors.Add($"Room chunk {chunk.Id} contains a null socket definition.");
+                    continue;
+                }
+
+                if (socket.Side == MapDirection.None)
+                {
+                    report.Errors.Add($"Room chunk {chunk.Id} contains a socket definition with no side.");
+                    continue;
+                }
+
+                if (!seenSides.Add(socket.Side))
+                {
+                    report.Errors.Add($"Room chunk {chunk.Id} repeats socket side {socket.Side}.");
+                }
+
+                var shouldBeOpen = (chunk.OpenSides & socket.Side) != MapDirection.None;
+                if (shouldBeOpen != RoomChunkSocketRules.AllowsConnection(socket))
+                {
+                    report.Errors.Add($"Room chunk {chunk.Id} socket {socket.Side} open/blocked state does not match OpenSides.");
+                }
+
+                if (socket.SocketType == RoomChunkSocketType.Blocked && !string.IsNullOrWhiteSpace(socket.SocketId))
+                {
+                    report.Errors.Add($"Room chunk {chunk.Id} blocked socket {socket.Side} must not define a socket id.");
+                }
+            }
+
+            foreach (var side in RoomChunkSocketRules.EnumerateSides(
+                MapDirection.North | MapDirection.East | MapDirection.South | MapDirection.West))
+            {
+                if (!seenSides.Contains(side))
+                {
+                    report.Errors.Add($"Room chunk {chunk.Id} is missing explicit socket definition for side {side}.");
+                }
+            }
+        }
+
+        private static RoomChunkSocketDefinition[] ResolveSocketDefinitions(RoomChunkAsset chunk)
+        {
+            if (chunk.SocketDefinitions != null && chunk.SocketDefinitions.Length > 0)
+            {
+                return chunk.SocketDefinitions;
+            }
+
+            var sockets = new List<RoomChunkSocketDefinition>();
+            foreach (var side in RoomChunkSocketRules.EnumerateSides(
+                MapDirection.North | MapDirection.East | MapDirection.South | MapDirection.West))
+            {
+                var isOpen = (chunk.OpenSides & side) != MapDirection.None;
+                sockets.Add(new RoomChunkSocketDefinition
+                {
+                    Side = side,
+                    SocketType = !isOpen
+                        ? RoomChunkSocketType.Blocked
+                        : chunk.LayoutKind == RoomChunkLayoutKind.Corridor
+                            ? RoomChunkSocketType.Corridor
+                            : RoomChunkSocketType.Door,
+                    SocketId = !isOpen
+                        ? string.Empty
+                        : chunk.LayoutKind == RoomChunkLayoutKind.Corridor
+                            ? "corridor"
+                            : "door"
+                });
+            }
+
+            return sockets.ToArray();
+        }
+
+        private static MapDirection ResolveOpenSides(RoomChunkAsset chunk)
+        {
+            var sides = MapDirection.None;
+            foreach (var socket in ResolveSocketDefinitions(chunk))
+            {
+                if (RoomChunkSocketRules.AllowsConnection(socket))
+                {
+                    sides |= socket.Side;
+                }
+            }
+
+            return sides;
         }
 
         private static int CountOpenSides(MapDirection sides)
@@ -947,6 +1038,8 @@ namespace Conn.Editor.Maps
                     }
                 }
             }
+
+            ValidateRequiredPoolConnectivity(profile, report);
         }
 
         private static MapRoomPoolRule[] GetEffectiveRoomPools(MapProfileAsset profile)
@@ -1019,6 +1112,191 @@ namespace Conn.Editor.Maps
             }
 
             return count;
+        }
+
+        private static void ValidateRequiredPoolConnectivity(MapProfileAsset profile, MapValidationReport report)
+        {
+            ValidateRequiredPoolConnection(
+                profile,
+                new[] { MapRoomPoolRole.Start },
+                new[] { MapRoomPoolRole.Main, MapRoomPoolRole.Corridor, MapRoomPoolRole.Hub, MapRoomPoolRole.HeightTransition },
+                "start->main-family",
+                report);
+            ValidateRequiredPoolConnection(
+                profile,
+                new[] { MapRoomPoolRole.Main, MapRoomPoolRole.Corridor, MapRoomPoolRole.Hub, MapRoomPoolRole.HeightTransition },
+                new[] { MapRoomPoolRole.Main, MapRoomPoolRole.Corridor, MapRoomPoolRole.Hub, MapRoomPoolRole.HeightTransition },
+                "main-family->main-family",
+                report);
+            ValidateRequiredPoolConnection(
+                profile,
+                new[] { MapRoomPoolRole.Main, MapRoomPoolRole.Corridor, MapRoomPoolRole.Hub, MapRoomPoolRole.HeightTransition },
+                new[] { MapRoomPoolRole.Quest },
+                "main-family->quest",
+                report);
+            ValidateRequiredPoolConnection(
+                profile,
+                new[] { MapRoomPoolRole.Quest },
+                new[] { MapRoomPoolRole.Boss },
+                "quest->boss",
+                report);
+            ValidateRequiredPoolConnection(
+                profile,
+                new[] { MapRoomPoolRole.Boss },
+                new[] { MapRoomPoolRole.Exit },
+                "boss->exit",
+                report);
+        }
+
+        private static void ValidateRequiredPoolConnection(
+            MapProfileAsset profile,
+            MapRoomPoolRole[] fromRoles,
+            MapRoomPoolRole[] toRoles,
+            string label,
+            MapValidationReport report)
+        {
+            var pools = GetEffectiveRoomPools(profile);
+            if (HasCompatiblePoolConnection(pools, fromRoles, toRoles))
+            {
+                return;
+            }
+
+            report.Errors.Add(
+                $"Map profile {profile.Id} has no legal socket connection for {label}. from={DescribePools(pools, fromRoles)} to={DescribePools(pools, toRoles)}");
+        }
+
+        private static bool HasCompatiblePoolConnection(MapRoomPoolRule[] pools, MapRoomPoolRole[] fromRoles, MapRoomPoolRole[] toRoles)
+        {
+            foreach (var fromPool in pools ?? Array.Empty<MapRoomPoolRule>())
+            {
+                if (fromPool == null || Array.IndexOf(fromRoles, fromPool.Role) < 0)
+                {
+                    continue;
+                }
+
+                foreach (var toPool in pools ?? Array.Empty<MapRoomPoolRule>())
+                {
+                    if (toPool == null || Array.IndexOf(toRoles, toPool.Role) < 0)
+                    {
+                        continue;
+                    }
+
+                    if (PoolsHaveCompatibleSockets(fromPool, toPool))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static bool PoolsHaveCompatibleSockets(MapRoomPoolRule fromPool, MapRoomPoolRule toPool)
+        {
+            foreach (var fromChunk in fromPool.AllowedChunks ?? Array.Empty<RoomChunkAsset>())
+            {
+                if (fromChunk == null)
+                {
+                    continue;
+                }
+
+                foreach (var toChunk in toPool.AllowedChunks ?? Array.Empty<RoomChunkAsset>())
+                {
+                    if (toChunk == null)
+                    {
+                        continue;
+                    }
+
+                    foreach (var side in RoomChunkSocketRules.EnumerateSides(
+                        MapDirection.North | MapDirection.East | MapDirection.South | MapDirection.West))
+                    {
+                        var fromSocket = FindSocketDefinition(fromChunk, side);
+                        var toSocket = FindSocketDefinition(toChunk, Opposite(side));
+                        if (RoomChunkSocketRules.AreCompatible(fromSocket, toSocket))
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static string DescribePools(MapRoomPoolRule[] pools, MapRoomPoolRole[] roles)
+        {
+            var values = new List<string>();
+            foreach (var pool in pools ?? Array.Empty<MapRoomPoolRule>())
+            {
+                if (pool == null || Array.IndexOf(roles, pool.Role) < 0)
+                {
+                    continue;
+                }
+
+                values.Add($"{pool.Role}/{pool.LayoutKind}[{DescribePoolSockets(pool)}]");
+            }
+
+            return values.Count > 0 ? string.Join(", ", values) : "(none)";
+        }
+
+        private static string DescribePoolSockets(MapRoomPoolRule pool)
+        {
+            var values = new List<string>();
+            foreach (var chunk in pool.AllowedChunks ?? Array.Empty<RoomChunkAsset>())
+            {
+                if (chunk == null)
+                {
+                    continue;
+                }
+
+                values.Add($"{chunk.Id}:{DescribeChunkSockets(chunk)}");
+            }
+
+            return values.Count > 0 ? string.Join(" | ", values) : "no-chunks";
+        }
+
+        private static string DescribeChunkSockets(RoomChunkAsset chunk)
+        {
+            var values = new List<string>();
+            foreach (var socket in ResolveSocketDefinitions(chunk))
+            {
+                if (socket != null)
+                {
+                    values.Add($"{socket.Side}:{socket.SocketType}:{socket.SocketId}");
+                }
+            }
+
+            return string.Join("/", values);
+        }
+
+        private static RoomChunkSocketDefinition FindSocketDefinition(RoomChunkAsset chunk, MapDirection side)
+        {
+            foreach (var socket in ResolveSocketDefinitions(chunk))
+            {
+                if (socket != null && socket.Side == side)
+                {
+                    return socket;
+                }
+            }
+
+            return null;
+        }
+
+        private static MapDirection Opposite(MapDirection direction)
+        {
+            switch (direction)
+            {
+                case MapDirection.North:
+                    return MapDirection.South;
+                case MapDirection.East:
+                    return MapDirection.West;
+                case MapDirection.South:
+                    return MapDirection.North;
+                case MapDirection.West:
+                    return MapDirection.East;
+                default:
+                    return MapDirection.None;
+            }
         }
 
         private static bool RoleTagsContain(string[] roleTags, MapRoomRole role)
