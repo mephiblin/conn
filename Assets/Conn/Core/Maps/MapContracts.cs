@@ -176,6 +176,7 @@ namespace Conn.Core.Maps
         public int GridX;
         public int GridY;
         public MapRoomRole Role;
+        public RoomChunkLayoutKind LayoutKind = RoomChunkLayoutKind.Room;
         public int BranchDepth;
         public int PathIndex;
         public MapDirection SocketMask;

@@ -221,7 +221,7 @@ namespace Conn.Tests.EditMode
             var generated = MapGenerationService.Generate(profile, chunks, 2001);
             var draft = ScriptableObject.CreateInstance<EditableMapDraftAsset>();
 
-            EditableMapDraftBuilder.PopulateFromGeneratedDraft(draft, generated, profile, 1, 0, 0.5f, 0.25f);
+            EditableMapDraftBuilder.PopulateFromGeneratedDraft(draft, generated, profile, chunks, 1, 0, 0.5f, 0.25f);
 
             Assert.That(draft.Width, Is.GreaterThan(0));
             Assert.That(draft.Height, Is.GreaterThan(0));
@@ -229,6 +229,37 @@ namespace Conn.Tests.EditMode
             Assert.That(draft.Sockets.Length, Is.EqualTo(generated.Graph.Edges.Count * 2));
             Assert.That(draft.Objects.Length, Is.GreaterThanOrEqualTo(0));
             Assert.That(draft.Cells.Length, Is.EqualTo(draft.Width * draft.Height));
+        }
+
+        [Test]
+        public void EditableDraftBuilderIsDeterministicForSameProfileAndSeed()
+        {
+            var profile = MapGenerationCatalog.ChapterTwoFirstSliceProfile();
+            var chunks = MapGenerationCatalog.ChapterTwoFirstSliceChunks();
+
+            var first = EditableMapDraftBuilder.BuildGeneratedDraft(profile, chunks, 2112, 1, 0, 0.5f, 0.25f);
+            var second = EditableMapDraftBuilder.BuildGeneratedDraft(profile, chunks, 2112, 1, 0, 0.5f, 0.25f);
+
+            Assert.That(JsonUtility.ToJson(first), Is.EqualTo(JsonUtility.ToJson(second)));
+
+            Object.DestroyImmediate(first);
+            Object.DestroyImmediate(second);
+        }
+
+        [Test]
+        public void GeneratedDraftIncludesIntentionalLayoutKinds()
+        {
+            var profile = MapGenerationCatalog.ChapterTwoFirstSliceProfile();
+            var chunks = MapGenerationCatalog.ChapterTwoFirstSliceChunks();
+            var draft = EditableMapDraftBuilder.BuildGeneratedDraft(profile, chunks, 2001, 1, 0, 0.5f, 0.25f);
+
+            Assert.That(draft.Rooms.Any(room => room.LayoutKind == RoomChunkLayoutKind.Hub), Is.True);
+            Assert.That(draft.Rooms.Any(room => room.LayoutKind == RoomChunkLayoutKind.Corridor), Is.True);
+            Assert.That(draft.Rooms.Any(room => room.LayoutKind == RoomChunkLayoutKind.DeadEnd), Is.True);
+            Assert.That(draft.Rooms.Any(room => room.LayoutKind == RoomChunkLayoutKind.HeightTransition), Is.True);
+            Assert.That(draft.Zones.Length, Is.GreaterThanOrEqualTo(1));
+
+            Object.DestroyImmediate(draft);
         }
 
         [Test]

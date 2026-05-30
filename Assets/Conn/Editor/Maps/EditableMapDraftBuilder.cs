@@ -34,6 +34,7 @@ namespace Conn.Editor.Maps
             string assetPath,
             GeneratedMapDraft generatedDraft,
             MapProfile profile,
+            IReadOnlyList<ChunkPreset> runtimeChunks,
             int floor,
             int difficulty,
             float cellSize = 1f,
@@ -42,9 +43,34 @@ namespace Conn.Editor.Maps
             EnsureDraftFolders();
 
             var draft = ScriptableObject.CreateInstance<EditableMapDraftAsset>();
-            PopulateFromGeneratedDraft(draft, generatedDraft, profile, floor, difficulty, cellSize, heightStep);
+            PopulateFromGeneratedDraft(draft, generatedDraft, profile, runtimeChunks, floor, difficulty, cellSize, heightStep);
             AssetDatabase.CreateAsset(draft, assetPath);
             AssetDatabase.SaveAssets();
+            return draft;
+        }
+
+        public static EditableMapDraftAsset BuildGeneratedDraft(
+            MapProfile profile,
+            IReadOnlyList<ChunkPreset> runtimeChunks,
+            int seed,
+            int floor,
+            int difficulty,
+            float cellSize = 1f,
+            float heightStep = 1f)
+        {
+            if (profile == null)
+            {
+                throw new ArgumentNullException(nameof(profile));
+            }
+
+            if (runtimeChunks == null)
+            {
+                throw new ArgumentNullException(nameof(runtimeChunks));
+            }
+
+            var generated = MapGenerationService.Generate(profile, runtimeChunks, seed);
+            var draft = ScriptableObject.CreateInstance<EditableMapDraftAsset>();
+            PopulateFromGeneratedDraft(draft, generated, profile, runtimeChunks, floor, difficulty, cellSize, heightStep);
             return draft;
         }
 
@@ -52,6 +78,7 @@ namespace Conn.Editor.Maps
             EditableMapDraftAsset target,
             GeneratedMapDraft generatedDraft,
             MapProfile profile,
+            IReadOnlyList<ChunkPreset> runtimeChunks,
             int floor,
             int difficulty,
             float cellSize = 1f,
@@ -72,7 +99,7 @@ namespace Conn.Editor.Maps
                 throw new ArgumentNullException(nameof(profile));
             }
 
-            var chunkLookup = BuildChunkLookup();
+            var chunkLookup = BuildChunkLookup(runtimeChunks);
             var roomBounds = CalculateRoomBounds(generatedDraft.Graph);
             var mapWidth = roomBounds.width * Mathf.Max(1, profile.RoomWidth);
             var mapHeight = roomBounds.height * Mathf.Max(1, profile.RoomHeight);
@@ -85,6 +112,7 @@ namespace Conn.Editor.Maps
             target.Version = 1;
             target.InitializeBlank(mapWidth, mapHeight, cellSize, heightStep);
 
+            var zoneId = BuildZoneId(profile, floor, difficulty);
             var rooms = new List<EditableMapRoom>();
             var objects = new List<EditableMapObjectPlacement>();
             var sockets = new List<EditableMapSocket>();
@@ -95,15 +123,15 @@ namespace Conn.Editor.Maps
             {
                 var roomOriginX = (node.GridX - roomBounds.xMin) * profile.RoomWidth;
                 var roomOriginY = (node.GridY - roomBounds.yMin) * profile.RoomHeight;
-                var layoutKind = RoomChunkLayoutKind.Room;
+                var layoutKind = node.LayoutKind;
                 if (chunkLookup.TryGetValue(node.ChunkId ?? string.Empty, out var chunk))
                 {
                     layoutKind = chunk.LayoutKind;
-                    StampChunk(target, chunk, roomOriginX, roomOriginY, node.Id, objects);
+                    StampChunk(target, chunk, roomOriginX, roomOriginY, node.Id, zoneId, objects);
                 }
                 else
                 {
-                    FillRoomFallback(target, roomOriginX, roomOriginY, profile.RoomWidth, profile.RoomHeight, node.Id);
+                    FillRoomFallback(target, roomOriginX, roomOriginY, profile.RoomWidth, profile.RoomHeight, node.Id, zoneId);
                 }
 
                 rooms.Add(new EditableMapRoom
@@ -117,7 +145,7 @@ namespace Conn.Editor.Maps
                     Height = profile.RoomHeight,
                     SocketMask = node.SocketMask,
                     HeightLevel = 0,
-                    ZoneId = string.Empty,
+                    ZoneId = zoneId,
                     ChunkId = node.ChunkId ?? string.Empty
                 });
 
@@ -127,7 +155,16 @@ namespace Conn.Editor.Maps
             target.Rooms = rooms.ToArray();
             target.Objects = objects.ToArray();
             target.Sockets = sockets.ToArray();
-            target.Zones = Array.Empty<EditableMapZone>();
+            target.Zones = new[]
+            {
+                new EditableMapZone
+                {
+                    Id = zoneId,
+                    ThemeId = profile.Theme ?? string.Empty,
+                    IntendedDifficulty = Mathf.Max(0, difficulty),
+                    Purpose = "generated_main"
+                }
+            };
         }
 
         public static string BuildDefaultAssetPath(string baseName)
@@ -145,9 +182,19 @@ namespace Conn.Editor.Maps
             }
         }
 
-        private static Dictionary<string, RoomChunkAsset> BuildChunkLookup()
+        private static Dictionary<string, RoomChunkSource> BuildChunkLookup(IReadOnlyList<ChunkPreset> runtimeChunks)
         {
-            var lookup = new Dictionary<string, RoomChunkAsset>(StringComparer.Ordinal);
+            var lookup = new Dictionary<string, RoomChunkSource>(StringComparer.Ordinal);
+            foreach (var runtimeChunk in runtimeChunks ?? Array.Empty<ChunkPreset>())
+            {
+                if (runtimeChunk == null || string.IsNullOrWhiteSpace(runtimeChunk.Id) || lookup.ContainsKey(runtimeChunk.Id))
+                {
+                    continue;
+                }
+
+                lookup.Add(runtimeChunk.Id, RoomChunkSource.FromRuntime(runtimeChunk));
+            }
+
             var guids = new List<string>();
             guids.AddRange(AssetDatabase.FindAssets("t:RoomChunkAsset"));
             guids.AddRange(AssetDatabase.FindAssets("t:LandmarkRoomAsset"));
@@ -161,7 +208,7 @@ namespace Conn.Editor.Maps
                     continue;
                 }
 
-                lookup.Add(chunk.Id, chunk);
+                lookup.Add(chunk.Id, RoomChunkSource.FromAuthoring(chunk));
             }
 
             return lookup;
@@ -242,7 +289,8 @@ namespace Conn.Editor.Maps
             int originY,
             int roomWidth,
             int roomHeight,
-            string roomId)
+            string roomId,
+            string zoneId)
         {
             for (var y = 0; y < roomHeight; y++)
             {
@@ -250,6 +298,7 @@ namespace Conn.Editor.Maps
                 {
                     var cell = EditableMapCell.CreateDefault(originX + x, originY + y);
                     cell.RoomId = roomId ?? string.Empty;
+                    cell.ZoneId = zoneId ?? string.Empty;
                     cell.Terrain = RoomChunkCellType.Floor;
                     target.TrySetCell(cell);
                 }
@@ -258,16 +307,18 @@ namespace Conn.Editor.Maps
 
         private static void StampChunk(
             EditableMapDraftAsset target,
-            RoomChunkAsset chunk,
+            RoomChunkSource chunk,
             int originX,
             int originY,
             string roomId,
+            string zoneId,
             List<EditableMapObjectPlacement> objects)
         {
-            foreach (var sourceCell in chunk.Cells ?? Array.Empty<RoomChunkCell>())
+            foreach (var sourceCell in chunk.Cells)
             {
                 var cell = EditableMapCell.CreateDefault(originX + sourceCell.X, originY + sourceCell.Y);
                 cell.RoomId = roomId ?? string.Empty;
+                cell.ZoneId = zoneId ?? string.Empty;
                 cell.Terrain = sourceCell.Type;
                 cell.Height = sourceCell.Height;
                 cell.Direction = sourceCell.Direction;
@@ -275,7 +326,7 @@ namespace Conn.Editor.Maps
                 target.TrySetCell(cell);
             }
 
-            foreach (var sourceObject in chunk.Objects ?? Array.Empty<RoomChunkObjectPlacement>())
+            foreach (var sourceObject in chunk.Objects)
             {
                 objects.Add(new EditableMapObjectPlacement
                 {
@@ -293,6 +344,11 @@ namespace Conn.Editor.Maps
                     MaterialId = sourceObject.MaterialId ?? string.Empty
                 });
             }
+        }
+
+        private static string BuildZoneId(MapProfile profile, int floor, int difficulty)
+        {
+            return $"{profile.ProfileId}_zone_f{Mathf.Max(1, floor)}_d{Mathf.Max(0, difficulty)}";
         }
 
         private static void CreateSocketsForNode(
@@ -376,6 +432,30 @@ namespace Conn.Editor.Maps
             }
 
             return string.IsNullOrWhiteSpace(sanitized) ? "EditableMapDraft" : sanitized;
+        }
+
+        private readonly struct RoomChunkSource
+        {
+            public readonly RoomChunkLayoutKind LayoutKind;
+            public readonly IReadOnlyList<RoomChunkCell> Cells;
+            public readonly IReadOnlyList<RoomChunkObjectPlacement> Objects;
+
+            private RoomChunkSource(RoomChunkLayoutKind layoutKind, IReadOnlyList<RoomChunkCell> cells, IReadOnlyList<RoomChunkObjectPlacement> objects)
+            {
+                LayoutKind = layoutKind;
+                Cells = cells ?? Array.Empty<RoomChunkCell>();
+                Objects = objects ?? Array.Empty<RoomChunkObjectPlacement>();
+            }
+
+            public static RoomChunkSource FromRuntime(ChunkPreset chunk)
+            {
+                return new RoomChunkSource(chunk.LayoutKind, chunk.Cells, chunk.Objects);
+            }
+
+            public static RoomChunkSource FromAuthoring(RoomChunkAsset chunk)
+            {
+                return new RoomChunkSource(chunk.LayoutKind, chunk.Cells, chunk.Objects);
+            }
         }
     }
 }

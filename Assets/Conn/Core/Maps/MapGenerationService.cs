@@ -13,6 +13,7 @@ namespace Conn.Core.Maps
             var pathLength = random.Next(profile.CriticalPathMin, profile.CriticalPathMax + 1);
             var x = 0;
             var y = profile.Height / profile.RoomHeight / 2;
+            var hubAttachIndex = Math.Max(1, Math.Min(pathLength - 5, pathLength / 2));
 
             for (var i = 0; i < pathLength; i++)
             {
@@ -27,7 +28,7 @@ namespace Conn.Core.Maps
 
             for (var i = 0; i < profile.SideBranchCount; i++)
             {
-                var attachIndex = Math.Max(1, Math.Min(pathLength - 2, 1 + i));
+                var attachIndex = hubAttachIndex;
                 var branchY = y + (i % 2 == 0 ? 1 : -1);
                 var branchId = $"side_{i}_a";
                 var branchEndId = $"side_{i}_b";
@@ -38,12 +39,13 @@ namespace Conn.Core.Maps
                 draft.Graph.SideBranches.Add(branchEndId);
             }
 
-            var loopBudget = random.Next(profile.LoopMin, profile.LoopMax + 1);
-            for (var i = 0; i < loopBudget && i < draft.Graph.SideBranches.Count; i++)
+            var loopBudget = Math.Min(Math.Max(0, random.Next(profile.LoopMin, profile.LoopMax + 1)), Math.Max(0, draft.Graph.SideBranches.Count - 1));
+            for (var i = 0; i < loopBudget && i < draft.Graph.SideBranches.Count - 1; i++)
             {
                 var sideId = draft.Graph.SideBranches[i];
                 var side = FindNode(draft.Graph, sideId);
-                var target = $"main_{side.GridX}";
+                var targetIndex = Math.Max(1, Math.Min(side.GridX, pathLength - 4));
+                var target = $"main_{targetIndex}";
                 if (!HasEdge(draft.Graph, sideId, target))
                 {
                     AddEdge(draft.Graph, sideId, target, "merge");
@@ -51,6 +53,7 @@ namespace Conn.Core.Maps
             }
 
             AssignSockets(draft.Graph);
+            AssignLayoutKinds(draft.Graph, random);
             AssignChunksAndPlacements(draft, profile, chunks);
             return draft;
         }
@@ -150,7 +153,7 @@ namespace Conn.Core.Maps
             for (var i = 0; i < draft.Graph.Nodes.Count; i++)
             {
                 var node = draft.Graph.Nodes[i];
-                var chunk = FindChunk(chunks, node.Role, node.SocketMask, profile.Theme, profile.RoomWidth, profile.RoomHeight);
+                var chunk = FindChunk(chunks, node.Role, node.LayoutKind, node.SocketMask, profile.Theme, profile.RoomWidth, profile.RoomHeight);
                 node.ChunkId = chunk.Id;
 
                 if (TryRequiredPlacementKind(node.Role, out var placementKind))
@@ -167,6 +170,56 @@ namespace Conn.Core.Maps
                 {
                     AddPlacement(draft, profile, node, chunk, MapPlacementKind.Loot, $"loot_{node.Id}");
                 }
+            }
+        }
+
+        private static void AssignLayoutKinds(RoomGraph graph, Random random)
+        {
+            if (graph == null)
+            {
+                return;
+            }
+
+            var preferredHeightTransitionId = FindPreferredHeightTransitionNodeId(graph, random);
+            for (var i = 0; i < graph.Nodes.Count; i++)
+            {
+                var node = graph.Nodes[i];
+                var degree = CountConnections(graph, node.Id);
+                var sockets = node.SocketMask;
+
+                if (node.Role == MapRoomRole.SideBranch)
+                {
+                    node.LayoutKind = degree == 1
+                        ? RoomChunkLayoutKind.DeadEnd
+                        : RoomChunkLayoutKind.Room;
+                    continue;
+                }
+
+                if (node.Role != MapRoomRole.MainPath)
+                {
+                    node.LayoutKind = RoomChunkLayoutKind.Room;
+                    continue;
+                }
+
+                if (node.Id == preferredHeightTransitionId)
+                {
+                    node.LayoutKind = RoomChunkLayoutKind.HeightTransition;
+                    continue;
+                }
+
+                if (degree >= 3)
+                {
+                    node.LayoutKind = RoomChunkLayoutKind.Hub;
+                    continue;
+                }
+
+                if (degree == 2 && IsOpposingSockets(sockets))
+                {
+                    node.LayoutKind = RoomChunkLayoutKind.Corridor;
+                    continue;
+                }
+
+                node.LayoutKind = RoomChunkLayoutKind.Room;
             }
         }
 
@@ -190,8 +243,17 @@ namespace Conn.Core.Maps
             });
         }
 
-        private static ChunkPreset FindChunk(IReadOnlyList<ChunkPreset> chunks, MapRoomRole role, MapDirection sockets, string theme, int width, int height)
+        private static ChunkPreset FindChunk(IReadOnlyList<ChunkPreset> chunks, MapRoomRole role, RoomChunkLayoutKind layoutKind, MapDirection sockets, string theme, int width, int height)
         {
+            for (var i = 0; i < chunks.Count; i++)
+            {
+                if (chunks[i].LayoutKind == layoutKind
+                    && chunks[i].Supports(role, sockets, theme, width, height))
+                {
+                    return chunks[i];
+                }
+            }
+
             for (var i = 0; i < chunks.Count; i++)
             {
                 if (chunks[i].Supports(role, sockets, theme, width, height))
@@ -200,7 +262,7 @@ namespace Conn.Core.Maps
                 }
             }
 
-            throw new InvalidOperationException($"No chunk supports role {role} with sockets {sockets}.");
+            throw new InvalidOperationException($"No chunk supports role {role} with layout {layoutKind} and sockets {sockets}.");
         }
 
         private static ChunkAnchor FindAnchor(ChunkPreset chunk, MapAnchorKind kind)
@@ -305,6 +367,57 @@ namespace Conn.Core.Maps
             }
 
             return direction == MapDirection.South ? MapDirection.North : MapDirection.East;
+        }
+
+        private static string FindPreferredHeightTransitionNodeId(RoomGraph graph, Random random)
+        {
+            var candidates = new List<RoomGraphNode>();
+            var fallbackCandidates = new List<RoomGraphNode>();
+            for (var i = 0; i < graph.Nodes.Count; i++)
+            {
+                var node = graph.Nodes[i];
+                if (node.Role == MapRoomRole.MainPath && node.PathIndex > 0 && node.PathIndex < graph.CriticalPath.Count - 2)
+                {
+                    fallbackCandidates.Add(node);
+                    if (CountConnections(graph, node.Id) < 3)
+                    {
+                        candidates.Add(node);
+                    }
+                }
+            }
+
+            if (candidates.Count == 0)
+            {
+                if (fallbackCandidates.Count == 0)
+                {
+                    return string.Empty;
+                }
+
+                return fallbackCandidates[random.Next(0, fallbackCandidates.Count)].Id;
+            }
+
+            return candidates[random.Next(0, candidates.Count)].Id;
+        }
+
+        private static int CountConnections(RoomGraph graph, string nodeId)
+        {
+            var count = 0;
+            for (var i = 0; i < graph.Edges.Count; i++)
+            {
+                var edge = graph.Edges[i];
+                if (edge.FromNodeId == nodeId || edge.ToNodeId == nodeId)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        private static bool IsOpposingSockets(MapDirection sockets)
+        {
+            return sockets == (MapDirection.East | MapDirection.West)
+                || sockets == (MapDirection.North | MapDirection.South);
         }
 
         private static void ValidateProfile(MapProfile profile)

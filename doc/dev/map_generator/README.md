@@ -46,11 +46,16 @@ As of 2026-05-30, the first draft-backed path is now in the project:
 - `MapGeneratorWorkspaceEditor` now has a bridge button that saves the current
   generated result as an `EditableMapDraftAsset` without making the workspace a
   required dependency of the new pipeline.
+- The fallback catalog generator is now layout-aware for the current ruins
+  slice: it assigns hub, corridor, dead-end, and height-transition room kinds
+  intentionally, selects matching chunk presets deterministically from role +
+  layout + sockets, and rasterizes those chunk cells/objects directly into the
+  generated editable draft.
 
 This is no longer only a Phase 1/2 slice. Draft authoring, palettes, preview,
-validation, and first-pass bake/runtime consumption now exist, but Scene View
-painting, richer route validation, generator depth, and full dungeon gameplay
-integration are still pending.
+validation, first-pass bake/runtime consumption, and initial layout-aware draft
+generation now exist, but richer route validation, deeper generator authoring,
+and full dungeon gameplay integration are still pending.
 
 ## Manual Unity Check Steps
 

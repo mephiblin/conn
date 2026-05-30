@@ -206,11 +206,13 @@ namespace Conn.Editor.Maps
                 var runtimeProfile = workspace.MapProfile != null
                     ? workspace.MapProfile.ToRuntimeProfile()
                     : MapGenerationCatalog.ChapterTwoFirstSliceProfile();
+                var runtimeChunks = ResolveRuntimeChunks(workspace, runtimeProfile);
                 var assetPath = EditableMapDraftBuilder.BuildDefaultAssetPath($"{generated.Draft.ProfileId}_{generated.Draft.Seed}_draft");
                 var draftAsset = EditableMapDraftBuilder.CreateDraftAssetFromGenerated(
                     assetPath,
                     generated.Draft,
                     runtimeProfile,
+                    runtimeChunks,
                     workspace.Floor,
                     workspace.Difficulty,
                     workspace.PreviewCellSize,
@@ -223,6 +225,25 @@ namespace Conn.Editor.Maps
             {
                 Debug.LogException(exception);
             }
+        }
+
+        private static System.Collections.Generic.IReadOnlyList<ChunkPreset> ResolveRuntimeChunks(MapGeneratorWorkspace workspace, MapProfile runtimeProfile)
+        {
+            if (workspace.MapProfile != null)
+            {
+                var snapshot = MapAuthoringValidationService.FindAuthoringAssets();
+                var bundle = RuntimeMapGenerationBundleBuilder.Build(
+                    snapshot,
+                    Mathf.Max(1, workspace.Floor),
+                    Mathf.Max(0, workspace.Difficulty));
+                var entry = bundle.FindProfile(runtimeProfile.ProfileId);
+                if (entry != null)
+                {
+                    return entry.Chunks;
+                }
+            }
+
+            return MapGenerationCatalog.ChapterTwoFirstSliceChunks();
         }
 
         private static GeneratedMapResult Generate(MapGeneratorWorkspace workspace)

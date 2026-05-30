@@ -974,21 +974,21 @@ is partially complete.
 
 ### Phase 5: Generator To Draft
 
-- [ ] Add `EditableMapDraftBuilder`.
-- [ ] Generate rooms/zones before rasterizing cells.
-- [ ] Assign `RoomChunkLayoutKind` during generation.
-- [ ] Generate hub nodes intentionally.
-- [ ] Generate corridor nodes intentionally.
-- [ ] Generate short dead-end stubs intentionally.
-- [ ] Generate height-transition nodes intentionally.
-- [ ] Choose chunks by role, layout kind, sockets, theme, and size.
-- [ ] Rasterize selected chunk cells into the draft grid.
-- [ ] Stamp selected chunk object placements into the draft.
-- [ ] Create cell-level sockets from room/chunk sockets.
-- [ ] Preserve deterministic output for the same profile and seed.
+- [x] Add `EditableMapDraftBuilder`.
+- [x] Generate rooms/zones before rasterizing cells.
+- [x] Assign `RoomChunkLayoutKind` during generation.
+- [x] Generate hub nodes intentionally.
+- [x] Generate corridor nodes intentionally.
+- [x] Generate short dead-end stubs intentionally.
+- [x] Generate height-transition nodes intentionally.
+- [x] Choose chunks by role, layout kind, sockets, theme, and size.
+- [x] Rasterize selected chunk cells into the draft grid.
+- [x] Stamp selected chunk object placements into the draft.
+- [x] Create cell-level sockets from room/chunk sockets.
+- [x] Preserve deterministic output for the same profile and seed.
 - [ ] Treat old `GeneratedMapDraft` only as adapter input.
-- [ ] Add tests for deterministic draft generation.
-- [ ] Add tests that generated drafts include requested layout kinds when the
+- [x] Add tests for deterministic draft generation.
+- [x] Add tests that generated drafts include requested layout kinds when the
   profile requires them.
 
 ### Phase 6: Connectivity And Height Validation
