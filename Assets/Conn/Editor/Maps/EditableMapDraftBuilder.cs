@@ -131,6 +131,8 @@ namespace Conn.Editor.Maps
             target.Id = $"{generatedDraft.ProfileId}_{generatedDraft.Seed}_draft";
             target.SourceProfileId = generatedDraft.ProfileId ?? string.Empty;
             target.Seed = generatedDraft.Seed;
+            target.GenerationRetryCount = Mathf.Max(0, generatedDraft.RetryCount);
+            target.GenerationFailureReason = generatedDraft.FailureReason ?? string.Empty;
             target.Floor = Mathf.Max(1, floor);
             target.Difficulty = Mathf.Max(0, difficulty);
             target.Version = 1;

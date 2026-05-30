@@ -2,6 +2,7 @@ using Conn.Authoring.Maps;
 using Conn.Core.Maps;
 using System;
 using System.Collections.Generic;
+using System.Text;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -20,6 +21,7 @@ namespace Conn.Editor.Maps
             EditorGUILayout.LabelField("Layout Snapshot Source", EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.MapProfile)));
             DrawProfileSummary(workspace.MapProfile);
+            DrawProfileEditor(workspace.MapProfile);
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.Seed)));
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.Floor)));
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.Difficulty)));
@@ -52,10 +54,15 @@ namespace Conn.Editor.Maps
                     MarkSceneDirty(workspace);
                 }
             }
+            else if (!ProfileValidationPassed(workspace.MapProfile, workspace))
+            {
+                EditorGUILayout.HelpBox("Run Validate Profile after editing profile rules or pools. Generate Preview stays disabled until the latest validation passes.", MessageType.Warning);
+            }
 
             using (new EditorGUILayout.HorizontalScope())
             {
-                using (new EditorGUI.DisabledScope(workspace.MapProfile == null))
+                var canGenerate = workspace.MapProfile != null && ProfileValidationPassed(workspace.MapProfile, workspace);
+                using (new EditorGUI.DisabledScope(!canGenerate))
                 {
                     if (GUILayout.Button("Generate Preview"))
                     {
@@ -69,6 +76,18 @@ namespace Conn.Editor.Maps
                         Undo.RecordObject(workspace, "Random Map Preview Seed");
                         workspace.Seed = UnityEngine.Random.Range(1, int.MaxValue);
                         GeneratePreview(workspace);
+                    }
+                }
+            }
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                using (new EditorGUI.DisabledScope(workspace.MapProfile == null))
+                {
+                    if (GUILayout.Button("Validate Profile"))
+                    {
+                        serializedObject.ApplyModifiedProperties();
+                        ValidateProfile(workspace);
                     }
                 }
             }
@@ -134,6 +153,10 @@ namespace Conn.Editor.Maps
 
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Last Result", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Profile Validation", workspace.LastProfileValidation);
+            EditorGUILayout.LabelField("Required Rooms", workspace.LastProfileRequiredRoomCount.ToString());
+            EditorGUILayout.LabelField("Pool Count", workspace.LastProfilePoolCount.ToString());
+            EditorGUILayout.LabelField("Socket Coverage", $"{workspace.LastProfileSocketCoverage}/4");
             EditorGUILayout.LabelField("Map", string.IsNullOrWhiteSpace(workspace.LastGeneratedMapId) ? "(none)" : workspace.LastGeneratedMapId);
             EditorGUILayout.LabelField("Profile", string.IsNullOrWhiteSpace(workspace.LastGeneratedProfileId) ? "(none)" : workspace.LastGeneratedProfileId);
             EditorGUILayout.LabelField("Seed", workspace.LastGeneratedSeed.ToString());
@@ -141,9 +164,25 @@ namespace Conn.Editor.Maps
             EditorGUILayout.LabelField("Rooms", workspace.LastRoomCount.ToString());
             EditorGUILayout.LabelField("Edges", workspace.LastEdgeCount.ToString());
             EditorGUILayout.LabelField("Placements", workspace.LastPlacementCount.ToString());
+            EditorGUILayout.LabelField("Chunks Selected", workspace.LastGeneratedChunkCount.ToString());
+            EditorGUILayout.LabelField("Retry Count", workspace.LastGeneratedRetryCount.ToString());
+            EditorGUILayout.LabelField("Failure Reason", string.IsNullOrWhiteSpace(workspace.LastGenerationFailureReason) ? "(none)" : workspace.LastGenerationFailureReason);
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.PreviewRooms)), true);
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.PreviewEdges)), true);
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.PreviewPlacements)), true);
+
+            if (workspace.LastProfileReport != null)
+            {
+                for (var i = 0; i < workspace.LastProfileReport.Errors.Count; i++)
+                {
+                    EditorGUILayout.HelpBox(workspace.LastProfileReport.Errors[i], MessageType.Error);
+                }
+
+                for (var i = 0; i < workspace.LastProfileReport.Warnings.Count; i++)
+                {
+                    EditorGUILayout.HelpBox(workspace.LastProfileReport.Warnings[i], MessageType.Warning);
+                }
+            }
 
             if (workspace.LastReport != null)
             {
@@ -171,6 +210,8 @@ namespace Conn.Editor.Maps
             EditorGUILayout.LabelField("Room Count", $"{profile.RoomCountMin} - {profile.RoomCountMax}");
             EditorGUILayout.LabelField("Critical Path", $"{profile.CriticalPathMin} - {profile.CriticalPathMax}");
             EditorGUILayout.LabelField("Side Branches", profile.SideBranchCount.ToString());
+            EditorGUILayout.LabelField("Required Rooms", CountRequiredRooms(profile).ToString());
+            EditorGUILayout.LabelField("Socket Coverage", $"{CountSocketCoverage(profile)}/4 directions");
             EditorGUILayout.LabelField(
                 "Room Asset Pools",
                 $"typed pools={Count(profile.RoomPools)}, legacy chunks={Count(profile.OptionalChunks)}, required landmarks={Count(profile.RequiredLandmarkRooms)}, optional landmarks={Count(profile.OptionalLandmarks)}");
@@ -185,6 +226,86 @@ namespace Conn.Editor.Maps
                 EditorGUILayout.LabelField(
                     $"{pool.Role}/{pool.LayoutKind}",
                     $"required={pool.Required}, min={pool.MinCount}, max={FormatMax(pool.MaxCount)}, weight={pool.Weight}, chunks={Count(pool.AllowedChunks)}");
+            }
+        }
+
+        private static void DrawProfileEditor(MapProfileAsset profile)
+        {
+            if (profile == null)
+            {
+                return;
+            }
+
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Profile Rules", EditorStyles.boldLabel);
+            var profileObject = new SerializedObject(profile);
+            profileObject.Update();
+            EditorGUILayout.PropertyField(profileObject.FindProperty(nameof(MapProfileAsset.Id)));
+            EditorGUILayout.PropertyField(profileObject.FindProperty(nameof(MapProfileAsset.DisplayName)));
+            EditorGUILayout.PropertyField(profileObject.FindProperty(nameof(MapProfileAsset.MapKind)));
+            EditorGUILayout.PropertyField(profileObject.FindProperty(nameof(MapProfileAsset.ThemeId)));
+            EditorGUILayout.PropertyField(profileObject.FindProperty(nameof(MapProfileAsset.GridSize)));
+            EditorGUILayout.PropertyField(profileObject.FindProperty(nameof(MapProfileAsset.RoomSize)));
+            EditorGUILayout.PropertyField(profileObject.FindProperty(nameof(MapProfileAsset.RoomCountMin)));
+            EditorGUILayout.PropertyField(profileObject.FindProperty(nameof(MapProfileAsset.RoomCountMax)));
+            EditorGUILayout.PropertyField(profileObject.FindProperty(nameof(MapProfileAsset.CriticalPathMin)));
+            EditorGUILayout.PropertyField(profileObject.FindProperty(nameof(MapProfileAsset.CriticalPathMax)));
+            EditorGUILayout.PropertyField(profileObject.FindProperty(nameof(MapProfileAsset.SideBranchCount)));
+            EditorGUILayout.PropertyField(profileObject.FindProperty(nameof(MapProfileAsset.LoopMin)));
+            EditorGUILayout.PropertyField(profileObject.FindProperty(nameof(MapProfileAsset.LoopMax)));
+            EditorGUILayout.PropertyField(profileObject.FindProperty(nameof(MapProfileAsset.RequiredAnchors)), true);
+            EditorGUILayout.PropertyField(profileObject.FindProperty(nameof(MapProfileAsset.ResourceSet)));
+            DrawPoolEditor(profileObject.FindProperty(nameof(MapProfileAsset.RoomPools)));
+
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Legacy Bridge", EditorStyles.miniBoldLabel);
+            EditorGUILayout.PropertyField(profileObject.FindProperty(nameof(MapProfileAsset.OptionalChunks)), true);
+            EditorGUILayout.PropertyField(profileObject.FindProperty(nameof(MapProfileAsset.RequiredLandmarkRooms)), true);
+            EditorGUILayout.PropertyField(profileObject.FindProperty(nameof(MapProfileAsset.OptionalLandmarks)), true);
+
+            profileObject.ApplyModifiedProperties();
+            if (GUI.changed)
+            {
+                EditorUtility.SetDirty(profile);
+            }
+        }
+
+        private static void DrawPoolEditor(SerializedProperty poolsProperty)
+        {
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Room Pools", EditorStyles.boldLabel);
+            if (GUILayout.Button("Add Pool"))
+            {
+                var index = poolsProperty.arraySize;
+                poolsProperty.InsertArrayElementAtIndex(index);
+                var pool = poolsProperty.GetArrayElementAtIndex(index);
+                pool.FindPropertyRelative(nameof(MapRoomPoolRule.Role)).enumValueIndex = 0;
+                pool.FindPropertyRelative(nameof(MapRoomPoolRule.LayoutKind)).enumValueIndex = 0;
+                pool.FindPropertyRelative(nameof(MapRoomPoolRule.Weight)).intValue = 1;
+            }
+
+            for (var i = 0; i < poolsProperty.arraySize; i++)
+            {
+                var pool = poolsProperty.GetArrayElementAtIndex(i);
+                using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+                {
+                    EditorGUILayout.BeginHorizontal();
+                    EditorGUILayout.LabelField($"Pool {i + 1}", EditorStyles.boldLabel);
+                    if (GUILayout.Button("Remove", GUILayout.Width(70f)))
+                    {
+                        poolsProperty.DeleteArrayElementAtIndex(i);
+                        break;
+                    }
+                    EditorGUILayout.EndHorizontal();
+
+                    EditorGUILayout.PropertyField(pool.FindPropertyRelative(nameof(MapRoomPoolRule.Role)));
+                    EditorGUILayout.PropertyField(pool.FindPropertyRelative(nameof(MapRoomPoolRule.LayoutKind)));
+                    EditorGUILayout.PropertyField(pool.FindPropertyRelative(nameof(MapRoomPoolRule.MinCount)));
+                    EditorGUILayout.PropertyField(pool.FindPropertyRelative(nameof(MapRoomPoolRule.MaxCount)));
+                    EditorGUILayout.PropertyField(pool.FindPropertyRelative(nameof(MapRoomPoolRule.Weight)));
+                    EditorGUILayout.PropertyField(pool.FindPropertyRelative(nameof(MapRoomPoolRule.Required)));
+                    EditorGUILayout.PropertyField(pool.FindPropertyRelative(nameof(MapRoomPoolRule.AllowedChunks)), true);
+                }
             }
         }
 
@@ -262,6 +383,178 @@ namespace Conn.Editor.Maps
             }
 
             return false;
+        }
+
+        private static int CountRequiredRooms(MapProfileAsset profile)
+        {
+            var count = 0;
+            foreach (var pool in GetEffectiveRoomPools(profile))
+            {
+                if (pool != null && pool.Required)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        private static int CountSocketCoverage(MapProfileAsset profile)
+        {
+            var covered = MapDirection.None;
+            foreach (var pool in GetEffectiveRoomPools(profile))
+            {
+                if (pool == null)
+                {
+                    continue;
+                }
+
+                foreach (var chunk in pool.AllowedChunks ?? Array.Empty<RoomChunkAsset>())
+                {
+                    if (chunk == null)
+                    {
+                        continue;
+                    }
+
+                    foreach (var socket in ResolveSocketDefinitions(chunk))
+                    {
+                        if (RoomChunkSocketRules.AllowsConnection(socket))
+                        {
+                            covered |= socket.Side;
+                        }
+                    }
+                }
+            }
+
+            return CountDirections(covered);
+        }
+
+        private static RoomChunkSocketDefinition[] ResolveSocketDefinitions(RoomChunkAsset chunk)
+        {
+            if (chunk.SocketDefinitions != null && chunk.SocketDefinitions.Length > 0)
+            {
+                return chunk.SocketDefinitions;
+            }
+
+            var sockets = new List<RoomChunkSocketDefinition>();
+            foreach (var side in RoomChunkSocketRules.EnumerateSides(MapDirection.North | MapDirection.East | MapDirection.South | MapDirection.West))
+            {
+                var isOpen = (chunk.OpenSides & side) != MapDirection.None;
+                sockets.Add(new RoomChunkSocketDefinition
+                {
+                    Side = side,
+                    SocketType = !isOpen
+                        ? RoomChunkSocketType.Blocked
+                        : chunk.LayoutKind == RoomChunkLayoutKind.Corridor
+                            ? RoomChunkSocketType.Corridor
+                            : RoomChunkSocketType.Door,
+                    SocketId = !isOpen
+                        ? string.Empty
+                        : chunk.LayoutKind == RoomChunkLayoutKind.Corridor
+                            ? "corridor"
+                            : "door"
+                });
+            }
+
+            return sockets.ToArray();
+        }
+
+        private static int CountDirections(MapDirection sides)
+        {
+            var count = 0;
+            foreach (var _ in RoomChunkSocketRules.EnumerateSides(sides))
+            {
+                count++;
+            }
+
+            return count;
+        }
+
+        private static bool ProfileValidationPassed(MapProfileAsset profile, MapGeneratorWorkspace workspace)
+        {
+            if (profile == null || workspace == null)
+            {
+                return false;
+            }
+
+            return workspace.LastProfileValidation == "Passed"
+                && string.Equals(workspace.LastValidatedProfileSignature, BuildProfileSignature(profile), StringComparison.Ordinal);
+        }
+
+        private static void ValidateProfile(MapGeneratorWorkspace workspace)
+        {
+            var profile = workspace.MapProfile;
+            if (profile == null)
+            {
+                return;
+            }
+
+            var snapshot = MapAuthoringValidationService.FindAuthoringAssets();
+            var report = MapAuthoringValidationService.Validate(snapshot);
+            Undo.RecordObject(workspace, "Validate Map Profile");
+            workspace.SetProfileValidationResult(
+                report,
+                BuildProfileSignature(profile),
+                CountRequiredRooms(profile),
+                CountEffectivePools(profile),
+                CountSocketCoverage(profile));
+            EditorUtility.SetDirty(workspace);
+            MarkSceneDirty(workspace);
+        }
+
+        private static string BuildProfileSignature(MapProfileAsset profile)
+        {
+            if (profile == null)
+            {
+                return string.Empty;
+            }
+
+            var builder = new StringBuilder();
+            builder.Append(profile.Id).Append('|');
+            builder.Append(profile.DisplayName).Append('|');
+            builder.Append(profile.MapKind).Append('|');
+            builder.Append(profile.ThemeId).Append('|');
+            builder.Append(profile.GridSize.x).Append(',').Append(profile.GridSize.y).Append('|');
+            builder.Append(profile.RoomSize.x).Append(',').Append(profile.RoomSize.y).Append('|');
+            builder.Append(profile.RoomCountMin).Append('|').Append(profile.RoomCountMax).Append('|');
+            builder.Append(profile.CriticalPathMin).Append('|').Append(profile.CriticalPathMax).Append('|');
+            builder.Append(profile.SideBranchCount).Append('|').Append(profile.LoopMin).Append('|').Append(profile.LoopMax).Append('|');
+            foreach (var pool in GetEffectiveRoomPools(profile))
+            {
+                if (pool == null)
+                {
+                    continue;
+                }
+
+                builder.Append(pool.Role).Append(':')
+                    .Append(pool.LayoutKind).Append(':')
+                    .Append(pool.MinCount).Append(':')
+                    .Append(pool.MaxCount).Append(':')
+                    .Append(pool.Weight).Append(':')
+                    .Append(pool.Required).Append(':');
+                foreach (var chunk in pool.AllowedChunks ?? Array.Empty<RoomChunkAsset>())
+                {
+                    builder.Append(chunk != null ? chunk.Id : "null").Append(',');
+                }
+
+                builder.Append('|');
+            }
+
+            return builder.ToString();
+        }
+
+        private static int CountEffectivePools(MapProfileAsset profile)
+        {
+            var count = 0;
+            foreach (var pool in GetEffectiveRoomPools(profile))
+            {
+                if (pool != null)
+                {
+                    count++;
+                }
+            }
+
+            return count;
         }
 
         private static void GeneratePreview(MapGeneratorWorkspace workspace)

@@ -96,7 +96,10 @@ namespace Conn.Core.Maps
             var plan = BuildNodePlan(profile, occupiedCells, neighborLookup, criticalPath, roomPools, attemptSeed);
             var states = BuildSolverStates(plan, templates);
             SolveStates(states, templates, attemptSeed, retryIndex);
-            return BuildDraft(profile, seed, states, templates);
+            var draft = BuildDraft(profile, seed, states, templates);
+            draft.RetryCount = retryIndex;
+            draft.FailureReason = string.Empty;
+            return draft;
         }
 
         private static List<CellCoordinate> BuildOccupiedCells(int width, int height, int targetRoomCount, int targetLoops, Random random)

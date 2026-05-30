@@ -33,6 +33,14 @@ namespace Conn.Editor.Maps
         public int LastRoomCount;
         public int LastEdgeCount;
         public int LastPlacementCount;
+        public int LastGeneratedChunkCount;
+        public int LastGeneratedRetryCount;
+        public string LastGenerationFailureReason = string.Empty;
+        public string LastProfileValidation = "Not validated";
+        public string LastValidatedProfileSignature = string.Empty;
+        public int LastProfileRequiredRoomCount;
+        public int LastProfilePoolCount;
+        public int LastProfileSocketCoverage;
         public string LastValidation = "Not generated";
         public PreviewRoom[] PreviewRooms = Array.Empty<PreviewRoom>();
         public PreviewEdge[] PreviewEdges = Array.Empty<PreviewEdge>();
@@ -42,6 +50,7 @@ namespace Conn.Editor.Maps
         [NonSerialized] public EditableMapDraftAsset LastEditableDraft;
         public CompiledMap LastCompiled { get; private set; }
         public MapValidationReport LastReport { get; private set; }
+        public MapValidationReport LastProfileReport { get; private set; }
 
         public bool HasPreviewSnapshot
         {
@@ -90,9 +99,31 @@ namespace Conn.Editor.Maps
             LastGeneratedDifficulty = Mathf.Max(0, Difficulty);
             LastRoomCount = draft?.Rooms?.Length ?? 0;
             LastPlacementCount = compiled?.Placements?.Count ?? 0;
+            LastGeneratedChunkCount = CountUniqueChunks(draft);
+            LastGeneratedRetryCount = draft?.GenerationRetryCount ?? 0;
+            LastGenerationFailureReason = report == null || report.Passed
+                ? string.Empty
+                : !string.IsNullOrWhiteSpace(draft?.GenerationFailureReason)
+                    ? draft.GenerationFailureReason
+                    : report.Errors.Count > 0 ? report.Errors[0] : "Generation failed.";
             LastValidation = report == null ? "Not validated" : report.Passed ? "Passed" : "Failed";
             CapturePreviewSnapshot(draft, compiled);
             LastEdgeCount = PreviewEdges?.Length ?? 0;
+        }
+
+        public void SetProfileValidationResult(
+            MapValidationReport report,
+            string signature,
+            int requiredRoomCount,
+            int poolCount,
+            int socketCoverage)
+        {
+            LastProfileReport = report;
+            LastProfileValidation = report == null ? "Not validated" : report.Passed ? "Passed" : "Failed";
+            LastValidatedProfileSignature = signature ?? string.Empty;
+            LastProfileRequiredRoomCount = Mathf.Max(0, requiredRoomCount);
+            LastProfilePoolCount = Mathf.Max(0, poolCount);
+            LastProfileSocketCoverage = Mathf.Max(0, socketCoverage);
         }
 
         public void ClearGeneratedResult()
@@ -109,6 +140,9 @@ namespace Conn.Editor.Maps
             LastRoomCount = 0;
             LastEdgeCount = 0;
             LastPlacementCount = 0;
+            LastGeneratedChunkCount = 0;
+            LastGeneratedRetryCount = 0;
+            LastGenerationFailureReason = string.Empty;
             LastValidation = "Not generated";
             ClearPreviewSnapshot();
         }
@@ -269,6 +303,26 @@ namespace Conn.Editor.Maps
 #endif
             }
         }
+
+        private static int CountUniqueChunks(EditableMapDraftAsset draft)
+        {
+            if (draft?.Rooms == null)
+            {
+                return 0;
+            }
+
+            var ids = new System.Collections.Generic.HashSet<string>(StringComparer.Ordinal);
+            for (var i = 0; i < draft.Rooms.Length; i++)
+            {
+                if (!string.IsNullOrWhiteSpace(draft.Rooms[i].ChunkId))
+                {
+                    ids.Add(draft.Rooms[i].ChunkId);
+                }
+            }
+
+            return ids.Count;
+        }
+
 
         private bool TryFindRoom(string id, out PreviewRoom room)
         {

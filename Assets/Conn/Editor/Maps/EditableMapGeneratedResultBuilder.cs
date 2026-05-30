@@ -16,8 +16,9 @@ namespace Conn.Editor.Maps
             float cellSize = 1f,
             float heightStep = 1f)
         {
-            var draft = EditableCellMapGenerator.Generate(
+            var draft = EditableMapDraftBuilder.BuildGeneratedDraft(
                 profile,
+                chunks,
                 seed,
                 floor,
                 difficulty,

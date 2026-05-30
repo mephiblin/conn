@@ -122,12 +122,12 @@ graph preview.
 
 ### Tasks
 
-- [ ] Replace raw profile arrays with a custom profile/pool editor.
-- [ ] Add profile rule summary:
+- [x] Replace raw profile arrays with a custom profile/pool editor.
+- [x] Add profile rule summary:
   room count, required rooms, pool count, socket coverage.
-- [ ] Add `Validate Profile` button.
-- [ ] Add `Generate Preview` only when profile validation passes.
-- [ ] Add generation result summary:
+- [x] Add `Validate Profile` button.
+- [x] Add `Generate Preview` only when profile validation passes.
+- [x] Add generation result summary:
   seed, rooms used, chunks selected, retry count, failure reason.
 
 ### Acceptance

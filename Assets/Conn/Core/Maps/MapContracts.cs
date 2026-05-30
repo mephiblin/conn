@@ -358,6 +358,8 @@ namespace Conn.Core.Maps
     {
         public string ProfileId = string.Empty;
         public int Seed;
+        public int RetryCount;
+        public string FailureReason = string.Empty;
         public RoomGraph Graph = new RoomGraph();
         public List<MapPlacement> Placements = new List<MapPlacement>();
     }

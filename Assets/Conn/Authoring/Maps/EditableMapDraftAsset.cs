@@ -13,6 +13,8 @@ namespace Conn.Authoring.Maps
         public string Id = string.Empty;
         public string SourceProfileId = string.Empty;
         public int Seed;
+        public int GenerationRetryCount;
+        public string GenerationFailureReason = string.Empty;
         public int Floor = 1;
         public int Difficulty;
         public int Version = 1;
