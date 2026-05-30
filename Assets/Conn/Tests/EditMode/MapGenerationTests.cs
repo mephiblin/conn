@@ -831,6 +831,26 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void EditableValidationReportsDuplicateAndMissingCellCoordinates()
+        {
+            var draft = BuildLinearValidationDraft();
+            draft.Cells[3] = new EditableMapCell
+            {
+                X = 0,
+                Y = 0,
+                Terrain = RoomChunkCellType.Floor,
+                Height = 0,
+                Direction = MapDirection.North
+            };
+
+            var report = EditableMapValidationService.Validate(draft);
+
+            Assert.That(report.Passed, Is.False);
+            Assert.That(report.Errors.Exists(error => error.Contains("Duplicate cell coordinate at (0, 0)")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("Missing cell coordinate at (3, 0)")), Is.True);
+        }
+
+        [Test]
         public void EditableValidationReportsBlockedRequiredRoute()
         {
             var draft = ScriptableObject.CreateInstance<EditableMapDraftAsset>();

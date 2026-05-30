@@ -40,17 +40,44 @@ namespace Conn.Editor.Maps
 
         private static void ValidateCells(EditableMapDraftAsset draft, MapValidationReport report)
         {
+            if (draft.Width <= 0 || draft.Height <= 0)
+            {
+                report.Errors.Add($"Draft dimensions must be positive, got {draft.Width}x{draft.Height}.");
+                return;
+            }
+
             if (draft.Cells == null || draft.Cells.Length != draft.Width * draft.Height)
             {
                 report.Errors.Add($"Draft cell array size mismatch: expected {draft.Width * draft.Height}, got {draft.Cells?.Length ?? 0}.");
                 return;
             }
 
+            var seen = new bool[draft.Width, draft.Height];
             foreach (var cell in draft.Cells)
             {
                 if (!draft.IsInBounds(cell.X, cell.Y))
                 {
                     report.Errors.Add($"Cell out of bounds at ({cell.X}, {cell.Y}).");
+                    continue;
+                }
+
+                if (seen[cell.X, cell.Y])
+                {
+                    report.Errors.Add($"Duplicate cell coordinate at ({cell.X}, {cell.Y}).");
+                    continue;
+                }
+
+                seen[cell.X, cell.Y] = true;
+            }
+
+            for (var y = 0; y < draft.Height; y++)
+            {
+                for (var x = 0; x < draft.Width; x++)
+                {
+                    if (!seen[x, y])
+                    {
+                        report.Errors.Add($"Missing cell coordinate at ({x}, {y}).");
+                    }
                 }
             }
         }

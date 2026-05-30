@@ -897,6 +897,9 @@ is partially complete.
 - [x] Store cells in a flat serialized array, not a multidimensional array.
 - [x] Add helper methods for `index = y * width + x`.
 - [x] Add safe bounds checks for cell lookup and mutation.
+  - 2026-05-30: draft validation now rejects non-positive dimensions,
+    duplicate cell coordinates, and missing cell coordinates even when the
+    serialized cell array length matches the expected grid size.
 - [x] Add draft identity fields: id, source profile id, seed, floor, difficulty.
 - [x] Add draft dimensions: width, height, cell size, height step.
 - [x] Add draft asset creation path under
