@@ -1,5 +1,6 @@
 using Conn.MapGenV2.Authoring;
 using Conn.MapGenV2.Core;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
@@ -11,6 +12,7 @@ namespace Conn.MapGenV2.Editor
         private const string DraftPathKey = "Conn.MapGenV2.Window.DraftPath";
         private const string PreviewCellSizeKey = "Conn.MapGenV2.Window.PreviewCellSize";
         private const string OutputModeKey = "Conn.MapGenV2.Window.OutputMode";
+        private const string ShowPropOverlayKey = "Conn.MapGenV2.Window.ShowPropOverlay";
         private static readonly Color EmptyColor = new Color(0.04f, 0.08f, 0.9f, 1f);
         private static readonly Color RoomColor = new Color(0.9f, 0f, 0f, 1f);
         private static readonly Color CorridorColor = new Color(0f, 0f, 0f, 1f);
@@ -22,6 +24,9 @@ namespace Conn.MapGenV2.Editor
         private static readonly Color SelectedConnectorColor = new Color(1f, 0.72f, 0.05f, 0.58f);
         private static readonly Color AdjacentLinkColor = new Color(0.1f, 0.95f, 1f, 0.48f);
         private static readonly Color HoverColor = new Color(1f, 1f, 1f, 0.22f);
+        private static readonly Color PropOverlayColor = new Color(0.1f, 1f, 0.35f, 0.9f);
+        private static readonly Color BlockerPropOverlayColor = new Color(1f, 0.45f, 0.05f, 0.9f);
+        private static readonly Color ObjectivePropOverlayColor = new Color(1f, 0.95f, 0.05f, 0.9f);
         private MapGenProfileAsset profile;
         private MapGenMockupDraftAsset draft;
         private Vector2 scroll;
@@ -34,6 +39,7 @@ namespace Conn.MapGenV2.Editor
         private float previewCellSize = 18f;
         private GameObject selectedMaterializedRoot;
         private MapGenV2SceneOutputMode outputMode = MapGenV2SceneOutputMode.ReplacePreviousRoot;
+        private bool showPropPlacementOverlay = true;
         private string lastOperationResult = "아직 실행한 작업이 없습니다. / No operation has run yet.";
 
         [MenuItem("Conn/MapGenV2/Map Generator")]
@@ -54,6 +60,7 @@ namespace Conn.MapGenV2.Editor
         {
             previewCellSize = EditorPrefs.GetFloat(PreviewCellSizeKey, previewCellSize);
             outputMode = (MapGenV2SceneOutputMode)EditorPrefs.GetInt(OutputModeKey, (int)outputMode);
+            showPropPlacementOverlay = EditorPrefs.GetBool(ShowPropOverlayKey, showPropPlacementOverlay);
             profile = LoadAssetFromEditorPrefs<MapGenProfileAsset>(ProfilePathKey);
             draft = LoadAssetFromEditorPrefs<MapGenMockupDraftAsset>(DraftPathKey);
         }
@@ -598,6 +605,7 @@ namespace Conn.MapGenV2.Editor
             SaveAssetToEditorPrefs(DraftPathKey, draft);
             EditorPrefs.SetFloat(PreviewCellSizeKey, previewCellSize);
             EditorPrefs.SetInt(OutputModeKey, (int)outputMode);
+            EditorPrefs.SetBool(ShowPropOverlayKey, showPropPlacementOverlay);
         }
 
         private static void SaveAssetToEditorPrefs(string key, Object asset)
@@ -647,6 +655,8 @@ namespace Conn.MapGenV2.Editor
                 EditorGUILayout.LabelField("리전 / Regions", previewData.Summary.RegionCount.ToString());
             }
 
+            var propPlacement = MapGenPropPlacementPlanner.BuildForDraft(draft);
+            DrawPropPlacementPreviewSummary(propPlacement);
             DrawMockupPreview(previewData);
             DrawCellDetails(previewData);
         }
@@ -660,6 +670,7 @@ namespace Conn.MapGenV2.Editor
                 GUILayout.FlexibleSpace();
                 EditorGUILayout.LabelField("확대 / Zoom", GUILayout.Width(72f));
                 previewCellSize = EditorGUILayout.Slider(previewCellSize, 6f, 32f, GUILayout.Width(180f));
+                showPropPlacementOverlay = EditorGUILayout.ToggleLeft("프롭 오버레이 / Props", showPropPlacementOverlay, GUILayout.Width(150f));
             }
 
             DrawLegend();
@@ -675,8 +686,10 @@ namespace Conn.MapGenV2.Editor
             var viewHeight = Mathf.Min(Mathf.Max(180f, previewHeight + 20f), 520f);
             previewScroll = EditorGUILayout.BeginScrollView(previewScroll, GUILayout.MinHeight(viewHeight), GUILayout.MaxHeight(viewHeight));
             var rect = GUILayoutUtility.GetRect(previewWidth, previewHeight, GUILayout.ExpandWidth(false), GUILayout.ExpandHeight(false));
+            var propPlacement = showPropPlacementOverlay ? MapGenPropPlacementPlanner.BuildForDraft(draft) : null;
             HandlePreviewInput(previewData, rect);
             DrawPreviewCells(previewData, rect);
+            DrawPropPlacementOverlay(previewData, rect, propPlacement);
             EditorGUILayout.EndScrollView();
         }
 
@@ -690,6 +703,28 @@ namespace Conn.MapGenV2.Editor
                 DrawLegendItem(BlockedColor, "회색 Blocked");
                 DrawLegendItem(ConnectorColor, "검정 Connector");
                 DrawLegendItem(ReservedColor, "회색 Reserved");
+                DrawLegendItem(PropOverlayColor, "초록 Prop");
+                DrawLegendItem(BlockerPropOverlayColor, "주황 Blocker");
+            }
+        }
+
+        private static void DrawPropPlacementPreviewSummary(MapGenPropPlacementResult propPlacement)
+        {
+            if (propPlacement == null || propPlacement.PlacedProps.Length == 0 && propPlacement.Report.TotalCandidateCells == 0)
+            {
+                return;
+            }
+
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                EditorGUILayout.LabelField("프롭 배치 미리보기 / Prop Placement Preview", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField(
+                    "요약 / Summary",
+                    $"Candidates {propPlacement.Report.TotalCandidateCells}, Placed {propPlacement.Report.PlacedCount}, Spacing Rejects {propPlacement.Report.RejectedBySpacing}, Blocker Issues {propPlacement.Report.BlockerTraversalIssues}");
+                if (!propPlacement.Report.IsValid)
+                {
+                    EditorGUILayout.HelpBox("프롭 배치에 문제가 있습니다. Materialize 전에 rule/filter/blocker 설정을 확인하세요.", MessageType.Warning);
+                }
             }
         }
 
@@ -707,11 +742,7 @@ namespace Conn.MapGenV2.Editor
                 for (var x = 0; x < previewData.Width; x++)
                 {
                     previewData.TryGetCell(x, y, out var cell);
-                    var cellRect = new Rect(
-                        rect.x + x * previewCellSize,
-                        rect.y + (previewData.Height - 1 - y) * previewCellSize,
-                        Mathf.Ceil(previewCellSize),
-                        Mathf.Ceil(previewCellSize));
+                    var cellRect = RectForCell(previewData, rect, x, y);
                     EditorGUI.DrawRect(cellRect, ColorForCell(cell.State));
 
                     if (hasSelectedCell && IsSelectedCellOrRegion(cell, x, y))
@@ -743,6 +774,44 @@ namespace Conn.MapGenV2.Editor
                     }
                 }
             }
+        }
+
+        private void DrawPropPlacementOverlay(
+            MapGenMockupPreviewData previewData,
+            Rect rect,
+            MapGenPropPlacementResult propPlacement)
+        {
+            if (propPlacement == null || propPlacement.PlacedProps == null || propPlacement.PlacedProps.Length == 0)
+            {
+                return;
+            }
+
+            var placed = new HashSet<MapGenGridCoord>();
+            foreach (var prop in propPlacement.PlacedProps)
+            {
+                if (!placed.Add(prop.Coord))
+                {
+                    continue;
+                }
+
+                var cellRect = RectForCell(previewData, rect, prop.Coord.X, prop.Coord.Y);
+                var size = Mathf.Max(4f, previewCellSize * 0.42f);
+                var markerRect = new Rect(
+                    cellRect.center.x - size * 0.5f,
+                    cellRect.center.y - size * 0.5f,
+                    size,
+                    size);
+                EditorGUI.DrawRect(markerRect, ColorForProp(prop));
+            }
+        }
+
+        private Rect RectForCell(MapGenMockupPreviewData previewData, Rect rect, int x, int y)
+        {
+            return new Rect(
+                rect.x + x * previewCellSize,
+                rect.y + (previewData.Height - 1 - y) * previewCellSize,
+                Mathf.Ceil(previewCellSize),
+                Mathf.Ceil(previewCellSize));
         }
 
         private void HandlePreviewInput(MapGenMockupPreviewData previewData, Rect rect)
@@ -1157,6 +1226,19 @@ namespace Conn.MapGenV2.Editor
                     return ReservedColor;
                 default:
                     return EmptyColor;
+            }
+        }
+
+        private static Color ColorForProp(MapGenPlacedProp prop)
+        {
+            switch (prop.ChannelKind)
+            {
+                case MapGenPropPlacementChannelKind.Blocker:
+                    return BlockerPropOverlayColor;
+                case MapGenPropPlacementChannelKind.Objective:
+                    return ObjectivePropOverlayColor;
+                default:
+                    return PropOverlayColor;
             }
         }
     }

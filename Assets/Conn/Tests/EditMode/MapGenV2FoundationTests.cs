@@ -2237,6 +2237,55 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void PropPlacementPlannerBuildsPreviewFromDraftRules()
+        {
+            var ruleSet = ScriptableObject.CreateInstance<MapGenRuleSetAsset>();
+            var profile = ScriptableObject.CreateInstance<MapGenProfileAsset>();
+            var draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();
+
+            try
+            {
+                ruleSet.PropPlacementRules = new[]
+                {
+                    new MapGenPropPlacementRules
+                    {
+                        Channel = "objective",
+                        ChannelKind = MapGenPropPlacementChannelKind.Objective,
+                        DistributionMode = MapGenPropDistributionMode.RequiredUnique,
+                        DensityPercent = 100,
+                        MinSpacingCells = 0,
+                        RequiredUnique = true
+                    }
+                };
+                profile.LayoutRules = ruleSet;
+                draft.Profile = profile;
+                draft.Seed = 909;
+                draft.GridSize = Vector2Int.one;
+                draft.EnsureCellArray();
+                draft.Cells[0] = new MapGenMockupCell
+                {
+                    State = MapGenCellState.Room,
+                    RegionId = 3,
+                    RoomCategory = MapGenRoomCategory.Quest,
+                    PropChannel = "objective"
+                };
+
+                var result = MapGenPropPlacementPlanner.BuildForDraft(draft);
+
+                Assert.That(result.Report.IsValid, Is.True);
+                Assert.That(result.Report.PlacedCount, Is.EqualTo(1));
+                Assert.That(result.PlacedProps[0].Channel, Is.EqualTo("objective"));
+                Assert.That(result.PlacedProps[0].ChannelKind, Is.EqualTo(MapGenPropPlacementChannelKind.Objective));
+            }
+            finally
+            {
+                Object.DestroyImmediate(draft);
+                Object.DestroyImmediate(profile);
+                Object.DestroyImmediate(ruleSet);
+            }
+        }
+
+        [Test]
         public void PropPlacementPlannerReportsBlockerTraversalBreaks()
         {
             var cells = new[]

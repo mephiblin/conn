@@ -794,6 +794,8 @@ Progress note 2026-05-31:
   blocking is explicitly allowed.
 - Prop placement rules now apply room category filters and corridor template
   filters before deterministic placement selection.
+- The main MapGenV2 window now shows a prop placement preview summary and draws
+  placed prop markers over the mockup grid, with distinct blocker coloring.
 
 Goal: support procedural props without breaking traversal.
 
@@ -810,7 +812,7 @@ Tasks:
 - [x] Add category filters for rooms/corridors.
 - [x] Add deterministic RNG stream for prop placement.
 - [x] Validate blocker props against traversal graph.
-- [ ] Add prop placement preview overlay.
+- [x] Add prop placement preview overlay.
 - [x] Add prop placement report.
 
 Acceptance:
@@ -826,6 +828,7 @@ Verification:
 - EditMode tests for blocker traversal validation.
 - EditMode test for one-per-region prop distribution.
 - EditMode test for room/corridor prop placement filters.
+- EditMode test for draft-driven prop placement preview data.
 - EditMode test for materialization prop requests using placement rules.
 - Manual Unity check with floor, wall, and blocker props.
 

@@ -6,6 +6,21 @@ namespace Conn.MapGenV2.Authoring
 {
     public static class MapGenPropPlacementPlanner
     {
+        public static MapGenPropPlacementResult BuildForDraft(MapGenMockupDraftAsset draft)
+        {
+            if (draft == null || draft.Profile == null || draft.Profile.LayoutRules == null)
+            {
+                return new MapGenPropPlacementResult();
+            }
+
+            return Build(
+                draft.Width,
+                draft.Height,
+                draft.Cells,
+                draft.Profile.LayoutRules.PropPlacementRules,
+                draft.Seed);
+        }
+
         public static MapGenPropPlacementResult Build(
             int width,
             int height,

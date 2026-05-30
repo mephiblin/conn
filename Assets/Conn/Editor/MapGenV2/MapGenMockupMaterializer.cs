@@ -116,12 +116,7 @@ namespace Conn.MapGenV2.Editor
             var propRules = draft.Profile.LayoutRules != null ? draft.Profile.LayoutRules.PropPlacementRules : null;
             if (propRules != null && propRules.Length > 0)
             {
-                var propPlacement = MapGenPropPlacementPlanner.Build(
-                    draft.Width,
-                    draft.Height,
-                    draft.Cells,
-                    propRules,
-                    draft.Seed);
+                var propPlacement = MapGenPropPlacementPlanner.BuildForDraft(draft);
                 propCoords = new MapGenGridCoord[propPlacement.PlacedProps.Length];
                 for (var i = 0; i < propPlacement.PlacedProps.Length; i++)
                 {
