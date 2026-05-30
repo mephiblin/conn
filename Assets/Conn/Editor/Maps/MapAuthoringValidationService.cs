@@ -17,6 +17,8 @@ namespace Conn.Editor.Maps
             {
                 Profiles = FindAssets<MapProfileAsset>(),
                 ResourceSets = FindAssets<MapResourceSetAsset>(),
+                TilePalettes = FindAssets<MapTilePaletteAsset>(),
+                ObjectPalettes = FindAssets<MapObjectPaletteAsset>(),
                 RoomChunks = FindAssets<RoomChunkAsset>(),
                 LandmarkRooms = FindAssets<LandmarkRoomAsset>(),
                 WeightProfiles = FindAssets<GenerationWeightProfileAsset>(),
@@ -32,6 +34,8 @@ namespace Conn.Editor.Maps
             snapshot ??= new MapAuthoringSnapshot();
             ValidateIds(snapshot, report);
             ValidateResourceSets(snapshot.ResourceSets, report);
+            ValidateTilePalettes(snapshot.TilePalettes, report);
+            ValidateObjectPalettes(snapshot.ObjectPalettes, report);
             ValidateChunks(snapshot.RoomChunks, report);
             ValidateLandmarks(snapshot.LandmarkRooms, report);
             ValidateWeightProfiles(snapshot, report);
@@ -46,6 +50,8 @@ namespace Conn.Editor.Maps
             var encounter = ScriptableObject.CreateInstance<EncounterDefinitionAsset>();
             var spawnTable = ScriptableObject.CreateInstance<SpawnTableAsset>();
             var resourceSet = ScriptableObject.CreateInstance<MapResourceSetAsset>();
+            var tilePalette = ScriptableObject.CreateInstance<MapTilePaletteAsset>();
+            var objectPalette = ScriptableObject.CreateInstance<MapObjectPaletteAsset>();
             var chunk = ScriptableObject.CreateInstance<RoomChunkAsset>();
             var landmark = ScriptableObject.CreateInstance<LandmarkRoomAsset>();
             var weights = ScriptableObject.CreateInstance<GenerationWeightProfileAsset>();
@@ -96,6 +102,36 @@ namespace Conn.Editor.Maps
                 resourceSet.Id = "map_authoring_probe_resources";
                 resourceSet.DisplayName = "Map Authoring Probe Resources";
                 resourceSet.ThemeId = "probe";
+
+                tilePalette.Id = "map_authoring_probe_tile_palette";
+                tilePalette.DisplayName = "Map Authoring Probe Tile Palette";
+                tilePalette.ThemeId = "probe";
+                tilePalette.Tiles = new[]
+                {
+                    new MapTilePaletteEntry
+                    {
+                        Id = "stone_floor",
+                        TerrainType = RoomChunkCellType.Floor,
+                        RuntimeMaterialId = "stone_floor_runtime",
+                        DefaultWalkable = true,
+                        DefaultHeightCost = 1
+                    }
+                };
+
+                objectPalette.Id = "map_authoring_probe_object_palette";
+                objectPalette.DisplayName = "Map Authoring Probe Object Palette";
+                objectPalette.ThemeId = "probe";
+                objectPalette.Objects = new[]
+                {
+                    new MapObjectPaletteEntry
+                    {
+                        Id = "torch_wall",
+                        Kind = RoomChunkObjectKind.Torch,
+                        FootprintWidth = 1,
+                        FootprintDepth = 1,
+                        RuntimeReferenceId = "torch_wall_runtime"
+                    }
+                };
 
                 chunk.Id = "map_authoring_probe_chunk";
                 chunk.DisplayName = "Map Authoring Probe Chunk";
@@ -191,6 +227,8 @@ namespace Conn.Editor.Maps
                 {
                     Profiles = new[] { profile },
                     ResourceSets = new[] { resourceSet },
+                    TilePalettes = new[] { tilePalette },
+                    ObjectPalettes = new[] { objectPalette },
                     RoomChunks = new[] { chunk },
                     LandmarkRooms = new[] { landmark },
                     WeightProfiles = new[] { weights },
@@ -210,6 +248,8 @@ namespace Conn.Editor.Maps
                 UnityEngine.Object.DestroyImmediate(weights);
                 UnityEngine.Object.DestroyImmediate(landmark);
                 UnityEngine.Object.DestroyImmediate(chunk);
+                UnityEngine.Object.DestroyImmediate(objectPalette);
+                UnityEngine.Object.DestroyImmediate(tilePalette);
                 UnityEngine.Object.DestroyImmediate(resourceSet);
                 UnityEngine.Object.DestroyImmediate(spawnTable);
                 UnityEngine.Object.DestroyImmediate(encounter);
@@ -221,6 +261,8 @@ namespace Conn.Editor.Maps
         {
             ExpectUniqueIds(snapshot.Profiles, "Map profile", report);
             ExpectUniqueIds(snapshot.ResourceSets, "Map resource set", report);
+            ExpectUniqueIds(snapshot.TilePalettes, "Map tile palette", report);
+            ExpectUniqueIds(snapshot.ObjectPalettes, "Map object palette", report);
             ExpectUniqueIds(snapshot.RoomChunks, "Room chunk", report);
             ExpectUniqueIds(snapshot.LandmarkRooms, "Landmark room", report);
             ExpectUniqueIds(snapshot.WeightProfiles, "Generation weight profile", report);
@@ -301,6 +343,106 @@ namespace Conn.Editor.Maps
                 ValidateObjectReference(chunk.Id, "room prefab", chunk.RoomPrefab, report);
                 ValidateObjectReference(chunk.Id, "tilemap reference", chunk.TilemapReference, report);
                 ValidateObjectReference(chunk.Id, "preview thumbnail", chunk.PreviewThumbnail, report);
+            }
+        }
+
+        private static void ValidateTilePalettes(MapTilePaletteAsset[] palettes, MapValidationReport report)
+        {
+            foreach (var palette in palettes ?? Array.Empty<MapTilePaletteAsset>())
+            {
+                if (palette == null)
+                {
+                    continue;
+                }
+
+                RequireName(palette.Id, palette.DisplayName, "Map tile palette", report);
+                if (string.IsNullOrWhiteSpace(palette.ThemeId))
+                {
+                    report.Errors.Add($"Map tile palette {palette.Id} theme id must not be empty.");
+                }
+
+                var ids = new HashSet<string>(StringComparer.Ordinal);
+                foreach (var tile in palette.Tiles ?? Array.Empty<MapTilePaletteEntry>())
+                {
+                    if (tile == null)
+                    {
+                        report.Errors.Add($"Map tile palette {palette.Id} contains a null entry.");
+                        continue;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(tile.Id))
+                    {
+                        report.Errors.Add($"Map tile palette {palette.Id} contains an entry with no id.");
+                    }
+                    else if (!ids.Add(tile.Id))
+                    {
+                        report.Errors.Add($"Map tile palette {palette.Id} contains duplicate tile id {tile.Id}.");
+                    }
+
+                    if (tile.EditorMaterial == null)
+                    {
+                        report.Warnings.Add($"Map tile palette {palette.Id} tile {tile.Id} has no editor material reference.");
+                    }
+
+                    if (string.IsNullOrWhiteSpace(tile.RuntimeMaterialId))
+                    {
+                        report.Errors.Add($"Map tile palette {palette.Id} tile {tile.Id} runtime material id must not be empty.");
+                    }
+
+                    if (tile.DefaultHeightCost < 0)
+                    {
+                        report.Errors.Add($"Map tile palette {palette.Id} tile {tile.Id} default height cost must not be negative.");
+                    }
+                }
+            }
+        }
+
+        private static void ValidateObjectPalettes(MapObjectPaletteAsset[] palettes, MapValidationReport report)
+        {
+            foreach (var palette in palettes ?? Array.Empty<MapObjectPaletteAsset>())
+            {
+                if (palette == null)
+                {
+                    continue;
+                }
+
+                RequireName(palette.Id, palette.DisplayName, "Map object palette", report);
+                if (string.IsNullOrWhiteSpace(palette.ThemeId))
+                {
+                    report.Errors.Add($"Map object palette {palette.Id} theme id must not be empty.");
+                }
+
+                var ids = new HashSet<string>(StringComparer.Ordinal);
+                foreach (var entry in palette.Objects ?? Array.Empty<MapObjectPaletteEntry>())
+                {
+                    if (entry == null)
+                    {
+                        report.Errors.Add($"Map object palette {palette.Id} contains a null entry.");
+                        continue;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(entry.Id))
+                    {
+                        report.Errors.Add($"Map object palette {palette.Id} contains an entry with no id.");
+                    }
+                    else if (!ids.Add(entry.Id))
+                    {
+                        report.Errors.Add($"Map object palette {palette.Id} contains duplicate object id {entry.Id}.");
+                    }
+
+                    ValidateObjectReference(palette.Id, $"object palette prefab {entry.Id}", entry.Prefab, report);
+                    ValidateObjectReference(palette.Id, $"object palette preview material {entry.Id}", entry.PreviewMaterial, report);
+
+                    if (entry.FootprintWidth <= 0 || entry.FootprintDepth <= 0)
+                    {
+                        report.Errors.Add($"Map object palette {palette.Id} object {entry.Id} footprint must be positive.");
+                    }
+
+                    if (string.IsNullOrWhiteSpace(entry.RuntimeReferenceId))
+                    {
+                        report.Errors.Add($"Map object palette {palette.Id} object {entry.Id} runtime reference id must not be empty.");
+                    }
+                }
             }
         }
 
@@ -1328,6 +1470,8 @@ namespace Conn.Editor.Maps
     {
         public MapProfileAsset[] Profiles = Array.Empty<MapProfileAsset>();
         public MapResourceSetAsset[] ResourceSets = Array.Empty<MapResourceSetAsset>();
+        public MapTilePaletteAsset[] TilePalettes = Array.Empty<MapTilePaletteAsset>();
+        public MapObjectPaletteAsset[] ObjectPalettes = Array.Empty<MapObjectPaletteAsset>();
         public RoomChunkAsset[] RoomChunks = Array.Empty<RoomChunkAsset>();
         public LandmarkRoomAsset[] LandmarkRooms = Array.Empty<LandmarkRoomAsset>();
         public GenerationWeightProfileAsset[] WeightProfiles = Array.Empty<GenerationWeightProfileAsset>();

@@ -949,27 +949,27 @@ is partially complete.
 
 ### Phase 4: Tile And Object Palettes
 
-- [ ] Create `MapTilePaletteAsset`.
-- [ ] Define `MapTilePaletteEntry`.
-- [ ] Add tile entry id.
-- [ ] Add terrain type.
-- [ ] Add editor material reference.
-- [ ] Add runtime material id.
-- [ ] Add default walkable flag.
-- [ ] Add default height cost or movement cost.
-- [ ] Create `MapObjectPaletteAsset`.
-- [ ] Define `MapObjectPaletteEntry`.
-- [ ] Add object entry id.
-- [ ] Add object kind.
-- [ ] Add prefab reference.
-- [ ] Add preview material reference.
-- [ ] Add footprint width/depth.
-- [ ] Add blocks movement flag.
-- [ ] Add runtime reference id.
-- [ ] Validate duplicate palette ids.
-- [ ] Validate broken prefab/material references.
-- [ ] Validate draft cells reference existing tile ids.
-- [ ] Validate draft objects reference existing object ids.
+- [x] Create `MapTilePaletteAsset`.
+- [x] Define `MapTilePaletteEntry`.
+- [x] Add tile entry id.
+- [x] Add terrain type.
+- [x] Add editor material reference.
+- [x] Add runtime material id.
+- [x] Add default walkable flag.
+- [x] Add default height cost or movement cost.
+- [x] Create `MapObjectPaletteAsset`.
+- [x] Define `MapObjectPaletteEntry`.
+- [x] Add object entry id.
+- [x] Add object kind.
+- [x] Add prefab reference.
+- [x] Add preview material reference.
+- [x] Add footprint width/depth.
+- [x] Add blocks movement flag.
+- [x] Add runtime reference id.
+- [x] Validate duplicate palette ids.
+- [x] Validate broken prefab/material references.
+- [x] Validate draft cells reference existing tile ids.
+- [x] Validate draft objects reference existing object ids.
 - [ ] Ensure runtime bake uses ids, not Unity references.
 
 ### Phase 5: Generator To Draft

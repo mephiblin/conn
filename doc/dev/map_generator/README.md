@@ -28,6 +28,10 @@ As of 2026-05-30, the first draft-backed path is now in the project:
 - `EditableMapValidationService` now validates walkability, blocking object
   footprints, socket legality, required room-to-room routes, and slope/stair
   height transitions for editable drafts.
+- `MapTilePaletteAsset` and `MapObjectPaletteAsset` now provide registered tile
+  and object ids for draft authoring, validation, and preview lookup. Drafts
+  can reference palette ids instead of raw Unity object references, while the
+  editor still resolves preview materials and prefabs from the palette assets.
 - `MapGeneratorWorkspaceEditor` now has a bridge button that saves the current
   generated result as an `EditableMapDraftAsset` without making the workspace a
   required dependency of the new pipeline.

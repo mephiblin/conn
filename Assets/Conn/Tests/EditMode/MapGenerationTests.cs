@@ -308,6 +308,82 @@ namespace Conn.Tests.EditMode
             Assert.That(report.Errors.Exists(error => error.Contains("requires a +1 height step")), Is.True);
         }
 
+        [Test]
+        public void EditableValidationReportsMissingPaletteReferences()
+        {
+            var draft = BuildLinearValidationDraft();
+            var tilePalette = ScriptableObject.CreateInstance<MapTilePaletteAsset>();
+            tilePalette.Tiles = new[]
+            {
+                new MapTilePaletteEntry { Id = "valid_floor", TerrainType = RoomChunkCellType.Floor, RuntimeMaterialId = "runtime_floor" }
+            };
+            var objectPalette = ScriptableObject.CreateInstance<MapObjectPaletteAsset>();
+            objectPalette.Objects = new[]
+            {
+                new MapObjectPaletteEntry { Id = "valid_torch", Kind = RoomChunkObjectKind.Torch, FootprintWidth = 1, FootprintDepth = 1, RuntimeReferenceId = "torch_runtime" }
+            };
+            draft.TilePalette = tilePalette;
+            draft.ObjectPalette = objectPalette;
+            draft.TrySetCell(new EditableMapCell { X = 0, Y = 0, Terrain = RoomChunkCellType.Floor, Height = 0, Direction = MapDirection.North, MaterialId = "missing_tile" });
+            draft.Objects = new[]
+            {
+                new EditableMapObjectPlacement
+                {
+                    Id = "torch",
+                    Kind = RoomChunkObjectKind.Torch,
+                    X = 0,
+                    Y = 0,
+                    Width = 1,
+                    Depth = 1,
+                    PaletteObjectId = "missing_object"
+                }
+            };
+
+            var report = EditableMapValidationService.Validate(draft);
+
+            Assert.That(report.Errors.Exists(error => error.Contains("missing tile palette id missing_tile")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("missing object palette id missing_object")), Is.True);
+
+            Object.DestroyImmediate(tilePalette);
+            Object.DestroyImmediate(objectPalette);
+        }
+
+        [Test]
+        public void MapAuthoringValidationReportsDuplicatePaletteIds()
+        {
+            var tilePalette = ScriptableObject.CreateInstance<MapTilePaletteAsset>();
+            tilePalette.Id = "tiles";
+            tilePalette.DisplayName = "Tiles";
+            tilePalette.ThemeId = "ruins";
+            tilePalette.Tiles = new[]
+            {
+                new MapTilePaletteEntry { Id = "stone", TerrainType = RoomChunkCellType.Floor, RuntimeMaterialId = "stone_runtime" },
+                new MapTilePaletteEntry { Id = "stone", TerrainType = RoomChunkCellType.Wall, RuntimeMaterialId = "stone_wall_runtime" }
+            };
+
+            var objectPalette = ScriptableObject.CreateInstance<MapObjectPaletteAsset>();
+            objectPalette.Id = "objects";
+            objectPalette.DisplayName = "Objects";
+            objectPalette.ThemeId = "ruins";
+            objectPalette.Objects = new[]
+            {
+                new MapObjectPaletteEntry { Id = "torch", Kind = RoomChunkObjectKind.Torch, FootprintWidth = 1, FootprintDepth = 1, RuntimeReferenceId = "torch_runtime" },
+                new MapObjectPaletteEntry { Id = "torch", Kind = RoomChunkObjectKind.Decor, FootprintWidth = 1, FootprintDepth = 1, RuntimeReferenceId = "torch_runtime_2" }
+            };
+
+            var report = MapAuthoringValidationService.Validate(new MapAuthoringSnapshot
+            {
+                TilePalettes = new[] { tilePalette },
+                ObjectPalettes = new[] { objectPalette }
+            });
+
+            Assert.That(report.Errors.Exists(error => error.Contains("duplicate tile id stone")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("duplicate object id torch")), Is.True);
+
+            Object.DestroyImmediate(tilePalette);
+            Object.DestroyImmediate(objectPalette);
+        }
+
         private static EditableMapDraftAsset BuildLinearValidationDraft()
         {
             var draft = ScriptableObject.CreateInstance<EditableMapDraftAsset>();

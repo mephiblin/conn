@@ -26,6 +26,7 @@ namespace Conn.Editor.Maps
             }
 
             ValidateCells(draft, report);
+            ValidatePaletteReferences(draft, report);
             var walkable = BuildWalkabilityMap(draft, report);
             ValidateObjects(draft, report);
             ValidateSockets(draft, walkable, report);
@@ -47,6 +48,43 @@ namespace Conn.Editor.Maps
                 if (!draft.IsInBounds(cell.X, cell.Y))
                 {
                     report.Errors.Add($"Cell out of bounds at ({cell.X}, {cell.Y}).");
+                }
+            }
+        }
+
+        private static void ValidatePaletteReferences(EditableMapDraftAsset draft, MapValidationReport report)
+        {
+            var tileIds = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var entry in draft.TilePalette?.Tiles ?? Array.Empty<MapTilePaletteEntry>())
+            {
+                if (entry != null && !string.IsNullOrWhiteSpace(entry.Id))
+                {
+                    tileIds.Add(entry.Id);
+                }
+            }
+
+            var objectIds = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var entry in draft.ObjectPalette?.Objects ?? Array.Empty<MapObjectPaletteEntry>())
+            {
+                if (entry != null && !string.IsNullOrWhiteSpace(entry.Id))
+                {
+                    objectIds.Add(entry.Id);
+                }
+            }
+
+            foreach (var cell in draft.Cells ?? Array.Empty<EditableMapCell>())
+            {
+                if (!string.IsNullOrWhiteSpace(cell.MaterialId) && tileIds.Count > 0 && !tileIds.Contains(cell.MaterialId))
+                {
+                    report.Errors.Add($"Cell ({cell.X}, {cell.Y}) references missing tile palette id {cell.MaterialId}.");
+                }
+            }
+
+            foreach (var placement in draft.Objects ?? Array.Empty<EditableMapObjectPlacement>())
+            {
+                if (!string.IsNullOrWhiteSpace(placement.PaletteObjectId) && objectIds.Count > 0 && !objectIds.Contains(placement.PaletteObjectId))
+                {
+                    report.Errors.Add($"Object {placement.Id} references missing object palette id {placement.PaletteObjectId}.");
                 }
             }
         }

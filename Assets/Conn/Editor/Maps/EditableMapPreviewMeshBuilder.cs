@@ -2,6 +2,7 @@ using Conn.Authoring.Maps;
 using Conn.Core.Maps;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
@@ -54,10 +55,10 @@ namespace Conn.Editor.Maps
                 }
             }
 
-            BuildMeshObjects(terrainRoot.transform, terrainMeshes);
-            BuildMeshObjects(wallRoot.transform, wallMeshes);
-            BuildMeshObjects(slopeRoot.transform, slopeMeshes);
-            BuildMeshObjects(stairRoot.transform, stairMeshes);
+            BuildMeshObjects(terrainRoot.transform, terrainMeshes, draft);
+            BuildMeshObjects(wallRoot.transform, wallMeshes, draft);
+            BuildMeshObjects(slopeRoot.transform, slopeMeshes, draft);
+            BuildMeshObjects(stairRoot.transform, stairMeshes, draft);
             BuildObjectPreview(objectRoot.transform, draft);
 
             return root;
@@ -124,7 +125,7 @@ namespace Conn.Editor.Maps
             return buffer;
         }
 
-        private static void BuildMeshObjects(Transform parent, Dictionary<string, MeshBuffer> buffers)
+        private static void BuildMeshObjects(Transform parent, Dictionary<string, MeshBuffer> buffers, EditableMapDraftAsset draft)
         {
             foreach (var pair in buffers)
             {
@@ -146,7 +147,7 @@ namespace Conn.Editor.Maps
                 mesh.RecalculateBounds();
 
                 child.AddComponent<MeshFilter>().sharedMesh = mesh;
-                child.AddComponent<MeshRenderer>().sharedMaterial = PreviewMaterialCache.ForId(pair.Key);
+                child.AddComponent<MeshRenderer>().sharedMaterial = PreviewMaterialCache.ForId(pair.Key, draft);
                 Undo.RegisterCreatedObjectUndo(child, "Create Editable Map Preview Mesh");
             }
         }
@@ -322,8 +323,7 @@ namespace Conn.Editor.Maps
         {
             foreach (var placement in draft.Objects ?? Array.Empty<EditableMapObjectPlacement>())
             {
-                var primitiveType = placement.Kind == RoomChunkObjectKind.Torch ? PrimitiveType.Cylinder : PrimitiveType.Cube;
-                var instance = GameObject.CreatePrimitive(primitiveType);
+                var instance = CreateObjectInstance(draft, placement);
                 instance.name = string.IsNullOrWhiteSpace(placement.Id)
                     ? $"Object {placement.Kind}"
                     : $"Object {placement.Id}";
@@ -338,9 +338,40 @@ namespace Conn.Editor.Maps
                     placement.Y * draft.CellSize + draft.CellSize * 0.5f);
                 instance.transform.rotation = Quaternion.Euler(0f, DirectionToAngle(placement.Direction), 0f);
                 instance.transform.localScale = scale;
-                instance.GetComponent<MeshRenderer>().sharedMaterial = PreviewMaterialCache.ForObject(placement.Kind, placement.BlocksMovement);
+                ApplyObjectPreviewMaterial(draft, placement, instance);
                 Undo.RegisterCreatedObjectUndo(instance, "Create Editable Map Preview Object");
             }
+        }
+
+        private static GameObject CreateObjectInstance(EditableMapDraftAsset draft, EditableMapObjectPlacement placement)
+        {
+            var entry = FindObjectPaletteEntry(draft, placement.PaletteObjectId);
+            if (entry?.Prefab != null)
+            {
+                return PrefabUtility.InstantiatePrefab(entry.Prefab) as GameObject ?? UnityEngine.Object.Instantiate(entry.Prefab);
+            }
+
+            var primitiveType = placement.Kind == RoomChunkObjectKind.Torch ? PrimitiveType.Cylinder : PrimitiveType.Cube;
+            return GameObject.CreatePrimitive(primitiveType);
+        }
+
+        private static void ApplyObjectPreviewMaterial(EditableMapDraftAsset draft, EditableMapObjectPlacement placement, GameObject instance)
+        {
+            var renderer = instance.GetComponentInChildren<MeshRenderer>();
+            if (renderer == null)
+            {
+                return;
+            }
+
+            var entry = FindObjectPaletteEntry(draft, placement.PaletteObjectId);
+            renderer.sharedMaterial = entry?.PreviewMaterial != null
+                ? entry.PreviewMaterial
+                : PreviewMaterialCache.ForObject(placement.Kind, placement.BlocksMovement);
+        }
+
+        private static MapObjectPaletteEntry FindObjectPaletteEntry(EditableMapDraftAsset draft, string paletteObjectId)
+        {
+            return draft?.ObjectPalette?.Objects?.FirstOrDefault(entry => entry != null && entry.Id == paletteObjectId);
         }
 
         private static string ResolveMaterialKey(string materialId, string fallback)
@@ -359,8 +390,14 @@ namespace Conn.Editor.Maps
         {
             private static readonly Dictionary<string, Material> Cache = new Dictionary<string, Material>(StringComparer.Ordinal);
 
-            public static Material ForId(string id)
+            public static Material ForId(string id, EditableMapDraftAsset draft = null)
             {
+                var paletteMaterial = draft?.TilePalette?.Tiles?.FirstOrDefault(entry => entry != null && entry.Id == id)?.EditorMaterial;
+                if (paletteMaterial != null)
+                {
+                    return paletteMaterial;
+                }
+
                 if (!Cache.TryGetValue(id, out var material))
                 {
                     material = new Material(Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard"))

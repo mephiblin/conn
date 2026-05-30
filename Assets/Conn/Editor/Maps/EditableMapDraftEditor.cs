@@ -1,5 +1,8 @@
 using Conn.Authoring.Maps;
 using Conn.Core.Maps;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
@@ -102,7 +105,7 @@ namespace Conn.Editor.Maps
 
                 if (GUILayout.Button("Ping Draft Folder"))
                 {
-                    var folder = AssetDatabase.LoadAssetAtPath<Object>(EditableMapDraftAsset.DefaultDraftFolder);
+                    var folder = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(EditableMapDraftAsset.DefaultDraftFolder);
                     if (folder != null)
                     {
                         EditorGUIUtility.PingObject(folder);
@@ -188,6 +191,8 @@ namespace Conn.Editor.Maps
                     cell.MaterialId = eraseMode ? string.Empty : (selectedMaterialId ?? string.Empty);
                     break;
                 case BrushMode.Object:
+                    StampObject(draft, x, y);
+                    return;
                 case BrushMode.RoomSocket:
                 case BrushMode.ValidationOverlay:
                     break;
@@ -211,6 +216,35 @@ namespace Conn.Editor.Maps
             }
 
             draft.TrySetCell(cell);
+        }
+
+        private void StampObject(EditableMapDraftAsset draft, int x, int y)
+        {
+            var objects = new List<EditableMapObjectPlacement>(draft.Objects ?? Array.Empty<EditableMapObjectPlacement>());
+            objects.RemoveAll(placement => placement.X == x && placement.Y == y);
+            if (!eraseMode)
+            {
+                var entry = draft.ObjectPalette?.Objects?.FirstOrDefault(candidate => candidate != null && candidate.Id == selectedObjectPaletteId);
+                if (entry != null)
+                {
+                    objects.Add(new EditableMapObjectPlacement
+                    {
+                        Id = $"{entry.Id}_{x}_{y}",
+                        PaletteObjectId = entry.Id,
+                        Kind = entry.Kind,
+                        X = x,
+                        Y = y,
+                        Height = targetHeight,
+                        Width = Mathf.Max(1, entry.FootprintWidth),
+                        Depth = Mathf.Max(1, entry.FootprintDepth),
+                        Direction = direction,
+                        BlocksMovement = entry.BlocksMovement,
+                        RuntimeReferenceId = entry.RuntimeReferenceId
+                    });
+                }
+            }
+
+            draft.Objects = objects.ToArray();
         }
     }
 }

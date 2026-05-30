@@ -23,6 +23,10 @@ namespace Conn.Authoring.Maps
         public float CellSize = 1f;
         public float HeightStep = 1f;
 
+        [Header("Palettes")]
+        public MapTilePaletteAsset TilePalette;
+        public MapObjectPaletteAsset ObjectPalette;
+
         [Header("Layers")]
         public EditableMapCell[] Cells = Array.Empty<EditableMapCell>();
         public EditableMapObjectPlacement[] Objects = Array.Empty<EditableMapObjectPlacement>();
