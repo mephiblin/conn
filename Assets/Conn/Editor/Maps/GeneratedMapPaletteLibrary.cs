@@ -108,7 +108,8 @@ namespace Conn.Editor.Maps
                 Object("treasure_chest", RoomChunkObjectKind.Chest, "treasure_chest", false),
                 Object("spawn_hint", RoomChunkObjectKind.SpawnHint, "spawn_hint", false),
                 Object("torch_wall", RoomChunkObjectKind.Torch, "torch_wall", false),
-                Object("barrel", RoomChunkObjectKind.Barrel, "barrel", false)
+                Object("barrel", RoomChunkObjectKind.Barrel, "barrel", false),
+                Object("rubble_blocker", RoomChunkObjectKind.Blocker, "rubble_blocker", true)
             };
         }
 

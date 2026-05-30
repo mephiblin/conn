@@ -570,6 +570,7 @@ namespace Conn.Tests.EditMode
                 Assert.That(result.Draft.Objects.Any(placement => placement.Kind == RoomChunkObjectKind.SpawnHint), Is.True);
                 Assert.That(result.Draft.Objects.Any(placement => placement.Kind == RoomChunkObjectKind.Torch), Is.True);
                 Assert.That(result.Draft.Objects.Any(placement => placement.Kind == RoomChunkObjectKind.Barrel), Is.True);
+                Assert.That(result.Draft.Objects.Any(placement => placement.Kind == RoomChunkObjectKind.Blocker && placement.BlocksMovement), Is.True);
                 Assert.That(result.Draft.Objects.Count(placement => placement.RuntimeReferenceId == "door"), Is.GreaterThanOrEqualTo(4));
                 Assert.That(result.Draft.Cells.Where(cell => !string.IsNullOrWhiteSpace(cell.MaterialId)).All(cell => tileIds.Contains(cell.MaterialId)), Is.True);
                 Assert.That(result.Draft.Objects.Where(placement => !string.IsNullOrWhiteSpace(placement.PaletteObjectId)).All(placement => objectIds.Contains(placement.PaletteObjectId)), Is.True);
@@ -582,6 +583,7 @@ namespace Conn.Tests.EditMode
                 Assert.That(result.Compiled.Cells.Count, Is.EqualTo(result.Draft.Cells.Length));
                 Assert.That(result.Compiled.Cells.Count(cell => cell.WallVariantId == "wall_corner"), Is.EqualTo(wallCornerCount));
                 Assert.That(result.Compiled.Objects.Count(placement => placement.RuntimeReferenceId == "door"), Is.GreaterThanOrEqualTo(4));
+                Assert.That(result.Compiled.Objects.Any(placement => placement.Kind == RoomChunkObjectKind.Blocker && placement.BlocksMovement), Is.True);
             }
             finally
             {

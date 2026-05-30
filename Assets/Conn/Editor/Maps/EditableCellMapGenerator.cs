@@ -330,6 +330,21 @@ namespace Conn.Editor.Maps
                 RuntimeReferenceId = "barrel",
                 MaterialId = "barrel"
             });
+
+            objects.Add(new EditableMapObjectPlacement
+            {
+                Id = "generated_rubble_blocker",
+                PaletteObjectId = "rubble_blocker",
+                Kind = RoomChunkObjectKind.Blocker,
+                X = Mathf.Clamp(bossRoom.xMax - 2, bossRoom.xMin, bossRoom.xMax - 1),
+                Y = Mathf.Clamp(bossRoom.yMax - 2, bossRoom.yMin, bossRoom.yMax - 1),
+                Width = 1,
+                Depth = 1,
+                Direction = MapDirection.South,
+                BlocksMovement = true,
+                RuntimeReferenceId = "rubble_blocker",
+                MaterialId = "rubble"
+            });
             draft.Objects = objects.ToArray();
         }
 

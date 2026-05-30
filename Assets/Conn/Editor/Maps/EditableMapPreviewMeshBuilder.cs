@@ -366,6 +366,8 @@ namespace Conn.Editor.Maps
                     return PrimitiveType.Cylinder;
                 case RoomChunkObjectKind.SpawnHint:
                     return PrimitiveType.Sphere;
+                case RoomChunkObjectKind.Blocker:
+                    return PrimitiveType.Cube;
                 default:
                     return PrimitiveType.Cube;
             }
@@ -393,6 +395,8 @@ namespace Conn.Editor.Maps
                     return new Vector3(width * 0.42f, draft.HeightStep * 0.65f, depth * 0.42f);
                 case RoomChunkObjectKind.SpawnHint:
                     return new Vector3(width * 0.35f, draft.HeightStep * 0.35f, depth * 0.35f);
+                case RoomChunkObjectKind.Blocker:
+                    return new Vector3(width * 0.85f, draft.HeightStep * 0.55f, depth * 0.85f);
                 default:
                     return new Vector3(width * 0.7f, draft.HeightStep * 0.5f, depth * 0.7f);
             }
