@@ -355,6 +355,42 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void MaterializedModuleMarkerInspectorReportsSourceMetadata()
+        {
+            var instance = new GameObject("MaterializedModule");
+
+            try
+            {
+                var marker = instance.AddComponent<MapGenV2MaterializedModuleMarker>();
+                marker.RegionId = 12;
+                marker.CellCoord = new Vector2Int(3, 4);
+                marker.ModuleCategory = MapGenModuleCategory.FloorA;
+                marker.Direction = MapGenGridDirection.East;
+                marker.SourceTemplateId = "start_template";
+                marker.PrefabName = "FloorPrefab";
+                marker.DraftSignature = "draft_sig";
+                marker.SourceSignature = "source_sig";
+                marker.ModuleSetSignature = "module_sig";
+
+                var summary = MapGenV2MaterializedModuleMarkerEditor.BuildSourceSummary(marker);
+
+                Assert.That(summary, Does.Contain("Region 12"));
+                Assert.That(summary, Does.Contain("Cell 3,4"));
+                Assert.That(summary, Does.Contain("Category FloorA"));
+                Assert.That(summary, Does.Contain("Direction East"));
+                Assert.That(summary, Does.Contain("Template start_template"));
+                Assert.That(summary, Does.Contain("Prefab FloorPrefab"));
+                Assert.That(summary, Does.Contain("Draft draft_sig"));
+                Assert.That(summary, Does.Contain("Source source_sig"));
+                Assert.That(summary, Does.Contain("ModuleSet module_sig"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(instance);
+            }
+        }
+
+        [Test]
         public void DraftInspectorSummaryReportsSelectionOverridesAndReadiness()
         {
             var draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();

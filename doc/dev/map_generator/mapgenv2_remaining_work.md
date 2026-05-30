@@ -185,7 +185,7 @@ tool, and generated output workflow.
 - [ ] Scene View must clearly distinguish states:
   unaccepted mockup, accepted mockup, materialized output, stale materialized
   output, baked runtime output.
-- [ ] Clicking a materialized room object should be able to select its source
+- [x] Clicking a materialized room object should be able to select its source
   mockup region or show source metadata in the inspector.
 - [x] Scene output hierarchy should be predictable:
   `MapGenV2_<Profile>_<Seed>`
