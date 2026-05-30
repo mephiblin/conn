@@ -594,6 +594,7 @@ namespace Conn.Tests.EditMode
                 Assert.That(gapCount, Is.GreaterThan(40));
                 Assert.That(slopeCount, Is.GreaterThanOrEqualTo(1));
                 Assert.That(stairCount, Is.GreaterThanOrEqualTo(1));
+                Assert.That(result.Draft.Cells.Where(cell => cell.Terrain == RoomChunkCellType.Slope || cell.Terrain == RoomChunkCellType.Stair).Any(cell => HasAdjacentGap(result.Draft, cell.X, cell.Y)), Is.False);
                 Assert.That(doorCount, Is.GreaterThanOrEqualTo(4));
                 Assert.That(deadEndCellCount, Is.GreaterThanOrEqualTo(2));
                 Assert.That(wallCornerCount, Is.GreaterThanOrEqualTo(4));
@@ -1612,6 +1613,19 @@ namespace Conn.Tests.EditMode
         private static bool IsWalkableCell(EditableMapCell cell)
         {
             return cell.Terrain != RoomChunkCellType.Gap && cell.Terrain != RoomChunkCellType.Wall;
+        }
+
+        private static bool HasAdjacentGap(EditableMapDraftAsset draft, int x, int y)
+        {
+            return IsGap(draft, x + 1, y)
+                || IsGap(draft, x, y + 1)
+                || IsGap(draft, x - 1, y)
+                || IsGap(draft, x, y - 1);
+        }
+
+        private static bool IsGap(EditableMapDraftAsset draft, int x, int y)
+        {
+            return draft.TryGetCell(x, y, out var cell) && cell.Terrain == RoomChunkCellType.Gap;
         }
     }
 }

@@ -980,6 +980,8 @@ is partially complete.
 - [x] Generate hub nodes intentionally.
 - [x] Generate corridor nodes intentionally.
 - [x] Generate short dead-end stubs intentionally.
+  - 2026-05-30: generated dead-end stubs are registered as room metadata with
+    bidirectional sockets and validated cell ownership.
 - [x] Generate height-transition nodes intentionally.
 - [x] Choose chunks by role, layout kind, sockets, theme, and size.
 - [x] Rasterize selected chunk cells into the draft grid.
@@ -1005,6 +1007,8 @@ is partially complete.
 - [x] Validate optional treasure/dead-end routes do not break required routes.
 - [x] Validate slope direction and height delta.
 - [x] Validate stair direction and height delta.
+- [x] Confirm generated slope/stair cells are enclosed by authored wall cells
+  instead of bordering raw gap cells.
 - [x] Report validation failures by cell, object id, room id, socket id, or
   palette id.
 - [x] Block bake when required validation errors exist.

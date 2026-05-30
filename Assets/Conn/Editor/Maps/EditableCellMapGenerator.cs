@@ -52,7 +52,7 @@ namespace Conn.Editor.Maps
             ConnectRooms(draft, random, rooms[6], rooms[3]);
             var sidePassages = AddSidePassages(draft, random, rooms);
             AddHeightTransitionFeature(draft, rooms[4]);
-            CarveWallsAroundFloors(draft);
+            CarveWallsAroundWalkableCells(draft);
             ClassifyWallVariants(draft);
             AddGeneratedObjects(draft, rooms);
             ApplyGeneratedRoomMetadata(draft, rooms, sidePassages);
@@ -339,14 +339,14 @@ namespace Conn.Editor.Maps
             }
         }
 
-        private static void CarveWallsAroundFloors(EditableMapDraftAsset draft)
+        private static void CarveWallsAroundWalkableCells(EditableMapDraftAsset draft)
         {
             var walls = new List<Vector2Int>();
             for (var y = 0; y < draft.Height; y++)
             {
                 for (var x = 0; x < draft.Width; x++)
                 {
-                    if (!draft.TryGetCell(x, y, out var cell) || cell.Terrain != RoomChunkCellType.Floor)
+                    if (!draft.TryGetCell(x, y, out var cell) || !IsOpenTerrain(cell.Terrain))
                     {
                         continue;
                     }
@@ -362,6 +362,11 @@ namespace Conn.Editor.Maps
             {
                 SetCell(draft, walls[i].x, walls[i].y, RoomChunkCellType.Wall, "generated_wall", MapDirection.North);
             }
+        }
+
+        private static bool IsOpenTerrain(RoomChunkCellType terrain)
+        {
+            return terrain == RoomChunkCellType.Floor || terrain == RoomChunkCellType.Slope || terrain == RoomChunkCellType.Stair;
         }
 
         private static void AddWallCandidate(EditableMapDraftAsset draft, List<Vector2Int> walls, int x, int y)
