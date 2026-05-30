@@ -50,6 +50,17 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void MapGenV2EditorTextProvidesPseudoLocalizationLengthCheck()
+        {
+            var source = "Generate Mockup";
+            var pseudo = MapGenV2EditorText.PseudoLocalize(source);
+
+            Assert.That(pseudo.Length, Is.GreaterThan(source.Length));
+            Assert.That(MapGenV2EditorText.IsLongTextSafe(source, pseudo.Length), Is.True);
+            Assert.That(MapGenV2EditorText.IsLongTextSafe(source, source.Length), Is.False);
+        }
+
+        [Test]
         public void RoomShapeValidatorRejectsConnectorAwayFromEdge()
         {
             var cells = new MapGenShapeCell[9];

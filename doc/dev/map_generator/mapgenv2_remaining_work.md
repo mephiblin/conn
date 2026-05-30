@@ -148,7 +148,7 @@ tool, and generated output workflow.
   Korean, but keep asset ids, enum names, and script/API names in English.
 - [ ] Avoid layout breakage from longer Korean text by using flexible widths,
   wrapping help boxes, scroll views, and minimum window sizes.
-- [ ] Add pseudo-localization or long-text checks before considering the editor
+- [x] Add pseudo-localization or long-text checks before considering the editor
   UI complete.
 
 ### Inspector UX

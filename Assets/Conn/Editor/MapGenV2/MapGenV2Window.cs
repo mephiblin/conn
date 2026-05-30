@@ -76,6 +76,26 @@ namespace Conn.MapGenV2.Editor
                     return key;
             }
         }
+
+        public static string PseudoLocalize(string source)
+        {
+            if (string.IsNullOrEmpty(source))
+            {
+                return source;
+            }
+
+            return $"［{source} 가나다 {source}］";
+        }
+
+        public static bool IsLongTextSafe(string source, int maxCharacters)
+        {
+            if (string.IsNullOrEmpty(source))
+            {
+                return true;
+            }
+
+            return PseudoLocalize(source).Length <= maxCharacters;
+        }
     }
 
     public sealed class MapGenV2Window : EditorWindow
