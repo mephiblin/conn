@@ -235,6 +235,32 @@ namespace Conn.MapGenV2.Authoring
             LastGeneratedSignature = ComputeSignature();
         }
 
+        public void SetRegionState(int regionId, MapGenCellState state)
+        {
+            if (regionId < 0)
+            {
+                return;
+            }
+
+            EnsureCellArray();
+            for (var i = 0; i < Cells.Length; i++)
+            {
+                if (Cells[i].RegionId != regionId)
+                {
+                    continue;
+                }
+
+                Cells[i] = ConvertRegionCell(Cells[i], regionId, state);
+            }
+
+            if (state == MapGenCellState.Empty)
+            {
+                ClearRegionOverride(regionId);
+            }
+
+            LastGeneratedSignature = ComputeSignature();
+        }
+
         public void ClearRegionOverride(int regionId)
         {
             if (RegionOverrides == null || RegionOverrides.Length == 0)
@@ -361,6 +387,21 @@ namespace Conn.MapGenV2.Authoring
 
             Array.Resize(ref copied, count);
             return copied;
+        }
+
+        private static MapGenMockupCell ConvertRegionCell(MapGenMockupCell cell, int regionId, MapGenCellState state)
+        {
+            if (state == MapGenCellState.Empty)
+            {
+                return MapGenMockupCell.Empty;
+            }
+
+            cell.State = state;
+            cell.RegionId = regionId;
+            cell.SocketKind = state == MapGenCellState.Blocked ? MapGenSocketKind.Blocked : MapGenSocketKind.None;
+            cell.SocketId = string.Empty;
+            cell.PropChannel = string.Empty;
+            return cell;
         }
 
         private static MapGenMockupCell[] CreateEmptyCells(int width, int height)

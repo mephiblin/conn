@@ -221,8 +221,11 @@ Progress note 2026-05-31:
   in the draft cells and leave accepted output stale until reaccepted.
 - Regenerate Same Seed now preserves locked region cells and locked override
   metadata while regenerating unlocked regions from the current profile/seed.
+- Selected regions can now be deleted or converted to blocked/reserved cells
+  from the preview inspector; those edits persist in the draft and make accepted
+  output stale until reaccepted.
 - Remaining Phase 1 work is fuller selected-region edit coverage:
-  reroll/delete/regenerate/reroute/block/reserve actions.
+  reroll/regenerate/reroute actions.
 
 Goal: make the mockup stage obvious and usable.
 
@@ -273,6 +276,7 @@ Verification:
 
 - EditMode test for preview grid data extraction from a generated draft.
 - EditMode test for selected-region edit persistence in a draft asset.
+- EditMode test for selected-region delete/block/reserve state edits.
 - Manual Unity check: generate 3 seeds and confirm visible layout changes.
 - Manual Unity check: select a generated room, change/lock it, regenerate
   allowed parts, and confirm the locked edit remains.

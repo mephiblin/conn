@@ -820,7 +820,40 @@ namespace Conn.MapGenV2.Editor
                         lastOperationResult = $"Cleared region {selectedRegionId} override metadata.";
                     }
                 }
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (GUILayout.Button("Delete Region / 삭제"))
+                    {
+                        ChangeSelectedRegionState(MapGenCellState.Empty, "Deleted");
+                        ClearSelection();
+                    }
+
+                    if (GUILayout.Button("Mark Blocked / 차단"))
+                    {
+                        ChangeSelectedRegionState(MapGenCellState.Blocked, "Marked blocked");
+                    }
+
+                    if (GUILayout.Button("Mark Reserved / 예약"))
+                    {
+                        ChangeSelectedRegionState(MapGenCellState.Reserved, "Marked reserved");
+                    }
+                }
             }
+        }
+
+        private void ChangeSelectedRegionState(MapGenCellState state, string actionLabel)
+        {
+            if (draft == null || selectedRegionId < 0)
+            {
+                return;
+            }
+
+            Undo.RecordObject(draft, $"MapGen {actionLabel} Region");
+            draft.SetRegionState(selectedRegionId, state);
+            EditorUtility.SetDirty(draft);
+            lastOperationResult = $"{actionLabel} region {selectedRegionId}. Accepted output is now stale until reaccepted.";
+            Repaint();
         }
 
         private static void DrawCellLine(string label, MapGenMockupPreviewData previewData, bool hasCell, Vector2Int coord)

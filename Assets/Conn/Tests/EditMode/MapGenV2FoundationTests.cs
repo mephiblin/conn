@@ -450,6 +450,62 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void MockupDraftRegionStateEditsDeleteBlockAndReserveCells()
+        {
+            var draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();
+
+            try
+            {
+                draft.GridSize = new Vector2Int(3, 1);
+                draft.EnsureCellArray();
+                for (var i = 0; i < draft.Cells.Length; i++)
+                {
+                    draft.Cells[i] = new MapGenMockupCell
+                    {
+                        State = i == 1 ? MapGenCellState.Connector : MapGenCellState.Room,
+                        RegionId = 7,
+                        RoomCategory = MapGenRoomCategory.Main,
+                        SocketKind = i == 1 ? MapGenSocketKind.Door : MapGenSocketKind.None,
+                        SocketId = i == 1 ? "main" : string.Empty,
+                        PropChannel = "loot"
+                    };
+                }
+
+                draft.Accept();
+                draft.SetRegionLocked(7, true);
+                draft.SetRegionState(7, MapGenCellState.Blocked);
+
+                Assert.That(draft.Cells, Has.Exactly(3).Matches<MapGenMockupCell>(
+                    cell => cell.RegionId == 7
+                        && cell.State == MapGenCellState.Blocked
+                        && cell.SocketKind == MapGenSocketKind.Blocked
+                        && string.IsNullOrEmpty(cell.SocketId)
+                        && string.IsNullOrEmpty(cell.PropChannel)));
+                Assert.That(draft.Accepted, Is.True);
+                Assert.That(draft.IsAcceptedSignatureCurrent, Is.False);
+                Assert.That(draft.TryGetRegionOverride(7, out var lockedOverride), Is.True);
+                Assert.That(lockedOverride.Locked, Is.True);
+
+                draft.SetRegionState(7, MapGenCellState.Reserved);
+
+                Assert.That(draft.Cells, Has.Exactly(3).Matches<MapGenMockupCell>(
+                    cell => cell.RegionId == 7
+                        && cell.State == MapGenCellState.Reserved
+                        && cell.SocketKind == MapGenSocketKind.None));
+
+                draft.SetRegionState(7, MapGenCellState.Empty);
+
+                Assert.That(draft.Cells, Has.Exactly(3).Matches<MapGenMockupCell>(
+                    cell => cell.RegionId < 0 && cell.State == MapGenCellState.Empty));
+                Assert.That(draft.TryGetRegionOverride(7, out _), Is.False);
+            }
+            finally
+            {
+                Object.DestroyImmediate(draft);
+            }
+        }
+
+        [Test]
         public void MockupDraftRegeneratePreservesLockedRegionCells()
         {
             var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
