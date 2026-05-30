@@ -19,7 +19,7 @@ namespace Conn.MapGenV2.Editor
             EnsureFolder(Root, "Drafts");
             EnsureFolder(Root, "MaterializedPrefabs");
             EnsureFolder("Assets/Conn/Core/MapGenV2", "BakedMaps");
-            AssetDatabase.Refresh();
+            MapGenV2AssetDatabasePolicy.RefreshAfterBulkAssetChanges();
         }
 
         public static void EnsureAssetFolder(string folderPath)

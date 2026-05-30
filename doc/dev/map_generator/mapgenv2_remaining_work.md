@@ -1108,6 +1108,9 @@ Progress note 2026-05-31:
   retry/contradiction counts, post-process pass/rollback/change counts,
   materialization request/footprint counts, and baked payload counts.
 - Focused tests already assert mockup generation does not create scene objects.
+- `AssetDatabase.Refresh()` is centralized behind
+  `MapGenV2AssetDatabasePolicy.RefreshAfterBulkAssetChanges()` so normal
+  mockup iteration does not add ad-hoc refresh calls.
 - Focused tests cover budget classification, profiler sample logging, and
   preview texture cache invalidation.
 
@@ -1123,7 +1126,7 @@ Tasks:
 - [x] Add memory allocation budget for solver and preview.
 - [ ] Add cancellation support for long generation runs.
 - [x] Add progress reporting for solve, post-process, materialize, and bake.
-- [ ] Avoid excessive `AssetDatabase.Refresh` calls during normal generation.
+- [x] Avoid excessive `AssetDatabase.Refresh` calls during normal generation.
 - [x] Cache preview textures and invalidate them only when draft data changes.
 - [x] Avoid scene object creation during mockup-only iteration.
 - [x] Add profiling hooks or logs for retries, contradictions, and pass costs.

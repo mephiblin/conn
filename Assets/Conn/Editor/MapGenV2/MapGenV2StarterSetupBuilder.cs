@@ -134,7 +134,7 @@ namespace Conn.MapGenV2.Editor
             MarkDirty(moduleSet, styleSet, ruleSet, roomShape, corridorTemplate, profile, draft);
             MarkDirty(roomTemplates);
             AssetDatabase.SaveAssets();
-            AssetDatabase.Refresh();
+            MapGenV2AssetDatabasePolicy.RefreshAfterBulkAssetChanges();
 
             return new MapGenV2StarterSetup
             {
@@ -208,7 +208,7 @@ namespace Conn.MapGenV2.Editor
             if (deleted > 0)
             {
                 AssetDatabase.SaveAssets();
-                AssetDatabase.Refresh();
+                MapGenV2AssetDatabasePolicy.RefreshAfterBulkAssetChanges();
             }
 
             return deleted;

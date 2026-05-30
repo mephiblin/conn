@@ -1372,6 +1372,26 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void AssetDatabaseRefreshIsCentralizedForMapGenV2EditorCode()
+        {
+            var directRefreshCallers = new System.Collections.Generic.List<string>();
+            foreach (var path in System.IO.Directory.GetFiles("Assets/Conn/Editor/MapGenV2", "*.cs", System.IO.SearchOption.TopDirectoryOnly))
+            {
+                if (path.EndsWith("MapGenV2AssetDatabasePolicy.cs", System.StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                if (System.IO.File.ReadAllText(path).Contains("AssetDatabase.Refresh("))
+                {
+                    directRefreshCallers.Add(path);
+                }
+            }
+
+            Assert.That(directRefreshCallers, Is.Empty);
+        }
+
+        [Test]
         public void AuthoringAssetMigrationAddsVersionAndNormalizesDefaults()
         {
             var profile = ScriptableObject.CreateInstance<MapGenProfileAsset>();
