@@ -1331,6 +1331,37 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void GenerationAndPostProcessSupportCooperativeCancellation()
+        {
+            var generation = MapGenMockupSolver.Generate(
+                8,
+                6,
+                42,
+                new[] { MapGenRoomCategory.Start, MapGenRoomCategory.Exit },
+                () => true);
+
+            Assert.That(generation.Success, Is.False);
+            Assert.That(generation.Report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                issue => issue.Code == "solver_cancelled"));
+
+            var cells = new MapGenMockupCell[4];
+            for (var i = 0; i < cells.Length; i++)
+            {
+                cells[i] = MapGenMockupCell.Empty;
+            }
+
+            var postProcess = MapGenMockupPostProcessor.Apply(
+                2,
+                2,
+                cells,
+                new MapGenPostProcessOptions { MaxPasses = 3, UseDirectRoutes = true },
+                () => true);
+
+            Assert.That(postProcess.Cancelled, Is.True);
+            Assert.That(postProcess.PassesRun, Is.EqualTo(0));
+        }
+
+        [Test]
         public void PreviewTextureCacheReusesAndInvalidatesByDraftSignature()
         {
             var draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();

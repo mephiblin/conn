@@ -1111,6 +1111,9 @@ Progress note 2026-05-31:
 - `AssetDatabase.Refresh()` is centralized behind
   `MapGenV2AssetDatabasePolicy.RefreshAfterBulkAssetChanges()` so normal
   mockup iteration does not add ad-hoc refresh calls.
+- Solver, post-process, materialize, and bake paths now accept cooperative
+  cancellation hooks; the main window connects those hooks to cancelable editor
+  progress bars.
 - Focused tests cover budget classification, profiler sample logging, and
   preview texture cache invalidation.
 
@@ -1124,7 +1127,7 @@ Tasks:
 - [x] Add generation time budget per target size.
 - [x] Add materialization time budget per target size.
 - [x] Add memory allocation budget for solver and preview.
-- [ ] Add cancellation support for long generation runs.
+- [x] Add cancellation support for long generation runs.
 - [x] Add progress reporting for solve, post-process, materialize, and bake.
 - [x] Avoid excessive `AssetDatabase.Refresh` calls during normal generation.
 - [x] Cache preview textures and invalidate them only when draft data changes.

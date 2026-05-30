@@ -14,6 +14,8 @@ namespace Conn.MapGenV2.Core
 
         public int Rollbacks { get; set; }
 
+        public bool Cancelled { get; set; }
+
         public bool RequiredConnectivityValid { get; set; } = true;
 
         public bool Changed => DirectRouteCellsAdded > 0

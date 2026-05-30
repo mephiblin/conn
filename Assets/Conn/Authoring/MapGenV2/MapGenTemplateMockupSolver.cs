@@ -16,10 +16,19 @@ namespace Conn.MapGenV2.Authoring
                 && profile.StyleSet.RoomTemplates.Length > 0;
         }
 
-        public static MapGenMockupSolverResult Generate(MapGenProfileAsset profile, int seed, int maxAttempts = DefaultMaxAttempts)
+        public static MapGenMockupSolverResult Generate(
+            MapGenProfileAsset profile,
+            int seed,
+            int maxAttempts = DefaultMaxAttempts,
+            Func<bool> shouldCancel = null)
         {
             var report = new MapGenValidationReport();
             maxAttempts = Mathf.Max(1, maxAttempts);
+            if (IsCancelled(shouldCancel, report))
+            {
+                return Failed(0, 0, seed, report, 1);
+            }
+
             if (profile == null)
             {
                 report.Add(new MapGenIssue(
@@ -78,8 +87,13 @@ namespace Conn.MapGenV2.Authoring
             MapGenMockupSolverResult lastFailure = null;
             for (var attempt = 0; attempt < maxAttempts; attempt++)
             {
+                if (IsCancelled(shouldCancel, report))
+                {
+                    return Failed(width, height, seed, report, attempt + 1);
+                }
+
                 var attemptSeed = GetAttemptSeed(seed, attempt);
-                var result = GenerateAttempt(profile, seed, attemptSeed, attempt + 1, width, height, sourceSignature, roomTemplates, corridorTemplates, landmarks);
+                var result = GenerateAttempt(profile, seed, attemptSeed, attempt + 1, width, height, sourceSignature, roomTemplates, corridorTemplates, landmarks, shouldCancel);
                 if (result.Success)
                 {
                     return result;
@@ -106,7 +120,8 @@ namespace Conn.MapGenV2.Authoring
             string sourceSignature,
             MapGenRoomTemplateAsset[] roomTemplates,
             MapGenCorridorTemplateAsset[] corridorTemplates,
-            MapGenRequiredLandmark[] landmarks)
+            MapGenRequiredLandmark[] landmarks,
+            Func<bool> shouldCancel)
         {
             var report = new MapGenValidationReport();
             var cells = CreateEmptyCells(width, height);
@@ -116,6 +131,11 @@ namespace Conn.MapGenV2.Authoring
 
             for (var step = 0; step < landmarks.Length; step++)
             {
+                if (IsCancelled(shouldCancel, report))
+                {
+                    return Failed(width, height, seed, report, attemptCount);
+                }
+
                 var i = PickLowestEntropyLandmarkIndex(
                     landmarks,
                     placed,
@@ -221,6 +241,22 @@ namespace Conn.MapGenV2.Authoring
             }
 
             return false;
+        }
+
+        private static bool IsCancelled(Func<bool> shouldCancel, MapGenValidationReport report)
+        {
+            if (shouldCancel == null || !shouldCancel())
+            {
+                return false;
+            }
+
+            report.Add(new MapGenIssue(
+                MapGenGenerationPhase.SolveMockup,
+                "production_solver_cancelled",
+                "Production mockup generation was cancelled.",
+                "Run generation again when ready.",
+                severity: MapGenIssueSeverity.Warning));
+            return true;
         }
 
         private static void AddRetryExhaustedIssue(MapGenValidationReport report, int maxAttempts)

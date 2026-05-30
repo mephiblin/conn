@@ -1,5 +1,6 @@
 using Conn.MapGenV2.Authoring;
 using Conn.MapGenV2.Core;
+using System;
 using UnityEditor;
 
 namespace Conn.MapGenV2.Editor
@@ -8,7 +9,17 @@ namespace Conn.MapGenV2.Editor
     {
         public static MapGenBakedMapAsset Bake(MapGenMockupDraftAsset draft)
         {
+            return Bake(draft, null);
+        }
+
+        public static MapGenBakedMapAsset Bake(MapGenMockupDraftAsset draft, Func<bool> shouldCancel)
+        {
             if (draft == null || draft.Profile == null || !draft.Accepted || !draft.IsAcceptedSignatureCurrent)
+            {
+                return null;
+            }
+
+            if (shouldCancel != null && shouldCancel())
             {
                 return null;
             }
@@ -17,9 +28,15 @@ namespace Conn.MapGenV2.Editor
                 ? MapGenOutputSettings.Defaults().BakedAssetFolder
                 : draft.Profile.OutputSettings.BakedAssetFolder;
             MapGenV2AssetFolderUtility.EnsureAssetFolder(bakeFolder);
-            var asset = ScriptableObjectUtility.CreateAsset<MapGenBakedMapAsset>(
-                $"{bakeFolder}/{draft.Profile.ProfileId}_{draft.Seed}_BakedMap.asset");
+            var assetPath = $"{bakeFolder}/{draft.Profile.ProfileId}_{draft.Seed}_BakedMap.asset";
+            var asset = ScriptableObjectUtility.CreateAsset<MapGenBakedMapAsset>(assetPath);
             var propPlacement = MapGenPropPlacementPlanner.BuildForDraft(draft);
+            if (shouldCancel != null && shouldCancel())
+            {
+                AssetDatabase.DeleteAsset(assetPath);
+                return null;
+            }
+
             asset.ProfileId = draft.Profile.ProfileId;
             asset.StyleId = draft.Profile.StyleSet != null ? draft.Profile.StyleSet.StyleId : string.Empty;
             asset.RuleSetId = draft.Profile.LayoutRules != null ? draft.Profile.LayoutRules.name : string.Empty;
@@ -30,6 +47,12 @@ namespace Conn.MapGenV2.Editor
             asset.Cells = MapGenRuntimeBakeDataBuilder.BuildCells(draft.Width, draft.Height, draft.Cells);
             asset.Regions = MapGenRuntimeBakeDataBuilder.BuildRegions(draft.Width, draft.Height, draft.Cells);
             asset.Connectors = MapGenRuntimeBakeDataBuilder.BuildConnectors(draft.Width, draft.Height, draft.Cells);
+            if (shouldCancel != null && shouldCancel())
+            {
+                AssetDatabase.DeleteAsset(assetPath);
+                return null;
+            }
+
             asset.TraversalEdges = MapGenRuntimeBakeDataBuilder.BuildTraversalEdges(draft.Width, draft.Height, draft.Cells);
             asset.Props = BuildProps(propPlacement);
             asset.SpawnMarkers = BuildMarkers(asset.Props, "spawn");

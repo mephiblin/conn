@@ -8,7 +8,8 @@ namespace Conn.MapGenV2.Core
             int width,
             int height,
             MapGenMockupCell[] cells,
-            MapGenPostProcessOptions options)
+            MapGenPostProcessOptions options,
+            Func<bool> shouldCancel = null)
         {
             var report = new MapGenPostProcessReport();
             if (!MapGenGridCoord.IsValidSize(width, height) || cells == null || cells.Length != width * height)
@@ -19,6 +20,12 @@ namespace Conn.MapGenV2.Core
             var maxPasses = Math.Max(1, options.MaxPasses);
             for (var pass = 0; pass < maxPasses; pass++)
             {
+                if (shouldCancel != null && shouldCancel())
+                {
+                    report.Cancelled = true;
+                    break;
+                }
+
                 var snapshot = CopyCells(cells);
                 var requiresConnectivity = HasRequiredRooms(width, snapshot);
                 var changed = false;

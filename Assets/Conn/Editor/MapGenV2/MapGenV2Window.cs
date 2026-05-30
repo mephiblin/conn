@@ -650,8 +650,8 @@ namespace Conn.MapGenV2.Editor
                     draft.Height,
                     budget.GenerationBudgetMs,
                     () => preserveLockedRegions
-                        ? draft.RegenerateUnlockedFromProfile()
-                        : draft.GenerateFromProfile(),
+                        ? draft.RegenerateUnlockedFromProfile(() => MapGenV2EditorProgress.Begin(operationName, "Solving mockup layout..."))
+                        : draft.GenerateFromProfile(() => MapGenV2EditorProgress.Begin(operationName, "Solving mockup layout...")),
                     result => MapGenV2PerformanceDetails.ForValidationReport(result, 1, $"Seed={draft.Seed}"),
                     out var sample);
                 MapGenV2EditorProgress.Report(operationName, "Building preview summary...", 0.85f);
@@ -692,7 +692,7 @@ namespace Conn.MapGenV2.Editor
                     draft.Width,
                     draft.Height,
                     budget.GenerationBudgetMs,
-                    () => draft.ApplyPostProcessingFromProfile(),
+                    () => draft.ApplyPostProcessingFromProfile(() => MapGenV2EditorProgress.Begin("Post-Process Mockup", "Running post-process passes...")),
                     result => MapGenV2PerformanceDetails.ForPostProcess(result, $"Seed={draft.Seed}"),
                     out var sample);
                 EditorUtility.SetDirty(draft);
@@ -727,7 +727,11 @@ namespace Conn.MapGenV2.Editor
                     draft.Width,
                     draft.Height,
                     budget.MaterializationBudgetMs,
-                    () => MapGenMockupMaterializer.Materialize(draft, GetSceneOutputMode(), selectedMaterializedRoot),
+                    () => MapGenMockupMaterializer.Materialize(
+                        draft,
+                        GetSceneOutputMode(),
+                        selectedMaterializedRoot,
+                        () => MapGenV2EditorProgress.Begin("Materialize To Scene", "Instantiating prefab modules...")),
                     _ => MapGenV2PerformanceDetails.ForMaterialization(
                         MapGenMockupMaterializer.BuildReport(
                             draft.Profile != null && draft.Profile.StyleSet != null ? draft.Profile.StyleSet.ModuleSet : null,
@@ -769,7 +773,9 @@ namespace Conn.MapGenV2.Editor
                     draft.Width,
                     draft.Height,
                     budget.GenerationBudgetMs,
-                    () => MapGenRuntimeBakeUtility.Bake(draft),
+                    () => MapGenRuntimeBakeUtility.Bake(
+                        draft,
+                        () => MapGenV2EditorProgress.Begin("Bake Runtime Asset", "Writing runtime-safe baked map...")),
                     result => MapGenV2PerformanceDetails.ForBakedMap(result, $"Seed={draft.Seed}"),
                     out var sample);
                 lastOperationResult = bakedAsset != null

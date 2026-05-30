@@ -39,12 +39,22 @@ namespace Conn.MapGenV2.Authoring
 
         public MapGenValidationReport GenerateFromProfile()
         {
-            return GenerateFromProfile(false);
+            return GenerateFromProfile(false, null);
+        }
+
+        public MapGenValidationReport GenerateFromProfile(Func<bool> shouldCancel)
+        {
+            return GenerateFromProfile(false, shouldCancel);
         }
 
         public MapGenValidationReport RegenerateUnlockedFromProfile()
         {
-            return GenerateFromProfile(true);
+            return GenerateFromProfile(true, null);
+        }
+
+        public MapGenValidationReport RegenerateUnlockedFromProfile(Func<bool> shouldCancel)
+        {
+            return GenerateFromProfile(true, shouldCancel);
         }
 
         public MapGenValidationReport RegenerateRegionFromProfile(int regionId)
@@ -112,7 +122,7 @@ namespace Conn.MapGenV2.Authoring
             return result.Report;
         }
 
-        private MapGenValidationReport GenerateFromProfile(bool preserveLockedRegions)
+        private MapGenValidationReport GenerateFromProfile(bool preserveLockedRegions, Func<bool> shouldCancel)
         {
             if (Profile == null)
             {
@@ -133,12 +143,13 @@ namespace Conn.MapGenV2.Authoring
 
             var usesTemplates = MapGenTemplateMockupSolver.CanUseTemplates(Profile);
             var result = usesTemplates
-                ? MapGenTemplateMockupSolver.Generate(Profile, Seed)
+                ? MapGenTemplateMockupSolver.Generate(Profile, Seed, shouldCancel: shouldCancel)
                 : MapGenMockupSolver.Generate(
                     Profile.MapSize.x,
                     Profile.MapSize.y,
                     Seed,
-                    Profile.LayoutRules != null ? Profile.LayoutRules.RequiredRoomCategories : Array.Empty<MapGenRoomCategory>());
+                    Profile.LayoutRules != null ? Profile.LayoutRules.RequiredRoomCategories : Array.Empty<MapGenRoomCategory>(),
+                    shouldCancel);
             if (!result.Success)
             {
                 return result.Report;
@@ -175,6 +186,11 @@ namespace Conn.MapGenV2.Authoring
 
         public MapGenPostProcessReport ApplyPostProcessingFromProfile()
         {
+            return ApplyPostProcessingFromProfile(null);
+        }
+
+        public MapGenPostProcessReport ApplyPostProcessingFromProfile(Func<bool> shouldCancel)
+        {
             EnsureCellArray();
             var options = new MapGenPostProcessOptions();
             if (Profile != null && Profile.LayoutRules != null)
@@ -187,7 +203,7 @@ namespace Conn.MapGenV2.Authoring
                 options.MaxPasses = rules.MaxPasses;
             }
 
-            var report = MapGenMockupPostProcessor.Apply(Width, Height, Cells, options);
+            var report = MapGenMockupPostProcessor.Apply(Width, Height, Cells, options, shouldCancel);
             LastDirectRouteCellsAdded = report.DirectRouteCellsAdded;
             LastDeadEndCorridorsRemoved = report.DeadEndCorridorsRemoved;
             LastIsolatedRoomsRemoved = report.IsolatedRoomsRemoved;

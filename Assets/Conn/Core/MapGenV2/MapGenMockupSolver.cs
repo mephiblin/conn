@@ -8,9 +8,15 @@ namespace Conn.MapGenV2.Core
             int width,
             int height,
             int seed,
-            MapGenRoomCategory[] requiredCategories)
+            MapGenRoomCategory[] requiredCategories,
+            Func<bool> shouldCancel = null)
         {
             var report = new MapGenValidationReport();
+            if (IsCancelled(shouldCancel, report))
+            {
+                return Failed(width, height, seed, report);
+            }
+
             if (!MapGenGridCoord.IsValidSize(width, height))
             {
                 report.Add(new MapGenIssue(
@@ -38,6 +44,11 @@ namespace Conn.MapGenV2.Core
             var previous = default(MapGenGridCoord);
             for (var i = 0; i < categories.Length; i++)
             {
+                if (IsCancelled(shouldCancel, report))
+                {
+                    return Failed(width, height, seed, report);
+                }
+
                 var room = PickRoomCoord(width, height, i, categories.Length, ref rng);
                 room = FindFreeRoomCoord(width, height, room, usedRooms);
                 usedRooms[room.ToIndex(width)] = true;
@@ -62,6 +73,22 @@ namespace Conn.MapGenV2.Core
                 Cells = cells,
                 Report = report
             };
+        }
+
+        private static bool IsCancelled(Func<bool> shouldCancel, MapGenValidationReport report)
+        {
+            if (shouldCancel == null || !shouldCancel())
+            {
+                return false;
+            }
+
+            report.Add(new MapGenIssue(
+                MapGenGenerationPhase.SolveMockup,
+                "solver_cancelled",
+                "Mockup generation was cancelled.",
+                "Run generation again when ready.",
+                severity: MapGenIssueSeverity.Warning));
+            return true;
         }
 
         private static MapGenMockupSolverResult Failed(int width, int height, int seed, MapGenValidationReport report)

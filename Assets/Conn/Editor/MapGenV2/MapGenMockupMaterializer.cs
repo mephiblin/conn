@@ -20,9 +20,15 @@ namespace Conn.MapGenV2.Editor
         public static GameObject Materialize(
             MapGenMockupDraftAsset draft,
             MapGenV2SceneOutputMode outputMode = MapGenV2SceneOutputMode.CreateNewRoot,
-            GameObject selectedRoot = null)
+            GameObject selectedRoot = null,
+            Func<bool> shouldCancel = null)
         {
             if (draft == null || draft.Profile == null || draft.Profile.StyleSet == null || draft.Profile.StyleSet.ModuleSet == null)
+            {
+                return null;
+            }
+
+            if (shouldCancel != null && shouldCancel())
             {
                 return null;
             }
@@ -79,6 +85,12 @@ namespace Conn.MapGenV2.Editor
 
             for (var i = 0; i < plan.RequestCount; i++)
             {
+                if (shouldCancel != null && shouldCancel())
+                {
+                    ClearRoot(root);
+                    return null;
+                }
+
                 var request = plan.Requests[i];
                 if (request.Category == MapGenModuleCategory.NavigationHelper)
                 {
