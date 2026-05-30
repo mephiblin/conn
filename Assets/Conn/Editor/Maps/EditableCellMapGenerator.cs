@@ -50,12 +50,12 @@ namespace Conn.Editor.Maps
             ConnectRooms(draft, random, rooms[2], rooms[6]);
             ConnectRooms(draft, random, rooms[2], rooms[7]);
             ConnectRooms(draft, random, rooms[6], rooms[3]);
-            AddSidePassages(draft, random, rooms);
+            var sidePassages = AddSidePassages(draft, random, rooms);
             AddHeightTransitionFeature(draft, rooms[4]);
             CarveWallsAroundFloors(draft);
             ClassifyWallVariants(draft);
             AddGeneratedObjects(draft, rooms);
-            ApplyGeneratedRoomMetadata(draft, rooms);
+            ApplyGeneratedRoomMetadata(draft, rooms, sidePassages);
             return draft;
         }
 
@@ -91,22 +91,31 @@ namespace Conn.Editor.Maps
             return rooms;
         }
 
-        private static void AddSidePassages(EditableMapDraftAsset draft, System.Random random, List<RectInt> rooms)
+        private static List<SidePassagePlan> AddSidePassages(EditableMapDraftAsset draft, System.Random random, List<RectInt> rooms)
         {
+            var sidePassages = new List<SidePassagePlan>();
             if (rooms == null || rooms.Count < 4)
             {
-                return;
+                return sidePassages;
             }
 
             var passageCount = Mathf.Clamp(rooms.Count / 2, 3, 5);
             for (var i = 0; i < passageCount; i++)
             {
-                var room = rooms[1 + (i % Mathf.Max(1, rooms.Count - 2))];
+                var ownerRoomIndex = 1 + (i % Mathf.Max(1, rooms.Count - 2));
+                var room = rooms[ownerRoomIndex];
                 var direction = PickSidePassageDirection(i, room, draft.Height);
                 var length = random.Next(3, 7);
                 var start = PickSidePassageStart(random, room, direction);
-                CarveSidePassage(draft, start, direction, length);
+                sidePassages.Add(new SidePassagePlan
+                {
+                    OwnerRoomIndex = ownerRoomIndex,
+                    DirectionFromOwner = direction,
+                    Bounds = CarveSidePassage(draft, start, direction, length)
+                });
             }
+
+            return sidePassages;
         }
 
         private static MapDirection PickSidePassageDirection(int index, RectInt room, int mapHeight)
@@ -139,19 +148,29 @@ namespace Conn.Editor.Maps
             }
         }
 
-        private static void CarveSidePassage(EditableMapDraftAsset draft, Vector2Int start, MapDirection direction, int length)
+        private static RectInt CarveSidePassage(EditableMapDraftAsset draft, Vector2Int start, MapDirection direction, int length)
         {
             var offset = DirectionOffset(direction);
+            var minX = start.x;
+            var maxX = start.x;
+            var minY = start.y;
+            var maxY = start.y;
             for (var i = 0; i <= length; i++)
             {
                 var position = start + offset * i;
                 if (!draft.IsInBounds(position.x, position.y))
                 {
-                    return;
+                    break;
                 }
 
                 SetCell(draft, position.x, position.y, RoomChunkCellType.Floor, "generated_corridor", direction);
+                minX = Mathf.Min(minX, position.x);
+                maxX = Mathf.Max(maxX, position.x);
+                minY = Mathf.Min(minY, position.y);
+                maxY = Mathf.Max(maxY, position.y);
             }
+
+            return new RectInt(minX, minY, (maxX - minX) + 1, (maxY - minY) + 1);
         }
 
         private static Vector2Int DirectionOffset(MapDirection direction)
@@ -167,6 +186,28 @@ namespace Conn.Editor.Maps
                 default:
                     return Vector2Int.up;
             }
+        }
+
+        private static MapDirection Opposite(MapDirection direction)
+        {
+            switch (direction)
+            {
+                case MapDirection.East:
+                    return MapDirection.West;
+                case MapDirection.South:
+                    return MapDirection.North;
+                case MapDirection.West:
+                    return MapDirection.East;
+                default:
+                    return MapDirection.South;
+            }
+        }
+
+        private struct SidePassagePlan
+        {
+            public int OwnerRoomIndex;
+            public MapDirection DirectionFromOwner;
+            public RectInt Bounds;
         }
 
         private static void CarveRoom(EditableMapDraftAsset draft, System.Random random, RectInt room, int roomIndex)
@@ -503,7 +544,7 @@ namespace Conn.Editor.Maps
             return cell.Terrain != RoomChunkCellType.Gap && cell.Terrain != RoomChunkCellType.Wall;
         }
 
-        private static void ApplyGeneratedRoomMetadata(EditableMapDraftAsset draft, List<RectInt> rooms)
+        private static void ApplyGeneratedRoomMetadata(EditableMapDraftAsset draft, List<RectInt> rooms, List<SidePassagePlan> sidePassages)
         {
             var zoneId = string.IsNullOrWhiteSpace(draft.SourceProfileId)
                 ? "generated_zone"
@@ -520,7 +561,7 @@ namespace Conn.Editor.Maps
                 }
             };
 
-            draft.Rooms = new[]
+            var roomRecords = new List<EditableMapRoom>
             {
                 BuildRoomRecord("start", MapRoomRole.Start, RoomChunkLayoutKind.Room, rooms[0], zoneId),
                 BuildRoomRecord("main_1", MapRoomRole.MainPath, RoomChunkLayoutKind.Corridor, rooms[1], zoneId),
@@ -532,8 +573,14 @@ namespace Conn.Editor.Maps
                 BuildRoomRecord("side_branch", MapRoomRole.SideBranch, RoomChunkLayoutKind.DeadEnd, rooms[7], zoneId)
             };
 
+            for (var i = 0; i < (sidePassages?.Count ?? 0); i++)
+            {
+                roomRecords.Add(BuildRoomRecord($"dead_end_stub_{i}", MapRoomRole.SideBranch, RoomChunkLayoutKind.DeadEnd, sidePassages[i].Bounds, zoneId));
+            }
+
+            draft.Rooms = roomRecords.ToArray();
             ApplyRoomIdsToCells(draft, draft.Rooms, zoneId);
-            draft.Sockets = new[]
+            var sockets = new List<EditableMapSocket>
             {
                 BuildSocket(draft, "start_to_main_1", "start", rooms[0], MapDirection.East, "main_1", rooms[1]),
                 BuildSocket(draft, "main_1_to_start", "main_1", rooms[1], MapDirection.West, "start", rooms[0]),
@@ -552,6 +599,40 @@ namespace Conn.Editor.Maps
                 BuildSocket(draft, "hub_to_side_branch", "hub", rooms[2], MapDirection.South, "side_branch", rooms[7]),
                 BuildSocket(draft, "side_branch_to_hub", "side_branch", rooms[7], MapDirection.North, "hub", rooms[2])
             };
+
+            for (var i = 0; i < (sidePassages?.Count ?? 0); i++)
+            {
+                var passage = sidePassages[i];
+                var ownerRoomId = RoomIdForGeneratedIndex(passage.OwnerRoomIndex);
+                var passageRoomId = $"dead_end_stub_{i}";
+                sockets.Add(BuildSocket(draft, $"{ownerRoomId}_to_{passageRoomId}", ownerRoomId, rooms[passage.OwnerRoomIndex], passage.DirectionFromOwner, passageRoomId, passage.Bounds));
+                sockets.Add(BuildSocket(draft, $"{passageRoomId}_to_{ownerRoomId}", passageRoomId, passage.Bounds, Opposite(passage.DirectionFromOwner), ownerRoomId, rooms[passage.OwnerRoomIndex]));
+            }
+
+            draft.Sockets = sockets.ToArray();
+        }
+
+        private static string RoomIdForGeneratedIndex(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return "start";
+                case 1:
+                    return "main_1";
+                case 2:
+                    return "hub";
+                case 3:
+                    return "quest";
+                case 4:
+                    return "boss";
+                case 5:
+                    return "exit";
+                case 6:
+                    return "treasure_branch";
+                default:
+                    return "side_branch";
+            }
         }
 
         private static EditableMapRoom BuildRoomRecord(

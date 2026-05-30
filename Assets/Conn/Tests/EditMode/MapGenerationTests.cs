@@ -609,6 +609,8 @@ namespace Conn.Tests.EditMode
                 Assert.That(result.Draft.Rooms.Any(room => room.Id == "hub" && room.LayoutKind == RoomChunkLayoutKind.Hub), Is.True);
                 Assert.That(result.Draft.Rooms.Any(room => room.Id == "boss" && room.LayoutKind == RoomChunkLayoutKind.HeightTransition), Is.True);
                 Assert.That(result.Draft.Rooms.Count(room => room.LayoutKind == RoomChunkLayoutKind.DeadEnd), Is.GreaterThanOrEqualTo(1));
+                Assert.That(result.Draft.Rooms.Count(room => room.Id.StartsWith("dead_end_stub_", System.StringComparison.Ordinal)), Is.GreaterThanOrEqualTo(3));
+                Assert.That(result.Draft.Cells.Any(cell => cell.RoomId.StartsWith("dead_end_stub_", System.StringComparison.Ordinal)), Is.True);
                 Assert.That(result.Draft.Sockets.Any(socket => socket.RoomId == "hub" && socket.TargetRoomId == "treasure_branch"), Is.True);
                 Assert.That(result.Draft.Sockets.Any(socket => socket.RoomId == "treasure_branch" && socket.TargetRoomId == "quest"), Is.True);
                 Assert.That(result.Draft.Sockets.All(socket => IsSocketOnRoomBoundary(result.Draft, socket)), Is.True);
