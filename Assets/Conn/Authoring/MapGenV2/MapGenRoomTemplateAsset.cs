@@ -11,6 +11,7 @@ namespace Conn.MapGenV2.Authoring
         public Vector2Int Footprint = new Vector2Int(3, 3);
         public MapGenRoomCategory RoomCategory = MapGenRoomCategory.Main;
         public MapGenRoomSizeClass SizeClass = MapGenRoomSizeClass.Medium;
+        public MapGenRoomShapeAsset[] SourceRoomShapes = Array.Empty<MapGenRoomShapeAsset>();
         public MapGenConnector[] Connectors = Array.Empty<MapGenConnector>();
         public Vector2Int[] FloorCells = Array.Empty<Vector2Int>();
         public Vector2Int[] WallCells = Array.Empty<Vector2Int>();
@@ -30,6 +31,7 @@ namespace Conn.MapGenV2.Authoring
             ValidateCells(report, ownerId, nameof(DoorHintCells), DoorHintCells, false);
             ValidatePropChannels(report, ownerId);
             ValidateConnectors(report, ownerId);
+            ValidateSourceRoomShapes(report, ownerId);
             return report;
         }
 
@@ -130,6 +132,23 @@ namespace Conn.MapGenV2.Authoring
             for (var i = 0; i < (Connectors?.Length ?? 0); i++)
             {
                 MapGenTemplateValidationUtility.ValidateConnector(report, ownerId, Footprint, Connectors[i], i);
+            }
+        }
+
+        private void ValidateSourceRoomShapes(MapGenValidationReport report, string ownerId)
+        {
+            for (var i = 0; i < (SourceRoomShapes?.Length ?? 0); i++)
+            {
+                if (SourceRoomShapes[i] != null)
+                {
+                    continue;
+                }
+
+                report.Add(new MapGenIssue(
+                    MapGenGenerationPhase.ValidateProfile,
+                    "room_template_null_source_shape",
+                    $"{ownerId} has an empty source room shape slot.",
+                    "Remove the empty slot or assign a MapGenRoomShapeAsset."));
             }
         }
     }

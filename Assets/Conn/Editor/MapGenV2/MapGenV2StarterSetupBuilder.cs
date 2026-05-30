@@ -75,6 +75,7 @@ namespace Conn.MapGenV2.Editor
             var roomTemplate = ScriptableObjectUtility.CreateAsset<MapGenRoomTemplateAsset>(
                 AssetDatabase.GenerateUniqueAssetPath($"{Root}/Templates/StarterRoomTemplate.asset"));
             PopulateStarterRoomTemplate(roomTemplate);
+            roomTemplate.SourceRoomShapes = new[] { roomShape };
 
             var corridorTemplate = ScriptableObjectUtility.CreateAsset<MapGenCorridorTemplateAsset>(
                 AssetDatabase.GenerateUniqueAssetPath($"{Root}/Templates/StarterCorridorTemplate.asset"));

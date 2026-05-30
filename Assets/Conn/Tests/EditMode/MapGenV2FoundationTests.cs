@@ -161,6 +161,28 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void RoomTemplateValidatorReportsNullSourceShapeSlot()
+        {
+            var template = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();
+
+            try
+            {
+                PopulateRoomTemplate(template, "shape_ref_template", MapGenRoomCategory.Main);
+                template.SourceRoomShapes = new MapGenRoomShapeAsset[] { null };
+
+                var report = template.Validate();
+
+                Assert.That(report.IsValid, Is.False);
+                Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "room_template_null_source_shape"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(template);
+            }
+        }
+
+        [Test]
         public void CorridorTemplateValidatorRequiresConnectorsAndLengthRange()
         {
             var template = ScriptableObject.CreateInstance<MapGenCorridorTemplateAsset>();

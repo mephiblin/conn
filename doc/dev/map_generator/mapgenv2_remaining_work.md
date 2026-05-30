@@ -521,6 +521,9 @@ Progress note 2026-05-31:
   remain available in the grid editor.
 - The room shape editor now shows connector edge warnings beside the brush/grid
   controls, including a count of connector cells that are not on an outer edge.
+- `MapGenRoomTemplateAsset` now stores source room-shape references, validates
+  empty source-shape slots, and has a custom inspector with summary counts,
+  source shape references, cell/connector data, and validation output.
 
 Goal: make room/chunk shapes editable as real grid assets.
 
@@ -534,7 +537,7 @@ Tasks:
 - [ ] Add generated thumbnail/preview cache.
 - [x] Add rotate/flip preview.
 - [x] Add “create approved variant” actions for rotated/flipped variants.
-- [ ] Add template editor that references one or more room shapes.
+- [x] Add template editor that references one or more room shapes.
 - [ ] Add corridor template editor for straight, turn, T, cross, and variable
   length templates.
 - [ ] Add validation panel showing occupied cells, connector count, invalid
@@ -549,6 +552,7 @@ Verification:
 
 - EditMode tests for resize preservation.
 - EditMode tests for rotate/flip variant generation.
+- EditMode test for room template source-shape reference validation.
 - Manual Unity check: author 3x3, 3x5, and 4x4 shapes like the reference video.
 
 ## Phase 7: Production Layout Solver
