@@ -376,6 +376,7 @@ namespace Conn.MapGenV2.Editor
         {
             var marker = Undo.AddComponent<MapGenV2MaterializedModuleMarker>(instance);
             marker.DraftSignature = draft != null ? draft.AcceptedSignature : string.Empty;
+            marker.SourceSignature = draft != null ? draft.AcceptedSourceSignature : string.Empty;
             marker.RegionId = request.RegionId;
             marker.SourceTemplateId = request.SourceTemplateId ?? string.Empty;
             marker.ModuleCategory = request.Category;

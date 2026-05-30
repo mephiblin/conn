@@ -7,6 +7,7 @@ namespace Conn.MapGenV2.Authoring
         public readonly bool HasDraft;
         public readonly bool DraftUsesSelectedProfile;
         public readonly bool HasGeneratedMockup;
+        public readonly bool GeneratedCurrent;
         public readonly bool Accepted;
         public readonly bool AcceptedCurrent;
         public readonly bool CanGenerate;
@@ -27,6 +28,7 @@ namespace Conn.MapGenV2.Authoring
             bool hasDraft,
             bool draftUsesSelectedProfile,
             bool hasGeneratedMockup,
+            bool generatedCurrent,
             bool accepted,
             bool acceptedCurrent,
             bool canGenerate,
@@ -46,6 +48,7 @@ namespace Conn.MapGenV2.Authoring
             HasDraft = hasDraft;
             DraftUsesSelectedProfile = draftUsesSelectedProfile;
             HasGeneratedMockup = hasGeneratedMockup;
+            GeneratedCurrent = generatedCurrent;
             Accepted = accepted;
             AcceptedCurrent = acceptedCurrent;
             CanGenerate = canGenerate;
@@ -71,12 +74,13 @@ namespace Conn.MapGenV2.Authoring
             var draftHasProfile = hasDraft && draftProfile != null;
             var draftProfileValid = draftHasProfile && draftProfile.Validate().IsValid;
             var hasGeneratedMockup = hasDraft && !string.IsNullOrEmpty(selectedDraft.LastGeneratedSignature);
+            var generatedCurrent = hasDraft && selectedDraft.IsGeneratedSignatureCurrent;
             var accepted = hasDraft && selectedDraft.Accepted;
             var acceptedCurrent = hasDraft && selectedDraft.IsAcceptedSignatureCurrent;
 
             var canGenerate = hasDraft && draftHasProfile && draftProfileValid;
-            var canPostProcess = canGenerate && hasGeneratedMockup;
-            var canAccept = hasGeneratedMockup;
+            var canPostProcess = canGenerate && hasGeneratedMockup && generatedCurrent;
+            var canAccept = hasGeneratedMockup && generatedCurrent;
             var canMaterialize = accepted && acceptedCurrent;
             var canBakeRuntime = canMaterialize;
 
@@ -85,10 +89,10 @@ namespace Conn.MapGenV2.Authoring
                 : BuildGenerateReason(hasDraft, draftHasProfile, draftProfileValid);
             var postProcessReason = canPostProcess
                 ? "Run Post-Process can update the generated draft cells."
-                : hasGeneratedMockup ? generateReason : "Generate Mockup first.";
+                : BuildGeneratedReason(hasGeneratedMockup, generatedCurrent, generateReason);
             var acceptReason = canAccept
                 ? "Accept Mockup can mark the current draft signature as the materialization source."
-                : "Generate Mockup first.";
+                : BuildGeneratedReason(hasGeneratedMockup, generatedCurrent, "Generate Mockup first.");
             var materializeReason = canMaterialize
                 ? "Materialize To Scene can instantiate the accepted mockup."
                 : BuildAcceptedReason(hasGeneratedMockup, accepted, acceptedCurrent);
@@ -102,6 +106,7 @@ namespace Conn.MapGenV2.Authoring
                 hasDraft,
                 draftUsesSelectedProfile,
                 hasGeneratedMockup,
+                generatedCurrent,
                 accepted,
                 acceptedCurrent,
                 canGenerate,
@@ -114,7 +119,7 @@ namespace Conn.MapGenV2.Authoring
                 acceptReason,
                 materializeReason,
                 bakeRuntimeReason,
-                BuildNextAction(hasProfile, profileValid, hasDraft, draftUsesSelectedProfile, canGenerate, hasGeneratedMockup, accepted, acceptedCurrent));
+                BuildNextAction(hasProfile, profileValid, hasDraft, draftUsesSelectedProfile, canGenerate, hasGeneratedMockup, generatedCurrent, accepted, acceptedCurrent));
         }
 
         private static string BuildGenerateReason(bool hasDraft, bool draftHasProfile, bool draftProfileValid)
@@ -157,6 +162,21 @@ namespace Conn.MapGenV2.Authoring
             return "Accepted mockup is not ready.";
         }
 
+        private static string BuildGeneratedReason(bool hasGeneratedMockup, bool generatedCurrent, string fallback)
+        {
+            if (!hasGeneratedMockup)
+            {
+                return "Generate Mockup first.";
+            }
+
+            if (!generatedCurrent)
+            {
+                return "The generated mockup is stale because source assets changed. Regenerate Mockup.";
+            }
+
+            return fallback;
+        }
+
         private static string BuildNextAction(
             bool hasProfile,
             bool profileValid,
@@ -164,6 +184,7 @@ namespace Conn.MapGenV2.Authoring
             bool draftUsesSelectedProfile,
             bool canGenerate,
             bool hasGeneratedMockup,
+            bool generatedCurrent,
             bool accepted,
             bool acceptedCurrent)
         {
@@ -195,6 +216,11 @@ namespace Conn.MapGenV2.Authoring
             if (!hasGeneratedMockup)
             {
                 return "Generate Mockup.";
+            }
+
+            if (!generatedCurrent)
+            {
+                return "Regenerate Mockup because source assets changed.";
             }
 
             if (!accepted || !acceptedCurrent)

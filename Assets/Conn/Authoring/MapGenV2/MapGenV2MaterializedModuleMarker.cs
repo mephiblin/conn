@@ -6,6 +6,7 @@ namespace Conn.MapGenV2.Authoring
     public sealed class MapGenV2MaterializedModuleMarker : MonoBehaviour
     {
         public string DraftSignature = string.Empty;
+        public string SourceSignature = string.Empty;
         public int RegionId = -1;
         public string SourceTemplateId = string.Empty;
         public MapGenModuleCategory ModuleCategory;

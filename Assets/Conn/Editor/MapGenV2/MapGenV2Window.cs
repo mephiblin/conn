@@ -716,6 +716,7 @@ namespace Conn.MapGenV2.Editor
                 EditorGUILayout.LabelField("생성 서명 / Generated Signature", string.IsNullOrEmpty(previewData.LastGeneratedSignature) ? "(none)" : previewData.LastGeneratedSignature);
                 EditorGUILayout.LabelField("현재 서명 / Current Signature", previewData.CurrentSignature);
                 EditorGUILayout.LabelField("수락 서명 / Accepted Signature", string.IsNullOrEmpty(previewData.AcceptedSignature) ? "(none)" : previewData.AcceptedSignature);
+                EditorGUILayout.LabelField("생성 상태 / Generated State", previewData.GeneratedSignatureCurrent ? "최신 / Current" : "소스 변경됨: 재생성 필요 / Stale");
                 EditorGUILayout.LabelField(
                     "상태 / State",
                     previewData.Accepted

@@ -43,6 +43,7 @@ namespace Conn.MapGenV2.Authoring
         public readonly string CurrentSignature;
         public readonly string AcceptedSignature;
         public readonly bool Accepted;
+        public readonly bool GeneratedSignatureCurrent;
         public readonly bool AcceptedSignatureCurrent;
         public readonly MapGenMockupPreviewSummary Summary;
         private readonly MapGenMockupCell[] cells;
@@ -56,6 +57,7 @@ namespace Conn.MapGenV2.Authoring
             string currentSignature,
             string acceptedSignature,
             bool accepted,
+            bool generatedSignatureCurrent,
             bool acceptedSignatureCurrent,
             MapGenMockupPreviewSummary summary,
             MapGenMockupCell[] cells)
@@ -68,6 +70,7 @@ namespace Conn.MapGenV2.Authoring
             CurrentSignature = currentSignature;
             AcceptedSignature = acceptedSignature;
             Accepted = accepted;
+            GeneratedSignatureCurrent = generatedSignatureCurrent;
             AcceptedSignatureCurrent = acceptedSignatureCurrent;
             Summary = summary;
             this.cells = cells ?? Array.Empty<MapGenMockupCell>();
@@ -97,6 +100,7 @@ namespace Conn.MapGenV2.Authoring
                 draft.ComputeSignature(),
                 draft.AcceptedSignature,
                 draft.Accepted,
+                draft.IsGeneratedSignatureCurrent,
                 draft.IsAcceptedSignatureCurrent,
                 BuildSummary(copiedCells),
                 copiedCells);
@@ -111,6 +115,7 @@ namespace Conn.MapGenV2.Authoring
             string.Empty,
             string.Empty,
             false,
+            true,
             true,
             new MapGenMockupPreviewSummary(0, 0, 0, 0, 0, 0, 0),
             Array.Empty<MapGenMockupCell>());

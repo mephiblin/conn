@@ -1225,6 +1225,15 @@ namespace Conn.Tests.EditMode
                 Assert.That(generated.CanAccept, Is.True);
                 Assert.That(generated.CanMaterialize, Is.False);
                 Assert.That(generated.MaterializeReason, Is.EqualTo("Accept Mockup first."));
+                Assert.That(draft.IsGeneratedSignatureCurrent, Is.True);
+
+                profile.ProfileId = "workflow_profile_changed";
+                var generatedStale = MapGenV2WorkflowStatus.From(profile, draft);
+                Assert.That(generatedStale.GeneratedCurrent, Is.False);
+                Assert.That(generatedStale.CanAccept, Is.False);
+                Assert.That(generatedStale.AcceptReason, Is.EqualTo("The generated mockup is stale because source assets changed. Regenerate Mockup."));
+                profile.ProfileId = "workflow_profile";
+                Assert.That(draft.IsGeneratedSignatureCurrent, Is.True);
 
                 draft.Accept();
                 var accepted = MapGenV2WorkflowStatus.From(profile, draft);
@@ -1265,6 +1274,7 @@ namespace Conn.Tests.EditMode
                 draft.Profile = profile;
                 draft.Seed = 1234;
                 draft.AcceptedSignature = "signature_a";
+                draft.AcceptedSourceSignature = "source_signature_a";
 
                 var marker = root.AddComponent<MapGenV2GeneratedMapMarker>();
                 marker.PopulateFromDraft(draft, "2026-05-31T00:00:00.0000000Z");
@@ -1272,6 +1282,7 @@ namespace Conn.Tests.EditMode
                 Assert.That(marker.ProfileId, Is.EqualTo("marker_profile"));
                 Assert.That(marker.Seed, Is.EqualTo(1234));
                 Assert.That(marker.DraftSignature, Is.EqualTo("signature_a"));
+                Assert.That(marker.SourceSignature, Is.EqualTo("source_signature_a"));
                 Assert.That(marker.StyleId, Is.EqualTo("marker_style"));
                 Assert.That(marker.GeneratedUtc, Is.EqualTo("2026-05-31T00:00:00.0000000Z"));
                 Assert.That(marker.SourceDraft, Is.SameAs(draft));

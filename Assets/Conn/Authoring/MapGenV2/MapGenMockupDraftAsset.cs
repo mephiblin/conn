@@ -7,6 +7,7 @@ namespace Conn.MapGenV2.Authoring
     [CreateAssetMenu(menuName = "Conn/MapGenV2/Mockup Draft", fileName = "MapGenMockupDraft")]
     public sealed class MapGenMockupDraftAsset : ScriptableObject
     {
+        public int Version = 1;
         public MapGenProfileAsset Profile;
         public int Seed;
         public Vector2Int GridSize = new Vector2Int(32, 32);
@@ -14,6 +15,10 @@ namespace Conn.MapGenV2.Authoring
         public bool Accepted;
         public string AcceptedSignature = string.Empty;
         public string LastGeneratedSignature = string.Empty;
+        public string LastGeneratedSourceSignature = string.Empty;
+        public string AcceptedSourceSignature = string.Empty;
+        [TextArea(2, 6)]
+        public string GenerationNotes = string.Empty;
         public int LastDirectRouteCellsAdded;
         public int LastDeadEndCorridorsRemoved;
         public int LastIsolatedRoomsRemoved;
@@ -25,6 +30,10 @@ namespace Conn.MapGenV2.Authoring
         public int Height => Mathf.Max(1, GridSize.y);
 
         public bool IsAcceptedSignatureCurrent => !Accepted || AcceptedSignature == ComputeSignature();
+
+        public bool IsGeneratedSignatureCurrent => string.IsNullOrEmpty(LastGeneratedSignature) || LastGeneratedSignature == ComputeSignature();
+
+        public string CurrentSourceSignature => MapGenMockupSourceSignature.Build(Profile);
 
         public MapGenValidationReport GenerateFromProfile()
         {
@@ -95,6 +104,7 @@ namespace Conn.MapGenV2.Authoring
             Accepted = false;
             AcceptedSignature = string.Empty;
             LastGeneratedSignature = ComputeSignature();
+            LastGeneratedSourceSignature = CurrentSourceSignature;
             RegionOverrides = CopyOverridesExcept(previousOverrides, regionId);
             ClearPostProcessReport();
             return result.Report;
@@ -153,6 +163,7 @@ namespace Conn.MapGenV2.Authoring
             Accepted = false;
             AcceptedSignature = string.Empty;
             LastGeneratedSignature = ComputeSignature();
+            LastGeneratedSourceSignature = CurrentSourceSignature;
             RegionOverrides = preserveLockedRegions
                 ? CopyLockedOverrides(previousOverrides)
                 : Array.Empty<MapGenMockupRegionOverride>();
@@ -181,6 +192,7 @@ namespace Conn.MapGenV2.Authoring
             LastEnclosedEmptyCellsFilled = report.EnclosedEmptyCellsFilled;
             MapGenMockupRegionUtility.AssignCorridorRegionIds(Width, Height, Cells, true);
             LastGeneratedSignature = ComputeSignature();
+            LastGeneratedSourceSignature = CurrentSourceSignature;
             if (report.Changed)
             {
                 ClearAcceptance();
@@ -228,6 +240,7 @@ namespace Conn.MapGenV2.Authoring
             GridSize = new Vector2Int(newWidth, newHeight);
             Cells = newCells;
             LastGeneratedSignature = ComputeSignature();
+            LastGeneratedSourceSignature = CurrentSourceSignature;
         }
 
         public string ComputeSignature()
@@ -241,12 +254,15 @@ namespace Conn.MapGenV2.Authoring
             Accepted = true;
             AcceptedSignature = ComputeSignature();
             LastGeneratedSignature = AcceptedSignature;
+            AcceptedSourceSignature = CurrentSourceSignature;
+            LastGeneratedSourceSignature = AcceptedSourceSignature;
         }
 
         public void ClearAcceptance()
         {
             Accepted = false;
             AcceptedSignature = string.Empty;
+            AcceptedSourceSignature = string.Empty;
         }
 
         public void Reject()
@@ -258,6 +274,7 @@ namespace Conn.MapGenV2.Authoring
         {
             Cells = CreateEmptyCells(Width, Height);
             LastGeneratedSignature = string.Empty;
+            LastGeneratedSourceSignature = string.Empty;
             RegionOverrides = Array.Empty<MapGenMockupRegionOverride>();
             ClearPostProcessReport();
             ClearAcceptance();

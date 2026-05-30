@@ -950,20 +950,30 @@ Verification:
 
 ## Phase 13: Persistence, Versioning, And Regeneration
 
+Progress note 2026-05-31:
+
+- Draft assets now store an asset version, generated source signature,
+  accepted source signature, and generation notes.
+- Workflow status detects stale generated drafts when profile/style/rule or
+  template source signatures change, and blocks accept/post-process until the
+  mockup is regenerated.
+- Materialized root/module markers now store source signatures in addition to
+  accepted draft signatures; saved prefabs preserve those markers.
+
 Goal: make generated assets safe to keep in a real project.
 
 Tasks:
 
-- [ ] Add source signature to drafts, materialized roots, prefabs, and baked
+- [x] Add source signature to drafts, materialized roots, prefabs, and baked
   assets.
-- [ ] Detect stale drafts when profile/style/rule/template assets change.
+- [x] Detect stale drafts when profile/style/rule/template assets change.
 - [ ] Detect stale materialized output when draft or module set changes.
 - [ ] Add `Regenerate`, `Repostprocess`, `Reaccept`, `Rematerialize`,
   `Rebake` workflows.
 - [ ] Add explicit overwrite policy.
 - [ ] Add asset version fields and migration helpers.
 - [ ] Add safe cleanup for generated assets created by starter setup or tests.
-- [ ] Add changelog/notes field for generated drafts.
+- [x] Add changelog/notes field for generated drafts.
 
 Acceptance:
 
