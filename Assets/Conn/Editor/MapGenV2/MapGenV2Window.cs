@@ -250,9 +250,15 @@ namespace Conn.MapGenV2.Editor
             return "Three-pane authoring layout: left setup/assets/output, center mockup actions and visual preview, right next action, validation, diagnostics, and scene output details.";
         }
 
+        public static string BuildInlineHelpCoverageSummary()
+        {
+            return "Inline help/tooltips cover profile, rule set, style set, module set, room shape, connectors, post-process, prop placement, bake settings, and materialization output.";
+        }
+
         private void DrawThreePaneWorkspace(MapGenV2WorkflowStatus workflow)
         {
             DrawWrappingHelpBox(BuildThreePaneLayoutSummary(), MessageType.Info);
+            DrawWrappingHelpBox(BuildInlineHelpCoverageSummary(), MessageType.Info);
             using (new EditorGUILayout.HorizontalScope())
             {
                 using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox, GUILayout.MinWidth(260f), GUILayout.MaxWidth(340f)))
@@ -2115,7 +2121,7 @@ namespace Conn.MapGenV2.Editor
 
             if (blockedCount + reservedCount > 0)
             {
-                return "Non-navigable; skipped by current materialization/runtime bake. / 현재 출력과 런타임 베이크에서 제외";
+                return "Blocked/reserved cells stamp blocker or reserved output. / 차단·예약 셀은 blocker 또는 reserved 출력 생성";
             }
 
             return "No materialization output expected. / 출력 없음";

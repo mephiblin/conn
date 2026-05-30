@@ -116,11 +116,21 @@ namespace Conn.Tests.EditMode
         public void MapGenV2WindowDeclaresThreePaneAuthoringLayout()
         {
             var summary = MapGenV2Window.BuildThreePaneLayoutSummary();
+            var help = MapGenV2Window.BuildInlineHelpCoverageSummary();
 
             Assert.That(summary, Does.Contain("Three-pane authoring layout"));
             Assert.That(summary, Does.Contain("left setup/assets/output"));
             Assert.That(summary, Does.Contain("center mockup actions and visual preview"));
             Assert.That(summary, Does.Contain("right next action, validation, diagnostics"));
+            Assert.That(help, Does.Contain("profile"));
+            Assert.That(help, Does.Contain("rule set"));
+            Assert.That(help, Does.Contain("style set"));
+            Assert.That(help, Does.Contain("module set"));
+            Assert.That(help, Does.Contain("room shape"));
+            Assert.That(help, Does.Contain("connectors"));
+            Assert.That(help, Does.Contain("post-process"));
+            Assert.That(help, Does.Contain("prop placement"));
+            Assert.That(help, Does.Contain("bake settings"));
         }
 
         [Test]
@@ -190,6 +200,7 @@ namespace Conn.Tests.EditMode
         {
             var profile = MapGenProfileAssetEditor.BuildInspectorUxSummary();
             var ruleSet = MapGenRuleSetAssetEditor.BuildInspectorUxSummary();
+            var styleSet = MapGenStyleSetAssetEditor.BuildInspectorUxSummary();
             var moduleSet = MapGenModuleSetAssetEditor.BuildInspectorUxSummary();
             var roomTemplate = MapGenRoomTemplateAssetEditor.BuildInspectorUxSummary();
             var corridorTemplate = MapGenCorridorTemplateAssetEditor.BuildInspectorUxSummary();
@@ -200,6 +211,9 @@ namespace Conn.Tests.EditMode
             Assert.That(profile, Does.Contain("room-shape arrays"));
             Assert.That(ruleSet, Does.Contain("advanced/debug foldout"));
             Assert.That(ruleSet, Does.Contain("raw serialized rule arrays"));
+            Assert.That(styleSet, Does.Contain("primary UX"));
+            Assert.That(styleSet, Does.Contain("advanced/debug foldout"));
+            Assert.That(styleSet, Does.Contain("room-template"));
             Assert.That(moduleSet, Does.Contain("advanced/debug foldout"));
             Assert.That(moduleSet, Does.Contain("raw serialized module entry arrays"));
             Assert.That(roomTemplate, Does.Contain("primary UX"));

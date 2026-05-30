@@ -113,7 +113,7 @@ tool, and generated output workflow.
 - [x] Add clear next-step guidance after each action:
   after starter setup, after mockup generation, after post-process, after accept,
   after materialize, and after bake.
-- [ ] Add inline help text and tooltips for profile, rule set, style set,
+- [x] Add inline help text and tooltips for profile, rule set, style set,
   module set, room shape, connector, post-process, prop placement, and bake
   settings.
 - [x] Group advanced settings under foldouts so a first-time user is not forced
