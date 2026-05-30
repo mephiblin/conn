@@ -19,6 +19,9 @@ namespace Conn.Editor.Maps
         private static readonly Color SlopeColor = new Color(0.53f, 0.48f, 0.31f, 1f);
         private static readonly Color StairColor = new Color(0.42f, 0.46f, 0.57f, 1f);
         private static readonly Color GridLineColor = new Color(0f, 0f, 0f, 0.22f);
+        private static readonly Color RoomOutlineColor = new Color(0.2f, 0.8f, 1f, 0.95f);
+        private static readonly Color SocketColor = new Color(1f, 0.9f, 0.2f, 0.95f);
+        private static readonly Color ObjectColor = new Color(1f, 1f, 1f, 0.95f);
 
         private enum BrushMode
         {
@@ -114,6 +117,10 @@ namespace Conn.Editor.Maps
                 DrawPreviewGrid(rect, draft.Width, draft.Height, cellWidth, cellHeight);
             }
 
+            DrawPreviewRooms(draft, rect, cellWidth, cellHeight);
+            DrawPreviewObjects(draft, rect, cellWidth, cellHeight);
+            DrawPreviewSockets(draft, rect, cellWidth, cellHeight);
+            DrawPreviewValidationMarkers(draft, rect, cellWidth, cellHeight);
             HandlePreviewPainting(draft, rect, Event.current);
         }
 
@@ -173,6 +180,116 @@ namespace Conn.Editor.Maps
                 default:
                     return GapColor;
             }
+        }
+
+        private static void DrawPreviewRooms(EditableMapDraftAsset draft, Rect previewRect, float cellWidth, float cellHeight)
+        {
+            foreach (var room in draft.Rooms ?? Array.Empty<EditableMapRoom>())
+            {
+                if (room.Width <= 0 || room.Height <= 0)
+                {
+                    continue;
+                }
+
+                var roomRect = new Rect(
+                    previewRect.x + room.X * cellWidth,
+                    previewRect.y + (draft.Height - room.Y - room.Height) * cellHeight,
+                    room.Width * cellWidth,
+                    room.Height * cellHeight);
+                DrawRectOutline(roomRect, RoomOutlineColor, 2f);
+                if (!string.IsNullOrWhiteSpace(room.Id) && roomRect.width >= 36f && roomRect.height >= 14f)
+                {
+                    GUI.Label(new Rect(roomRect.x + 2f, roomRect.y + 1f, roomRect.width - 4f, 16f), room.Id, EditorStyles.whiteMiniLabel);
+                }
+            }
+        }
+
+        private static void DrawPreviewObjects(EditableMapDraftAsset draft, Rect previewRect, float cellWidth, float cellHeight)
+        {
+            foreach (var placement in draft.Objects ?? Array.Empty<EditableMapObjectPlacement>())
+            {
+                if (!draft.IsInBounds(placement.X, placement.Y))
+                {
+                    continue;
+                }
+
+                var cellRect = CellToPreviewRect(draft, previewRect, cellWidth, cellHeight, placement.X, placement.Y);
+                var markerSize = Mathf.Clamp(Mathf.Min(cellRect.width, cellRect.height) * 0.55f, 4f, 12f);
+                var marker = new Rect(
+                    cellRect.center.x - markerSize * 0.5f,
+                    cellRect.center.y - markerSize * 0.5f,
+                    markerSize,
+                    markerSize);
+                EditorGUI.DrawRect(marker, placement.BlocksMovement ? ValidationColor : ObjectColor);
+            }
+        }
+
+        private static void DrawPreviewSockets(EditableMapDraftAsset draft, Rect previewRect, float cellWidth, float cellHeight)
+        {
+            foreach (var socket in draft.Sockets ?? Array.Empty<EditableMapSocket>())
+            {
+                if (!draft.IsInBounds(socket.X, socket.Y))
+                {
+                    continue;
+                }
+
+                var cellRect = CellToPreviewRect(draft, previewRect, cellWidth, cellHeight, socket.X, socket.Y);
+                var marker = DirectionMarkerRect(cellRect, socket.Direction);
+                EditorGUI.DrawRect(marker, SocketColor);
+            }
+        }
+
+        private void DrawPreviewValidationMarkers(EditableMapDraftAsset draft, Rect previewRect, float cellWidth, float cellHeight)
+        {
+            if (lastValidationReport == null || brushMode != BrushMode.ValidationOverlay)
+            {
+                return;
+            }
+
+            foreach (var marker in EditableMapDraftSceneTools.BuildValidationMarkers(draft, lastValidationReport))
+            {
+                if (!draft.IsInBounds(marker.Position.x, marker.Position.y))
+                {
+                    continue;
+                }
+
+                var cellRect = CellToPreviewRect(draft, previewRect, cellWidth, cellHeight, marker.Position.x, marker.Position.y);
+                EditorGUI.DrawRect(cellRect, ValidationColor);
+                DrawRectOutline(cellRect, Color.red, 2f);
+            }
+        }
+
+        private static Rect CellToPreviewRect(EditableMapDraftAsset draft, Rect previewRect, float cellWidth, float cellHeight, int x, int y)
+        {
+            return new Rect(
+                previewRect.x + x * cellWidth,
+                previewRect.y + (draft.Height - y - 1) * cellHeight,
+                Mathf.Ceil(cellWidth),
+                Mathf.Ceil(cellHeight));
+        }
+
+        private static Rect DirectionMarkerRect(Rect cellRect, MapDirection direction)
+        {
+            var thickness = Mathf.Clamp(Mathf.Min(cellRect.width, cellRect.height) * 0.2f, 2f, 6f);
+            switch (direction)
+            {
+                case MapDirection.East:
+                    return new Rect(cellRect.xMax - thickness, cellRect.y, thickness, cellRect.height);
+                case MapDirection.South:
+                    return new Rect(cellRect.x, cellRect.yMax - thickness, cellRect.width, thickness);
+                case MapDirection.West:
+                    return new Rect(cellRect.x, cellRect.y, thickness, cellRect.height);
+                default:
+                    return new Rect(cellRect.x, cellRect.y, cellRect.width, thickness);
+            }
+        }
+
+        private static void DrawRectOutline(Rect rect, Color color, float thickness)
+        {
+            EditorGUI.DrawRect(new Rect(rect.x, rect.y, rect.width, thickness), color);
+            EditorGUI.DrawRect(new Rect(rect.x, rect.yMax - thickness, rect.width, thickness), color);
+            EditorGUI.DrawRect(new Rect(rect.x, rect.y, thickness, rect.height), color);
+            EditorGUI.DrawRect(new Rect(rect.xMax - thickness, rect.y, thickness, rect.height), color);
         }
 
         private void DrawDraftSummary(EditableMapDraftAsset draft)
