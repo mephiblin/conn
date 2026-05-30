@@ -73,6 +73,49 @@ namespace Conn.MapGenV2.Core
             return report;
         }
 
+        public static MapGenValidationReport ValidateSafety(
+            int width,
+            int height,
+            MapGenMockupCell[] cells,
+            MapGenPostProcessOptions options)
+        {
+            var report = new MapGenValidationReport();
+            if (!MapGenGridCoord.IsValidSize(width, height) || cells == null || cells.Length != width * height)
+            {
+                report.Add(new MapGenIssue(
+                    MapGenGenerationPhase.PostProcess,
+                    "post_process_safety_invalid_grid",
+                    "Post-process safety validation requires a valid mockup grid.",
+                    "Generate or resize the mockup before running post-process validation."));
+                return report;
+            }
+
+            var copy = CopyCells(cells);
+            var postProcessReport = Apply(width, height, copy, options);
+            if (postProcessReport.Rollbacks > 0)
+            {
+                report.Add(new MapGenIssue(
+                    MapGenGenerationPhase.PostProcess,
+                    "post_process_pass_requires_rollback",
+                    "Post-process settings would break required traversal and require rollback.",
+                    "Disable the unsafe pass or adjust the mockup/rules before accepting the result.",
+                    severity: MapGenIssueSeverity.Warning,
+                    contextPath: nameof(MapGenPostProcessOptions)));
+            }
+
+            if (!postProcessReport.RequiredConnectivityValid)
+            {
+                report.Add(new MapGenIssue(
+                    MapGenGenerationPhase.PostProcess,
+                    "post_process_required_connectivity_invalid",
+                    "Post-process result does not preserve required Start to Exit traversal.",
+                    "Add valid traversal before running post-process or adjust the post-process rules.",
+                    contextPath: nameof(MapGenPostProcessOptions)));
+            }
+
+            return report;
+        }
+
         private static int FillEnclosedEmptySpace(int width, int height, MapGenMockupCell[] cells)
         {
             var candidates = new bool[cells.Length];

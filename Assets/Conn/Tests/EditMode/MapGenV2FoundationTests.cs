@@ -1902,6 +1902,51 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void MockupFeasibilityValidatorReportsBlockedRequiredTraversal()
+        {
+            var cells = new[]
+            {
+                new MapGenMockupCell { State = MapGenCellState.Room, RoomCategory = MapGenRoomCategory.Start },
+                new MapGenMockupCell { State = MapGenCellState.Blocked },
+                new MapGenMockupCell { State = MapGenCellState.Room, RoomCategory = MapGenRoomCategory.Exit }
+            };
+
+            var report = MapGenMockupFeasibilityValidator.Validate(3, 1, cells);
+
+            Assert.That(report.IsValid, Is.False);
+            Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                issue => issue.Code == "mockup_blocked_required_traversal"
+                    && issue.ContextPath == "Draft.Cells"
+                    && issue.Cell == new MapGenGridCoord(0, 0)));
+        }
+
+        [Test]
+        public void PostProcessorSafetyValidatorReportsRollbackRisk()
+        {
+            var cells = new MapGenMockupCell[9];
+            for (var i = 0; i < cells.Length; i++)
+            {
+                cells[i] = MapGenMockupCell.Empty;
+            }
+
+            cells[0] = new MapGenMockupCell { State = MapGenCellState.Room, RoomCategory = MapGenRoomCategory.Start };
+            cells[8] = new MapGenMockupCell { State = MapGenCellState.Room, RoomCategory = MapGenRoomCategory.Exit };
+
+            var report = MapGenMockupPostProcessor.ValidateSafety(3, 3, cells, new MapGenPostProcessOptions
+            {
+                RemoveSmallRooms = true,
+                MaxPasses = 1
+            });
+
+            Assert.That(report.IsValid, Is.False);
+            Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                issue => issue.Code == "post_process_required_connectivity_invalid"));
+            Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                issue => issue.Code == "post_process_pass_requires_rollback"
+                    && issue.Severity == MapGenIssueSeverity.Warning));
+        }
+
+        [Test]
         public void PostProcessorFillsEnclosedEmptySpace()
         {
             var cells = new MapGenMockupCell[9];

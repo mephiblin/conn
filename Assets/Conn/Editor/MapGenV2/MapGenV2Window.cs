@@ -200,7 +200,26 @@ namespace Conn.MapGenV2.Editor
 
             if (draft != null && !string.IsNullOrWhiteSpace(draft.LastGeneratedSignature))
             {
+                report.AddRange(MapGenMockupFeasibilityValidator.Validate(draft.Width, draft.Height, draft.Cells), draft);
                 report.AddRange(MapGenPropPlacementValidator.Validate(draft.Width, draft.Height, draft.Cells), draft);
+                if (draft.Profile != null && draft.Profile.LayoutRules != null)
+                {
+                    var postProcessRules = draft.Profile.LayoutRules.PostProcessRules;
+                    report.AddRange(
+                        MapGenMockupPostProcessor.ValidateSafety(
+                            draft.Width,
+                            draft.Height,
+                            draft.Cells,
+                            new MapGenPostProcessOptions
+                            {
+                                UseDirectRoutes = postProcessRules.UseDirectRoutes,
+                                ReduceDeadEnds = postProcessRules.ReduceDeadEnds,
+                                RemoveSmallRooms = postProcessRules.RemoveSmallRooms,
+                                FillEnclosedEmptySpace = postProcessRules.FillEnclosedEmptySpace,
+                                MaxPasses = postProcessRules.MaxPasses
+                            }),
+                        draft);
+                }
             }
 
             if (draft != null

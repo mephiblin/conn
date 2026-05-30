@@ -914,6 +914,9 @@ Progress note 2026-05-31:
 - Added profile graph diagnostics for required category/template pools,
   impossible room/corridor/distance ranges, and room-to-corridor connector
   compatibility matrix issues.
+- Added mockup blocked-region feasibility diagnostics for required Start to
+  Exit traversal and post-process safety dry-run diagnostics for rollback or
+  connectivity-breaking pass settings.
 
 Goal: make failures actionable.
 
@@ -927,8 +930,8 @@ Tasks:
 - [x] Validate required pools and modules.
 - [x] Validate connector compatibility matrix.
 - [x] Validate impossible quantity/range constraints.
-- [ ] Validate blocked-region feasibility.
-- [ ] Validate post-process pass safety.
+- [x] Validate blocked-region feasibility.
+- [x] Validate post-process pass safety.
 - [x] Validate materialization coverage before instantiation.
 - [x] Validate runtime bake consistency after materialization.
 - [x] Add diagnostics panel in `MapGenV2Window`.
