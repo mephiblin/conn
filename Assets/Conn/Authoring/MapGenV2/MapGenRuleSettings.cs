@@ -53,6 +53,7 @@ namespace Conn.MapGenV2.Authoring
         public bool ReduceDeadEnds;
         public bool SplitLargeRooms;
         public bool RemoveSmallRooms;
+        public bool FillEnclosedEmptySpace;
         public int MaxPasses;
 
         public static MapGenPostProcessRules Defaults()
@@ -63,6 +64,7 @@ namespace Conn.MapGenV2.Authoring
                 ReduceDeadEnds = false,
                 SplitLargeRooms = false,
                 RemoveSmallRooms = false,
+                FillEnclosedEmptySpace = false,
                 MaxPasses = 1
             };
         }

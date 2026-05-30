@@ -664,6 +664,8 @@ Progress note 2026-05-31:
   `PassesRun` alongside per-pass change counts.
 - Post-process passes now validate required Start-to-Exit traversal after each
   pass attempt and rollback changes that would break that traversal.
+- Added an enclosed-empty-space fill pass that converts empty cells surrounded
+  by navigable neighbors into corridor cells and reports filled cell counts.
 
 Goal: make post-processing explicit, configurable, visible, and safe.
 
@@ -672,8 +674,10 @@ Tasks:
 - [x] Convert post-process options into a rule asset/struct.
 - [ ] Implement pass list:
   remove small rooms, split large rooms, consolidate paths, add direct routes,
-  fill selected empty space, reduce dead ends, add loops, normalize route
-  lengths, widen/clean corridors, merge compatible adjacent rooms.
+  reduce dead ends, add loops, normalize route lengths, widen/clean corridors,
+  merge compatible adjacent rooms.
+- [x] Implement enclosed-empty-space fill pass.
+- [ ] Extend fill pass to designer-selected empty-space masks.
 - [ ] Each pass must report what changed.
 - [ ] Add per-pass before/after overlay in preview.
 - [ ] Add pass order configuration.
@@ -690,6 +694,7 @@ Verification:
 
 - EditMode test that draft post-processing reads structured rule settings.
 - EditMode test for rollback on invalid pass result.
+- EditMode test for enclosed-empty-space fill pass.
 - Tests for every pass.
 - Manual Unity check: toggle each pass and inspect diff overlay.
 

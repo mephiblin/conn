@@ -25,10 +25,17 @@ namespace Conn.MapGenV2.Core
                 var directRouteCellsAdded = 0;
                 var deadEndCorridorsRemoved = 0;
                 var isolatedRoomsRemoved = 0;
+                var enclosedEmptyCellsFilled = 0;
                 if (options.UseDirectRoutes)
                 {
                     directRouteCellsAdded = AddDirectRoute(width, height, cells);
                     changed |= directRouteCellsAdded > 0;
+                }
+
+                if (options.FillEnclosedEmptySpace)
+                {
+                    enclosedEmptyCellsFilled = FillEnclosedEmptySpace(width, height, cells);
+                    changed |= enclosedEmptyCellsFilled > 0;
                 }
 
                 if (options.ReduceDeadEnds)
@@ -56,6 +63,7 @@ namespace Conn.MapGenV2.Core
                 report.DirectRouteCellsAdded += directRouteCellsAdded;
                 report.DeadEndCorridorsRemoved += deadEndCorridorsRemoved;
                 report.IsolatedRoomsRemoved += isolatedRoomsRemoved;
+                report.EnclosedEmptyCellsFilled += enclosedEmptyCellsFilled;
                 if (!changed)
                 {
                     break;
@@ -63,6 +71,44 @@ namespace Conn.MapGenV2.Core
             }
 
             return report;
+        }
+
+        private static int FillEnclosedEmptySpace(int width, int height, MapGenMockupCell[] cells)
+        {
+            var candidates = new bool[cells.Length];
+            var count = 0;
+            for (var i = 0; i < cells.Length; i++)
+            {
+                if (cells[i].State != MapGenCellState.Empty)
+                {
+                    continue;
+                }
+
+                var coord = MapGenGridCoord.FromIndex(i, width);
+                if (CountNavigableNeighbors(width, height, cells, coord) < 3)
+                {
+                    continue;
+                }
+
+                candidates[i] = true;
+                count++;
+            }
+
+            for (var i = 0; i < candidates.Length; i++)
+            {
+                if (!candidates[i])
+                {
+                    continue;
+                }
+
+                cells[i] = new MapGenMockupCell
+                {
+                    State = MapGenCellState.Corridor,
+                    RegionId = -1
+                };
+            }
+
+            return count;
         }
 
         private static MapGenMockupCell[] CopyCells(MapGenMockupCell[] cells)

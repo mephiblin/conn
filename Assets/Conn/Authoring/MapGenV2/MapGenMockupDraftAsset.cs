@@ -17,6 +17,7 @@ namespace Conn.MapGenV2.Authoring
         public int LastDirectRouteCellsAdded;
         public int LastDeadEndCorridorsRemoved;
         public int LastIsolatedRoomsRemoved;
+        public int LastEnclosedEmptyCellsFilled;
         public MapGenMockupRegionOverride[] RegionOverrides = Array.Empty<MapGenMockupRegionOverride>();
 
         public int Width => Mathf.Max(1, GridSize.x);
@@ -169,6 +170,7 @@ namespace Conn.MapGenV2.Authoring
                 options.UseDirectRoutes = rules.UseDirectRoutes;
                 options.ReduceDeadEnds = rules.ReduceDeadEnds;
                 options.RemoveSmallRooms = rules.RemoveSmallRooms;
+                options.FillEnclosedEmptySpace = rules.FillEnclosedEmptySpace;
                 options.MaxPasses = rules.MaxPasses;
             }
 
@@ -176,6 +178,7 @@ namespace Conn.MapGenV2.Authoring
             LastDirectRouteCellsAdded = report.DirectRouteCellsAdded;
             LastDeadEndCorridorsRemoved = report.DeadEndCorridorsRemoved;
             LastIsolatedRoomsRemoved = report.IsolatedRoomsRemoved;
+            LastEnclosedEmptyCellsFilled = report.EnclosedEmptyCellsFilled;
             MapGenMockupRegionUtility.AssignCorridorRegionIds(Width, Height, Cells, true);
             LastGeneratedSignature = ComputeSignature();
             if (report.Changed)
@@ -370,6 +373,7 @@ namespace Conn.MapGenV2.Authoring
             LastDirectRouteCellsAdded = 0;
             LastDeadEndCorridorsRemoved = 0;
             LastIsolatedRoomsRemoved = 0;
+            LastEnclosedEmptyCellsFilled = 0;
         }
 
         private void OnValidate()
@@ -664,6 +668,7 @@ namespace Conn.MapGenV2.Authoring
             Add(ref hash, ruleSet.PostProcessRules.ReduceDeadEnds ? 1 : 0);
             Add(ref hash, ruleSet.PostProcessRules.SplitLargeRooms ? 1 : 0);
             Add(ref hash, ruleSet.PostProcessRules.RemoveSmallRooms ? 1 : 0);
+            Add(ref hash, ruleSet.PostProcessRules.FillEnclosedEmptySpace ? 1 : 0);
             Add(ref hash, ruleSet.PostProcessRules.MaxPasses);
             AddPropRules(ref hash, ruleSet.PropPlacementRules);
         }

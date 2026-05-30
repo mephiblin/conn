@@ -5,6 +5,7 @@ namespace Conn.MapGenV2.Core
         public bool UseDirectRoutes;
         public bool ReduceDeadEnds;
         public bool RemoveSmallRooms;
+        public bool FillEnclosedEmptySpace;
         public int MaxPasses;
     }
 }

@@ -8,6 +8,8 @@ namespace Conn.MapGenV2.Core
 
         public int IsolatedRoomsRemoved { get; set; }
 
+        public int EnclosedEmptyCellsFilled { get; set; }
+
         public int PassesRun { get; set; }
 
         public int Rollbacks { get; set; }
@@ -16,6 +18,7 @@ namespace Conn.MapGenV2.Core
 
         public bool Changed => DirectRouteCellsAdded > 0
             || DeadEndCorridorsRemoved > 0
-            || IsolatedRoomsRemoved > 0;
+            || IsolatedRoomsRemoved > 0
+            || EnclosedEmptyCellsFilled > 0;
     }
 }

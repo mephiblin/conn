@@ -613,6 +613,7 @@ namespace Conn.Tests.EditMode
                 draft.LastDirectRouteCellsAdded = 2;
                 draft.LastDeadEndCorridorsRemoved = 1;
                 draft.LastIsolatedRoomsRemoved = 1;
+                draft.LastEnclosedEmptyCellsFilled = 1;
                 draft.Accept();
 
                 draft.ClearDraft();
@@ -623,6 +624,7 @@ namespace Conn.Tests.EditMode
                 Assert.That(draft.LastDirectRouteCellsAdded, Is.Zero);
                 Assert.That(draft.LastDeadEndCorridorsRemoved, Is.Zero);
                 Assert.That(draft.LastIsolatedRoomsRemoved, Is.Zero);
+                Assert.That(draft.LastEnclosedEmptyCellsFilled, Is.Zero);
                 Assert.That(draft.Cells, Has.All.Matches<MapGenMockupCell>(cell => cell.State == MapGenCellState.Empty));
             }
             finally
@@ -1606,6 +1608,31 @@ namespace Conn.Tests.EditMode
             Assert.That(report.IsolatedRoomsRemoved, Is.Zero);
             Assert.That(cells[0].State, Is.EqualTo(MapGenCellState.Room));
             Assert.That(cells[8].State, Is.EqualTo(MapGenCellState.Room));
+        }
+
+        [Test]
+        public void PostProcessorFillsEnclosedEmptySpace()
+        {
+            var cells = new MapGenMockupCell[9];
+            for (var i = 0; i < cells.Length; i++)
+            {
+                cells[i] = MapGenMockupCell.Empty;
+            }
+
+            cells[1] = new MapGenMockupCell { State = MapGenCellState.Corridor };
+            cells[3] = new MapGenMockupCell { State = MapGenCellState.Room };
+            cells[5] = new MapGenMockupCell { State = MapGenCellState.Connector };
+            cells[7] = new MapGenMockupCell { State = MapGenCellState.Corridor };
+
+            var report = MapGenMockupPostProcessor.Apply(3, 3, cells, new MapGenPostProcessOptions
+            {
+                FillEnclosedEmptySpace = true,
+                MaxPasses = 1
+            });
+
+            Assert.That(report.EnclosedEmptyCellsFilled, Is.EqualTo(1));
+            Assert.That(report.Changed, Is.True);
+            Assert.That(cells[4].State, Is.EqualTo(MapGenCellState.Corridor));
         }
 
         [Test]
