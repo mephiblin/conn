@@ -167,6 +167,51 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void CompiledValidationReportsInvalidRoomRecords()
+        {
+            var profile = new MapProfile { ProfileId = "compiled_room_record_probe", Width = 4, Height = 2 };
+            var compiled = new CompiledMap
+            {
+                MapId = "compiled_room_record_probe",
+                ProfileId = profile.ProfileId,
+                Width = profile.Width,
+                Height = profile.Height,
+                CellSize = 1f,
+                HeightStep = 1f
+            };
+            compiled.Rooms.Add(new RoomGraphNode { Id = "start", Role = MapRoomRole.Start });
+            compiled.Rooms.Add(new RoomGraphNode { Id = "quest", Role = MapRoomRole.QuestTarget });
+            compiled.RoomRecords.Add(new CompiledMapRoomRecord { Id = "start", Role = MapRoomRole.Start, X = 0, Y = 0, Width = 1, Height = 1 });
+            compiled.RoomRecords.Add(new CompiledMapRoomRecord { Id = "start", Role = MapRoomRole.Start, X = 0, Y = 0, Width = 1, Height = 1 });
+            compiled.RoomRecords.Add(new CompiledMapRoomRecord { Id = "orphan", Role = MapRoomRole.SideBranch, X = 1, Y = 0, Width = 1, Height = 1 });
+            compiled.RoomRecords.Add(new CompiledMapRoomRecord { Id = "bad_size", Role = MapRoomRole.SideBranch, X = 0, Y = 0, Width = 0, Height = 1 });
+            compiled.RoomRecords.Add(new CompiledMapRoomRecord { Id = "bad_bounds", Role = MapRoomRole.SideBranch, X = 3, Y = 0, Width = 2, Height = 1 });
+            for (var x = 0; x < profile.Width; x++)
+            {
+                for (var y = 0; y < profile.Height; y++)
+                {
+                    compiled.Cells.Add(new CompiledMapCell
+                    {
+                        X = x,
+                        Y = y,
+                        RoomId = x == 1 && y == 0 ? "start" : string.Empty,
+                        Terrain = RoomChunkCellType.Floor
+                    });
+                }
+            }
+
+            var report = MapValidationService.ValidateCompiled(profile, compiled);
+
+            Assert.That(report.Passed, Is.False);
+            Assert.That(report.Errors.Exists(error => error.Contains("duplicate room record id: start")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("room record orphan") && error.Contains("no matching graph room")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("room record bad_size") && error.Contains("invalid size 0x1")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("room record bad_bounds") && error.Contains("bounds leave the map")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("graph room quest") && error.Contains("no room record")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("cell (1, 0)") && error.Contains("outside room record start")), Is.True);
+        }
+
+        [Test]
         public void ChunkPresetCellGridSurvivesUnityJsonSerialization()
         {
             var preset = new ChunkPreset

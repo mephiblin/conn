@@ -53,6 +53,7 @@ namespace Conn.Core.Maps
 
             ExpectCompiledHeader(profile, compiled, report);
             var walkableCells = BuildCompiledWalkableCellSet(compiled, report);
+            ExpectCompiledRoomRecords(compiled, report);
             ExpectCompiledPlacements(profile, compiled, walkableCells, report);
             ExpectCompiledEncounterPlacements(compiled, report);
             ExpectCompiledSocketsAndDoors(compiled, walkableCells, report);
@@ -342,6 +343,71 @@ namespace Conn.Core.Maps
                     {
                         report.Errors.Add($"Compiled map socket pair {socketPair} has no baked door.");
                     }
+                }
+            }
+        }
+
+        private static void ExpectCompiledRoomRecords(CompiledMap compiled, MapValidationReport report)
+        {
+            if ((compiled.RoomRecords?.Count ?? 0) == 0)
+            {
+                return;
+            }
+
+            var graphRoomIds = BuildCompiledRoomIdSet(compiled);
+            var recordIds = new HashSet<string>();
+            foreach (var room in compiled.RoomRecords ?? new List<CompiledMapRoomRecord>())
+            {
+                if (string.IsNullOrWhiteSpace(room.Id))
+                {
+                    report.Errors.Add("Compiled map contains a room record with no id.");
+                }
+                else if (!recordIds.Add(room.Id))
+                {
+                    report.Errors.Add($"Compiled map contains duplicate room record id: {room.Id}.");
+                }
+
+                if (!string.IsNullOrWhiteSpace(room.Id) && !graphRoomIds.Contains(room.Id))
+                {
+                    report.Errors.Add($"Compiled map room record {room.Id} has no matching graph room.");
+                }
+
+                if (room.Width <= 0 || room.Height <= 0)
+                {
+                    report.Errors.Add($"Compiled map room record {room.Id} has invalid size {room.Width}x{room.Height}.");
+                    continue;
+                }
+
+                if (room.X < 0 || room.Y < 0 || room.X + room.Width > compiled.Width || room.Y + room.Height > compiled.Height)
+                {
+                    report.Errors.Add($"Compiled map room record {room.Id} bounds leave the map at ({room.X}, {room.Y}) size {room.Width}x{room.Height}.");
+                }
+            }
+
+            foreach (var roomId in graphRoomIds)
+            {
+                if (!recordIds.Contains(roomId))
+                {
+                    report.Errors.Add($"Compiled map graph room {roomId} has no room record.");
+                }
+            }
+
+            var roomRecords = BuildCompiledRoomRecordLookup(compiled);
+            foreach (var cell in compiled.Cells ?? new List<CompiledMapCell>())
+            {
+                if (string.IsNullOrWhiteSpace(cell.RoomId))
+                {
+                    continue;
+                }
+
+                if (!roomRecords.TryGetValue(cell.RoomId, out var room))
+                {
+                    continue;
+                }
+
+                if (!IsInsideRoomRecord(cell.X, cell.Y, room))
+                {
+                    report.Errors.Add($"Compiled map cell ({cell.X}, {cell.Y}) is outside room record {cell.RoomId}.");
                 }
             }
         }

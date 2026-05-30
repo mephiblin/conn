@@ -1046,6 +1046,10 @@ is partially complete.
     compatibility.
 - [x] Bake objects to runtime-safe records.
 - [x] Bake rooms and zones.
+  - 2026-05-30: compiled room-record validation now rejects missing ids,
+    duplicate ids, missing graph-room matches, invalid or out-of-bounds room
+    bounds, graph rooms without records, and cells assigned outside their room
+    record.
 - [x] Bake sockets and doors.
   - 2026-05-30: compiled map validation now checks socket ids, room/target
     references, walkable socket cells, room-boundary direction, reciprocal
