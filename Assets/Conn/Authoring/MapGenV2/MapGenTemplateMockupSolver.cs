@@ -1,5 +1,6 @@
 using Conn.MapGenV2.Core;
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Conn.MapGenV2.Authoring
@@ -188,7 +189,9 @@ namespace Conn.MapGenV2.Authoring
                 }
             }
 
-            ApplyLoopPolicy(profile.LayoutRules, cells, width, height, placements, ref rng);
+            var allPlacements = new List<RoomPlacement>(placements);
+            ApplyBranchAndDeadEndPolicy(profile.LayoutRules, cells, width, height, roomTemplates, corridorTemplates, allPlacements, report, ref rng);
+            ApplyLoopPolicy(profile.LayoutRules, cells, width, height, allPlacements.ToArray(), ref rng);
 
             if (!ValidateDistanceRules(profile.LayoutRules.DistanceRules, landmarks, placements, report))
             {
@@ -234,7 +237,11 @@ namespace Conn.MapGenV2.Authoring
         {
             foreach (var issue in report.Issues)
             {
-                if (issue.Code == "production_solver_start_exit_distance_too_short")
+                if (issue.Code == "production_solver_start_exit_distance_too_short"
+                    || issue.Code == "production_solver_no_room_placement_candidates"
+                    || issue.Code == "production_solver_cannot_place_room"
+                    || issue.Code == "production_solver_missing_room_connector"
+                    || issue.Code == "production_solver_missing_compatible_corridor_template")
                 {
                     return true;
                 }
@@ -582,6 +589,126 @@ namespace Conn.MapGenV2.Authoring
 
             CarveCorridor(cells, width, height, fromCoord, toCoord, Mathf.Max(1, corridor.Width), corridor.TemplateId);
             return true;
+        }
+
+        private static void ApplyBranchAndDeadEndPolicy(
+            MapGenRuleSetAsset ruleSet,
+            MapGenMockupCell[] cells,
+            int width,
+            int height,
+            MapGenRoomTemplateAsset[] roomTemplates,
+            MapGenCorridorTemplateAsset[] corridorTemplates,
+            List<RoomPlacement> placements,
+            MapGenValidationReport report,
+            ref MapGenRandom rng)
+        {
+            if (ruleSet == null || placements == null || placements.Count == 0)
+            {
+                return;
+            }
+
+            var targetRoomCount = Mathf.Clamp(
+                ruleSet.QuantityRules.MinRooms,
+                placements.Count,
+                Mathf.Max(placements.Count, ruleSet.QuantityRules.MaxRooms));
+            var categories = BuildBranchCategories(ruleSet.QuantityRules.OptionalCategories, targetRoomCount - placements.Count);
+            for (var i = 0; i < categories.Count && placements.Count < targetRoomCount; i++)
+            {
+                var category = categories[i];
+                var template = PickTemplateForCategory(roomTemplates, category, ref rng);
+                if (template == null)
+                {
+                    report.Add(new MapGenIssue(
+                        MapGenGenerationPhase.SolveMockup,
+                        "production_solver_skipped_branch_missing_template",
+                        $"Skipped optional branch room because no template can satisfy category {category}.",
+                        "Add an optional category template or a Main fallback template.",
+                        severity: MapGenIssueSeverity.Warning));
+                    continue;
+                }
+
+                var regionId = placements.Count;
+                if (!TryPlaceRoom(cells, width, height, template, category, regionId, targetRoomCount, ref rng, out var branch))
+                {
+                    report.Add(new MapGenIssue(
+                        MapGenGenerationPhase.SolveMockup,
+                        "production_solver_skipped_branch_no_candidates",
+                        $"Skipped optional branch room {category} because no placement candidate remained.",
+                        "Increase map size or reduce minimum room count.",
+                        severity: MapGenIssueSeverity.Warning));
+                    continue;
+                }
+
+                var anchor = PickBranchAnchor(placements, branch.Center);
+                var branchReport = new MapGenValidationReport();
+                if (!TryConnectRooms(cells, width, height, anchor, branch, corridorTemplates, branchReport))
+                {
+                    ClearRegion(cells, regionId);
+                    report.Add(new MapGenIssue(
+                        MapGenGenerationPhase.SolveMockup,
+                        "production_solver_skipped_branch_connection",
+                        $"Skipped optional branch room {category} because it could not connect to the existing route.",
+                        "Add compatible room/corridor connectors or reduce optional branch requirements.",
+                        severity: MapGenIssueSeverity.Warning));
+                    continue;
+                }
+
+                placements.Add(branch);
+            }
+        }
+
+        private static List<MapGenRoomCategory> BuildBranchCategories(MapGenRoomCategory[] optionalCategories, int desiredCount)
+        {
+            var categories = new List<MapGenRoomCategory>();
+            if (desiredCount <= 0)
+            {
+                return categories;
+            }
+
+            foreach (var category in optionalCategories ?? Array.Empty<MapGenRoomCategory>())
+            {
+                if (categories.Count >= desiredCount)
+                {
+                    return categories;
+                }
+
+                categories.Add(category);
+            }
+
+            while (categories.Count < desiredCount)
+            {
+                categories.Add(MapGenRoomCategory.Main);
+            }
+
+            return categories;
+        }
+
+        private static RoomPlacement PickBranchAnchor(List<RoomPlacement> placements, MapGenGridCoord center)
+        {
+            var best = placements[0];
+            var bestDistance = int.MaxValue;
+            foreach (var placement in placements)
+            {
+                var distance = Mathf.Abs(placement.Center.X - center.X) + Mathf.Abs(placement.Center.Y - center.Y);
+                if (distance < bestDistance)
+                {
+                    best = placement;
+                    bestDistance = distance;
+                }
+            }
+
+            return best;
+        }
+
+        private static void ClearRegion(MapGenMockupCell[] cells, int regionId)
+        {
+            for (var i = 0; i < (cells?.Length ?? 0); i++)
+            {
+                if (cells[i].RegionId == regionId)
+                {
+                    cells[i] = MapGenMockupCell.Empty;
+                }
+            }
         }
 
         private static void ApplyLoopPolicy(

@@ -603,6 +603,12 @@ Progress note 2026-05-31:
   attempt counts on solver results and an explicit retry-exhausted diagnostic.
 - Added `LoopRate` validation and a deterministic loop-policy corridor pass
   that can add an alternate route between the first and last required rooms.
+- Deterministic retries now cover placement exhaustion, room placement failure,
+  missing room connectors, and missing compatible corridor templates in
+  addition to distance contradictions.
+- Optional branch/dead-end policy now uses `OptionalRoomCategories` plus
+  `MinRooms`/`MaxRooms` to place extra side/main rooms and connect each one to
+  the nearest existing route as a dead-end branch.
 - Layout signatures now include profile, rule, room shape, room template, and
   corridor template source contracts, so accepted/generated mockups become stale
   when relevant authoring inputs change.
@@ -631,9 +637,9 @@ Tasks:
 - [x] Maintain graph connectivity during solve.
 - [x] Add deterministic retries with detailed contradiction reports for
   retryable distance contradictions.
-- [ ] Expand deterministic retries to additional retryable contradiction types.
+- [x] Expand deterministic retries to additional retryable contradiction types.
 - [x] Add basic loop policy from `LoopRate`.
-- [ ] Add branch and dead-end policies.
+- [x] Add branch and dead-end policies.
 - [x] Add layout signatures that include profile/template/rule versions.
 
 Acceptance:
