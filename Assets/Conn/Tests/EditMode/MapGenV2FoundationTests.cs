@@ -450,6 +450,62 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void MockupDraftRegeneratePreservesLockedRegionCells()
+        {
+            var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
+            var styleSet = ScriptableObject.CreateInstance<MapGenStyleSetAsset>();
+            var ruleSet = ScriptableObject.CreateInstance<MapGenRuleSetAsset>();
+            var roomShape = ScriptableObject.CreateInstance<MapGenRoomShapeAsset>();
+            var startTemplate = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();
+            var exitTemplate = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();
+            var profile = ScriptableObject.CreateInstance<MapGenProfileAsset>();
+            var draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();
+            GameObject floor = null;
+            GameObject wall = null;
+
+            try
+            {
+                PopulateValidWorkflowProfile(profile, styleSet, moduleSet, ruleSet, roomShape, out floor, out wall);
+                profile.MapSize = new Vector2Int(10, 6);
+                ruleSet.RequiredRoomCategories = new[] { MapGenRoomCategory.Start, MapGenRoomCategory.Exit };
+                ruleSet.QuantityRules.RequiredCategories = ruleSet.RequiredRoomCategories;
+                PopulateRoomTemplate(startTemplate, "start_template", MapGenRoomCategory.Start);
+                PopulateRoomTemplate(exitTemplate, "exit_template", MapGenRoomCategory.Exit);
+                styleSet.RoomTemplates = new[] { startTemplate, exitTemplate };
+                draft.Profile = profile;
+                draft.Seed = 123;
+
+                Assert.That(draft.GenerateFromProfile().IsValid, Is.True);
+                draft.SetRegionCategory(0, MapGenRoomCategory.Boss);
+                draft.SetRegionLocked(0, true);
+                var before = CopyRegionCells(draft, 0);
+                draft.Seed = 456;
+
+                Assert.That(draft.RegenerateUnlockedFromProfile().IsValid, Is.True);
+
+                Assert.That(draft.TryGetRegionOverride(0, out var regionOverride), Is.True);
+                Assert.That(regionOverride.Locked, Is.True);
+                Assert.That(regionOverride.CategoryOverride, Is.EqualTo(MapGenRoomCategory.Boss));
+                Assert.That(CopyRegionCells(draft, 0), Is.EqualTo(before));
+                Assert.That(draft.Cells, Has.Some.Matches<MapGenMockupCell>(
+                    cell => cell.RegionId != 0 && cell.State != MapGenCellState.Empty));
+            }
+            finally
+            {
+                Object.DestroyImmediate(draft);
+                Object.DestroyImmediate(profile);
+                Object.DestroyImmediate(exitTemplate);
+                Object.DestroyImmediate(startTemplate);
+                Object.DestroyImmediate(roomShape);
+                Object.DestroyImmediate(ruleSet);
+                Object.DestroyImmediate(styleSet);
+                Object.DestroyImmediate(moduleSet);
+                Object.DestroyImmediate(floor);
+                Object.DestroyImmediate(wall);
+            }
+        }
+
+        [Test]
         public void MockupPreviewDataExtractsCellsAndSummary()
         {
             var draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();
@@ -1036,6 +1092,23 @@ namespace Conn.Tests.EditMode
         private static bool IsRoomFootprintCell(MapGenMockupCell cell)
         {
             return cell.State == MapGenCellState.Room || cell.State == MapGenCellState.Connector;
+        }
+
+        private static string CopyRegionCells(MapGenMockupDraftAsset draft, int regionId)
+        {
+            var signature = string.Empty;
+            for (var i = 0; i < draft.Cells.Length; i++)
+            {
+                var cell = draft.Cells[i];
+                if (cell.RegionId != regionId)
+                {
+                    continue;
+                }
+
+                signature += $"{i}:{cell.State}:{cell.RegionId}:{cell.RoomCategory}:{cell.SocketKind}:{cell.SocketId}|";
+            }
+
+            return signature;
         }
 
         private static void EnsureTempFolder(string folder)

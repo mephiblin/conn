@@ -359,7 +359,7 @@ namespace Conn.MapGenV2.Editor
                 {
                     if (GUILayout.Button("Regenerate Same Seed"))
                     {
-                        GenerateMockup("Regenerate Same Seed");
+                        GenerateMockup("Regenerate Same Seed", preserveLockedRegions: true);
                     }
                 }
 
@@ -466,7 +466,7 @@ namespace Conn.MapGenV2.Editor
             }
         }
 
-        private void GenerateMockup(string operationName, bool recordUndo = true)
+        private void GenerateMockup(string operationName, bool recordUndo = true, bool preserveLockedRegions = false)
         {
             if (draft == null)
             {
@@ -478,7 +478,9 @@ namespace Conn.MapGenV2.Editor
                 Undo.RecordObject(draft, operationName);
             }
 
-            var report = draft.GenerateFromProfile();
+            var report = preserveLockedRegions
+                ? draft.RegenerateUnlockedFromProfile()
+                : draft.GenerateFromProfile();
             ClearSelection();
             EditorUtility.SetDirty(draft);
             var preview = MapGenMockupPreviewData.FromDraft(draft);

@@ -27,6 +27,16 @@ namespace Conn.MapGenV2.Authoring
 
         public MapGenValidationReport GenerateFromProfile()
         {
+            return GenerateFromProfile(false);
+        }
+
+        public MapGenValidationReport RegenerateUnlockedFromProfile()
+        {
+            return GenerateFromProfile(true);
+        }
+
+        private MapGenValidationReport GenerateFromProfile(bool preserveLockedRegions)
+        {
             if (Profile == null)
             {
                 var report = new MapGenValidationReport();
@@ -56,12 +66,23 @@ namespace Conn.MapGenV2.Authoring
                 return result.Report;
             }
 
+            var previousWidth = Width;
+            var previousHeight = Height;
+            var previousCells = Cells ?? Array.Empty<MapGenMockupCell>();
+            var previousOverrides = RegionOverrides ?? Array.Empty<MapGenMockupRegionOverride>();
             GridSize = new Vector2Int(result.Width, result.Height);
             Cells = result.Cells;
+            if (preserveLockedRegions)
+            {
+                PreserveLockedRegions(previousWidth, previousHeight, previousCells, previousOverrides);
+            }
+
             Accepted = false;
             AcceptedSignature = string.Empty;
-            LastGeneratedSignature = result.Signature;
-            RegionOverrides = Array.Empty<MapGenMockupRegionOverride>();
+            LastGeneratedSignature = ComputeSignature();
+            RegionOverrides = preserveLockedRegions
+                ? CopyLockedOverrides(previousOverrides)
+                : Array.Empty<MapGenMockupRegionOverride>();
             ClearPostProcessReport();
             return result.Report;
         }
@@ -286,6 +307,60 @@ namespace Conn.MapGenV2.Authoring
 
             Array.Resize(ref RegionOverrides, RegionOverrides.Length + 1);
             RegionOverrides[RegionOverrides.Length - 1] = regionOverride;
+        }
+
+        private void PreserveLockedRegions(
+            int previousWidth,
+            int previousHeight,
+            MapGenMockupCell[] previousCells,
+            MapGenMockupRegionOverride[] previousOverrides)
+        {
+            foreach (var regionOverride in previousOverrides ?? Array.Empty<MapGenMockupRegionOverride>())
+            {
+                if (!regionOverride.Locked)
+                {
+                    continue;
+                }
+
+                for (var y = 0; y < Mathf.Min(previousHeight, Height); y++)
+                {
+                    for (var x = 0; x < Mathf.Min(previousWidth, Width); x++)
+                    {
+                        var previousIndex = (y * previousWidth) + x;
+                        if (previousIndex < 0 || previousIndex >= previousCells.Length)
+                        {
+                            continue;
+                        }
+
+                        var previousCell = previousCells[previousIndex];
+                        if (previousCell.RegionId != regionOverride.RegionId)
+                        {
+                            continue;
+                        }
+
+                        Cells[(y * Width) + x] = previousCell;
+                    }
+                }
+            }
+        }
+
+        private static MapGenMockupRegionOverride[] CopyLockedOverrides(MapGenMockupRegionOverride[] source)
+        {
+            var copied = new MapGenMockupRegionOverride[source?.Length ?? 0];
+            var count = 0;
+            foreach (var regionOverride in source ?? Array.Empty<MapGenMockupRegionOverride>())
+            {
+                if (!regionOverride.Locked)
+                {
+                    continue;
+                }
+
+                copied[count] = regionOverride;
+                count++;
+            }
+
+            Array.Resize(ref copied, count);
+            return copied;
         }
 
         private static MapGenMockupCell[] CreateEmptyCells(int width, int height)

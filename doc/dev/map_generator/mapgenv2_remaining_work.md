@@ -219,9 +219,10 @@ Progress note 2026-05-31:
 - Selected generated regions can now be inspected in the main window, locked or
   unlocked, assigned a category override, and cleared; category edits persist
   in the draft cells and leave accepted output stale until reaccepted.
+- Regenerate Same Seed now preserves locked region cells and locked override
+  metadata while regenerating unlocked regions from the current profile/seed.
 - Remaining Phase 1 work is fuller selected-region edit coverage:
-  reroll/delete/regenerate/reroute/block/reserve actions and solver support for
-  locked regions during regeneration.
+  reroll/delete/regenerate/reroute/block/reserve actions.
 
 Goal: make the mockup stage obvious and usable.
 
