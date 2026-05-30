@@ -133,7 +133,10 @@ namespace Conn.MapGenV2.Authoring
 
                 if (MatchesChannelKind(width, height, cells, coord, cell, rule))
                 {
-                    candidates.Add(new PropCandidate(coord, cell.RegionId));
+                    candidates.Add(new PropCandidate(
+                        coord,
+                        cell.RegionId,
+                        CountBoundaryNeighbors(width, height, cells, coord) > 0));
                 }
             }
 
@@ -155,9 +158,13 @@ namespace Conn.MapGenV2.Authoring
                     return PickOnePerRegion(ordered);
                 case MapGenPropDistributionMode.RequiredUnique:
                     return new[] { PickRandom(ordered, seed, ruleIndex) };
+                case MapGenPropDistributionMode.Perimeter:
+                    ordered.RemoveAll(candidate => !candidate.IsPerimeter);
+                    return ordered.Count == 0
+                        ? Array.Empty<MapGenGridCoord>()
+                        : PickByDensity(ordered, seed, ruleIndex, rule.DensityPercent <= 0 ? 100 : rule.DensityPercent);
                 case MapGenPropDistributionMode.Random:
                 case MapGenPropDistributionMode.WeightedRandom:
-                case MapGenPropDistributionMode.Perimeter:
                 case MapGenPropDistributionMode.MarkerBased:
                 default:
                     return PickByDensity(ordered, seed, ruleIndex, rule.DensityPercent <= 0 ? 100 : rule.DensityPercent);
@@ -237,8 +244,11 @@ namespace Conn.MapGenV2.Authoring
                     return string.Equals(cell.PropChannel ?? string.Empty, rule.Channel, StringComparison.Ordinal);
                 case MapGenPropPlacementChannelKind.Objective:
                 case MapGenPropPlacementChannelKind.Custom:
+                    return string.Equals(cell.PropChannel ?? string.Empty, rule.Channel, StringComparison.Ordinal);
                 case MapGenPropPlacementChannelKind.Wall:
+                    return CountBoundaryNeighbors(width, height, cells, coord) > 0;
                 case MapGenPropPlacementChannelKind.Corner:
+                    return CountBoundaryNeighbors(width, height, cells, coord) >= 2;
                 default:
                     return string.Equals(cell.PropChannel ?? string.Empty, rule.Channel, StringComparison.Ordinal);
             }
@@ -444,11 +454,13 @@ namespace Conn.MapGenV2.Authoring
         {
             public readonly MapGenGridCoord Coord;
             public readonly int RegionId;
+            public readonly bool IsPerimeter;
 
-            public PropCandidate(MapGenGridCoord coord, int regionId)
+            public PropCandidate(MapGenGridCoord coord, int regionId, bool isPerimeter)
             {
                 Coord = coord;
                 RegionId = regionId;
+                IsPerimeter = isPerimeter;
             }
         }
     }

@@ -2286,6 +2286,57 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void PropPlacementPlannerSupportsWallCornerAndPerimeterChannels()
+        {
+            var cells = new[]
+            {
+                new MapGenMockupCell { State = MapGenCellState.Room, RegionId = 1 },
+                new MapGenMockupCell { State = MapGenCellState.Room, RegionId = 1 },
+                new MapGenMockupCell { State = MapGenCellState.Room, RegionId = 1 },
+                new MapGenMockupCell { State = MapGenCellState.Room, RegionId = 1 },
+                new MapGenMockupCell { State = MapGenCellState.Room, RegionId = 1 },
+                new MapGenMockupCell { State = MapGenCellState.Room, RegionId = 1 },
+                new MapGenMockupCell { State = MapGenCellState.Room, RegionId = 1 },
+                new MapGenMockupCell { State = MapGenCellState.Room, RegionId = 1 },
+                new MapGenMockupCell { State = MapGenCellState.Room, RegionId = 1 }
+            };
+            var wallRules = new[]
+            {
+                new MapGenPropPlacementRules
+                {
+                    Channel = "wall_decor",
+                    ChannelKind = MapGenPropPlacementChannelKind.Wall,
+                    DistributionMode = MapGenPropDistributionMode.Perimeter,
+                    DensityPercent = 100,
+                    MinSpacingCells = 0
+                }
+            };
+            var cornerRules = new[]
+            {
+                new MapGenPropPlacementRules
+                {
+                    Channel = "corner_decor",
+                    ChannelKind = MapGenPropPlacementChannelKind.Corner,
+                    DistributionMode = MapGenPropDistributionMode.MarkerBased,
+                    DensityPercent = 100,
+                    MinSpacingCells = 0
+                }
+            };
+
+            var wallResult = MapGenPropPlacementPlanner.Build(3, 3, cells, wallRules, 13);
+            var cornerResult = MapGenPropPlacementPlanner.Build(3, 3, cells, cornerRules, 13);
+
+            Assert.That(wallResult.Report.IsValid, Is.True);
+            Assert.That(cornerResult.Report.IsValid, Is.True);
+            Assert.That(wallResult.PlacedProps, Has.None.Matches<MapGenPlacedProp>(
+                prop => prop.Channel == "wall_decor" && prop.Coord == new MapGenGridCoord(1, 1)));
+            Assert.That(cornerResult.PlacedProps, Has.Some.Matches<MapGenPlacedProp>(
+                prop => prop.Channel == "corner_decor" && prop.Coord == new MapGenGridCoord(0, 0)));
+            Assert.That(cornerResult.PlacedProps, Has.None.Matches<MapGenPlacedProp>(
+                prop => prop.Channel == "corner_decor" && prop.Coord == new MapGenGridCoord(1, 1)));
+        }
+
+        [Test]
         public void PropPlacementPlannerReportsBlockerTraversalBreaks()
         {
             var cells = new[]
