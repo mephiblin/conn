@@ -5,12 +5,6 @@ namespace Conn.Core.Maps
 {
     public static class RuntimeMapGenerationService
     {
-        public static GeneratedMapDraft Generate(RuntimeMapGenerationBundle bundle, string profileId, int seed)
-        {
-            var entry = RequireEntry(bundle, profileId);
-            return MapGenerationService.Generate(entry.Profile, entry.Chunks, seed);
-        }
-
         public static CompiledMap GenerateCompiled(RuntimeMapGenerationBundle bundle, string profileId, int seed)
         {
             var entry = RequireEntry(bundle, profileId);

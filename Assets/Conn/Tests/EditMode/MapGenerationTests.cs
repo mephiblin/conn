@@ -315,6 +315,58 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void EditableDraftBuilderCanSaveCopiedDraftAssetWithoutGeneratedGraph()
+        {
+            var source = ScriptableObject.CreateInstance<EditableMapDraftAsset>();
+            source.Id = "copied_draft_probe";
+            source.SourceProfileId = MapGenerationCatalog.ChapterTwoFirstSliceProfileId;
+            source.Seed = 901;
+            source.InitializeBlank(2, 2, 1f, 1f);
+            source.TrySetCell(new EditableMapCell
+            {
+                X = 1,
+                Y = 1,
+                RoomId = "copied_room",
+                Terrain = RoomChunkCellType.Floor,
+                Height = 0,
+                Direction = MapDirection.North,
+                MaterialId = "copied_floor"
+            });
+            source.Rooms = new[]
+            {
+                new EditableMapRoom
+                {
+                    Id = "copied_room",
+                    Role = MapRoomRole.Start,
+                    LayoutKind = RoomChunkLayoutKind.Room,
+                    X = 0,
+                    Y = 0,
+                    Width = 2,
+                    Height = 2
+                }
+            };
+
+            var assetPath = AssetDatabase.GenerateUniqueAssetPath($"{EditableMapDraftAsset.DefaultDraftFolder}/EditableMapDraft_CopyProbe.asset");
+
+            try
+            {
+                var copied = EditableMapDraftBuilder.CreateDraftAssetFromSource(assetPath, source);
+
+                Assert.That(copied, Is.Not.Null);
+                Assert.That(copied.Id, Is.EqualTo(source.Id));
+                Assert.That(copied.SourceProfileId, Is.EqualTo(source.SourceProfileId));
+                Assert.That(copied.GetCell(1, 1).MaterialId, Is.EqualTo("copied_floor"));
+                Assert.That(copied.Rooms.Length, Is.EqualTo(1));
+            }
+            finally
+            {
+                AssetDatabase.DeleteAsset(assetPath);
+                AssetDatabase.Refresh();
+                Object.DestroyImmediate(source);
+            }
+        }
+
+        [Test]
         public void SampleEditableMapDraftAssetLoadsValidatesAndBakes()
         {
             var draft = AssetDatabase.LoadAssetAtPath<EditableMapDraftAsset>(EditableMapDraftSampleAssetBuilder.SampleDraftAssetPath);

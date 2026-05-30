@@ -36,7 +36,7 @@ namespace Conn.Editor.Maps
         public PreviewPlacement[] PreviewPlacements = Array.Empty<PreviewPlacement>();
         public bool DrawSceneGizmos = true;
 
-        public GeneratedMapDraft LastDraft { get; private set; }
+        [NonSerialized] public EditableMapDraftAsset LastEditableDraft;
         public CompiledMap LastCompiled { get; private set; }
         public MapValidationReport LastReport { get; private set; }
 
@@ -70,26 +70,28 @@ namespace Conn.Editor.Maps
             }
         }
 
-        public void SetGeneratedResult(GeneratedMapDraft draft, CompiledMap compiled, MapValidationReport report)
+        public void SetGeneratedResult(EditableMapDraftAsset draft, CompiledMap compiled, MapValidationReport report)
         {
-            LastDraft = draft;
+            ReleaseTransientDraft();
+            LastEditableDraft = draft;
             LastCompiled = compiled;
             LastReport = report;
             LastGeneratedMapId = compiled != null ? compiled.MapId : string.Empty;
-            LastGeneratedProfileId = compiled != null ? compiled.ProfileId : draft?.ProfileId ?? string.Empty;
+            LastGeneratedProfileId = compiled != null ? compiled.ProfileId : draft?.SourceProfileId ?? string.Empty;
             LastGeneratedSeed = compiled?.Seed ?? draft?.Seed ?? 0;
             LastGeneratedFloor = Mathf.Max(1, Floor);
             LastGeneratedDifficulty = Mathf.Max(0, Difficulty);
-            LastRoomCount = draft?.Graph?.Nodes?.Count ?? 0;
-            LastEdgeCount = draft?.Graph?.Edges?.Count ?? 0;
-            LastPlacementCount = draft?.Placements?.Count ?? 0;
+            LastRoomCount = draft?.Rooms?.Length ?? 0;
+            LastPlacementCount = compiled?.Placements?.Count ?? 0;
             LastValidation = report == null ? "Not validated" : report.Passed ? "Passed" : "Failed";
-            CapturePreviewSnapshot(draft);
+            CapturePreviewSnapshot(draft, compiled);
+            LastEdgeCount = PreviewEdges?.Length ?? 0;
         }
 
         public void ClearGeneratedResult()
         {
-            LastDraft = null;
+            ReleaseTransientDraft();
+            LastEditableDraft = null;
             LastCompiled = null;
             LastReport = null;
             LastGeneratedMapId = string.Empty;
@@ -136,33 +138,33 @@ namespace Conn.Editor.Maps
             return new Vector3(room.GridX * RoomSpacing, 0f, room.GridY * RoomSpacing);
         }
 
-        private void CapturePreviewSnapshot(GeneratedMapDraft draft)
+        private void CapturePreviewSnapshot(EditableMapDraftAsset draft, CompiledMap compiled)
         {
-            if (draft?.Graph == null)
+            if (draft == null)
             {
                 ClearPreviewSnapshot();
                 return;
             }
 
-            PreviewRooms = new PreviewRoom[draft.Graph.Nodes.Count];
-            for (var i = 0; i < draft.Graph.Nodes.Count; i++)
+            PreviewRooms = new PreviewRoom[draft.Rooms.Length];
+            for (var i = 0; i < draft.Rooms.Length; i++)
             {
-                var node = draft.Graph.Nodes[i];
+                var room = draft.Rooms[i];
                 PreviewRooms[i] = new PreviewRoom
                 {
-                    Id = node.Id,
-                    Role = node.Role,
-                    GridX = node.GridX,
-                    GridY = node.GridY,
-                    SocketMask = node.SocketMask,
-                    ChunkId = node.ChunkId
+                    Id = room.Id,
+                    Role = room.Role,
+                    GridX = room.Width > 0 ? room.X / room.Width : room.X,
+                    GridY = room.Height > 0 ? room.Y / room.Height : room.Y,
+                    SocketMask = room.SocketMask,
+                    ChunkId = room.ChunkId
                 };
             }
 
-            PreviewEdges = new PreviewEdge[draft.Graph.Edges.Count];
-            for (var i = 0; i < draft.Graph.Edges.Count; i++)
+            PreviewEdges = new PreviewEdge[compiled?.Doors?.Count ?? 0];
+            for (var i = 0; i < PreviewEdges.Length; i++)
             {
-                var edge = draft.Graph.Edges[i];
+                var edge = compiled.Doors[i];
                 PreviewEdges[i] = new PreviewEdge
                 {
                     FromNodeId = edge.FromNodeId,
@@ -172,10 +174,10 @@ namespace Conn.Editor.Maps
                 };
             }
 
-            PreviewPlacements = new PreviewPlacement[draft.Placements.Count];
-            for (var i = 0; i < draft.Placements.Count; i++)
+            PreviewPlacements = new PreviewPlacement[compiled?.Placements?.Count ?? 0];
+            for (var i = 0; i < PreviewPlacements.Length; i++)
             {
-                var placement = draft.Placements[i];
+                var placement = compiled.Placements[i];
                 PreviewPlacements[i] = new PreviewPlacement
                 {
                     Id = placement.Id,
@@ -186,6 +188,16 @@ namespace Conn.Editor.Maps
                     ReferenceId = placement.ReferenceId
                 };
             }
+        }
+
+        private void ReleaseTransientDraft()
+        {
+            if (LastEditableDraft == null || (LastEditableDraft.hideFlags & HideFlags.DontSave) == 0)
+            {
+                return;
+            }
+
+            DestroyImmediate(LastEditableDraft);
         }
 
         private void OnDrawGizmos()

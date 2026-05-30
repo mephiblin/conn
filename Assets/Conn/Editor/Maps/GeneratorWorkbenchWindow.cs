@@ -11,7 +11,7 @@ namespace Conn.Editor.Maps
         private int seed = 2001;
         private int floor = 1;
         private int difficulty = 0;
-        private GeneratedMapDraft draft;
+        private EditableMapDraftAsset draft;
         private CompiledMap compiled;
         private MapValidationReport report;
         private MapAuthoringSnapshot authoringSnapshot;
@@ -24,6 +24,12 @@ namespace Conn.Editor.Maps
         public static void Open()
         {
             GetWindow<GeneratorWorkbenchWindow>("Generator");
+        }
+
+        private void OnDisable()
+        {
+            ReleaseTransientDraft();
+            draft = null;
         }
 
         private void OnGUI()
@@ -121,12 +127,11 @@ namespace Conn.Editor.Maps
             if (draft != null)
             {
                 EditorGUILayout.Space();
-                EditorGUILayout.LabelField("Profile", draft.ProfileId);
-                EditorGUILayout.LabelField("Rooms", draft.Graph.Nodes.Count.ToString());
-                EditorGUILayout.LabelField("Edges", draft.Graph.Edges.Count.ToString());
-                EditorGUILayout.LabelField("Placements", draft.Placements.Count.ToString());
+                EditorGUILayout.LabelField("Profile", draft.SourceProfileId);
+                EditorGUILayout.LabelField("Rooms", draft.Rooms.Length.ToString());
+                EditorGUILayout.LabelField("Sockets", draft.Sockets.Length.ToString());
+                EditorGUILayout.LabelField("Placements", (compiled?.Placements?.Count ?? 0).ToString());
                 EditorGUILayout.LabelField("Encounter Placements", (compiled?.EncounterPlacements?.Count ?? 0).ToString());
-                EditorGUILayout.LabelField("Critical Path", string.Join(" -> ", draft.Graph.CriticalPath.ToArray()));
                 if (compiled != null)
                 {
                     EditorGUILayout.LabelField("Compiled Map", compiled.MapId);
@@ -145,9 +150,9 @@ namespace Conn.Editor.Maps
 
                 EditorGUILayout.Space();
                 EditorGUILayout.LabelField("Placement Details", EditorStyles.boldLabel);
-                for (var i = 0; i < draft.Placements.Count; i++)
+                for (var i = 0; i < (compiled?.Placements?.Count ?? 0); i++)
                 {
-                    var placement = draft.Placements[i];
+                    var placement = compiled.Placements[i];
                     EditorGUILayout.LabelField($"{placement.Id}: {placement.Kind} room={placement.RoomId} pos=({placement.X},{placement.Y}) ref={placement.ReferenceId}");
                 }
 
@@ -164,10 +169,10 @@ namespace Conn.Editor.Maps
 
                 EditorGUILayout.Space();
                 EditorGUILayout.LabelField("Room Details", EditorStyles.boldLabel);
-                for (var i = 0; i < draft.Graph.Nodes.Count; i++)
+                for (var i = 0; i < draft.Rooms.Length; i++)
                 {
-                    var node = draft.Graph.Nodes[i];
-                    EditorGUILayout.LabelField($"{node.Id}: {node.Role} ({node.GridX},{node.GridY}) {node.SocketMask} chunk={node.ChunkId}");
+                    var room = draft.Rooms[i];
+                    EditorGUILayout.LabelField($"{room.Id}: {room.Role} ({room.X},{room.Y}) {room.SocketMask} chunk={room.ChunkId}");
                 }
             }
 
@@ -183,9 +188,7 @@ namespace Conn.Editor.Maps
 
             var profile = MapGenerationCatalog.ChapterTwoFirstSliceProfile();
             var chunks = MapGenerationCatalog.ChapterTwoFirstSliceChunks();
-            draft = MapGenerationService.Generate(profile, chunks, seed);
-            report = MapValidationService.Validate(profile, draft);
-            compiled = MapGenerationService.Compile(profile, draft);
+            ApplyGeneratedResult(EditableMapGeneratedResultBuilder.Build(profile, chunks, seed, floor, difficulty));
         }
 
         private bool GenerateFromSelectedProfile()
@@ -194,6 +197,7 @@ namespace Conn.Editor.Maps
             authoringReport = MapAuthoringValidationService.Validate(authoringSnapshot);
             if (!authoringReport.Passed)
             {
+                ReleaseTransientDraft();
                 draft = null;
                 compiled = null;
                 report = null;
@@ -207,14 +211,13 @@ namespace Conn.Editor.Maps
             {
                 report = new MapValidationReport();
                 report.Errors.Add($"Selected map profile is not in the built runtime bundle: {profileId}");
+                ReleaseTransientDraft();
                 draft = null;
                 compiled = null;
                 return true;
             }
 
-            draft = RuntimeMapGenerationService.Generate(builtBundle, profileId, seed);
-            report = MapValidationService.Validate(entry.Profile, draft);
-            compiled = RuntimeMapGenerationService.GenerateCompiled(builtBundle, profileId, seed);
+            ApplyGeneratedResult(EditableMapGeneratedResultBuilder.Build(entry.Profile, entry.Chunks, seed, floor, difficulty));
             return true;
         }
 
@@ -256,6 +259,24 @@ namespace Conn.Editor.Maps
         private static int Count<T>(T[] values)
         {
             return values?.Length ?? 0;
+        }
+
+        private void ApplyGeneratedResult(EditableMapGeneratedResultBuilder.GeneratedEditableMapResult generated)
+        {
+            ReleaseTransientDraft();
+            draft = generated.Draft;
+            compiled = generated.Compiled;
+            report = generated.Report;
+        }
+
+        private void ReleaseTransientDraft()
+        {
+            if (draft == null || (draft.hideFlags & HideFlags.DontSave) == 0)
+            {
+                return;
+            }
+
+            DestroyImmediate(draft);
         }
 
         private void SaveCompiledMap()

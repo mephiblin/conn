@@ -49,6 +49,24 @@ namespace Conn.Editor.Maps
             return draft;
         }
 
+        public static EditableMapDraftAsset CreateDraftAssetFromSource(
+            string assetPath,
+            EditableMapDraftAsset sourceDraft)
+        {
+            EnsureDraftFolders();
+
+            if (sourceDraft == null)
+            {
+                throw new ArgumentNullException(nameof(sourceDraft));
+            }
+
+            var draft = ScriptableObject.CreateInstance<EditableMapDraftAsset>();
+            PopulateFromDraft(draft, sourceDraft);
+            AssetDatabase.CreateAsset(draft, assetPath);
+            AssetDatabase.SaveAssets();
+            return draft;
+        }
+
         public static EditableMapDraftAsset BuildGeneratedDraft(
             MapProfile profile,
             IReadOnlyList<ChunkPreset> runtimeChunks,
@@ -165,6 +183,21 @@ namespace Conn.Editor.Maps
                     Purpose = "generated_main"
                 }
             };
+        }
+
+        public static void PopulateFromDraft(EditableMapDraftAsset target, EditableMapDraftAsset sourceDraft)
+        {
+            if (target == null)
+            {
+                throw new ArgumentNullException(nameof(target));
+            }
+
+            if (sourceDraft == null)
+            {
+                throw new ArgumentNullException(nameof(sourceDraft));
+            }
+
+            JsonUtility.FromJsonOverwrite(JsonUtility.ToJson(sourceDraft), target);
         }
 
         public static string BuildDefaultAssetPath(string baseName)

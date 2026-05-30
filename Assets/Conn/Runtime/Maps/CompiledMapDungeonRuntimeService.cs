@@ -41,8 +41,7 @@ namespace Conn.Runtime.Maps
             }
 
             var chunks = MapGenerationCatalog.ChapterTwoFirstSliceChunks();
-            var draft = MapGenerationService.Generate(profile, chunks, DefaultDungeonSeed);
-            currentCompiledMap = MapGenerationService.Compile(profile, draft);
+            currentCompiledMap = MapGenerationService.GenerateCompiled(profile, chunks, DefaultDungeonSeed);
             return currentCompiledMap;
         }
 

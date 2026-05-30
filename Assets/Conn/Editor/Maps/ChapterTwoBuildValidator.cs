@@ -58,10 +58,7 @@ namespace Conn.Editor.Maps
             CompiledMap lastCompiled = null;
             foreach (var seed in RequiredCompiledMapSeeds)
             {
-                var draft = MapGenerationService.Generate(profile, chunks, seed);
-                var report = MapValidationService.Validate(profile, draft);
-                MapValidationService.ThrowIfFailed(report);
-                var compiled = MapGenerationService.Compile(profile, draft);
+                var compiled = MapGenerationService.GenerateCompiled(profile, chunks, seed);
                 MapValidationService.ThrowIfFailed(MapValidationService.ValidateCompiled(profile, compiled));
                 MapValidationService.ThrowIfFailed(MapValidationService.ValidateQuestMapContract(QuestCatalog.Find(QuestCatalog.TestHuntId), profile, compiled));
                 ValidateDatabaseQuestMapContracts(database, profile, compiled);

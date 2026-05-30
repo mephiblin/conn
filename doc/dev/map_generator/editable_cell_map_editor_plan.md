@@ -986,7 +986,7 @@ is partially complete.
 - [x] Stamp selected chunk object placements into the draft.
 - [x] Create cell-level sockets from room/chunk sockets.
 - [x] Preserve deterministic output for the same profile and seed.
-- [ ] Treat old `GeneratedMapDraft` only as adapter input.
+- [x] Treat old `GeneratedMapDraft` only as adapter input.
 - [x] Add tests for deterministic draft generation.
 - [x] Add tests that generated drafts include requested layout kinds when the
   profile requires them.

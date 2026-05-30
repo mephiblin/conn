@@ -200,23 +200,11 @@ namespace Conn.Editor.Maps
         {
             try
             {
-                var generated = workspace.LastDraft != null
-                    ? new GeneratedMapResult(workspace.LastDraft, workspace.LastCompiled, workspace.LastReport)
+                var generated = workspace.LastEditableDraft != null
+                    ? new GeneratedMapResult(workspace.LastEditableDraft, workspace.LastCompiled, workspace.LastReport)
                     : Generate(workspace);
-                var runtimeProfile = workspace.MapProfile != null
-                    ? workspace.MapProfile.ToRuntimeProfile()
-                    : MapGenerationCatalog.ChapterTwoFirstSliceProfile();
-                var runtimeChunks = ResolveRuntimeChunks(workspace, runtimeProfile);
-                var assetPath = EditableMapDraftBuilder.BuildDefaultAssetPath($"{generated.Draft.ProfileId}_{generated.Draft.Seed}_draft");
-                var draftAsset = EditableMapDraftBuilder.CreateDraftAssetFromGenerated(
-                    assetPath,
-                    generated.Draft,
-                    runtimeProfile,
-                    runtimeChunks,
-                    workspace.Floor,
-                    workspace.Difficulty,
-                    workspace.PreviewCellSize,
-                    workspace.PreviewCellSize);
+                var assetPath = EditableMapDraftBuilder.BuildDefaultAssetPath($"{generated.Draft.SourceProfileId}_{generated.Draft.Seed}_draft");
+                var draftAsset = EditableMapDraftBuilder.CreateDraftAssetFromSource(assetPath, generated.Draft);
 
                 Selection.activeObject = draftAsset;
                 EditorGUIUtility.PingObject(draftAsset);
@@ -225,25 +213,6 @@ namespace Conn.Editor.Maps
             {
                 Debug.LogException(exception);
             }
-        }
-
-        private static System.Collections.Generic.IReadOnlyList<ChunkPreset> ResolveRuntimeChunks(MapGeneratorWorkspace workspace, MapProfile runtimeProfile)
-        {
-            if (workspace.MapProfile != null)
-            {
-                var snapshot = MapAuthoringValidationService.FindAuthoringAssets();
-                var bundle = RuntimeMapGenerationBundleBuilder.Build(
-                    snapshot,
-                    Mathf.Max(1, workspace.Floor),
-                    Mathf.Max(0, workspace.Difficulty));
-                var entry = bundle.FindProfile(runtimeProfile.ProfileId);
-                if (entry != null)
-                {
-                    return entry.Chunks;
-                }
-            }
-
-            return MapGenerationCatalog.ChapterTwoFirstSliceChunks();
         }
 
         private static GeneratedMapResult Generate(MapGeneratorWorkspace workspace)
@@ -263,18 +232,43 @@ namespace Conn.Editor.Maps
                     throw new InvalidOperationException($"Map profile is not in the runtime bundle: {workspace.MapProfile.Id}");
                 }
 
-                var draft = RuntimeMapGenerationService.Generate(bundle, workspace.MapProfile.Id, workspace.Seed);
-                var report = MapValidationService.Validate(entry.Profile, draft);
-                var compiled = RuntimeMapGenerationService.GenerateCompiled(bundle, workspace.MapProfile.Id, workspace.Seed);
-                return new GeneratedMapResult(draft, compiled, report);
+                return BuildEditableResult(
+                    entry.Profile,
+                    entry.Chunks,
+                    workspace.Seed,
+                    workspace.Floor,
+                    workspace.Difficulty,
+                    workspace.PreviewCellSize);
             }
 
             var profile = MapGenerationCatalog.ChapterTwoFirstSliceProfile();
             var chunks = MapGenerationCatalog.ChapterTwoFirstSliceChunks();
-            var catalogDraft = MapGenerationService.Generate(profile, chunks, workspace.Seed);
-            var catalogReport = MapValidationService.Validate(profile, catalogDraft);
-            var catalogCompiled = MapGenerationService.Compile(profile, catalogDraft);
-            return new GeneratedMapResult(catalogDraft, catalogCompiled, catalogReport);
+            return BuildEditableResult(
+                profile,
+                chunks,
+                workspace.Seed,
+                workspace.Floor,
+                workspace.Difficulty,
+                workspace.PreviewCellSize);
+        }
+
+        private static GeneratedMapResult BuildEditableResult(
+            MapProfile profile,
+            System.Collections.Generic.IReadOnlyList<ChunkPreset> chunks,
+            int seed,
+            int floor,
+            int difficulty,
+            float cellSize)
+        {
+            var generated = EditableMapGeneratedResultBuilder.Build(
+                profile,
+                chunks,
+                seed,
+                floor,
+                difficulty,
+                cellSize,
+                cellSize);
+            return new GeneratedMapResult(generated.Draft, generated.Compiled, generated.Report);
         }
 
         private static void DrawPreview(MapGeneratorWorkspace workspace, string undoName)
@@ -431,11 +425,11 @@ namespace Conn.Editor.Maps
 
         private readonly struct GeneratedMapResult
         {
-            public readonly GeneratedMapDraft Draft;
+            public readonly EditableMapDraftAsset Draft;
             public readonly CompiledMap Compiled;
             public readonly MapValidationReport Report;
 
-            public GeneratedMapResult(GeneratedMapDraft draft, CompiledMap compiled, MapValidationReport report)
+            public GeneratedMapResult(EditableMapDraftAsset draft, CompiledMap compiled, MapValidationReport report)
             {
                 Draft = draft;
                 Compiled = compiled;

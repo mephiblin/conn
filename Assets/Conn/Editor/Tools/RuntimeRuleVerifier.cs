@@ -303,8 +303,7 @@ namespace Conn.Editor.Tools
         {
             var profile = MapGenerationCatalog.ChapterTwoFirstSliceProfile();
             var chunks = MapGenerationCatalog.ChapterTwoFirstSliceChunks();
-            var draft = MapGenerationService.Generate(profile, chunks, 2001);
-            var compiled = MapGenerationService.Compile(profile, draft);
+            var compiled = MapGenerationService.GenerateCompiled(profile, chunks, 2001);
             var json = JsonUtility.ToJson(compiled);
             var loaded = CompiledMapRuntimeLoader.LoadAndValidateFromJson(json, profile);
             var quest = QuestCatalog.Find(QuestCatalog.TestHuntId);
@@ -672,7 +671,7 @@ namespace Conn.Editor.Tools
             session.StartNewGame();
             QuestRuntimeService.AcceptQuest(session, QuestCatalog.TestHuntId);
             var profile = MapGenerationCatalog.ChapterTwoFirstSliceProfile();
-            var generated = MapGenerationService.Compile(profile, MapGenerationService.Generate(profile, MapGenerationCatalog.ChapterTwoFirstSliceChunks(), 2001));
+            var generated = MapGenerationService.GenerateCompiled(profile, MapGenerationCatalog.ChapterTwoFirstSliceChunks(), 2001);
             var asset = ScriptableObject.CreateInstance<CompiledMapAsset>();
             asset.ProfileId = profile.ProfileId;
             asset.Seed = 2001;

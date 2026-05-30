@@ -194,8 +194,10 @@ namespace Conn.Editor.Tools
 
             var profile = Conn.Core.Maps.MapGenerationCatalog.ChapterTwoFirstSliceProfile();
             var chunks = Conn.Core.Maps.MapGenerationCatalog.ChapterTwoFirstSliceChunks();
-            var draft = Conn.Core.Maps.MapGenerationService.Generate(profile, chunks, Conn.Runtime.Maps.CompiledMapDungeonRuntimeService.DefaultDungeonSeed);
-            var compiled = Conn.Core.Maps.MapGenerationService.Compile(profile, draft);
+            var compiled = Conn.Core.Maps.MapGenerationService.GenerateCompiled(
+                profile,
+                chunks,
+                Conn.Runtime.Maps.CompiledMapDungeonRuntimeService.DefaultDungeonSeed);
             ChapterTwoBuildValidator.SaveCompiledMapAsset(compiled, Conn.Runtime.Maps.CompiledMapDungeonRuntimeService.DefaultDungeonSeed);
         }
 

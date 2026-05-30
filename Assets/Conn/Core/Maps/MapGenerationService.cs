@@ -73,6 +73,11 @@ namespace Conn.Core.Maps
             };
         }
 
+        public static CompiledMap GenerateCompiled(MapProfile profile, IReadOnlyList<ChunkPreset> chunks, int seed)
+        {
+            return Compile(profile, Generate(profile, chunks, seed));
+        }
+
         private static MapRoomRole RoleForPathIndex(int index, int pathLength)
         {
             if (index == 0)

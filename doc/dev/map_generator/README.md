@@ -51,6 +51,10 @@ As of 2026-05-30, the first draft-backed path is now in the project:
   intentionally, selects matching chunk presets deterministically from role +
   layout + sockets, and rasterizes those chunk cells/objects directly into the
   generated editable draft.
+- The high-level editor flow now treats `EditableMapDraftAsset` and
+  `CompiledMap` as the primary outputs. The old `GeneratedMapDraft` graph
+  remains only as an internal adapter stage inside the draft builder and core
+  generator validation code, not as a saved/user-facing result type.
 
 This is no longer only a Phase 1/2 slice. Draft authoring, palettes, preview,
 validation, first-pass bake/runtime consumption, and initial layout-aware draft
