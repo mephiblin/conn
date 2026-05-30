@@ -172,7 +172,7 @@ tool, and generated output workflow.
 
 ### Scene View UX
 
-- [ ] Add a MapGenV2 Scene View overlay with:
+- [x] Add a MapGenV2 Scene View overlay with:
   selected draft/root, generate, accept, materialize, clear, frame, overlay
   visibility toggles, and current tool mode.
 - [ ] Add Scene View handles/gizmos for:

@@ -162,6 +162,34 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void SceneViewOverlaySummaryReportsDraftRootActionsAndToggles()
+        {
+            var draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();
+            var root = new GameObject("MapGenV2_profile_2001");
+
+            try
+            {
+                draft.name = "draft_a";
+                draft.Accepted = true;
+                draft.AcceptedSignature = draft.ComputeSignature();
+
+                var summary = MapGenV2SceneViewOverlay.BuildOverlaySummary(draft, root, "Move");
+
+                Assert.That(summary, Does.Contain("Draft draft_a"));
+                Assert.That(summary, Does.Contain("Root MapGenV2_profile_2001"));
+                Assert.That(summary, Does.Contain("accepted current"));
+                Assert.That(summary, Does.Contain("Tool Move"));
+                Assert.That(summary, Does.Contain("Generate/Accept/Materialize/Clear/Frame"));
+                Assert.That(summary, Does.Contain("Toggles Grid/Region IDs/Connectors"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+                Object.DestroyImmediate(draft);
+            }
+        }
+
+        [Test]
         public void ProfileInspectorSummaryIncludesAuthoringReadiness()
         {
             var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
