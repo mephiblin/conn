@@ -217,6 +217,7 @@ namespace Conn.Editor.Maps
         private static void ValidateObjects(EditableMapDraftAsset draft, MapValidationReport report)
         {
             var ids = new HashSet<string>(StringComparer.Ordinal);
+            var occupiedCells = new Dictionary<Vector2Int, string>();
             foreach (var placement in draft.Objects ?? Array.Empty<EditableMapObjectPlacement>())
             {
                 if (!string.IsNullOrWhiteSpace(placement.Id) && !ids.Add(placement.Id))
@@ -239,6 +240,16 @@ namespace Conn.Editor.Maps
                         if (cell.Terrain == RoomChunkCellType.Wall || cell.Terrain == RoomChunkCellType.Gap)
                         {
                             report.Errors.Add($"Object {placement.Id} overlaps non-walkable cell ({x}, {y}).");
+                        }
+
+                        var position = new Vector2Int(x, y);
+                        if (occupiedCells.TryGetValue(position, out var existingId))
+                        {
+                            report.Errors.Add($"Object {placement.Id} overlaps object {existingId} at ({x}, {y}).");
+                        }
+                        else
+                        {
+                            occupiedCells.Add(position, placement.Id ?? string.Empty);
                         }
                     }
                 }

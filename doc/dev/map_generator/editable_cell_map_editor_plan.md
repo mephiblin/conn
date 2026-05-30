@@ -970,6 +970,9 @@ is partially complete.
 - [x] Validate broken prefab/material references.
 - [x] Validate draft cells reference existing tile ids.
 - [x] Validate draft objects reference existing object ids.
+- [x] Validate object footprints do not overlap other object footprints.
+  - 2026-05-30: generated object placement now avoids occupied door/object
+    cells, and validation rejects overlapping footprints.
 - [x] Ensure runtime bake uses ids, not Unity references.
 
 ### Phase 5: Generator To Draft

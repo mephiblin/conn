@@ -604,6 +604,7 @@ namespace Conn.Tests.EditMode
                 Assert.That(result.Draft.Objects.Any(placement => placement.Kind == RoomChunkObjectKind.Torch), Is.True);
                 Assert.That(result.Draft.Objects.Any(placement => placement.Kind == RoomChunkObjectKind.Barrel), Is.True);
                 Assert.That(result.Draft.Objects.Any(placement => placement.Kind == RoomChunkObjectKind.Blocker && placement.BlocksMovement), Is.True);
+                Assert.That(HasOverlappingObjectFootprints(result.Draft.Objects), Is.False);
                 Assert.That(result.Draft.Objects.Count(placement => placement.RuntimeReferenceId == "door"), Is.GreaterThanOrEqualTo(4));
                 Assert.That(result.Draft.Cells.Where(cell => !string.IsNullOrWhiteSpace(cell.MaterialId)).All(cell => tileIds.Contains(cell.MaterialId)), Is.True);
                 Assert.That(result.Draft.Objects.Where(placement => !string.IsNullOrWhiteSpace(placement.PaletteObjectId)).All(placement => objectIds.Contains(placement.PaletteObjectId)), Is.True);
@@ -897,6 +898,38 @@ namespace Conn.Tests.EditMode
 
             Assert.That(report.Passed, Is.False);
             Assert.That(report.Errors.Exists(error => error.Contains("optional treasure object treasure_hidden")), Is.True);
+        }
+
+        [Test]
+        public void EditableValidationReportsOverlappingObjectFootprints()
+        {
+            var draft = BuildLinearValidationDraft();
+            draft.Objects = new[]
+            {
+                new EditableMapObjectPlacement
+                {
+                    Id = "crate_a",
+                    Kind = RoomChunkObjectKind.Barrel,
+                    X = 1,
+                    Y = 0,
+                    Width = 2,
+                    Depth = 1
+                },
+                new EditableMapObjectPlacement
+                {
+                    Id = "crate_b",
+                    Kind = RoomChunkObjectKind.Chest,
+                    X = 2,
+                    Y = 0,
+                    Width = 1,
+                    Depth = 1
+                }
+            };
+
+            var report = EditableMapValidationService.Validate(draft);
+
+            Assert.That(report.Passed, Is.False);
+            Assert.That(report.Errors.Exists(error => error.Contains("crate_b overlaps object crate_a at (2, 0)")), Is.True);
         }
 
         [Test]
@@ -1641,6 +1674,26 @@ namespace Conn.Tests.EditMode
         {
             var cell = compiled.Cells.FirstOrDefault(candidate => candidate.X == placement.X && candidate.Y == placement.Y);
             return cell != null && cell.Terrain != RoomChunkCellType.Wall && cell.Terrain != RoomChunkCellType.Gap;
+        }
+
+        private static bool HasOverlappingObjectFootprints(EditableMapObjectPlacement[] objects)
+        {
+            var occupied = new System.Collections.Generic.HashSet<Vector2Int>();
+            foreach (var placement in objects ?? System.Array.Empty<EditableMapObjectPlacement>())
+            {
+                for (var dy = 0; dy < System.Math.Max(1, placement.Depth); dy++)
+                {
+                    for (var dx = 0; dx < System.Math.Max(1, placement.Width); dx++)
+                    {
+                        if (!occupied.Add(new Vector2Int(placement.X + dx, placement.Y + dy)))
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            return false;
         }
     }
 }

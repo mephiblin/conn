@@ -390,13 +390,14 @@ namespace Conn.Editor.Maps
 
             var sideRoom = rooms[6];
             var sideCenter = RoomCenter(sideRoom);
+            var treasurePosition = FindObjectPlacementCell(draft, objects, sideRoom, sideCenter, 1, 1);
             objects.Add(new EditableMapObjectPlacement
             {
                 Id = "generated_treasure_chest",
                 PaletteObjectId = "treasure_chest",
                 Kind = RoomChunkObjectKind.Chest,
-                X = sideCenter.x,
-                Y = sideCenter.y,
+                X = treasurePosition.x,
+                Y = treasurePosition.y,
                 Width = 1,
                 Depth = 1,
                 Direction = MapDirection.South,
@@ -407,13 +408,14 @@ namespace Conn.Editor.Maps
 
             var encounterRoom = rooms[3];
             var encounterCenter = RoomCenter(encounterRoom);
+            var spawnPosition = FindObjectPlacementCell(draft, objects, encounterRoom, encounterCenter, 1, 1);
             objects.Add(new EditableMapObjectPlacement
             {
                 Id = "generated_spawn_hint",
                 PaletteObjectId = "spawn_hint",
                 Kind = RoomChunkObjectKind.SpawnHint,
-                X = encounterCenter.x,
-                Y = encounterCenter.y,
+                X = spawnPosition.x,
+                Y = spawnPosition.y,
                 Width = 1,
                 Depth = 1,
                 Direction = MapDirection.North,
@@ -424,13 +426,17 @@ namespace Conn.Editor.Maps
 
             var startRoom = rooms[0];
             var startCenter = RoomCenter(startRoom);
+            var torchPreferred = new Vector2Int(
+                Mathf.Clamp(startCenter.x + 2, startRoom.xMin, startRoom.xMax - 1),
+                Mathf.Clamp(startCenter.y + 1, startRoom.yMin, startRoom.yMax - 1));
+            var torchPosition = FindObjectPlacementCell(draft, objects, startRoom, torchPreferred, 1, 1);
             objects.Add(new EditableMapObjectPlacement
             {
                 Id = "generated_start_torch",
                 PaletteObjectId = "torch_wall",
                 Kind = RoomChunkObjectKind.Torch,
-                X = Mathf.Clamp(startCenter.x + 2, startRoom.xMin, startRoom.xMax - 1),
-                Y = Mathf.Clamp(startCenter.y + 1, startRoom.yMin, startRoom.yMax - 1),
+                X = torchPosition.x,
+                Y = torchPosition.y,
                 Width = 1,
                 Depth = 1,
                 Direction = MapDirection.West,
@@ -441,13 +447,17 @@ namespace Conn.Editor.Maps
 
             var bossRoom = rooms[4];
             var bossCenter = RoomCenter(bossRoom);
+            var barrelPreferred = new Vector2Int(
+                Mathf.Clamp(bossCenter.x - 2, bossRoom.xMin, bossRoom.xMax - 1),
+                Mathf.Clamp(bossCenter.y - 1, bossRoom.yMin, bossRoom.yMax - 1));
+            var barrelPosition = FindObjectPlacementCell(draft, objects, bossRoom, barrelPreferred, 1, 1);
             objects.Add(new EditableMapObjectPlacement
             {
                 Id = "generated_barrel_blocker",
                 PaletteObjectId = "barrel",
                 Kind = RoomChunkObjectKind.Barrel,
-                X = Mathf.Clamp(bossCenter.x - 2, bossRoom.xMin, bossRoom.xMax - 1),
-                Y = Mathf.Clamp(bossCenter.y - 1, bossRoom.yMin, bossRoom.yMax - 1),
+                X = barrelPosition.x,
+                Y = barrelPosition.y,
                 Width = 1,
                 Depth = 1,
                 Direction = MapDirection.North,
@@ -456,13 +466,17 @@ namespace Conn.Editor.Maps
                 MaterialId = "barrel"
             });
 
+            var rubblePreferred = new Vector2Int(
+                Mathf.Clamp(bossRoom.xMax - 2, bossRoom.xMin, bossRoom.xMax - 1),
+                Mathf.Clamp(bossRoom.yMax - 2, bossRoom.yMin, bossRoom.yMax - 1));
+            var rubblePosition = FindObjectPlacementCell(draft, objects, bossRoom, rubblePreferred, 1, 1);
             objects.Add(new EditableMapObjectPlacement
             {
                 Id = "generated_rubble_blocker",
                 PaletteObjectId = "rubble_blocker",
                 Kind = RoomChunkObjectKind.Blocker,
-                X = Mathf.Clamp(bossRoom.xMax - 2, bossRoom.xMin, bossRoom.xMax - 1),
-                Y = Mathf.Clamp(bossRoom.yMax - 2, bossRoom.yMin, bossRoom.yMax - 1),
+                X = rubblePosition.x,
+                Y = rubblePosition.y,
                 Width = 1,
                 Depth = 1,
                 Direction = MapDirection.South,
@@ -471,6 +485,84 @@ namespace Conn.Editor.Maps
                 MaterialId = "rubble"
             });
             draft.Objects = objects.ToArray();
+        }
+
+        private static Vector2Int FindObjectPlacementCell(
+            EditableMapDraftAsset draft,
+            List<EditableMapObjectPlacement> objects,
+            RectInt room,
+            Vector2Int preferred,
+            int width,
+            int depth)
+        {
+            if (CanPlaceObject(draft, objects, room, preferred.x, preferred.y, width, depth))
+            {
+                return preferred;
+            }
+
+            var best = preferred;
+            var bestDistance = int.MaxValue;
+            var found = false;
+            for (var y = room.yMin; y < room.yMax; y++)
+            {
+                for (var x = room.xMin; x < room.xMax; x++)
+                {
+                    if (!CanPlaceObject(draft, objects, room, x, y, width, depth))
+                    {
+                        continue;
+                    }
+
+                    var distance = Mathf.Abs(preferred.x - x) + Mathf.Abs(preferred.y - y);
+                    if (!found || distance < bestDistance)
+                    {
+                        found = true;
+                        bestDistance = distance;
+                        best = new Vector2Int(x, y);
+                    }
+                }
+            }
+
+            return best;
+        }
+
+        private static bool CanPlaceObject(
+            EditableMapDraftAsset draft,
+            List<EditableMapObjectPlacement> objects,
+            RectInt room,
+            int x,
+            int y,
+            int width,
+            int depth)
+        {
+            for (var dy = 0; dy < Mathf.Max(1, depth); dy++)
+            {
+                for (var dx = 0; dx < Mathf.Max(1, width); dx++)
+                {
+                    var cellX = x + dx;
+                    var cellY = y + dy;
+                    if (!room.Contains(new Vector2Int(cellX, cellY)) || !IsWalkable(draft, cellX, cellY) || IsObjectOccupied(objects, cellX, cellY))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        private static bool IsObjectOccupied(List<EditableMapObjectPlacement> objects, int x, int y)
+        {
+            foreach (var placement in objects)
+            {
+                var width = Mathf.Max(1, placement.Width);
+                var depth = Mathf.Max(1, placement.Depth);
+                if (x >= placement.X && y >= placement.Y && x < placement.X + width && y < placement.Y + depth)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static void AddDoorObjects(EditableMapDraftAsset draft, List<EditableMapObjectPlacement> objects)
