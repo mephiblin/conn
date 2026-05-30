@@ -38,12 +38,28 @@ namespace Conn.Editor.Maps
             BakeSocketsAndDoors(draft, compiled);
             BakeAnchors(draft, compiled);
             BakeEncounterPlacements(draft, compiled);
+            ValidateCompiledAgainstDraft(draft, compiled);
             return compiled;
         }
 
         public static CompiledMapAsset SaveCompiledMapAsset(EditableMapDraftAsset draft, string assetPath = null)
         {
             var compiled = Bake(draft);
+            var path = string.IsNullOrWhiteSpace(assetPath)
+                ? AssetDatabase.GenerateUniqueAssetPath($"Assets/Conn/Core/Maps/{compiled.MapId}_CompiledMap.asset")
+                : assetPath;
+            return SaveCompiledMapAsset(compiled, path);
+        }
+
+        public static CompiledMapAsset SaveCompiledMapAsset(CompiledMap compiled, string assetPath)
+        {
+            if (compiled == null)
+            {
+                throw new ArgumentNullException(nameof(compiled));
+            }
+
+            var profile = ResolveValidationProfile(compiled);
+            MapValidationService.ThrowIfFailed(MapValidationService.ValidateCompiled(profile, compiled));
             var path = string.IsNullOrWhiteSpace(assetPath)
                 ? AssetDatabase.GenerateUniqueAssetPath($"Assets/Conn/Core/Maps/{compiled.MapId}_CompiledMap.asset")
                 : assetPath;
@@ -60,6 +76,34 @@ namespace Conn.Editor.Maps
             EditorUtility.SetDirty(asset);
             AssetDatabase.SaveAssets();
             return asset;
+        }
+
+        private static void ValidateCompiledAgainstDraft(EditableMapDraftAsset draft, CompiledMap compiled)
+        {
+            var profile = BuildValidationProfile(draft.SourceProfileId, draft.Width, draft.Height);
+            MapValidationService.ThrowIfFailed(MapValidationService.ValidateCompiled(profile, compiled));
+        }
+
+        private static MapProfile ResolveValidationProfile(CompiledMap compiled)
+        {
+            return BuildValidationProfile(compiled.ProfileId, compiled.Width, compiled.Height);
+        }
+
+        private static MapProfile BuildValidationProfile(string profileId, int width, int height)
+        {
+            return new MapProfile
+            {
+                ProfileId = profileId ?? string.Empty,
+                Width = width,
+                Height = height,
+                RequiredAnchors = new List<MapAnchorKind>
+                {
+                    MapAnchorKind.Start,
+                    MapAnchorKind.QuestTarget,
+                    MapAnchorKind.Boss,
+                    MapAnchorKind.Exit
+                }
+            };
         }
 
         private static void BakeCells(EditableMapDraftAsset draft, CompiledMap compiled)

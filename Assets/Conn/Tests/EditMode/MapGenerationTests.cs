@@ -1044,6 +1044,29 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void SaveCompiledMapAssetRejectsInvalidCompiledPayload()
+        {
+            var compiled = new CompiledMap
+            {
+                MapId = "invalid_save_probe",
+                ProfileId = MapGenerationCatalog.ChapterTwoFirstSliceProfileId,
+                Width = 4,
+                Height = 4,
+                CellSize = 1f,
+                HeightStep = 1f
+            };
+            compiled.Rooms.Add(new RoomGraphNode { Id = "start", Role = MapRoomRole.Start });
+            compiled.Placements.Add(new MapPlacement { Id = "start", Kind = MapPlacementKind.Start, RoomId = "start", X = 0, Y = 0 });
+            compiled.Objects.Add(new CompiledMapObjectPlacement { PlacementId = "bad_object", Kind = RoomChunkObjectKind.Chest, X = 9, Y = 0, Width = 1, Depth = 1 });
+            var path = "Assets/Conn/Core/Maps/invalid_save_probe_CompiledMap.asset";
+
+            var exception = Assert.Throws<System.InvalidOperationException>(() => EditableMapBakeService.SaveCompiledMapAsset(compiled, path));
+
+            Assert.That(exception.Message, Does.Contain("bad_object footprint is outside map bounds"));
+            Assert.That(AssetDatabase.LoadAssetAtPath<CompiledMapAsset>(path), Is.Null);
+        }
+
+        [Test]
         public void EditableBakeRoundTripLoadsFromCompiledJson()
         {
             var draft = BuildBakeDraft();

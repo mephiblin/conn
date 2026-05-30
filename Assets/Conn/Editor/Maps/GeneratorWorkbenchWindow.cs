@@ -287,18 +287,7 @@ namespace Conn.Editor.Maps
             }
 
             var assetPath = $"Assets/Conn/Core/Maps/{compiled.ProfileId}_{seed}_CompiledMap.asset";
-            var asset = AssetDatabase.LoadAssetAtPath<CompiledMapAsset>(assetPath);
-            if (asset == null)
-            {
-                asset = CreateInstance<CompiledMapAsset>();
-                AssetDatabase.CreateAsset(asset, assetPath);
-            }
-
-            asset.ProfileId = compiled.ProfileId;
-            asset.Seed = seed;
-            asset.Json = JsonUtility.ToJson(compiled, true);
-            EditorUtility.SetDirty(asset);
-            AssetDatabase.SaveAssets();
+            EditableMapBakeService.SaveCompiledMapAsset(compiled, assetPath);
             Debug.Log($"Saved compiled map asset: {assetPath}");
         }
     }
