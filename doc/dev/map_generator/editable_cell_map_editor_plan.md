@@ -940,12 +940,12 @@ is partially complete.
 - [x] Add fill/clear operations.
 - [x] Add cell coordinate input for first-pass editing if Scene View picking is
   not ready.
-- [ ] Add Scene View cell picking.
-- [ ] Add click/drag painting.
+- [x] Add Scene View cell picking.
+- [x] Add click/drag painting.
 - [x] Call `Undo.RecordObject` before every draft mutation.
 - [x] Call `EditorUtility.SetDirty` after every draft mutation.
-- [ ] Confirm Undo/Redo restores cell and object changes correctly.
-- [ ] Add validation overlay display for failed cells/objects/sockets.
+- [x] Confirm Undo/Redo restores cell and object changes correctly.
+- [x] Add validation overlay display for failed cells/objects/sockets.
 
 ### Phase 4: Tile And Object Palettes
 

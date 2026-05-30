@@ -11,6 +11,9 @@ namespace Conn.Editor.Maps
     [CustomEditor(typeof(EditableMapDraftAsset))]
     public sealed class EditableMapDraftEditor : UnityEditor.Editor
     {
+        private static readonly Color HoverColor = new Color(0.2f, 0.7f, 1f, 0.18f);
+        private static readonly Color ValidationColor = new Color(1f, 0.2f, 0.2f, 0.18f);
+
         private enum BrushMode
         {
             Terrain = 0,
@@ -33,7 +36,21 @@ namespace Conn.Editor.Maps
         private bool eraseMode;
         private int cellX;
         private int cellY;
+        private bool scenePaintEnabled = true;
+        private bool scenePaintActive;
+        private Vector2Int hoveredCell = new Vector2Int(-1, -1);
+        private Vector2Int lastScenePaintCell = new Vector2Int(int.MinValue, int.MinValue);
         private MapValidationReport lastValidationReport;
+
+        private void OnEnable()
+        {
+            SceneView.duringSceneGui += DuringSceneGui;
+        }
+
+        private void OnDisable()
+        {
+            SceneView.duringSceneGui -= DuringSceneGui;
+        }
 
         public override void OnInspectorGUI()
         {
@@ -56,6 +73,7 @@ namespace Conn.Editor.Maps
             eraseMode = EditorGUILayout.Toggle("Erase Mode", eraseMode);
             cellX = EditorGUILayout.IntField("Cell X", cellX);
             cellY = EditorGUILayout.IntField("Cell Y", cellY);
+            scenePaintEnabled = EditorGUILayout.Toggle("Scene Paint Enabled", scenePaintEnabled);
 
             using (new EditorGUILayout.HorizontalScope())
             {
@@ -88,6 +106,7 @@ namespace Conn.Editor.Maps
                 if (GUILayout.Button("Validate"))
                 {
                     lastValidationReport = EditableMapValidationService.Validate(draft);
+                    SceneView.RepaintAll();
                 }
             }
 
@@ -275,6 +294,140 @@ namespace Conn.Editor.Maps
             }
 
             draft.Objects = objects.ToArray();
+        }
+
+        private void DuringSceneGui(SceneView sceneView)
+        {
+            if (Selection.activeObject != target || !scenePaintEnabled)
+            {
+                return;
+            }
+
+            var draft = target as EditableMapDraftAsset;
+            if (draft == null)
+            {
+                return;
+            }
+
+            var currentEvent = Event.current;
+            if (TryGetHoveredCell(draft, currentEvent, out var cell))
+            {
+                hoveredCell = cell;
+                cellX = cell.x;
+                cellY = cell.y;
+                DrawCellHighlight(draft, cell, HoverColor);
+
+                if (brushMode == BrushMode.ValidationOverlay && lastValidationReport != null)
+                {
+                    DrawValidationMarkers(draft, lastValidationReport);
+                }
+
+                HandleScenePainting(draft, currentEvent, cell);
+                Repaint();
+            }
+            else if (brushMode == BrushMode.ValidationOverlay && lastValidationReport != null)
+            {
+                DrawValidationMarkers(draft, lastValidationReport);
+            }
+        }
+
+        private bool TryGetHoveredCell(EditableMapDraftAsset draft, Event currentEvent, out Vector2Int cell)
+        {
+            cell = default;
+            if (currentEvent == null)
+            {
+                return false;
+            }
+
+            var ray = HandleUtility.GUIPointToWorldRay(currentEvent.mousePosition);
+            var plane = new Plane(Vector3.up, Vector3.zero);
+            if (!plane.Raycast(ray, out var distance))
+            {
+                return false;
+            }
+
+            var world = ray.GetPoint(distance);
+            return EditableMapDraftSceneTools.TryGetCellFromWorld(draft, world, out cell);
+        }
+
+        private void HandleScenePainting(EditableMapDraftAsset draft, Event currentEvent, Vector2Int cell)
+        {
+            var controlId = GUIUtility.GetControlID(FocusType.Passive);
+            HandleUtility.AddDefaultControl(controlId);
+
+            if (currentEvent.button != 0 || currentEvent.alt)
+            {
+                return;
+            }
+
+            switch (currentEvent.type)
+            {
+                case EventType.MouseDown:
+                    scenePaintActive = true;
+                    lastScenePaintCell = new Vector2Int(int.MinValue, int.MinValue);
+                    PaintSceneCellIfNeeded(draft, cell);
+                    currentEvent.Use();
+                    break;
+                case EventType.MouseDrag:
+                    if (!scenePaintActive)
+                    {
+                        break;
+                    }
+
+                    PaintSceneCellIfNeeded(draft, cell);
+                    currentEvent.Use();
+                    break;
+                case EventType.MouseUp:
+                    scenePaintActive = false;
+                    lastScenePaintCell = new Vector2Int(int.MinValue, int.MinValue);
+                    currentEvent.Use();
+                    break;
+            }
+        }
+
+        private void PaintSceneCellIfNeeded(EditableMapDraftAsset draft, Vector2Int cell)
+        {
+            if (lastScenePaintCell == cell)
+            {
+                return;
+            }
+
+            PaintBrush(draft, cell.x, cell.y);
+            lastScenePaintCell = cell;
+        }
+
+        private static void DrawCellHighlight(EditableMapDraftAsset draft, Vector2Int cell, Color color)
+        {
+            var cellSize = Mathf.Max(0.01f, draft.CellSize);
+            var center = new Vector3(
+                cell.x * cellSize + cellSize * 0.5f,
+                0.02f,
+                cell.y * cellSize + cellSize * 0.5f);
+            var size = new Vector3(cellSize, 0.01f, cellSize);
+            Handles.color = color;
+            Handles.DrawSolidRectangleWithOutline(new[]
+            {
+                center + new Vector3(-size.x * 0.5f, 0f, -size.z * 0.5f),
+                center + new Vector3(-size.x * 0.5f, 0f, size.z * 0.5f),
+                center + new Vector3(size.x * 0.5f, 0f, size.z * 0.5f),
+                center + new Vector3(size.x * 0.5f, 0f, -size.z * 0.5f)
+            }, color, Color.cyan);
+            Handles.Label(center + Vector3.up * 0.05f, $"Cell {cell.x},{cell.y}");
+        }
+
+        private static void DrawValidationMarkers(EditableMapDraftAsset draft, MapValidationReport report)
+        {
+            foreach (var marker in EditableMapDraftSceneTools.BuildValidationMarkers(draft, report))
+            {
+                DrawCellHighlight(draft, marker.Position, ValidationColor);
+                var cellSize = Mathf.Max(0.01f, draft.CellSize);
+                var position = new Vector3(
+                    marker.Position.x * cellSize + cellSize * 0.5f,
+                    0.15f,
+                    marker.Position.y * cellSize + cellSize * 0.5f);
+                Handles.color = Color.red;
+                Handles.Label(position, marker.Label);
+            }
         }
     }
 }

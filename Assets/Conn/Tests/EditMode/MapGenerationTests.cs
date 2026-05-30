@@ -7,6 +7,8 @@ using Conn.Runtime.Maps;
 using Conn.Runtime.Session;
 using Conn.Runtime.World;
 using NUnit.Framework;
+using System.Linq;
+using UnityEditor;
 using UnityEngine;
 
 namespace Conn.Tests.EditMode
@@ -467,6 +469,105 @@ namespace Conn.Tests.EditMode
 
             Object.DestroyImmediate(root.gameObject);
             Object.DestroyImmediate(sessionGameObject);
+        }
+
+        [Test]
+        public void SceneToolsConvertWorldPositionToDraftCell()
+        {
+            var draft = ScriptableObject.CreateInstance<EditableMapDraftAsset>();
+            draft.InitializeBlank(4, 4, 0.5f, 1f);
+
+            var found = EditableMapDraftSceneTools.TryGetCellFromWorld(draft, new Vector3(1.1f, 0f, 0.6f), out var cell);
+
+            Assert.That(found, Is.True);
+            Assert.That(cell, Is.EqualTo(new Vector2Int(2, 1)));
+        }
+
+        [Test]
+        public void SceneToolsBuildValidationMarkersForCellsObjectsAndSockets()
+        {
+            var draft = BuildLinearValidationDraft();
+            draft.Objects = new[]
+            {
+                new EditableMapObjectPlacement
+                {
+                    Id = "barrel_a",
+                    Kind = RoomChunkObjectKind.Barrel,
+                    X = 1,
+                    Y = 0,
+                    Width = 1,
+                    Depth = 1
+                }
+            };
+            draft.Sockets = new[]
+            {
+                new EditableMapSocket
+                {
+                    Id = "socket_a",
+                    RoomId = "start",
+                    X = 0,
+                    Y = 0,
+                    Direction = MapDirection.East,
+                    TargetRoomId = "quest",
+                    Width = 1
+                }
+            };
+
+            var report = new MapValidationReport();
+            report.Errors.Add("Cell (2, 0) is invalid.");
+            report.Errors.Add("Object barrel_a overlaps non-walkable cell.");
+            report.Errors.Add("Socket socket_a does not touch a walkable cell.");
+            var markers = EditableMapDraftSceneTools.BuildValidationMarkers(draft, report).ToArray();
+
+            Assert.That(markers.Length, Is.EqualTo(3));
+            Assert.That(markers.Any(marker => marker.Kind == ValidationMarkerKind.Cell && marker.Position == new Vector2Int(2, 0)), Is.True);
+            Assert.That(markers.Any(marker => marker.Kind == ValidationMarkerKind.Object && marker.Position == new Vector2Int(1, 0)), Is.True);
+            Assert.That(markers.Any(marker => marker.Kind == ValidationMarkerKind.Socket && marker.Position == new Vector2Int(0, 0)), Is.True);
+        }
+
+        [Test]
+        public void UndoRedoRestoresEditableDraftCellAndObjectChanges()
+        {
+            var draft = ScriptableObject.CreateInstance<EditableMapDraftAsset>();
+            draft.InitializeBlank(2, 2, 1f, 1f);
+            var originalCell = draft.GetCell(0, 0);
+
+            Undo.RecordObject(draft, "Edit Draft For Undo");
+            draft.TrySetCell(new EditableMapCell
+            {
+                X = 0,
+                Y = 0,
+                Terrain = RoomChunkCellType.Wall,
+                Height = 2,
+                Direction = MapDirection.South,
+                MaterialId = "stone_wall"
+            });
+            draft.Objects = new[]
+            {
+                new EditableMapObjectPlacement
+                {
+                    Id = "torch_undo",
+                    Kind = RoomChunkObjectKind.Torch,
+                    X = 1,
+                    Y = 1,
+                    Width = 1,
+                    Depth = 1
+                }
+            };
+            EditorUtility.SetDirty(draft);
+
+            Undo.PerformUndo();
+
+            Assert.That(draft.GetCell(0, 0).Terrain, Is.EqualTo(originalCell.Terrain));
+            Assert.That(draft.Objects.Length, Is.EqualTo(0));
+
+            Undo.PerformRedo();
+
+            Assert.That(draft.GetCell(0, 0).Terrain, Is.EqualTo(RoomChunkCellType.Wall));
+            Assert.That(draft.GetCell(0, 0).Height, Is.EqualTo(2));
+            Assert.That(draft.Objects.Length, Is.EqualTo(1));
+
+            Object.DestroyImmediate(draft);
         }
 
         private static EditableMapDraftAsset BuildLinearValidationDraft()

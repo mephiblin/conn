@@ -25,6 +25,9 @@ As of 2026-05-30, the first draft-backed path is now in the project:
 - `EditableMapDraftEditor` adds first-pass draft actions for blank grid reset,
   preview rebuild, preview clear, coordinate brush edits, fill/clear, and
   draft validation.
+- `EditableMapDraftEditor` now also hooks Scene View painting: hovered cell
+  picking, left-click paint, drag paint across cells, and validation overlays
+  for failed cells/objects/sockets.
 - `EditableMapValidationService` now validates walkability, blocking object
   footprints, socket legality, required room-to-room routes, and slope/stair
   height transitions for editable drafts.
