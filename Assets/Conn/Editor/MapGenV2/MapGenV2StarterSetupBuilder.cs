@@ -27,13 +27,13 @@ namespace Conn.MapGenV2.Editor
         {
             MapGenV2AssetFolderUtility.CreateDefaultFolders();
 
-            var floorPrefab = CreatePrimitivePrefab("StarterFloor", PrimitiveType.Cube, new Color(0.78f, 0.16f, 0.12f), new Vector3(0.92f, 0.08f, 0.92f));
-            var corridorPrefab = CreatePrimitivePrefab("StarterCorridorFloor", PrimitiveType.Cube, new Color(0.05f, 0.05f, 0.05f), new Vector3(0.82f, 0.06f, 0.82f));
-            var wallPrefab = CreatePrimitivePrefab("StarterWall", PrimitiveType.Cube, new Color(0.2f, 0.32f, 0.85f), new Vector3(0.16f, 1.25f, 0.92f));
-            var cornerPrefab = CreatePrimitivePrefab("StarterCorner", PrimitiveType.Cube, new Color(0.12f, 0.22f, 0.58f), new Vector3(0.24f, 1.35f, 0.24f));
-            var ceilingPrefab = CreatePrimitivePrefab("StarterCeiling", PrimitiveType.Cube, new Color(0.85f, 0.86f, 0.82f), new Vector3(0.92f, 0.05f, 0.92f));
-            var doorPrefab = CreatePrimitivePrefab("StarterDoor", PrimitiveType.Cube, new Color(0.95f, 0.66f, 0.18f), new Vector3(0.56f, 1f, 0.12f));
-            var propPrefab = CreatePrimitivePrefab("StarterProp", PrimitiveType.Sphere, new Color(0.2f, 0.72f, 0.42f), new Vector3(0.32f, 0.32f, 0.32f));
+            var floorPrefab = CreatePrimitivePrefab("StarterFloor", PrimitiveType.Cube, new Color(0.78f, 0.16f, 0.12f), new Vector3(0.92f, 0.08f, 0.92f), new Vector3(0f, 0.04f, 0f));
+            var corridorPrefab = CreatePrimitivePrefab("StarterCorridorFloor", PrimitiveType.Cube, new Color(0.05f, 0.05f, 0.05f), new Vector3(0.82f, 0.06f, 0.82f), new Vector3(0f, 0.07f, 0f));
+            var wallPrefab = CreatePrimitivePrefab("StarterWall", PrimitiveType.Cube, new Color(0.2f, 0.32f, 0.85f), new Vector3(0.16f, 1.25f, 0.92f), new Vector3(0f, 0.625f, 0f));
+            var cornerPrefab = CreatePrimitivePrefab("StarterCorner", PrimitiveType.Cube, new Color(0.12f, 0.22f, 0.58f), new Vector3(0.24f, 1.35f, 0.24f), new Vector3(0f, 0.675f, 0f));
+            var ceilingPrefab = CreatePrimitivePrefab("StarterCeiling", PrimitiveType.Cube, new Color(0.85f, 0.86f, 0.82f), new Vector3(0.92f, 0.05f, 0.92f), new Vector3(0f, 1.42f, 0f));
+            var doorPrefab = CreatePrimitivePrefab("StarterDoor", PrimitiveType.Cube, new Color(0.95f, 0.66f, 0.18f), new Vector3(0.56f, 1f, 0.12f), new Vector3(0f, 0.5f, 0f));
+            var propPrefab = CreatePrimitivePrefab("StarterProp", PrimitiveType.Sphere, new Color(0.2f, 0.72f, 0.42f), new Vector3(0.32f, 0.32f, 0.32f), new Vector3(0f, 0.2f, 0f));
 
             var moduleSet = ScriptableObjectUtility.CreateAsset<MapGenModuleSetAsset>(
                 AssetDatabase.GenerateUniqueAssetPath($"{Root}/ModuleSets/StarterModuleSet.asset"));
@@ -120,13 +120,17 @@ namespace Conn.MapGenV2.Editor
             string name,
             PrimitiveType primitiveType,
             Color materialColor,
-            Vector3 localScale)
+            Vector3 meshScale,
+            Vector3 meshLocalPosition)
         {
             var path = AssetDatabase.GenerateUniqueAssetPath($"{Root}/MaterializedPrefabs/{name}.prefab");
-            var instance = GameObject.CreatePrimitive(primitiveType);
-            instance.name = name;
-            instance.transform.localScale = localScale;
-            var renderer = instance.GetComponent<Renderer>();
+            var instance = new GameObject(name);
+            var mesh = GameObject.CreatePrimitive(primitiveType);
+            mesh.name = $"{name}_Visual";
+            mesh.transform.SetParent(instance.transform, false);
+            mesh.transform.localPosition = meshLocalPosition;
+            mesh.transform.localScale = meshScale;
+            var renderer = mesh.GetComponent<Renderer>();
             if (renderer != null)
             {
                 renderer.sharedMaterial = CreateStarterMaterial(name, materialColor);

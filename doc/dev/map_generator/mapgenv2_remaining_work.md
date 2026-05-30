@@ -361,6 +361,9 @@ Progress note 2026-05-31:
 - Starter profiles now include authoring notes explaining that generated
   placeholder prefabs are learning aids, how to read their colors/categories,
   and when mockup/materialize/bake steps should be used.
+- Starter prefabs now use stable cell-centered roots with offset visual children
+  so floors, corridors, walls, ceilings, doors, and props do not share the same
+  coplanar surface in newly generated starter content.
 
 Goal: starter output should be visually understandable even before real art is
 plugged in.
@@ -372,7 +375,7 @@ Tasks:
 - [x] Use different heights/scales so walls/doors/props are visually readable.
 - [x] Add simple labels or object names including category and grid coordinate.
 - [x] Ensure starter prefabs have consistent pivots and cell-size alignment.
-- [ ] Ensure starter materialization does not produce z-fighting or overlapping
+- [x] Ensure starter materialization does not produce z-fighting or overlapping
   unreadable blocks.
 - [x] Add starter profile notes explaining placeholder content.
 - [x] Keep generated starter assets under `Assets/Conn/Authoring/MapGenV2/`
