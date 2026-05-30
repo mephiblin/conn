@@ -295,6 +295,7 @@ namespace Conn.MapGenV2.Editor
             marker.RegionId = request.RegionId;
             marker.SourceTemplateId = request.SourceTemplateId ?? string.Empty;
             marker.ModuleCategory = request.Category;
+            marker.Direction = request.Direction;
             marker.PrefabName = prefabName ?? string.Empty;
             marker.CellCoord = new Vector2Int(request.Coord.X, request.Coord.Y);
             EditorUtility.SetDirty(marker);
@@ -372,19 +373,26 @@ namespace Conn.MapGenV2.Editor
 
         private static Quaternion RotationFor(MapGenGridDirection direction, MapGenModuleRotationPolicy policy)
         {
-            if (policy == MapGenModuleRotationPolicy.None)
+            switch (policy)
             {
-                return Quaternion.identity;
+                case MapGenModuleRotationPolicy.Rotate90:
+                    return Quaternion.Euler(0f, 90f, 0f);
+                case MapGenModuleRotationPolicy.Rotate180:
+                    return Quaternion.Euler(0f, 180f, 0f);
+                case MapGenModuleRotationPolicy.Rotate270:
+                    return Quaternion.Euler(0f, 270f, 0f);
+                case MapGenModuleRotationPolicy.AnyOrthogonal:
+                    var y = direction switch
+                    {
+                        MapGenGridDirection.East => 90f,
+                        MapGenGridDirection.South => 180f,
+                        MapGenGridDirection.West => 270f,
+                        _ => 0f
+                    };
+                    return Quaternion.Euler(0f, y, 0f);
+                default:
+                    return Quaternion.identity;
             }
-
-            var y = direction switch
-            {
-                MapGenGridDirection.East => 90f,
-                MapGenGridDirection.South => 180f,
-                MapGenGridDirection.West => 270f,
-                _ => 0f
-            };
-            return Quaternion.Euler(0f, y, 0f);
         }
     }
 }

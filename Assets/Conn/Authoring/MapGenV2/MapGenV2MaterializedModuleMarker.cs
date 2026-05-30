@@ -9,6 +9,7 @@ namespace Conn.MapGenV2.Authoring
         public int RegionId = -1;
         public string SourceTemplateId = string.Empty;
         public MapGenModuleCategory ModuleCategory;
+        public MapGenGridDirection Direction;
         public string PrefabName = string.Empty;
         public Vector2Int CellCoord;
     }

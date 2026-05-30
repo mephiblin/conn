@@ -1172,6 +1172,87 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void MaterializerAppliesCellSizeOffsetAndRotationPolicy()
+        {
+            const string tempFolder = "Assets/Conn/Tests/TempMapGenV2Materializer";
+            var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
+            var styleSet = ScriptableObject.CreateInstance<MapGenStyleSetAsset>();
+            var profile = ScriptableObject.CreateInstance<MapGenProfileAsset>();
+            var draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();
+            GameObject root = null;
+
+            try
+            {
+                EnsureTempFolder(tempFolder);
+                var floorPrefab = CreateTempPrefab($"{tempFolder}/Floor.prefab", "Floor");
+                var wallPrefab = CreateTempPrefab($"{tempFolder}/Wall.prefab", "Wall");
+                moduleSet.FloorsA = new[]
+                {
+                    new MapGenModuleEntry
+                    {
+                        Prefab = floorPrefab,
+                        Weight = 1,
+                        Footprint = Vector2Int.one,
+                        Offset = new Vector3(0.25f, 0.5f, -0.25f),
+                        RotationPolicy = MapGenModuleRotationPolicy.None
+                    }
+                };
+                moduleSet.WallsStraight = new[]
+                {
+                    new MapGenModuleEntry
+                    {
+                        Prefab = wallPrefab,
+                        Weight = 1,
+                        Footprint = Vector2Int.one,
+                        RotationPolicy = MapGenModuleRotationPolicy.AnyOrthogonal
+                    }
+                };
+                styleSet.ModuleSet = moduleSet;
+                profile.ProfileId = "rotation_profile";
+                profile.CellSize = 2f;
+                profile.StyleSet = styleSet;
+                draft.Profile = profile;
+                draft.Seed = 77;
+                draft.GridSize = Vector2Int.one;
+                draft.EnsureCellArray();
+                draft.Cells[0] = new MapGenMockupCell
+                {
+                    State = MapGenCellState.Room,
+                    RegionId = 4,
+                    RoomCategory = MapGenRoomCategory.Start
+                };
+                draft.Accept();
+
+                root = MapGenMockupMaterializer.Materialize(draft);
+
+                var markers = root.GetComponentsInChildren<MapGenV2MaterializedModuleMarker>();
+                var floorMarker = System.Array.Find(markers, marker => marker.ModuleCategory == MapGenModuleCategory.FloorA);
+                var eastWallMarker = System.Array.Find(markers, marker =>
+                    marker.ModuleCategory == MapGenModuleCategory.WallStraight
+                    && marker.Direction == MapGenGridDirection.East);
+                Assert.That(floorMarker, Is.Not.Null);
+                Assert.That(floorMarker.transform.position.x, Is.EqualTo(1.25f).Within(0.001f));
+                Assert.That(floorMarker.transform.position.y, Is.EqualTo(0.5f).Within(0.001f));
+                Assert.That(floorMarker.transform.position.z, Is.EqualTo(0.75f).Within(0.001f));
+                Assert.That(eastWallMarker, Is.Not.Null);
+                Assert.That(Mathf.DeltaAngle(eastWallMarker.transform.eulerAngles.y, 90f), Is.EqualTo(0f).Within(0.001f));
+            }
+            finally
+            {
+                if (root != null)
+                {
+                    Object.DestroyImmediate(root);
+                }
+
+                AssetDatabase.DeleteAsset(tempFolder);
+                Object.DestroyImmediate(draft);
+                Object.DestroyImmediate(profile);
+                Object.DestroyImmediate(styleSet);
+                Object.DestroyImmediate(moduleSet);
+            }
+        }
+
+        [Test]
         public void MockupSolverIsDeterministicForSameSeed()
         {
             var required = new[] { MapGenRoomCategory.Start, MapGenRoomCategory.Quest, MapGenRoomCategory.Exit };

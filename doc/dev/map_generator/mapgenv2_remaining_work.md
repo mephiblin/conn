@@ -710,6 +710,9 @@ Progress note 2026-05-31:
   requests and names missing module categories before scene objects are stamped.
 - Materialization preflight now records deterministic weighted prefab selections
   and detects prefab footprint out-of-bounds/overlap issues.
+- Scene materialization applies profile `CellSize`, module offsets, and
+  rotation policies, with materialized module markers preserving request
+  direction for inspection.
 
 Goal: turn accepted mockups into readable project-prefab maps.
 
@@ -722,9 +725,10 @@ Tasks:
   the materialized output.
 - [ ] Classify floors, corridors, straight walls, inside corners, outside
   corners, ceilings, doors, props, and navigation helper objects.
-- [ ] Use `CellSize` consistently for positions.
+- [x] Use `CellSize` consistently for positions.
 - [x] Respect prefab footprint in materialization preflight.
-- [ ] Respect allowed rotations and pivot rules.
+- [x] Respect allowed rotations and module offsets.
+- [ ] Add explicit pivot-rule validation.
 - [x] Deterministically choose weighted module entries.
 - [ ] Support whole doors and split door frames/panels.
 - [ ] Support connector-width-aware door openings.
@@ -749,6 +753,7 @@ Verification:
 - EditMode tests for category classification.
 - EditMode test for materialization plan source metadata.
 - EditMode test for deterministic weighted selection and footprint overlap.
+- EditMode test for `CellSize`, module offset, and rotation-policy stamping.
 - EditMode test for missing prefab/module reports.
 - Manual Unity check with at least two style sets.
 
