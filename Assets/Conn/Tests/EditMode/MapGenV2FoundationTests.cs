@@ -562,6 +562,63 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void MockupDraftGenerationAssignsSelectableCorridorRegions()
+        {
+            var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
+            var styleSet = ScriptableObject.CreateInstance<MapGenStyleSetAsset>();
+            var ruleSet = ScriptableObject.CreateInstance<MapGenRuleSetAsset>();
+            var roomShape = ScriptableObject.CreateInstance<MapGenRoomShapeAsset>();
+            var profile = ScriptableObject.CreateInstance<MapGenProfileAsset>();
+            var draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();
+            GameObject floor = null;
+            GameObject wall = null;
+
+            try
+            {
+                PopulateValidWorkflowProfile(profile, styleSet, moduleSet, ruleSet, roomShape, out floor, out wall);
+                profile.MapSize = new Vector2Int(8, 4);
+                ruleSet.RequiredRoomCategories = new[] { MapGenRoomCategory.Start, MapGenRoomCategory.Exit };
+                ruleSet.QuantityRules.RequiredCategories = ruleSet.RequiredRoomCategories;
+                draft.Profile = profile;
+                draft.Seed = 321;
+
+                Assert.That(draft.GenerateFromProfile().IsValid, Is.True);
+
+                var corridorRegionId = System.Array.Find(
+                    draft.Cells,
+                    cell => cell.State == MapGenCellState.Corridor).RegionId;
+                Assert.That(corridorRegionId, Is.GreaterThanOrEqualTo(2));
+                var matchingCorridorCells = 0;
+                foreach (var cell in draft.Cells)
+                {
+                    if (cell.State != MapGenCellState.Corridor)
+                    {
+                        continue;
+                    }
+
+                    Assert.That(cell.RegionId, Is.GreaterThanOrEqualTo(0));
+                    if (cell.RegionId == corridorRegionId)
+                    {
+                        matchingCorridorCells++;
+                    }
+                }
+
+                Assert.That(matchingCorridorCells, Is.GreaterThan(0));
+            }
+            finally
+            {
+                Object.DestroyImmediate(draft);
+                Object.DestroyImmediate(profile);
+                Object.DestroyImmediate(roomShape);
+                Object.DestroyImmediate(ruleSet);
+                Object.DestroyImmediate(styleSet);
+                Object.DestroyImmediate(moduleSet);
+                Object.DestroyImmediate(floor);
+                Object.DestroyImmediate(wall);
+            }
+        }
+
+        [Test]
         public void MockupPreviewDataExtractsCellsAndSummary()
         {
             var draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();

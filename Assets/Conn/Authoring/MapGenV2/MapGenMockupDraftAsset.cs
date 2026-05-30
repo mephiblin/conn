@@ -72,6 +72,8 @@ namespace Conn.MapGenV2.Authoring
             var previousOverrides = RegionOverrides ?? Array.Empty<MapGenMockupRegionOverride>();
             GridSize = new Vector2Int(result.Width, result.Height);
             Cells = result.Cells;
+            var corridorMinimumRegionId = preserveLockedRegions ? MaxRegionId(previousCells) + 1 : 0;
+            MapGenMockupRegionUtility.AssignCorridorRegionIds(Width, Height, Cells, false, corridorMinimumRegionId);
             if (preserveLockedRegions)
             {
                 PreserveLockedRegions(previousWidth, previousHeight, previousCells, previousOverrides);
@@ -102,6 +104,7 @@ namespace Conn.MapGenV2.Authoring
             LastDirectRouteCellsAdded = report.DirectRouteCellsAdded;
             LastDeadEndCorridorsRemoved = report.DeadEndCorridorsRemoved;
             LastIsolatedRoomsRemoved = report.IsolatedRoomsRemoved;
+            MapGenMockupRegionUtility.AssignCorridorRegionIds(Width, Height, Cells, true);
             LastGeneratedSignature = ComputeSignature();
             if (report.Changed)
             {
@@ -387,6 +390,20 @@ namespace Conn.MapGenV2.Authoring
 
             Array.Resize(ref copied, count);
             return copied;
+        }
+
+        private static int MaxRegionId(MapGenMockupCell[] cells)
+        {
+            var maxRegionId = -1;
+            foreach (var cell in cells ?? Array.Empty<MapGenMockupCell>())
+            {
+                if (cell.RegionId > maxRegionId)
+                {
+                    maxRegionId = cell.RegionId;
+                }
+            }
+
+            return maxRegionId;
         }
 
         private static MapGenMockupCell ConvertRegionCell(MapGenMockupCell cell, int regionId, MapGenCellState state)

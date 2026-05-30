@@ -224,6 +224,9 @@ Progress note 2026-05-31:
 - Selected regions can now be deleted or converted to blocked/reserved cells
   from the preview inspector; those edits persist in the draft and make accepted
   output stale until reaccepted.
+- Generated corridor components now receive selectable region ids, so clicking a
+  corridor cell selects and highlights the owning corridor region through the
+  same preview path used for rooms.
 - Remaining Phase 1 work is fuller selected-region edit coverage:
   reroll/regenerate/reroute actions.
 
@@ -238,7 +241,7 @@ Tasks:
   gray = blocked/reserved.
 - [x] Show selected/hovered cell coordinate, state, region id, room category,
   socket kind/id, and prop channel.
-- [ ] Allow clicking a generated room/corridor cell to select the owning
+- [x] Allow clicking a generated room/corridor cell to select the owning
   region, not only the individual grid cell.
 - [ ] Highlight the selected region, its connectors, and adjacent corridor
   links in the preview.
@@ -277,6 +280,7 @@ Verification:
 - EditMode test for preview grid data extraction from a generated draft.
 - EditMode test for selected-region edit persistence in a draft asset.
 - EditMode test for selected-region delete/block/reserve state edits.
+- EditMode test for generated corridor cells receiving selectable region ids.
 - Manual Unity check: generate 3 seeds and confirm visible layout changes.
 - Manual Unity check: select a generated room, change/lock it, regenerate
   allowed parts, and confirm the locked edit remains.
