@@ -96,6 +96,8 @@ namespace Conn.Tests.EditMode
             compiled.Cells.Add(new CompiledMapCell { X = 1, Y = 0, RoomId = "start", ZoneId = "zone_a", Terrain = RoomChunkCellType.Wall });
             compiled.Objects.Add(new CompiledMapObjectPlacement { PlacementId = "duplicate_object", X = 1, Y = 0, Width = 1, Depth = 1, Kind = RoomChunkObjectKind.Blocker });
             compiled.Objects.Add(new CompiledMapObjectPlacement { PlacementId = "duplicate_object", X = profile.Width, Y = 0, Width = 1, Depth = 1, Kind = RoomChunkObjectKind.Chest });
+            compiled.Objects.Add(new CompiledMapObjectPlacement { PlacementId = "overlap_a", X = 0, Y = 0, Width = 1, Depth = 1, Kind = RoomChunkObjectKind.Barrel });
+            compiled.Objects.Add(new CompiledMapObjectPlacement { PlacementId = "overlap_b", X = 0, Y = 0, Width = 1, Depth = 1, Kind = RoomChunkObjectKind.Chest });
 
             var report = MapValidationService.ValidateCompiled(profile, compiled);
 
@@ -105,6 +107,7 @@ namespace Conn.Tests.EditMode
             Assert.That(report.Errors.Exists(error => error.Contains("duplicate object placement id: duplicate_object")), Is.True);
             Assert.That(report.Errors.Exists(error => error.Contains("duplicate_object overlaps non-walkable or missing cell (1, 0)")), Is.True);
             Assert.That(report.Errors.Exists(error => error.Contains("duplicate_object footprint is outside map bounds")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("overlap_b overlaps object overlap_a at (0, 0)")), Is.True);
         }
 
         [Test]

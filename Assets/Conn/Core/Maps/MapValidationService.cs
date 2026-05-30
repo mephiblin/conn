@@ -273,6 +273,7 @@ namespace Conn.Core.Maps
             }
 
             var objectIds = new HashSet<string>();
+            var occupiedObjectCells = new Dictionary<string, string>();
             foreach (var placement in compiled.Objects ?? new List<CompiledMapObjectPlacement>())
             {
                 if (string.IsNullOrWhiteSpace(placement.PlacementId))
@@ -299,6 +300,16 @@ namespace Conn.Core.Maps
                         if (compiled.Cells.Count > 0 && !walkableCells.Contains(CellKey(x, y)))
                         {
                             report.Errors.Add($"Compiled map object {placement.PlacementId} overlaps non-walkable or missing cell ({x}, {y}).");
+                        }
+
+                        var key = CellKey(x, y);
+                        if (occupiedObjectCells.TryGetValue(key, out var existingId))
+                        {
+                            report.Errors.Add($"Compiled map object {placement.PlacementId} overlaps object {existingId} at ({x}, {y}).");
+                        }
+                        else
+                        {
+                            occupiedObjectCells.Add(key, placement.PlacementId ?? string.Empty);
                         }
                     }
                 }

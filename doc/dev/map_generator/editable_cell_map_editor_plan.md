@@ -973,6 +973,8 @@ is partially complete.
 - [x] Validate object footprints do not overlap other object footprints.
   - 2026-05-30: generated object placement now avoids occupied door/object
     cells, and validation rejects overlapping footprints.
+  - 2026-05-30: compiled map validation also rejects overlapping baked object
+    footprints before runtime load.
 - [x] Ensure runtime bake uses ids, not Unity references.
 
 ### Phase 5: Generator To Draft
