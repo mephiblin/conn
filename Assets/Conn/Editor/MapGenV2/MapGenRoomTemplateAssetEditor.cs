@@ -1,5 +1,7 @@
 using Conn.MapGenV2.Authoring;
+using Conn.MapGenV2.Core;
 using UnityEditor;
+using UnityEngine;
 
 namespace Conn.MapGenV2.Editor
 {
@@ -21,6 +23,8 @@ namespace Conn.MapGenV2.Editor
                 EditorGUILayout.LabelField("Connectors", (template.Connectors?.Length ?? 0).ToString());
                 EditorGUILayout.LabelField("Source Shapes", CountAssignedShapes(template).ToString());
             }
+
+            DrawValidationSummary(template);
 
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("기본 정보 / Identity", EditorStyles.boldLabel);
@@ -48,6 +52,74 @@ namespace Conn.MapGenV2.Editor
 
             serializedObject.ApplyModifiedProperties();
             MapGenValidationReportEditorGUI.Draw(template.Validate(), template, "Room template is valid.");
+        }
+
+        private static void DrawValidationSummary(MapGenRoomTemplateAsset template)
+        {
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("검증 요약 / Validation Summary", EditorStyles.boldLabel);
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                var occupied = CountUniqueOccupiedCells(template);
+                var invalidSockets = CountInvalidConnectors(template);
+                EditorGUILayout.LabelField("Footprint / 풋프린트", $"{template.Footprint.x} x {template.Footprint.y}");
+                EditorGUILayout.LabelField("Occupied Cells / 점유 셀", occupied.ToString());
+                EditorGUILayout.LabelField("Connector Count / 커넥터 수", (template.Connectors?.Length ?? 0).ToString());
+                EditorGUILayout.LabelField("Invalid Socket Cells / 잘못된 소켓", invalidSockets.ToString());
+            }
+        }
+
+        private static int CountUniqueOccupiedCells(MapGenRoomTemplateAsset template)
+        {
+            var occupied = new System.Collections.Generic.HashSet<Vector2Int>();
+            AddCells(occupied, template.FloorCells);
+            AddCells(occupied, template.WallCells);
+            AddCells(occupied, template.BlockedCells);
+            AddCells(occupied, template.DoorHintCells);
+            return occupied.Count;
+        }
+
+        private static void AddCells(System.Collections.Generic.HashSet<Vector2Int> occupied, Vector2Int[] cells)
+        {
+            foreach (var cell in cells ?? System.Array.Empty<Vector2Int>())
+            {
+                occupied.Add(cell);
+            }
+        }
+
+        private static int CountInvalidConnectors(MapGenRoomTemplateAsset template)
+        {
+            var invalid = 0;
+            for (var i = 0; i < (template.Connectors?.Length ?? 0); i++)
+            {
+                var connector = template.Connectors[i];
+                if (!MapGenTemplateValidationUtility.IsInBounds(connector.LocalCell, template.Footprint)
+                    || !IsOnSide(connector.LocalCell, template.Footprint, connector.Side)
+                    || connector.SocketKind == MapGenSocketKind.None
+                    || connector.Width <= 0)
+                {
+                    invalid++;
+                }
+            }
+
+            return invalid;
+        }
+
+        private static bool IsOnSide(Vector2Int cell, Vector2Int footprint, MapGenGridDirection side)
+        {
+            switch (side)
+            {
+                case MapGenGridDirection.North:
+                    return cell.y == footprint.y - 1;
+                case MapGenGridDirection.East:
+                    return cell.x == footprint.x - 1;
+                case MapGenGridDirection.South:
+                    return cell.y == 0;
+                case MapGenGridDirection.West:
+                    return cell.x == 0;
+                default:
+                    return false;
+            }
         }
 
         private static int CountAssignedShapes(MapGenRoomTemplateAsset template)

@@ -527,6 +527,9 @@ Progress note 2026-05-31:
 - `MapGenCorridorTemplateAsset` now has a custom inspector for straight, turn,
   T, cross, and variable-length authoring data, showing kind, turn kind, width,
   length range, max footprint, connectors, prop channels, and validation.
+- Room template inspector validation now explicitly shows footprint, occupied
+  cells, connector count, and invalid socket count before the full validation
+  issue list.
 
 Goal: make room/chunk shapes editable as real grid assets.
 
@@ -543,7 +546,7 @@ Tasks:
 - [x] Add template editor that references one or more room shapes.
 - [x] Add corridor template editor for straight, turn, T, cross, and variable
   length templates.
-- [ ] Add validation panel showing occupied cells, connector count, invalid
+- [x] Add validation panel showing occupied cells, connector count, invalid
   sockets, and footprint.
 
 Acceptance:
