@@ -41,6 +41,7 @@ namespace Conn.MapGenV2.Editor
         private MapGenV2SceneOutputMode outputMode = MapGenV2SceneOutputMode.ReplacePreviousRoot;
         private bool showPropPlacementOverlay = true;
         private string lastOperationResult = "아직 실행한 작업이 없습니다. / No operation has run yet.";
+        private readonly MapGenV2PreviewTextureCache previewTextureCache = new MapGenV2PreviewTextureCache();
 
         [MenuItem("Conn/MapGenV2/Map Generator")]
         public static void Open()
@@ -68,6 +69,7 @@ namespace Conn.MapGenV2.Editor
         private void OnDisable()
         {
             SaveWindowState();
+            previewTextureCache.Dispose();
         }
 
         private void OnGUI()
@@ -1100,13 +1102,24 @@ namespace Conn.MapGenV2.Editor
 
         private void DrawPreviewCells(MapGenMockupPreviewData previewData, Rect rect)
         {
+            var texture = previewTextureCache.GetOrCreate(previewData, new MapGenV2PreviewPalette(
+                EmptyColor,
+                RoomColor,
+                CorridorColor,
+                BlockedColor,
+                ConnectorColor,
+                ReservedColor));
+            if (texture != null)
+            {
+                GUI.DrawTexture(rect, texture, ScaleMode.StretchToFill, false);
+            }
+
             for (var y = previewData.Height - 1; y >= 0; y--)
             {
                 for (var x = 0; x < previewData.Width; x++)
                 {
                     previewData.TryGetCell(x, y, out var cell);
                     var cellRect = RectForCell(previewData, rect, x, y);
-                    EditorGUI.DrawRect(cellRect, ColorForCell(cell.State));
 
                     if (hasSelectedCell && IsSelectedCellOrRegion(cell, x, y))
                     {

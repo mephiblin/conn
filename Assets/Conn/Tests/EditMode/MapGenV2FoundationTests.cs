@@ -1295,6 +1295,47 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void PreviewTextureCacheReusesAndInvalidatesByDraftSignature()
+        {
+            var draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();
+            var cache = new MapGenV2PreviewTextureCache();
+
+            try
+            {
+                draft.Seed = 1;
+                draft.GridSize = new Vector2Int(2, 1);
+                draft.EnsureCellArray();
+                draft.Cells[0] = new MapGenMockupCell { State = MapGenCellState.Room, RegionId = 1 };
+                draft.Cells[1] = new MapGenMockupCell { State = MapGenCellState.Corridor, RegionId = 2 };
+                var palette = new MapGenV2PreviewPalette(
+                    Color.blue,
+                    Color.red,
+                    Color.black,
+                    Color.gray,
+                    Color.yellow,
+                    Color.white);
+
+                var first = cache.GetOrCreate(MapGenMockupPreviewData.FromDraft(draft), palette);
+                Assert.That(first, Is.Not.Null);
+                Assert.That(cache.LastRequestWasCacheHit, Is.False);
+
+                var second = cache.GetOrCreate(MapGenMockupPreviewData.FromDraft(draft), palette);
+                Assert.That(second, Is.SameAs(first));
+                Assert.That(cache.LastRequestWasCacheHit, Is.True);
+
+                draft.Cells[1] = new MapGenMockupCell { State = MapGenCellState.Blocked, RegionId = 2 };
+                var third = cache.GetOrCreate(MapGenMockupPreviewData.FromDraft(draft), palette);
+                Assert.That(third, Is.Not.Null);
+                Assert.That(cache.LastRequestWasCacheHit, Is.False);
+            }
+            finally
+            {
+                cache.Dispose();
+                Object.DestroyImmediate(draft);
+            }
+        }
+
+        [Test]
         public void AuthoringAssetMigrationAddsVersionAndNormalizesDefaults()
         {
             var profile = ScriptableObject.CreateInstance<MapGenProfileAsset>();

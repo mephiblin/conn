@@ -1102,7 +1102,10 @@ Progress note 2026-05-31:
 - Main window Generate, Repostprocess, Materialize, and Bake actions now show
   editor progress bars, record operation-level elapsed time and managed memory
   delta, and append samples to `Logs/MapGenV2Performance.log`.
-- Focused tests cover budget classification and profiler sample logging.
+- Mockup preview now caches a 1-pixel-per-cell texture keyed by draft signature,
+  while hover/selection/grid/prop overlays remain dynamic.
+- Focused tests cover budget classification, profiler sample logging, and
+  preview texture cache invalidation.
 
 Goal: make the generator usable for larger production maps without editor
 freezes or unbounded memory growth.
@@ -1117,7 +1120,7 @@ Tasks:
 - [ ] Add cancellation support for long generation runs.
 - [x] Add progress reporting for solve, post-process, materialize, and bake.
 - [ ] Avoid excessive `AssetDatabase.Refresh` calls during normal generation.
-- [ ] Cache preview textures and invalidate them only when draft data changes.
+- [x] Cache preview textures and invalidate them only when draft data changes.
 - [ ] Avoid scene object creation during mockup-only iteration.
 - [ ] Add profiling hooks or logs for retries, contradictions, and pass costs.
 

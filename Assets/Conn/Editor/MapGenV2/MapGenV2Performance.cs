@@ -1,7 +1,10 @@
+using Conn.MapGenV2.Authoring;
+using Conn.MapGenV2.Core;
 using System;
 using System.Diagnostics;
 using System.IO;
 using UnityEditor;
+using UnityEngine;
 
 namespace Conn.MapGenV2.Editor
 {
@@ -175,6 +178,122 @@ namespace Conn.MapGenV2.Editor
         public static void End()
         {
             EditorUtility.ClearProgressBar();
+        }
+    }
+
+    public readonly struct MapGenV2PreviewPalette
+    {
+        public readonly Color Empty;
+        public readonly Color Room;
+        public readonly Color Corridor;
+        public readonly Color Blocked;
+        public readonly Color Connector;
+        public readonly Color Reserved;
+
+        public MapGenV2PreviewPalette(
+            Color empty,
+            Color room,
+            Color corridor,
+            Color blocked,
+            Color connector,
+            Color reserved)
+        {
+            Empty = empty;
+            Room = room;
+            Corridor = corridor;
+            Blocked = blocked;
+            Connector = connector;
+            Reserved = reserved;
+        }
+    }
+
+    public sealed class MapGenV2PreviewTextureCache : IDisposable
+    {
+        private Texture2D texture;
+        private string cacheKey = string.Empty;
+
+        public bool LastRequestWasCacheHit { get; private set; }
+
+        public Texture2D GetOrCreate(MapGenMockupPreviewData previewData, MapGenV2PreviewPalette palette)
+        {
+            if (previewData.Width <= 0 || previewData.Height <= 0)
+            {
+                LastRequestWasCacheHit = false;
+                return null;
+            }
+
+            var key = BuildKey(previewData);
+            if (texture != null
+                && cacheKey == key
+                && texture.width == previewData.Width
+                && texture.height == previewData.Height)
+            {
+                LastRequestWasCacheHit = true;
+                return texture;
+            }
+
+            LastRequestWasCacheHit = false;
+            if (texture != null)
+            {
+                UnityEngine.Object.DestroyImmediate(texture);
+            }
+
+            texture = new Texture2D(previewData.Width, previewData.Height, TextureFormat.RGBA32, false)
+            {
+                name = "MapGenV2MockupPreviewCache",
+                filterMode = FilterMode.Point,
+                wrapMode = TextureWrapMode.Clamp
+            };
+
+            for (var y = 0; y < previewData.Height; y++)
+            {
+                for (var x = 0; x < previewData.Width; x++)
+                {
+                    previewData.TryGetCell(x, y, out var cell);
+                    texture.SetPixel(x, y, ColorForCell(cell.State, palette));
+                }
+            }
+
+            texture.Apply(false, false);
+            cacheKey = key;
+            return texture;
+        }
+
+        public void Dispose()
+        {
+            if (texture != null)
+            {
+                UnityEngine.Object.DestroyImmediate(texture);
+                texture = null;
+            }
+
+            cacheKey = string.Empty;
+            LastRequestWasCacheHit = false;
+        }
+
+        private static string BuildKey(MapGenMockupPreviewData previewData)
+        {
+            return $"{previewData.Width}x{previewData.Height}:{previewData.Seed}:{previewData.CurrentSignature}:{previewData.LastGeneratedSignature}:{previewData.AcceptedSignature}";
+        }
+
+        private static Color ColorForCell(MapGenCellState state, MapGenV2PreviewPalette palette)
+        {
+            switch (state)
+            {
+                case MapGenCellState.Room:
+                    return palette.Room;
+                case MapGenCellState.Corridor:
+                case MapGenCellState.Wall:
+                    return palette.Corridor;
+                case MapGenCellState.Blocked:
+                    return palette.Blocked;
+                case MapGenCellState.Connector:
+                    return palette.Connector;
+                case MapGenCellState.Reserved:
+                    return palette.Reserved;
+                default:
+                    return palette.Empty;
+            }
         }
     }
 }
