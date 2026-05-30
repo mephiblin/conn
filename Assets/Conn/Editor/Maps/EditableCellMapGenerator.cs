@@ -33,6 +33,7 @@ namespace Conn.Editor.Maps
             draft.Difficulty = Mathf.Max(0, difficulty);
             draft.Version = 1;
             draft.InitializeBlank(width, height, cellSize, heightStep);
+            GeneratedMapPaletteLibrary.AssignGeneratedPalettes(draft);
 
             var mainY = height / 2;
             var rooms = BuildRoomPlan(profile, random, width, height, mainY);

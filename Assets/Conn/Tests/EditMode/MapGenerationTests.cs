@@ -526,9 +526,13 @@ namespace Conn.Tests.EditMode
                 var doorCount = result.Draft.Cells.Count(cell => cell.MaterialId == "generated_door");
                 var wallCornerCount = result.Draft.Cells.Count(cell => cell.WallVariantId == "wall_corner");
                 var wallEdgeCount = result.Draft.Cells.Count(cell => cell.WallVariantId == "wall_edge");
+                var tileIds = result.Draft.TilePalette.Tiles.Select(tile => tile.Id).ToHashSet();
+                var objectIds = result.Draft.ObjectPalette.Objects.Select(entry => entry.Id).ToHashSet();
 
                 Assert.That(result.Report.Passed, Is.True, string.Join("\n", result.Report.Errors));
                 Assert.That(result.Compiled, Is.Not.Null);
+                Assert.That(result.Draft.TilePalette, Is.Not.Null);
+                Assert.That(result.Draft.ObjectPalette, Is.Not.Null);
                 Assert.That(floorCount, Is.GreaterThan(80));
                 Assert.That(wallCount, Is.GreaterThan(40));
                 Assert.That(gapCount, Is.GreaterThan(40));
@@ -542,6 +546,8 @@ namespace Conn.Tests.EditMode
                 Assert.That(result.Draft.Objects.Any(placement => placement.Kind == RoomChunkObjectKind.Torch), Is.True);
                 Assert.That(result.Draft.Objects.Any(placement => placement.Kind == RoomChunkObjectKind.Barrel), Is.True);
                 Assert.That(result.Draft.Objects.Count(placement => placement.RuntimeReferenceId == "door"), Is.GreaterThanOrEqualTo(4));
+                Assert.That(result.Draft.Cells.Where(cell => !string.IsNullOrWhiteSpace(cell.MaterialId)).All(cell => tileIds.Contains(cell.MaterialId)), Is.True);
+                Assert.That(result.Draft.Objects.Where(placement => !string.IsNullOrWhiteSpace(placement.PaletteObjectId)).All(placement => objectIds.Contains(placement.PaletteObjectId)), Is.True);
                 Assert.That(result.Draft.Rooms.Any(room => room.Id == "hub" && room.LayoutKind == RoomChunkLayoutKind.Hub), Is.True);
                 Assert.That(result.Draft.Rooms.Any(room => room.Id == "boss" && room.LayoutKind == RoomChunkLayoutKind.HeightTransition), Is.True);
                 Assert.That(result.Draft.Rooms.Count(room => room.LayoutKind == RoomChunkLayoutKind.DeadEnd), Is.GreaterThanOrEqualTo(1));
