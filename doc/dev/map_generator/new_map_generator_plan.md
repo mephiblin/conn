@@ -680,6 +680,384 @@ GeneratedMap_<profile>_<seed>
 This hierarchy is for inspection, editing, prefab baking, and runtime scene
 loading. It should be reproducible from the accepted mockup plus module set.
 
+## Implementation Contracts
+
+This section defines the contracts required before code implementation starts.
+Do not leave these choices implicit in the first implementation pass.
+
+### Assembly Boundary
+
+Use explicit assembly definitions so editor code cannot leak into runtime code.
+
+```text
+Conn.MapGenV2.Core
+  Path: Assets/Conn/Core/MapGenV2/
+  References: no UnityEditor references.
+
+Conn.MapGenV2.Authoring
+  Path: Assets/Conn/Authoring/MapGenV2/
+  References: Conn.MapGenV2.Core.
+  Contains ScriptableObject asset types only.
+
+Conn.MapGenV2.Editor
+  Path: Assets/Conn/Editor/MapGenV2/
+  References: Conn.MapGenV2.Core, Conn.MapGenV2.Authoring, UnityEditor.
+  Contains inspectors, windows, asset factories, preview drawing, and bake tools.
+```
+
+Runtime-safe generated/baked data must live in `Core` or another runtime-safe
+folder. Editor-only preview objects, inspectors, and asset creation menus must
+stay in `Editor`.
+
+### Coordinate And Grid Contract
+
+Use one canonical grid contract for mockup, materialization, validation, and
+runtime bake.
+
+- Logical grid coordinate: `MapGenGridCoord(int x, int y)`.
+- Unity world projection: grid `x` maps to world `+X`; grid `y` maps to world
+  `+Z`.
+- World height: floor plane starts at `Y = 0`.
+- Default cell size: `1.0f`, overridable by profile but fixed per generated map.
+- Cell origin: bottom-left logical cell corner at world `(0, 0, 0)`.
+- Cell center: `(x + 0.5f) * cellSize`, `0`, `(y + 0.5f) * cellSize`.
+- Neighbor order: north `+y`, east `+x`, south `-y`, west `-x`.
+- Serialized index: `index = y * width + x`.
+- Bounds rule: coordinates are valid only when `0 <= x < width` and
+  `0 <= y < height`.
+
+All room shapes, mockup cells, module footprints, prop markers, navigation data,
+and baked runtime cells must use this contract.
+
+### Core Enum Contracts
+
+Start with compact enums and flags. Expand only when validation requires it.
+
+```csharp
+public enum MapGenCellState
+{
+    Empty,
+    Room,
+    Corridor,
+    Wall,
+    Blocked,
+    Connector,
+    Reserved
+}
+
+public enum MapGenRoomCategory
+{
+    Start,
+    Main,
+    Side,
+    Hub,
+    Quest,
+    Boss,
+    Exit,
+    Transition
+}
+
+public enum MapGenSocketKind
+{
+    None,
+    Door,
+    Corridor,
+    Wildcard,
+    Blocked
+}
+
+public enum MapGenModuleCategory
+{
+    FloorA,
+    FloorB,
+    WallStraight,
+    WallCornerInside,
+    WallCornerOutside,
+    CeilingInterior,
+    CeilingExterior,
+    DoorWhole,
+    DoorFrameHalf,
+    DoorPanelHalf,
+    Prop
+}
+
+public enum MapGenGenerationPhase
+{
+    ValidateProfile,
+    BuildDomain,
+    SolveMockup,
+    PostProcess,
+    AcceptMockup,
+    Materialize,
+    PlaceProps,
+    BakeRuntime
+}
+```
+
+### Core Type Contracts
+
+Initial runtime-safe structs/classes should be explicit and testable.
+
+```csharp
+public readonly struct MapGenGridCoord
+{
+    public readonly int X;
+    public readonly int Y;
+}
+
+public struct MapGenShapeCell
+{
+    public MapGenCellState State;
+    public MapGenSocketKind SocketKind;
+    public string SocketId;
+    public string[] Tags;
+}
+
+public struct MapGenMockupCell
+{
+    public MapGenCellState State;
+    public int RegionId;
+    public MapGenRoomCategory RoomCategory;
+    public MapGenSocketKind SocketKind;
+    public string SocketId;
+}
+
+public sealed class MapGenValidationReport
+{
+    public bool IsValid;
+    public List<MapGenIssue> Issues;
+}
+
+public sealed class MapGenIssue
+{
+    public MapGenGenerationPhase Phase;
+    public string Code;
+    public string Message;
+    public string SuggestedFix;
+    public MapGenGridCoord? Cell;
+}
+
+public sealed class MapGenGenerationResult
+{
+    public bool Success;
+    public int Seed;
+    public int RetryCount;
+    public MapGenMockupData Draft;
+    public MapGenValidationReport Report;
+}
+
+public sealed class MapGenMockupData
+{
+    public int Width;
+    public int Height;
+    public MapGenMockupCell[] Cells;
+    public string Signature;
+}
+```
+
+`Core` must not depend on `UnityEngine.Object`, `ScriptableObject`, or editor
+asset types. If Unity object context is needed, keep it in an authoring/editor
+wrapper:
+
+```csharp
+public sealed class MapGenAuthoringIssue
+{
+    public MapGenIssue Issue;
+    public UnityEngine.Object Context;
+}
+```
+
+### Deterministic RNG Contract
+
+Do not use `UnityEngine.Random` in generation.
+
+Requirements:
+
+- Use one explicit RNG type, e.g. `MapGenRandom`.
+- Store initial seed in every mockup draft and runtime bake.
+- Derive sub-streams by named phase: solver, post-process, materialization,
+  prop placement.
+- Same profile GUIDs, same asset data, same seed, and same code version must
+  produce the same mockup signature.
+- Weighted selection must use the same RNG path regardless of editor repaint or
+  scene preview calls.
+
+Recommended API:
+
+```csharp
+public struct MapGenRandom
+{
+    public MapGenRandom(int seed);
+    public int NextInt(int minInclusive, int maxExclusive);
+    public float NextFloat01();
+    public MapGenRandom Fork(string streamName);
+}
+```
+
+### Asset Creation Menus
+
+Add explicit creation paths for all authoring assets.
+
+```text
+Assets/Create/Conn/MapGenV2/Profile
+Assets/Create/Conn/MapGenV2/Style Set
+Assets/Create/Conn/MapGenV2/Module Set
+Assets/Create/Conn/MapGenV2/Room Shape
+Assets/Create/Conn/MapGenV2/Room Template
+Assets/Create/Conn/MapGenV2/Corridor Template
+Assets/Create/Conn/MapGenV2/Rule Set
+```
+
+Editor window path:
+
+```text
+Conn/MapGenV2/Map Generator
+```
+
+Do not put new production workflow menus under legacy paths.
+
+### Default Asset Storage Policy
+
+Generated and authored assets should have predictable paths.
+
+```text
+Assets/Conn/Authoring/MapGenV2/Profiles/
+Assets/Conn/Authoring/MapGenV2/StyleSets/
+Assets/Conn/Authoring/MapGenV2/ModuleSets/
+Assets/Conn/Authoring/MapGenV2/RoomShapes/
+Assets/Conn/Authoring/MapGenV2/Templates/
+Assets/Conn/Authoring/MapGenV2/Drafts/
+Assets/Conn/Authoring/MapGenV2/MaterializedPrefabs/
+Assets/Conn/Core/MapGenV2/BakedMaps/
+```
+
+Regeneration policy:
+
+- Mockup generation creates a new draft unless the user explicitly overwrites
+  the selected draft.
+- Accepting a mockup sets `accepted = true` and records an immutable
+  `acceptedSignature`.
+- Materialization creates or updates output under a selected output path.
+- Baking writes runtime-safe data and stores the accepted mockup signature used
+  for the bake.
+- If source assets change after acceptance, the draft is marked stale until
+  revalidated.
+
+### Custom Inspector Editing Contract
+
+Room shape editing must use normal Unity editor safety mechanisms.
+
+- Use `SerializedObject` and `SerializedProperty` where possible.
+- Call `Undo.RecordObject` before cell edits.
+- Mark assets dirty only after actual serialized data changes.
+- Support multi-cell drag painting.
+- Clamp dimensions before resizing cell arrays.
+- Preserve existing cells when resizing when possible.
+- Rebuild preview cache only after data changes, not on every repaint.
+- Never instantiate scene objects during room shape inspector painting.
+
+### Mockup Signature Contract
+
+Every generated mockup must expose a deterministic signature for tests and stale
+asset checks.
+
+Signature inputs:
+
+- profile id and serialized profile settings.
+- style id and module set id only when materialization-affecting rules are
+  included.
+- room shape ids and cell data.
+- rule set data.
+- seed.
+- final mockup cell states, region ids, connector ids, and post-process history.
+
+Signature excludes:
+
+- editor window layout.
+- scene camera position.
+- preview mesh instance ids.
+- Unity object instance ids.
+
+### Materialization Classification Contract
+
+Materialization converts accepted mockup cells into module requests through
+neighbor inspection.
+
+Base rules:
+
+- A navigable room or corridor cell requests one floor module.
+- A navigable cell edge adjacent to empty, blocked, or out-of-bounds requests a
+  wall.
+- A navigable cell edge adjacent to another navigable cell does not request a
+  wall unless a connector/door rule overrides it.
+- A connector between two navigable regions requests a door module when doors
+  are enabled.
+- A blocked cell never receives floor modules.
+
+Corner rules:
+
+- A convex outside corner exists when two perpendicular boundary edges meet
+  around an empty/out-of-bounds diagonal.
+- A concave inside corner exists when two perpendicular navigable edges meet
+  around a blocked or wall-producing diagonal.
+- Corner rules must run after straight wall edge detection.
+- If a prefab category cannot represent a corner, fallback to straight wall
+  pieces and report a warning.
+
+Ceiling rules:
+
+- Interior room cells request interior ceilings when the style enables ceilings.
+- Exterior shell or outside boundary cells request exterior ceiling modules only
+  if the style requests an outer shell.
+- Corridor ceilings are controlled separately from room ceilings.
+
+Door rules:
+
+- Whole-door modules take priority when available.
+- If whole doors are unavailable, use half frame/panel modules only when both
+  required half categories are available.
+- Missing door modules are validation errors when doors are required, warnings
+  when doors are optional.
+
+### Runtime Bake Contract
+
+Runtime bake must not serialize editor-only references.
+
+Allowed runtime data:
+
+- primitive values.
+- runtime-safe enums.
+- stable content ids.
+- grid coordinates.
+- region ids.
+- traversal edges.
+- spawn/objective marker ids.
+- prefab/content ids only if runtime loading is explicitly supported.
+
+Disallowed runtime data:
+
+- `UnityEditor` types.
+- editor window state.
+- `ScriptableObject` authoring references unless the runtime system already
+  supports loading them.
+- scene preview objects.
+- generated diagnostic meshes.
+
+### First Implementation Slice
+
+The first development slice should be intentionally small.
+
+1. Add asmdefs and empty namespace folders.
+2. Add core enums and grid coordinate helpers.
+3. Add `MapGenRoomShapeAsset` and `MapGenShapeCell`.
+4. Add room shape custom inspector with clickable grid.
+5. Add validation for dimensions, occupied cells, and connector edge placement.
+6. Add tests for indexing, resizing, and validation.
+7. Commit and push.
+
+Do not start WFC, materialization, prop placement, or runtime bake before this
+slice is stable.
+
 ## Validation Requirements
 
 Profile validation must run before generation.
@@ -742,6 +1120,38 @@ Editor-only output:
 - raw template references
 
 ## MVP Milestones
+
+### Execution Checklist
+
+Use this checklist as the actual development order. Each completed group should
+be committed and pushed separately.
+
+- [ ] Foundation: asmdefs, folders, core enums, grid coordinate helpers.
+- [ ] Room shape authoring: `MapGenRoomShapeAsset`, cell data, custom grid
+  inspector, undo/redo, validation.
+- [ ] Module set authoring: `MapGenModuleSetAsset`, weighted prefab entries,
+  prefab grid validation.
+- [ ] Profile/style/rule assets: profile wiring, style set, rule set, creation
+  menus, default folders.
+- [ ] Validation reports: structured issue codes, suggested fixes, context
+  objects, editor display.
+- [ ] Mockup draft model: cells, regions, signatures, accepted/stale state,
+  save/load.
+- [ ] Mockup preview: blue/red/black/gray grid renderer and overlays.
+- [ ] Solver MVP: deterministic connected mockup layout with required rooms and
+  corridor paths.
+- [ ] Post-processing MVP: direct route, dead-end reduction, small room removal,
+  per-pass report.
+- [ ] Mockup acceptance flow: accept, reject, regenerate, stale detection.
+- [ ] Materialization MVP: floor/wall/corner/ceiling/door module classification
+  and deterministic weighted prefab placement.
+- [ ] Prop placement MVP: prop channels, deterministic weighted placement,
+  traversal-safe validation.
+- [ ] Runtime bake MVP: runtime-safe grid, regions, doors, traversal graph,
+  markers.
+- [ ] Editor window MVP: profile selection, validation, generate mockup, accept,
+  materialize, bake.
+- [ ] Integration tests and manual Unity checks.
 
 ### Milestone 1: Data Contracts
 
