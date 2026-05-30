@@ -1158,8 +1158,12 @@ Current verification status:
 - Integration EditMode tests have been added for profile validation, mockup
   generation, acceptance, materialization classification, prop validation, and
   runtime bake data.
-- Manual Unity checks are still pending because the local command environment
-  does not expose a Unity executable.
+- Unity executable found:
+  `/home/inri/Unity/Hub/Editor/6000.4.8f1/Editor/Unity`.
+- Batchmode EditMode test execution was attempted, but Unity refused to open the
+  project because another Unity instance already has this project open.
+- Manual Unity checks remain pending and must be run from the currently open
+  Unity editor instance or after closing it.
 
 ### Milestone 1: Data Contracts
 
