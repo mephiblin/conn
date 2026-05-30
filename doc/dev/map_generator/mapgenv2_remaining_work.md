@@ -175,11 +175,11 @@ tool, and generated output workflow.
 - [x] Add a MapGenV2 Scene View overlay with:
   selected draft/root, generate, accept, materialize, clear, frame, overlay
   visibility toggles, and current tool mode.
-- [ ] Add Scene View handles/gizmos for:
+- [x] Add Scene View handles/gizmos for:
   generated bounds, cell grid, selected region outline, room id, connector
   arrows, door/blocker markers, prop channels, stale materialized root, and
   nav/build bounds.
-- [ ] Provide separate visibility toggles:
+- [x] Provide separate visibility toggles:
   mockup grid, region ids, connectors, sockets, blocked cells, prop channels,
   nav graph, prefab bounds, and diagnostics.
 - [ ] Scene View must clearly distinguish states:

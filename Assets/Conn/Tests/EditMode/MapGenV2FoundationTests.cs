@@ -180,13 +180,45 @@ namespace Conn.Tests.EditMode
                 Assert.That(summary, Does.Contain("accepted current"));
                 Assert.That(summary, Does.Contain("Tool Move"));
                 Assert.That(summary, Does.Contain("Generate/Accept/Materialize/Clear/Frame"));
-                Assert.That(summary, Does.Contain("Toggles Grid/Region IDs/Connectors"));
+                Assert.That(summary, Does.Contain("Toggles Grid/Region IDs/Connectors/Sockets/Blocked/Props/Nav/Bounds/Diagnostics"));
             }
             finally
             {
                 Object.DestroyImmediate(root);
                 Object.DestroyImmediate(draft);
             }
+        }
+
+        [Test]
+        public void SceneViewVisibilitySummaryListsSeparateToggles()
+        {
+            var summary = MapGenV2SceneViewOverlay.BuildVisibilityToggleSummary();
+
+            Assert.That(summary, Does.Contain("mockup grid"));
+            Assert.That(summary, Does.Contain("region ids"));
+            Assert.That(summary, Does.Contain("connectors"));
+            Assert.That(summary, Does.Contain("sockets"));
+            Assert.That(summary, Does.Contain("blocked cells"));
+            Assert.That(summary, Does.Contain("prop channels"));
+            Assert.That(summary, Does.Contain("nav graph"));
+            Assert.That(summary, Does.Contain("prefab bounds"));
+            Assert.That(summary, Does.Contain("diagnostics"));
+        }
+
+        [Test]
+        public void SceneViewGizmoSummaryListsRequiredInspectionHandles()
+        {
+            var summary = MapGenV2SceneViewGizmos.BuildSceneGizmoSummary();
+
+            Assert.That(summary, Does.Contain("generated bounds"));
+            Assert.That(summary, Does.Contain("cell grid"));
+            Assert.That(summary, Does.Contain("selected region outline"));
+            Assert.That(summary, Does.Contain("room id"));
+            Assert.That(summary, Does.Contain("connector arrows"));
+            Assert.That(summary, Does.Contain("door/blocker markers"));
+            Assert.That(summary, Does.Contain("prop channels"));
+            Assert.That(summary, Does.Contain("stale materialized root"));
+            Assert.That(summary, Does.Contain("nav/build bounds"));
         }
 
         [Test]

@@ -9,9 +9,15 @@ namespace Conn.MapGenV2.Editor
     [Overlay(typeof(SceneView), "MapGenV2", true)]
     public sealed class MapGenV2SceneViewOverlay : Overlay
     {
-        private const string ShowMockupGridKey = "Conn.MapGenV2.SceneOverlay.ShowMockupGrid";
-        private const string ShowRegionIdsKey = "Conn.MapGenV2.SceneOverlay.ShowRegionIds";
-        private const string ShowConnectorsKey = "Conn.MapGenV2.SceneOverlay.ShowConnectors";
+        public const string ShowMockupGridKey = "Conn.MapGenV2.SceneOverlay.ShowMockupGrid";
+        public const string ShowRegionIdsKey = "Conn.MapGenV2.SceneOverlay.ShowRegionIds";
+        public const string ShowConnectorsKey = "Conn.MapGenV2.SceneOverlay.ShowConnectors";
+        public const string ShowSocketsKey = "Conn.MapGenV2.SceneOverlay.ShowSockets";
+        public const string ShowBlockedCellsKey = "Conn.MapGenV2.SceneOverlay.ShowBlockedCells";
+        public const string ShowPropChannelsKey = "Conn.MapGenV2.SceneOverlay.ShowPropChannels";
+        public const string ShowNavGraphKey = "Conn.MapGenV2.SceneOverlay.ShowNavGraph";
+        public const string ShowPrefabBoundsKey = "Conn.MapGenV2.SceneOverlay.ShowPrefabBounds";
+        public const string ShowDiagnosticsKey = "Conn.MapGenV2.SceneOverlay.ShowDiagnostics";
 
         public override VisualElement CreatePanelContent()
         {
@@ -43,6 +49,12 @@ namespace Conn.MapGenV2.Editor
             root.Add(BuildToggle("Mockup Grid", ShowMockupGridKey, true));
             root.Add(BuildToggle("Region IDs", ShowRegionIdsKey, true));
             root.Add(BuildToggle("Connectors", ShowConnectorsKey, true));
+            root.Add(BuildToggle("Sockets", ShowSocketsKey, true));
+            root.Add(BuildToggle("Blocked Cells", ShowBlockedCellsKey, true));
+            root.Add(BuildToggle("Prop Channels", ShowPropChannelsKey, true));
+            root.Add(BuildToggle("Nav Graph", ShowNavGraphKey, true));
+            root.Add(BuildToggle("Prefab Bounds", ShowPrefabBoundsKey, true));
+            root.Add(BuildToggle("Diagnostics", ShowDiagnosticsKey, true));
             return root;
         }
 
@@ -57,7 +69,13 @@ namespace Conn.MapGenV2.Editor
                 ? draft.IsAcceptedSignatureCurrent ? "accepted current" : "accepted stale"
                 : "not accepted";
             return $"Draft {draftLabel}, Root {rootLabel}, State {accepted}, Tool {toolMode}, "
-                + "Actions Generate/Accept/Materialize/Clear/Frame, Toggles Grid/Region IDs/Connectors";
+                + "Actions Generate/Accept/Materialize/Clear/Frame, "
+                + "Toggles Grid/Region IDs/Connectors/Sockets/Blocked/Props/Nav/Bounds/Diagnostics";
+        }
+
+        public static string BuildVisibilityToggleSummary()
+        {
+            return "Scene visibility toggles: mockup grid, region ids, connectors, sockets, blocked cells, prop channels, nav graph, prefab bounds, diagnostics.";
         }
 
         private static string CurrentToolMode => Tools.current.ToString();
