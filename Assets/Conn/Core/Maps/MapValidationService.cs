@@ -54,6 +54,7 @@ namespace Conn.Core.Maps
             ExpectCompiledHeader(profile, compiled, report);
             var walkableCells = BuildCompiledWalkableCellSet(compiled, report);
             ExpectCompiledRoomRecords(compiled, report);
+            ExpectCompiledZoneRecords(compiled, report);
             ExpectCompiledPlacements(profile, compiled, walkableCells, report);
             ExpectCompiledEncounterPlacements(compiled, report);
             ExpectCompiledSocketsAndDoors(compiled, walkableCells, report);
@@ -412,6 +413,38 @@ namespace Conn.Core.Maps
             }
         }
 
+        private static void ExpectCompiledZoneRecords(CompiledMap compiled, MapValidationReport report)
+        {
+            var zoneIds = new HashSet<string>();
+            foreach (var zone in compiled.Zones ?? new List<CompiledMapZoneRecord>())
+            {
+                if (string.IsNullOrWhiteSpace(zone.Id))
+                {
+                    report.Errors.Add("Compiled map contains a zone record with no id.");
+                }
+                else if (!zoneIds.Add(zone.Id))
+                {
+                    report.Errors.Add($"Compiled map contains duplicate zone record id: {zone.Id}.");
+                }
+            }
+
+            foreach (var room in compiled.RoomRecords ?? new List<CompiledMapRoomRecord>())
+            {
+                if (!string.IsNullOrWhiteSpace(room.ZoneId) && !zoneIds.Contains(room.ZoneId))
+                {
+                    report.Errors.Add($"Compiled map room record {room.Id} references missing zone {room.ZoneId}.");
+                }
+            }
+
+            foreach (var cell in compiled.Cells ?? new List<CompiledMapCell>())
+            {
+                if (!string.IsNullOrWhiteSpace(cell.ZoneId) && !zoneIds.Contains(cell.ZoneId))
+                {
+                    report.Errors.Add($"Compiled map cell ({cell.X}, {cell.Y}) references missing zone {cell.ZoneId}.");
+                }
+            }
+        }
+
         private static void ExpectCompiledCellsAndObjects(
             CompiledMap compiled,
             HashSet<string> walkableCells,
@@ -426,25 +459,11 @@ namespace Conn.Core.Maps
                 }
             }
 
-            var zoneIds = new HashSet<string>();
-            foreach (var zone in compiled.Zones ?? new List<CompiledMapZoneRecord>())
-            {
-                if (!string.IsNullOrWhiteSpace(zone.Id))
-                {
-                    zoneIds.Add(zone.Id);
-                }
-            }
-
             foreach (var cell in compiled.Cells ?? new List<CompiledMapCell>())
             {
                 if (!string.IsNullOrWhiteSpace(cell.RoomId) && !roomIds.Contains(cell.RoomId))
                 {
                     report.Errors.Add($"Compiled map cell ({cell.X}, {cell.Y}) references missing room {cell.RoomId}.");
-                }
-
-                if (!string.IsNullOrWhiteSpace(cell.ZoneId) && zoneIds.Count > 0 && !zoneIds.Contains(cell.ZoneId))
-                {
-                    report.Errors.Add($"Compiled map cell ({cell.X}, {cell.Y}) references missing zone {cell.ZoneId}.");
                 }
 
             }

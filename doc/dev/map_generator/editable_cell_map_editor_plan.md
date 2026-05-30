@@ -1050,6 +1050,8 @@ is partially complete.
     duplicate ids, missing graph-room matches, invalid or out-of-bounds room
     bounds, graph rooms without records, and cells assigned outside their room
     record.
+  - 2026-05-30: compiled zone-record validation now rejects missing/duplicate
+    zone ids and room or cell references to missing zones.
 - [x] Bake sockets and doors.
   - 2026-05-30: compiled map validation now checks socket ids, room/target
     references, walkable socket cells, room-boundary direction, reciprocal

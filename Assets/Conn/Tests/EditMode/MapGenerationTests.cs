@@ -181,7 +181,10 @@ namespace Conn.Tests.EditMode
             };
             compiled.Rooms.Add(new RoomGraphNode { Id = "start", Role = MapRoomRole.Start });
             compiled.Rooms.Add(new RoomGraphNode { Id = "quest", Role = MapRoomRole.QuestTarget });
-            compiled.RoomRecords.Add(new CompiledMapRoomRecord { Id = "start", Role = MapRoomRole.Start, X = 0, Y = 0, Width = 1, Height = 1 });
+            compiled.Zones.Add(new CompiledMapZoneRecord { Id = string.Empty, ThemeId = "missing_id" });
+            compiled.Zones.Add(new CompiledMapZoneRecord { Id = "zone_a", ThemeId = "ruins" });
+            compiled.Zones.Add(new CompiledMapZoneRecord { Id = "zone_a", ThemeId = "duplicate" });
+            compiled.RoomRecords.Add(new CompiledMapRoomRecord { Id = "start", Role = MapRoomRole.Start, X = 0, Y = 0, Width = 1, Height = 1, ZoneId = "missing_zone" });
             compiled.RoomRecords.Add(new CompiledMapRoomRecord { Id = "start", Role = MapRoomRole.Start, X = 0, Y = 0, Width = 1, Height = 1 });
             compiled.RoomRecords.Add(new CompiledMapRoomRecord { Id = "orphan", Role = MapRoomRole.SideBranch, X = 1, Y = 0, Width = 1, Height = 1 });
             compiled.RoomRecords.Add(new CompiledMapRoomRecord { Id = "bad_size", Role = MapRoomRole.SideBranch, X = 0, Y = 0, Width = 0, Height = 1 });
@@ -195,6 +198,7 @@ namespace Conn.Tests.EditMode
                         X = x,
                         Y = y,
                         RoomId = x == 1 && y == 0 ? "start" : string.Empty,
+                        ZoneId = x == 2 && y == 0 ? "missing_zone" : string.Empty,
                         Terrain = RoomChunkCellType.Floor
                     });
                 }
@@ -203,6 +207,10 @@ namespace Conn.Tests.EditMode
             var report = MapValidationService.ValidateCompiled(profile, compiled);
 
             Assert.That(report.Passed, Is.False);
+            Assert.That(report.Errors.Exists(error => error.Contains("zone record with no id")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("duplicate zone record id: zone_a")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("room record start") && error.Contains("missing zone missing_zone")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("cell (2, 0)") && error.Contains("missing zone missing_zone")), Is.True);
             Assert.That(report.Errors.Exists(error => error.Contains("duplicate room record id: start")), Is.True);
             Assert.That(report.Errors.Exists(error => error.Contains("room record orphan") && error.Contains("no matching graph room")), Is.True);
             Assert.That(report.Errors.Exists(error => error.Contains("room record bad_size") && error.Contains("invalid size 0x1")), Is.True);
