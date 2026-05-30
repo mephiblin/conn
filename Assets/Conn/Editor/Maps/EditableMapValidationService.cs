@@ -282,6 +282,7 @@ namespace Conn.Editor.Maps
         {
             var ids = new HashSet<string>(StringComparer.Ordinal);
             var occupiedCells = new Dictionary<Vector2Int, string>();
+            var requireRoomOwnership = (draft.Rooms?.Length ?? 0) > 0;
             foreach (var placement in draft.Objects ?? Array.Empty<EditableMapObjectPlacement>())
             {
                 if (!string.IsNullOrWhiteSpace(placement.Id) && !ids.Add(placement.Id))
@@ -289,6 +290,7 @@ namespace Conn.Editor.Maps
                     report.Errors.Add($"Duplicate object id: {placement.Id}.");
                 }
 
+                var footprintRoomId = string.Empty;
                 for (var dy = 0; dy < Mathf.Max(1, placement.Depth); dy++)
                 {
                     for (var dx = 0; dx < Mathf.Max(1, placement.Width); dx++)
@@ -304,6 +306,22 @@ namespace Conn.Editor.Maps
                         if (cell.Terrain == RoomChunkCellType.Wall || cell.Terrain == RoomChunkCellType.Gap)
                         {
                             report.Errors.Add($"Object {placement.Id} overlaps non-walkable cell ({x}, {y}).");
+                        }
+
+                        if (requireRoomOwnership)
+                        {
+                            if (string.IsNullOrWhiteSpace(cell.RoomId))
+                            {
+                                report.Errors.Add($"Object {placement.Id} overlaps cell ({x}, {y}) with no room ownership.");
+                            }
+                            else if (string.IsNullOrEmpty(footprintRoomId))
+                            {
+                                footprintRoomId = cell.RoomId;
+                            }
+                            else if (!string.Equals(footprintRoomId, cell.RoomId, StringComparison.Ordinal))
+                            {
+                                report.Errors.Add($"Object {placement.Id} footprint crosses rooms {footprintRoomId} and {cell.RoomId} at ({x}, {y}).");
+                            }
                         }
 
                         var position = new Vector2Int(x, y);

@@ -1064,6 +1064,7 @@ namespace Conn.Tests.EditMode
                 {
                     X = x,
                     Y = 0,
+                    RoomId = x == 0 ? "start" : x == 1 ? "quest" : x == 2 ? "boss" : "exit",
                     Terrain = RoomChunkCellType.Floor,
                     Height = 0,
                     Direction = MapDirection.North
@@ -1255,6 +1256,47 @@ namespace Conn.Tests.EditMode
 
             Assert.That(report.Passed, Is.False);
             Assert.That(report.Errors.Exists(error => error.Contains("crate_b overlaps object crate_a at (2, 0)")), Is.True);
+        }
+
+        [Test]
+        public void EditableValidationReportsObjectFootprintsCrossingRooms()
+        {
+            var draft = BuildLinearValidationDraft();
+            draft.TrySetCell(new EditableMapCell
+            {
+                X = 3,
+                Y = 0,
+                Terrain = RoomChunkCellType.Floor,
+                Height = 0,
+                Direction = MapDirection.North
+            });
+            draft.Objects = new[]
+            {
+                new EditableMapObjectPlacement
+                {
+                    Id = "wide_crate",
+                    Kind = RoomChunkObjectKind.Barrel,
+                    X = 0,
+                    Y = 0,
+                    Width = 2,
+                    Depth = 1
+                },
+                new EditableMapObjectPlacement
+                {
+                    Id = "orphan_decor",
+                    Kind = RoomChunkObjectKind.Decor,
+                    X = 3,
+                    Y = 0,
+                    Width = 1,
+                    Depth = 1
+                }
+            };
+
+            var report = EditableMapValidationService.Validate(draft);
+
+            Assert.That(report.Passed, Is.False);
+            Assert.That(report.Errors.Exists(error => error.Contains("wide_crate footprint crosses rooms start and quest at (1, 0)")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("orphan_decor overlaps cell (3, 0) with no room ownership")), Is.True);
         }
 
         [Test]
@@ -1674,6 +1716,7 @@ namespace Conn.Tests.EditMode
                 {
                     X = x,
                     Y = 0,
+                    RoomId = x == 0 ? "start" : x == 1 ? "quest" : x == 2 ? "boss" : "exit",
                     Terrain = RoomChunkCellType.Floor,
                     Height = 0,
                     Direction = MapDirection.North

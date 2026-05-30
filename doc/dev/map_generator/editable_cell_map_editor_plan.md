@@ -1013,6 +1013,8 @@ is partially complete.
 - [x] Build a walkability map from terrain, height, blockers, and sockets.
 - [x] Treat wall/gap cells as non-walkable.
 - [x] Treat blocking objects as non-walkable across their footprint.
+  - 2026-05-30: draft validation now rejects object footprints that touch
+    unowned cells or cross multiple room ids before bake.
 - [x] Validate all sockets touch walkable cells.
   - 2026-05-30: socket validation now also rejects non-cardinal directions,
     socket widths that leave the owning room, and sockets whose direction is
