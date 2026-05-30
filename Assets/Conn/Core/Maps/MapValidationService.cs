@@ -478,6 +478,7 @@ namespace Conn.Core.Maps
 
             var objectIds = new HashSet<string>();
             var occupiedObjectCells = new Dictionary<string, string>();
+            var cellsByCoordinate = BuildCompiledCellLookup(compiled);
             foreach (var placement in compiled.Objects ?? new List<CompiledMapObjectPlacement>())
             {
                 if (string.IsNullOrWhiteSpace(placement.PlacementId))
@@ -489,6 +490,7 @@ namespace Conn.Core.Maps
                     report.Errors.Add($"Compiled map contains duplicate object placement id: {placement.PlacementId}.");
                 }
 
+                var footprintRoomId = string.Empty;
                 for (var dy = 0; dy < Math.Max(1, placement.Depth); dy++)
                 {
                     for (var dx = 0; dx < Math.Max(1, placement.Width); dx++)
@@ -504,6 +506,22 @@ namespace Conn.Core.Maps
                         if (compiled.Cells.Count > 0 && !walkableCells.Contains(CellKey(x, y)))
                         {
                             report.Errors.Add($"Compiled map object {placement.PlacementId} overlaps non-walkable or missing cell ({x}, {y}).");
+                        }
+
+                        if (cellsByCoordinate.TryGetValue(CellKey(x, y), out var cell))
+                        {
+                            if (string.IsNullOrWhiteSpace(cell.RoomId))
+                            {
+                                report.Errors.Add($"Compiled map object {placement.PlacementId} overlaps cell ({x}, {y}) with no room id.");
+                            }
+                            else if (string.IsNullOrEmpty(footprintRoomId))
+                            {
+                                footprintRoomId = cell.RoomId;
+                            }
+                            else if (!string.Equals(footprintRoomId, cell.RoomId, StringComparison.Ordinal))
+                            {
+                                report.Errors.Add($"Compiled map object {placement.PlacementId} footprint crosses room {footprintRoomId} into room {cell.RoomId} at ({x}, {y}).");
+                            }
                         }
 
                         var key = CellKey(x, y);
@@ -546,6 +564,26 @@ namespace Conn.Core.Maps
             }
 
             return records;
+        }
+
+        private static Dictionary<string, CompiledMapCell> BuildCompiledCellLookup(CompiledMap compiled)
+        {
+            var cells = new Dictionary<string, CompiledMapCell>();
+            foreach (var cell in compiled.Cells ?? new List<CompiledMapCell>())
+            {
+                if (cell.X < 0 || cell.Y < 0 || cell.X >= compiled.Width || cell.Y >= compiled.Height)
+                {
+                    continue;
+                }
+
+                var key = CellKey(cell.X, cell.Y);
+                if (!cells.ContainsKey(key))
+                {
+                    cells.Add(key, cell);
+                }
+            }
+
+            return cells;
         }
 
         private static HashSet<string> BuildCompiledWalkableCellSet(CompiledMap compiled, MapValidationReport report)

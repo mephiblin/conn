@@ -289,6 +289,36 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void CompiledValidationReportsObjectFootprintCrossingRooms()
+        {
+            var profile = new MapProfile { ProfileId = "compiled_object_room_probe", Width = 3, Height = 1 };
+            var compiled = new CompiledMap
+            {
+                MapId = "compiled_object_room_probe",
+                ProfileId = profile.ProfileId,
+                Width = profile.Width,
+                Height = profile.Height,
+                CellSize = 1f,
+                HeightStep = 1f
+            };
+            compiled.Rooms.Add(new RoomGraphNode { Id = "start", Role = MapRoomRole.Start });
+            compiled.Rooms.Add(new RoomGraphNode { Id = "quest", Role = MapRoomRole.QuestTarget });
+            compiled.RoomRecords.Add(new CompiledMapRoomRecord { Id = "start", Role = MapRoomRole.Start, X = 0, Y = 0, Width = 1, Height = 1 });
+            compiled.RoomRecords.Add(new CompiledMapRoomRecord { Id = "quest", Role = MapRoomRole.QuestTarget, X = 1, Y = 0, Width = 2, Height = 1 });
+            compiled.Cells.Add(new CompiledMapCell { X = 0, Y = 0, RoomId = "start", Terrain = RoomChunkCellType.Floor });
+            compiled.Cells.Add(new CompiledMapCell { X = 1, Y = 0, RoomId = "quest", Terrain = RoomChunkCellType.Floor });
+            compiled.Cells.Add(new CompiledMapCell { X = 2, Y = 0, Terrain = RoomChunkCellType.Floor });
+            compiled.Objects.Add(new CompiledMapObjectPlacement { PlacementId = "cross_room_object", Kind = RoomChunkObjectKind.Blocker, X = 0, Y = 0, Width = 2, Depth = 1 });
+            compiled.Objects.Add(new CompiledMapObjectPlacement { PlacementId = "unowned_object", Kind = RoomChunkObjectKind.Decor, X = 2, Y = 0, Width = 1, Depth = 1 });
+
+            var report = MapValidationService.ValidateCompiled(profile, compiled);
+
+            Assert.That(report.Passed, Is.False);
+            Assert.That(report.Errors.Exists(error => error.Contains("cross_room_object") && error.Contains("crosses room start into room quest")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("unowned_object") && error.Contains("no room id")), Is.True);
+        }
+
+        [Test]
         public void ChunkPresetCellGridSurvivesUnityJsonSerialization()
         {
             var preset = new ChunkPreset
