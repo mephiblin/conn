@@ -1266,7 +1266,7 @@ namespace Conn.Tests.EditMode
                 {
                     Id = "barrel_a",
                     Kind = RoomChunkObjectKind.Barrel,
-                    X = 1,
+                    X = 0,
                     Y = 0,
                     Width = 1,
                     Depth = 1
@@ -1289,13 +1289,17 @@ namespace Conn.Tests.EditMode
             var report = new MapValidationReport();
             report.Errors.Add("Cell (2, 0) is invalid.");
             report.Errors.Add("Object barrel_a overlaps non-walkable cell (1, 0).");
+            report.Errors.Add("Object barrel_a overlaps object crate_a at (2, 0).");
             report.Errors.Add("Socket socket_a does not touch a walkable cell at (0, 0).");
+            report.Errors.Add("Room quest bounds leave the draft at (9, 0) size 3x1.");
             var markers = EditableMapDraftSceneTools.BuildValidationMarkers(draft, report).ToArray();
 
-            Assert.That(markers.Length, Is.EqualTo(3));
+            Assert.That(markers.Length, Is.EqualTo(5));
             Assert.That(markers.Any(marker => marker.Kind == ValidationMarkerKind.Cell && marker.Position == new Vector2Int(2, 0)), Is.True);
             Assert.That(markers.Any(marker => marker.Kind == ValidationMarkerKind.Object && marker.Position == new Vector2Int(1, 0)), Is.True);
+            Assert.That(markers.Any(marker => marker.Kind == ValidationMarkerKind.Object && marker.Position == new Vector2Int(2, 0)), Is.True);
             Assert.That(markers.Any(marker => marker.Kind == ValidationMarkerKind.Socket && marker.Position == new Vector2Int(0, 0)), Is.True);
+            Assert.That(markers.Any(marker => marker.Kind == ValidationMarkerKind.Room && marker.Position == new Vector2Int(9, 0)), Is.True);
         }
 
         [Test]

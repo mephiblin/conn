@@ -1017,6 +1017,10 @@ is partially complete.
   instead of bordering raw gap cells.
 - [x] Report validation failures by cell, object id, room id, socket id, or
   palette id.
+  - 2026-05-30: validation overlay markers now prefer explicit error
+    coordinates for object/socket/room failures before falling back to authored
+    origins or room centers, so overlap and bounds errors point at the failing
+    cell.
 - [x] Block bake when required validation errors exist.
 - [x] Add tests for disconnected routes.
 - [x] Add tests for blocking object route cuts.

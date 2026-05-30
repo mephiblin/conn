@@ -104,10 +104,13 @@ namespace Conn.Editor.Maps
             {
                 if (!string.IsNullOrWhiteSpace(placement.Id) && (error?.Contains(placement.Id, StringComparison.Ordinal) ?? false))
                 {
+                    var position = TryGetCoordinate(error, out var errorPosition)
+                        ? errorPosition
+                        : new Vector2Int(placement.X, placement.Y);
                     marker = new ValidationMarker
                     {
                         Kind = ValidationMarkerKind.Object,
-                        Position = new Vector2Int(placement.X, placement.Y),
+                        Position = position,
                         Label = error
                     };
                     return true;
@@ -124,10 +127,13 @@ namespace Conn.Editor.Maps
             {
                 if (!string.IsNullOrWhiteSpace(socket.Id) && (error?.Contains(socket.Id, StringComparison.Ordinal) ?? false))
                 {
+                    var position = TryGetCoordinate(error, out var errorPosition)
+                        ? errorPosition
+                        : new Vector2Int(socket.X, socket.Y);
                     marker = new ValidationMarker
                     {
                         Kind = ValidationMarkerKind.Socket,
-                        Position = new Vector2Int(socket.X, socket.Y),
+                        Position = position,
                         Label = error
                     };
                     return true;
@@ -144,10 +150,13 @@ namespace Conn.Editor.Maps
             {
                 if (!string.IsNullOrWhiteSpace(room.Id) && (error?.Contains(room.Id, StringComparison.Ordinal) ?? false))
                 {
+                    var position = TryGetCoordinate(error, out var errorPosition)
+                        ? errorPosition
+                        : new Vector2Int(room.X + Mathf.Max(0, room.Width / 2), room.Y + Mathf.Max(0, room.Height / 2));
                     marker = new ValidationMarker
                     {
                         Kind = ValidationMarkerKind.Room,
-                        Position = new Vector2Int(room.X + Mathf.Max(0, room.Width / 2), room.Y + Mathf.Max(0, room.Height / 2)),
+                        Position = position,
                         Label = error
                     };
                     return true;
@@ -155,6 +164,21 @@ namespace Conn.Editor.Maps
             }
 
             return false;
+        }
+
+        private static bool TryGetCoordinate(string error, out Vector2Int position)
+        {
+            position = default;
+            var match = CellCoordinatePattern.Match(error ?? string.Empty);
+            if (!match.Success
+                || !int.TryParse(match.Groups[1].Value, out var x)
+                || !int.TryParse(match.Groups[2].Value, out var y))
+            {
+                return false;
+            }
+
+            position = new Vector2Int(x, y);
+            return true;
         }
     }
 
