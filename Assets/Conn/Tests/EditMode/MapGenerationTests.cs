@@ -546,6 +546,31 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void GeneratedEditableDraftBuildsNamedSceneMapPreview()
+        {
+            var profile = MapGenerationCatalog.ChapterTwoFirstSliceProfile();
+            var draft = EditableCellMapGenerator.Generate(profile, 2001, 1, 0, 0.5f, 0.25f);
+
+            try
+            {
+                var root = EditableMapPreviewMeshBuilder.RebuildPreview(draft);
+
+                Assert.That(draft.name, Is.EqualTo(draft.Id));
+                Assert.That(root.name, Does.Contain(draft.Id));
+                Assert.That(root.transform.Find("Terrain Mesh"), Is.Not.Null);
+                Assert.That(root.transform.Find("Wall Mesh"), Is.Not.Null);
+                Assert.That(root.transform.Find("Slope Mesh"), Is.Not.Null);
+                Assert.That(root.transform.Find("Stair Mesh"), Is.Not.Null);
+
+                Object.DestroyImmediate(root);
+            }
+            finally
+            {
+                Object.DestroyImmediate(draft);
+            }
+        }
+
+        [Test]
         public void EditablePreviewBuilderRebuildsWithoutWorkspaceDependency()
         {
             var draft = ScriptableObject.CreateInstance<EditableMapDraftAsset>();

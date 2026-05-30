@@ -26,6 +26,7 @@ namespace Conn.Editor.Maps
             var height = Mathf.Clamp(profile.RoomHeight * 3, 24, Mathf.Max(24, profile.Height));
             var draft = ScriptableObject.CreateInstance<EditableMapDraftAsset>();
             draft.Id = $"{profile.ProfileId}_{seed}_cell_draft";
+            draft.name = draft.Id;
             draft.SourceProfileId = profile.ProfileId ?? string.Empty;
             draft.Seed = seed;
             draft.Floor = Mathf.Max(1, floor);

@@ -141,9 +141,10 @@ namespace Conn.Editor.Maps
                 if (workspace.ClearBeforePreview)
                 {
                     ClearPreviewWithUndo(workspace, "Generate Map Preview");
+                    EditableMapPreviewMeshBuilder.ClearPreview(generated.Draft);
                 }
 
-                DrawPreview(workspace, "Generate Map Preview");
+                EditableMapPreviewMeshBuilder.RebuildPreview(generated.Draft);
                 MarkSceneDirty(workspace);
             }
             catch (Exception exception)
@@ -171,7 +172,7 @@ namespace Conn.Editor.Maps
 
         private static void BuildScenePreviewFromSnapshot(MapGeneratorWorkspace workspace)
         {
-            if (!workspace.HasPreviewSnapshot)
+            if (!workspace.HasPreviewSnapshot || workspace.LastEditableDraft == null)
             {
                 return;
             }
@@ -179,9 +180,10 @@ namespace Conn.Editor.Maps
             if (workspace.ClearBeforePreview)
             {
                 ClearPreviewWithUndo(workspace, "Build Map Scene Preview");
+                EditableMapPreviewMeshBuilder.ClearPreview(workspace.LastEditableDraft);
             }
 
-            DrawPreview(workspace, "Build Map Scene Preview");
+            EditableMapPreviewMeshBuilder.RebuildPreview(workspace.LastEditableDraft);
             MarkSceneDirty(workspace);
         }
 
