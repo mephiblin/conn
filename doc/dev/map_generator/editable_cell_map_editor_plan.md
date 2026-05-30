@@ -1040,6 +1040,10 @@ is partially complete.
 - [x] Bake objects to runtime-safe records.
 - [x] Bake rooms and zones.
 - [x] Bake sockets and doors.
+  - 2026-05-30: compiled map validation now checks socket ids, room/target
+    references, walkable socket cells, room-boundary direction, reciprocal
+    socket direction/key consistency, and socket-pair-to-door parity before
+    runtime load.
 - [x] Bake anchors and encounter placements.
   - 2026-05-30: required anchor placements resolve to walkable cells inside
     the room instead of blindly using rectangular room centers.

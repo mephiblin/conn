@@ -55,7 +55,7 @@ namespace Conn.Core.Maps
             var walkableCells = BuildCompiledWalkableCellSet(compiled, report);
             ExpectCompiledPlacements(profile, compiled, walkableCells, report);
             ExpectCompiledEncounterPlacements(compiled, report);
-            ExpectCompiledDoors(compiled, report);
+            ExpectCompiledSocketsAndDoors(compiled, walkableCells, report);
             ExpectCompiledCellsAndObjects(compiled, walkableCells, report);
             return report;
         }
@@ -222,8 +222,14 @@ namespace Conn.Core.Maps
             }
         }
 
-        private static void ExpectCompiledDoors(CompiledMap compiled, MapValidationReport report)
+        private static void ExpectCompiledSocketsAndDoors(
+            CompiledMap compiled,
+            HashSet<string> walkableCells,
+            MapValidationReport report)
         {
+            var roomIds = BuildCompiledRoomIdSet(compiled);
+            var roomRecords = BuildCompiledRoomRecordLookup(compiled);
+            var doorPairs = new HashSet<string>();
             for (var i = 0; i < compiled.Doors.Count; i++)
             {
                 var edge = compiled.Doors[i];
@@ -232,6 +238,110 @@ namespace Conn.Core.Maps
                 if (from == null || to == null)
                 {
                     report.Errors.Add($"Compiled map door {edge.FromNodeId}->{edge.ToNodeId} references a missing room.");
+                }
+
+                doorPairs.Add(RoomPairKey(edge.FromNodeId, edge.ToNodeId));
+            }
+
+            var socketIds = new HashSet<string>();
+            var socketPairs = new HashSet<string>();
+            foreach (var socket in compiled.Sockets ?? new List<CompiledMapSocketRecord>())
+            {
+                if (string.IsNullOrWhiteSpace(socket.Id))
+                {
+                    report.Errors.Add("Compiled map contains a socket with no id.");
+                }
+                else if (!socketIds.Add(socket.Id))
+                {
+                    report.Errors.Add($"Compiled map contains duplicate socket id: {socket.Id}.");
+                }
+
+                if (string.IsNullOrWhiteSpace(socket.RoomId) || !roomIds.Contains(socket.RoomId))
+                {
+                    report.Errors.Add($"Compiled map socket {socket.Id} references missing room {socket.RoomId}.");
+                }
+
+                if (!string.IsNullOrWhiteSpace(socket.TargetRoomId) && !roomIds.Contains(socket.TargetRoomId))
+                {
+                    report.Errors.Add($"Compiled map socket {socket.Id} references missing target room {socket.TargetRoomId}.");
+                }
+
+                if (!IsSingleCardinalDirection(socket.Direction))
+                {
+                    report.Errors.Add($"Compiled map socket {socket.Id} has invalid direction {socket.Direction}.");
+                }
+
+                var width = Math.Max(1, socket.Width);
+                for (var offset = 0; offset < width; offset++)
+                {
+                    var x = socket.X;
+                    var y = socket.Y;
+                    if (socket.Direction == MapDirection.North || socket.Direction == MapDirection.South)
+                    {
+                        x += offset;
+                    }
+                    else
+                    {
+                        y += offset;
+                    }
+
+                    if (x < 0 || y < 0 || x >= compiled.Width || y >= compiled.Height)
+                    {
+                        report.Errors.Add($"Compiled map socket {socket.Id} width leaves map bounds at ({x}, {y}).");
+                        continue;
+                    }
+
+                    if (compiled.Cells.Count > 0 && !walkableCells.Contains(CellKey(x, y)))
+                    {
+                        report.Errors.Add($"Compiled map socket {socket.Id} includes non-walkable or missing cell ({x}, {y}).");
+                    }
+
+                    if (roomRecords.TryGetValue(socket.RoomId ?? string.Empty, out var room)
+                        && (!IsInsideRoomRecord(x, y, room) || !IsOnSocketBoundary(x, y, socket.Direction, room)))
+                    {
+                        report.Errors.Add($"Compiled map socket {socket.Id} direction {socket.Direction} is not on the matching room boundary at ({x}, {y}).");
+                    }
+                }
+
+                if (string.IsNullOrWhiteSpace(socket.TargetRoomId))
+                {
+                    continue;
+                }
+
+                socketPairs.Add(RoomPairKey(socket.RoomId, socket.TargetRoomId));
+                if (!TryFindReciprocalSocket(compiled, socket, out var reciprocal))
+                {
+                    report.Errors.Add($"Compiled map socket {socket.Id} from room {socket.RoomId} to {socket.TargetRoomId} has no reciprocal socket.");
+                    continue;
+                }
+
+                if (reciprocal.Direction != OppositeDirection(socket.Direction))
+                {
+                    report.Errors.Add($"Compiled map socket {socket.Id} reciprocal socket {reciprocal.Id} has direction {reciprocal.Direction}, expected {OppositeDirection(socket.Direction)}.");
+                }
+
+                if (!string.Equals(socket.LockedDoorKeyId ?? string.Empty, reciprocal.LockedDoorKeyId ?? string.Empty, StringComparison.Ordinal))
+                {
+                    report.Errors.Add($"Compiled map socket {socket.Id} locked key does not match reciprocal socket {reciprocal.Id}.");
+                }
+            }
+
+            if ((compiled.Sockets?.Count ?? 0) > 0)
+            {
+                foreach (var doorPair in doorPairs)
+                {
+                    if (!socketPairs.Contains(doorPair))
+                    {
+                        report.Errors.Add($"Compiled map door {doorPair} has no matching socket pair.");
+                    }
+                }
+
+                foreach (var socketPair in socketPairs)
+                {
+                    if (!doorPairs.Contains(socketPair))
+                    {
+                        report.Errors.Add($"Compiled map socket pair {socketPair} has no baked door.");
+                    }
                 }
             }
         }
@@ -315,6 +425,34 @@ namespace Conn.Core.Maps
                     }
                 }
             }
+        }
+
+        private static HashSet<string> BuildCompiledRoomIdSet(CompiledMap compiled)
+        {
+            var ids = new HashSet<string>();
+            foreach (var room in compiled.Rooms ?? new List<RoomGraphNode>())
+            {
+                if (!string.IsNullOrWhiteSpace(room.Id))
+                {
+                    ids.Add(room.Id);
+                }
+            }
+
+            return ids;
+        }
+
+        private static Dictionary<string, CompiledMapRoomRecord> BuildCompiledRoomRecordLookup(CompiledMap compiled)
+        {
+            var records = new Dictionary<string, CompiledMapRoomRecord>();
+            foreach (var room in compiled.RoomRecords ?? new List<CompiledMapRoomRecord>())
+            {
+                if (!string.IsNullOrWhiteSpace(room.Id))
+                {
+                    records[room.Id] = room;
+                }
+            }
+
+            return records;
         }
 
         private static HashSet<string> BuildCompiledWalkableCellSet(CompiledMap compiled, MapValidationReport report)
@@ -475,6 +613,73 @@ namespace Conn.Core.Maps
         private static string CellKey(int x, int y)
         {
             return $"{x}:{y}";
+        }
+
+        private static string RoomPairKey(string firstRoomId, string secondRoomId)
+        {
+            return string.CompareOrdinal(firstRoomId, secondRoomId) <= 0
+                ? $"{firstRoomId}->{secondRoomId}"
+                : $"{secondRoomId}->{firstRoomId}";
+        }
+
+        private static bool IsSingleCardinalDirection(MapDirection direction)
+        {
+            return direction == MapDirection.North
+                || direction == MapDirection.East
+                || direction == MapDirection.South
+                || direction == MapDirection.West;
+        }
+
+        private static MapDirection OppositeDirection(MapDirection direction)
+        {
+            switch (direction)
+            {
+                case MapDirection.North:
+                    return MapDirection.South;
+                case MapDirection.East:
+                    return MapDirection.West;
+                case MapDirection.South:
+                    return MapDirection.North;
+                case MapDirection.West:
+                    return MapDirection.East;
+                default:
+                    return MapDirection.None;
+            }
+        }
+
+        private static bool IsInsideRoomRecord(int x, int y, CompiledMapRoomRecord room)
+        {
+            return x >= room.X && y >= room.Y && x < room.X + room.Width && y < room.Y + room.Height;
+        }
+
+        private static bool IsOnSocketBoundary(int x, int y, MapDirection direction, CompiledMapRoomRecord room)
+        {
+            switch (direction)
+            {
+                case MapDirection.East:
+                    return x == room.X + room.Width - 1;
+                case MapDirection.South:
+                    return y == room.Y;
+                case MapDirection.West:
+                    return x == room.X;
+                default:
+                    return y == room.Y + room.Height - 1;
+            }
+        }
+
+        private static bool TryFindReciprocalSocket(CompiledMap compiled, CompiledMapSocketRecord socket, out CompiledMapSocketRecord reciprocal)
+        {
+            foreach (var candidate in compiled.Sockets ?? new List<CompiledMapSocketRecord>())
+            {
+                if (candidate.RoomId == socket.TargetRoomId && candidate.TargetRoomId == socket.RoomId)
+                {
+                    reciprocal = candidate;
+                    return true;
+                }
+            }
+
+            reciprocal = null;
+            return false;
         }
 
         private static RoomGraphNode FindNodeByRole(RoomGraph graph, MapRoomRole role)

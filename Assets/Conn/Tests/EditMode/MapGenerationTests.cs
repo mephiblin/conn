@@ -113,6 +113,56 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void CompiledValidationReportsInvalidSocketsAndDoorLinks()
+        {
+            var profile = new MapProfile { ProfileId = "compiled_socket_probe", Width = 6, Height = 2 };
+            var compiled = new CompiledMap
+            {
+                MapId = "compiled_socket_probe",
+                ProfileId = profile.ProfileId,
+                Width = profile.Width,
+                Height = profile.Height,
+                CellSize = 1f,
+                HeightStep = 1f
+            };
+            compiled.Rooms.Add(new RoomGraphNode { Id = "start", Role = MapRoomRole.Start });
+            compiled.Rooms.Add(new RoomGraphNode { Id = "quest", Role = MapRoomRole.QuestTarget });
+            compiled.Rooms.Add(new RoomGraphNode { Id = "boss", Role = MapRoomRole.Boss });
+            compiled.RoomRecords.Add(new CompiledMapRoomRecord { Id = "start", Role = MapRoomRole.Start, X = 0, Y = 0, Width = 2, Height = 2 });
+            compiled.RoomRecords.Add(new CompiledMapRoomRecord { Id = "quest", Role = MapRoomRole.QuestTarget, X = 2, Y = 0, Width = 2, Height = 2 });
+            compiled.RoomRecords.Add(new CompiledMapRoomRecord { Id = "boss", Role = MapRoomRole.Boss, X = 4, Y = 0, Width = 2, Height = 2 });
+            for (var x = 0; x < profile.Width; x++)
+            {
+                for (var y = 0; y < profile.Height; y++)
+                {
+                    compiled.Cells.Add(new CompiledMapCell { X = x, Y = y, Terrain = x == 1 && y == 1 ? RoomChunkCellType.Wall : RoomChunkCellType.Floor });
+                }
+            }
+
+            compiled.Doors.Add(new RoomGraphEdge { FromNodeId = "quest", ToNodeId = "boss", Kind = "socket" });
+            compiled.Sockets.Add(new CompiledMapSocketRecord { Id = "dup_socket", RoomId = "start", X = 1, Y = 0, Direction = MapDirection.East, Width = 1, TargetRoomId = "quest", LockedDoorKeyId = "key_a" });
+            compiled.Sockets.Add(new CompiledMapSocketRecord { Id = "dup_socket", RoomId = "quest", X = 2, Y = 0, Direction = MapDirection.West, Width = 1, TargetRoomId = "start", LockedDoorKeyId = "key_b" });
+            compiled.Sockets.Add(new CompiledMapSocketRecord { Id = "bad_direction", RoomId = "start", X = 1, Y = 0, Direction = MapDirection.North | MapDirection.East, Width = 1 });
+            compiled.Sockets.Add(new CompiledMapSocketRecord { Id = "interior_socket", RoomId = "start", X = 0, Y = 0, Direction = MapDirection.East, Width = 1 });
+            compiled.Sockets.Add(new CompiledMapSocketRecord { Id = "blocked_socket", RoomId = "start", X = 1, Y = 1, Direction = MapDirection.East, Width = 1 });
+            compiled.Sockets.Add(new CompiledMapSocketRecord { Id = "missing_target", RoomId = "boss", X = 4, Y = 0, Direction = MapDirection.West, Width = 1, TargetRoomId = "missing_room" });
+            compiled.Sockets.Add(new CompiledMapSocketRecord { Id = "no_reciprocal", RoomId = "boss", X = 4, Y = 1, Direction = MapDirection.West, Width = 1, TargetRoomId = "start" });
+
+            var report = MapValidationService.ValidateCompiled(profile, compiled);
+
+            Assert.That(report.Passed, Is.False);
+            Assert.That(report.Errors.Exists(error => error.Contains("duplicate socket id: dup_socket")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("dup_socket locked key does not match reciprocal socket")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("bad_direction") && error.Contains("invalid direction")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("interior_socket") && error.Contains("matching room boundary")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("blocked_socket") && error.Contains("non-walkable or missing cell")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("missing_target") && error.Contains("missing target room")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("no_reciprocal") && error.Contains("no reciprocal socket")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("door boss->quest") && error.Contains("no matching socket pair")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("socket pair quest->start") && error.Contains("no baked door")), Is.True);
+        }
+
+        [Test]
         public void ChunkPresetCellGridSurvivesUnityJsonSerialization()
         {
             var preset = new ChunkPreset
