@@ -537,6 +537,10 @@ namespace Conn.Tests.EditMode
                 Assert.That(result.Draft.Objects.Any(placement => placement.Kind == RoomChunkObjectKind.SpawnHint), Is.True);
                 Assert.That(result.Draft.Objects.Any(placement => placement.Kind == RoomChunkObjectKind.Torch), Is.True);
                 Assert.That(result.Draft.Objects.Any(placement => placement.Kind == RoomChunkObjectKind.Barrel), Is.True);
+                Assert.That(result.Draft.Rooms.Any(room => room.Id == "hub" && room.LayoutKind == RoomChunkLayoutKind.Hub), Is.True);
+                Assert.That(result.Draft.Rooms.Any(room => room.Id == "boss" && room.LayoutKind == RoomChunkLayoutKind.HeightTransition), Is.True);
+                Assert.That(result.Draft.Rooms.Count(room => room.LayoutKind == RoomChunkLayoutKind.DeadEnd), Is.GreaterThanOrEqualTo(2));
+                Assert.That(result.Draft.Sockets.Any(socket => socket.RoomId == "hub" && socket.TargetRoomId == "treasure_branch"), Is.True);
                 Assert.That(result.Compiled.Cells.Count, Is.EqualTo(result.Draft.Cells.Length));
             }
             finally

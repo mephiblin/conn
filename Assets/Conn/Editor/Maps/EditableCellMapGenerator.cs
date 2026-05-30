@@ -52,6 +52,7 @@ namespace Conn.Editor.Maps
             CarveWallsAroundFloors(draft);
             AddGeneratedObjects(draft, rooms);
             EditableMapDraftMetadataBuilder.BuildPlayableMetadataFromDrawing(draft);
+            ApplyGeneratedRoomMetadata(draft, rooms);
             return draft;
         }
 
@@ -326,6 +327,119 @@ namespace Conn.Editor.Maps
                 MaterialId = "barrel"
             });
             draft.Objects = objects.ToArray();
+        }
+
+        private static void ApplyGeneratedRoomMetadata(EditableMapDraftAsset draft, List<RectInt> rooms)
+        {
+            var zoneId = string.IsNullOrWhiteSpace(draft.SourceProfileId)
+                ? "generated_zone"
+                : $"{draft.SourceProfileId}_generated_zone";
+
+            draft.Zones = new[]
+            {
+                new EditableMapZone
+                {
+                    Id = zoneId,
+                    ThemeId = string.IsNullOrWhiteSpace(draft.SourceProfileId) ? "generated" : draft.SourceProfileId,
+                    IntendedDifficulty = Mathf.Max(0, draft.Difficulty),
+                    Purpose = "cell_first_generated"
+                }
+            };
+
+            draft.Rooms = new[]
+            {
+                BuildRoomRecord("start", MapRoomRole.Start, RoomChunkLayoutKind.Room, rooms[0], zoneId),
+                BuildRoomRecord("main_1", MapRoomRole.MainPath, RoomChunkLayoutKind.Corridor, rooms[1], zoneId),
+                BuildRoomRecord("hub", MapRoomRole.MainPath, RoomChunkLayoutKind.Hub, rooms[2], zoneId),
+                BuildRoomRecord("quest", MapRoomRole.QuestTarget, RoomChunkLayoutKind.Room, rooms[3], zoneId),
+                BuildRoomRecord("boss", MapRoomRole.Boss, RoomChunkLayoutKind.HeightTransition, rooms[4], zoneId),
+                BuildRoomRecord("exit", MapRoomRole.Exit, RoomChunkLayoutKind.Room, rooms[5], zoneId),
+                BuildRoomRecord("treasure_branch", MapRoomRole.SideBranch, RoomChunkLayoutKind.DeadEnd, rooms[6], zoneId),
+                BuildRoomRecord("side_branch", MapRoomRole.SideBranch, RoomChunkLayoutKind.DeadEnd, rooms[7], zoneId)
+            };
+
+            ApplyRoomIdsToCells(draft, draft.Rooms, zoneId);
+            draft.Sockets = new[]
+            {
+                BuildSocket("start_to_main_1", "start", RoomCenter(rooms[0]), MapDirection.East, "main_1"),
+                BuildSocket("main_1_to_start", "main_1", RoomCenter(rooms[1]), MapDirection.West, "start"),
+                BuildSocket("main_1_to_hub", "main_1", RoomCenter(rooms[1]), MapDirection.East, "hub"),
+                BuildSocket("hub_to_main_1", "hub", RoomCenter(rooms[2]), MapDirection.West, "main_1"),
+                BuildSocket("hub_to_quest", "hub", RoomCenter(rooms[2]), MapDirection.East, "quest"),
+                BuildSocket("quest_to_hub", "quest", RoomCenter(rooms[3]), MapDirection.West, "hub"),
+                BuildSocket("quest_to_boss", "quest", RoomCenter(rooms[3]), MapDirection.East, "boss"),
+                BuildSocket("boss_to_quest", "boss", RoomCenter(rooms[4]), MapDirection.West, "quest"),
+                BuildSocket("boss_to_exit", "boss", RoomCenter(rooms[4]), MapDirection.East, "exit"),
+                BuildSocket("exit_to_boss", "exit", RoomCenter(rooms[5]), MapDirection.West, "boss"),
+                BuildSocket("hub_to_treasure_branch", "hub", RoomCenter(rooms[2]), MapDirection.North, "treasure_branch"),
+                BuildSocket("treasure_branch_to_hub", "treasure_branch", RoomCenter(rooms[6]), MapDirection.South, "hub"),
+                BuildSocket("hub_to_side_branch", "hub", RoomCenter(rooms[2]), MapDirection.South, "side_branch"),
+                BuildSocket("side_branch_to_hub", "side_branch", RoomCenter(rooms[7]), MapDirection.North, "hub")
+            };
+        }
+
+        private static EditableMapRoom BuildRoomRecord(
+            string id,
+            MapRoomRole role,
+            RoomChunkLayoutKind layoutKind,
+            RectInt bounds,
+            string zoneId)
+        {
+            return new EditableMapRoom
+            {
+                Id = id,
+                Role = role,
+                LayoutKind = layoutKind,
+                X = bounds.xMin,
+                Y = bounds.yMin,
+                Width = bounds.width,
+                Height = bounds.height,
+                SocketMask = MapDirection.North | MapDirection.East | MapDirection.South | MapDirection.West,
+                HeightLevel = 0,
+                ZoneId = zoneId,
+                ChunkId = $"generated_{layoutKind.ToString().ToLowerInvariant()}"
+            };
+        }
+
+        private static void ApplyRoomIdsToCells(EditableMapDraftAsset draft, EditableMapRoom[] rooms, string zoneId)
+        {
+            foreach (var room in rooms)
+            {
+                for (var y = room.Y; y < room.Y + room.Height; y++)
+                {
+                    for (var x = room.X; x < room.X + room.Width; x++)
+                    {
+                        if (!draft.TryGetCell(x, y, out var cell) || cell.Terrain == RoomChunkCellType.Gap || cell.Terrain == RoomChunkCellType.Wall)
+                        {
+                            continue;
+                        }
+
+                        cell.RoomId = room.Id;
+                        cell.ZoneId = zoneId;
+                        draft.TrySetCell(cell);
+                    }
+                }
+            }
+        }
+
+        private static EditableMapSocket BuildSocket(
+            string id,
+            string roomId,
+            Vector2Int position,
+            MapDirection direction,
+            string targetRoomId)
+        {
+            return new EditableMapSocket
+            {
+                Id = id,
+                RoomId = roomId,
+                X = position.x,
+                Y = position.y,
+                Direction = direction,
+                Width = 1,
+                TargetRoomId = targetRoomId,
+                LockedDoorKeyId = string.Empty
+            };
         }
 
         private static Vector2Int RoomCenter(RectInt room)
