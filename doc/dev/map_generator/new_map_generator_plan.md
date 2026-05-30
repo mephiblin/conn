@@ -1165,6 +1165,9 @@ Current verification status:
 - Basic Roslyn compile smoke check passed for `Conn.MapGenV2.Core`,
   `Conn.MapGenV2.Authoring`, and `Conn.MapGenV2.Editor` source files using Unity
   6000.4.8f1 reference assemblies.
+- Added `Conn/MapGenV2/Run Manual Verification` for the currently open Unity
+  editor. It runs a transient profile/draft/generate/accept/classify/bake-data
+  workflow and writes `Logs/MapGenV2ManualVerification.log`.
 - Manual Unity checks remain pending and must be run from the currently open
   Unity editor instance or after closing it.
 
