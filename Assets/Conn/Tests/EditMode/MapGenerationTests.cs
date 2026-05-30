@@ -580,6 +580,10 @@ namespace Conn.Tests.EditMode
                 Assert.That(root.transform.Find("Wall Mesh"), Is.Not.Null);
                 Assert.That(root.transform.Find("Slope Mesh"), Is.Not.Null);
                 Assert.That(root.transform.Find("Stair Mesh"), Is.Not.Null);
+                var objectRoot = root.transform.Find("Object Preview Root");
+                var door = objectRoot.Cast<Transform>().FirstOrDefault(child => child.name.Contains("generated_door"));
+                Assert.That(door, Is.Not.Null);
+                Assert.That(Mathf.Min(door.localScale.x, door.localScale.z), Is.LessThan(draft.CellSize * 0.3f));
 
                 Object.DestroyImmediate(root);
             }

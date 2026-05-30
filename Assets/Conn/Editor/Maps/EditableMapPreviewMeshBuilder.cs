@@ -328,10 +328,7 @@ namespace Conn.Editor.Maps
                     ? $"Object {placement.Kind}"
                     : $"Object {placement.Id}";
                 instance.transform.SetParent(parent, false);
-                var scale = new Vector3(
-                    Mathf.Max(1, placement.Width) * draft.CellSize * 0.7f,
-                    draft.HeightStep * 0.5f,
-                    Mathf.Max(1, placement.Depth) * draft.CellSize * 0.7f);
+                var scale = ResolveObjectScale(draft, placement);
                 instance.transform.position = new Vector3(
                     placement.X * draft.CellSize + draft.CellSize * 0.5f,
                     placement.Height * draft.HeightStep + scale.y * 0.5f + 0.05f,
@@ -351,8 +348,59 @@ namespace Conn.Editor.Maps
                 return PrefabUtility.InstantiatePrefab(entry.Prefab) as GameObject ?? UnityEngine.Object.Instantiate(entry.Prefab);
             }
 
-            var primitiveType = placement.Kind == RoomChunkObjectKind.Torch ? PrimitiveType.Cylinder : PrimitiveType.Cube;
+            var primitiveType = ResolvePrimitiveType(placement);
             return GameObject.CreatePrimitive(primitiveType);
+        }
+
+        private static PrimitiveType ResolvePrimitiveType(EditableMapObjectPlacement placement)
+        {
+            if (IsDoor(placement))
+            {
+                return PrimitiveType.Cube;
+            }
+
+            switch (placement.Kind)
+            {
+                case RoomChunkObjectKind.Torch:
+                case RoomChunkObjectKind.Barrel:
+                    return PrimitiveType.Cylinder;
+                case RoomChunkObjectKind.SpawnHint:
+                    return PrimitiveType.Sphere;
+                default:
+                    return PrimitiveType.Cube;
+            }
+        }
+
+        private static Vector3 ResolveObjectScale(EditableMapDraftAsset draft, EditableMapObjectPlacement placement)
+        {
+            var width = Mathf.Max(1, placement.Width) * draft.CellSize;
+            var depth = Mathf.Max(1, placement.Depth) * draft.CellSize;
+            if (IsDoor(placement))
+            {
+                var horizontal = placement.Direction == MapDirection.East || placement.Direction == MapDirection.West;
+                return horizontal
+                    ? new Vector3(width * 0.18f, draft.HeightStep * 1.2f, depth * 0.9f)
+                    : new Vector3(width * 0.9f, draft.HeightStep * 1.2f, depth * 0.18f);
+            }
+
+            switch (placement.Kind)
+            {
+                case RoomChunkObjectKind.Chest:
+                    return new Vector3(width * 0.65f, draft.HeightStep * 0.35f, depth * 0.45f);
+                case RoomChunkObjectKind.Torch:
+                    return new Vector3(width * 0.18f, draft.HeightStep * 0.9f, depth * 0.18f);
+                case RoomChunkObjectKind.Barrel:
+                    return new Vector3(width * 0.42f, draft.HeightStep * 0.65f, depth * 0.42f);
+                case RoomChunkObjectKind.SpawnHint:
+                    return new Vector3(width * 0.35f, draft.HeightStep * 0.35f, depth * 0.35f);
+                default:
+                    return new Vector3(width * 0.7f, draft.HeightStep * 0.5f, depth * 0.7f);
+            }
+        }
+
+        private static bool IsDoor(EditableMapObjectPlacement placement)
+        {
+            return placement.PaletteObjectId == "door" || placement.RuntimeReferenceId == "door";
         }
 
         private static void ApplyObjectPreviewMaterial(EditableMapDraftAsset draft, EditableMapObjectPlacement placement, GameObject instance)
