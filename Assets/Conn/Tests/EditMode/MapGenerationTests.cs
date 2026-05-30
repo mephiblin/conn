@@ -455,6 +455,26 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void GeneratedEditableDraftValidatesAndBuildsCompiledResult()
+        {
+            var profile = MapGenerationCatalog.ChapterTwoFirstSliceProfile();
+            var chunks = MapGenerationCatalog.ChapterTwoFirstSliceChunks();
+
+            var result = EditableMapGeneratedResultBuilder.Build(profile, chunks, 2001, 1, 0, 0.5f, 0.25f);
+
+            try
+            {
+                Assert.That(result.Report.Passed, Is.True, string.Join("\n", result.Report.Errors));
+                Assert.That(result.Compiled, Is.Not.Null);
+                Assert.That(result.Compiled.Doors.Count, Is.GreaterThan(0));
+            }
+            finally
+            {
+                Object.DestroyImmediate(result.Draft);
+            }
+        }
+
+        [Test]
         public void EditablePreviewBuilderRebuildsWithoutWorkspaceDependency()
         {
             var draft = ScriptableObject.CreateInstance<EditableMapDraftAsset>();
@@ -493,14 +513,34 @@ namespace Conn.Tests.EditMode
         [Test]
         public void EditableValidationReportsBlockedRequiredRoute()
         {
-            var draft = BuildLinearValidationDraft();
+            var draft = ScriptableObject.CreateInstance<EditableMapDraftAsset>();
+            draft.InitializeBlank(8, 1, 1f, 1f);
+            for (var x = 0; x < 8; x++)
+            {
+                draft.TrySetCell(new EditableMapCell
+                {
+                    X = x,
+                    Y = 0,
+                    Terrain = RoomChunkCellType.Floor,
+                    Height = 0,
+                    Direction = MapDirection.North
+                });
+            }
+
+            draft.Rooms = new[]
+            {
+                new EditableMapRoom { Id = "start", Role = MapRoomRole.Start, X = 0, Y = 0, Width = 2, Height = 1 },
+                new EditableMapRoom { Id = "quest", Role = MapRoomRole.QuestTarget, X = 2, Y = 0, Width = 2, Height = 1 },
+                new EditableMapRoom { Id = "boss", Role = MapRoomRole.Boss, X = 4, Y = 0, Width = 2, Height = 1 },
+                new EditableMapRoom { Id = "exit", Role = MapRoomRole.Exit, X = 6, Y = 0, Width = 2, Height = 1 }
+            };
             draft.Objects = new[]
             {
                 new EditableMapObjectPlacement
                 {
                     Id = "blocker",
                     Kind = RoomChunkObjectKind.Blocker,
-                    X = 1,
+                    X = 2,
                     Y = 0,
                     Width = 1,
                     Depth = 1,

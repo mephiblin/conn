@@ -181,25 +181,25 @@ namespace Conn.Editor.Maps
 
         private static void ValidateRequiredRoutes(EditableMapDraftAsset draft, bool[,] walkable, MapValidationReport report)
         {
-            if (!TryFindRoomCenter(draft, MapRoomRole.Start, out var start, out var startRoom))
+            if (!TryFindRequiredRouteAnchor(draft, walkable, MapRoomRole.Start, out var start, out var startRoom))
             {
                 report.Errors.Add("Missing start room.");
                 return;
             }
 
-            if (!TryFindRoomCenter(draft, MapRoomRole.QuestTarget, out var quest, out var questRoom))
+            if (!TryFindRequiredRouteAnchor(draft, walkable, MapRoomRole.QuestTarget, out var quest, out var questRoom))
             {
                 report.Errors.Add("Missing quest room.");
                 return;
             }
 
-            if (!TryFindRoomCenter(draft, MapRoomRole.Boss, out var boss, out var bossRoom))
+            if (!TryFindRequiredRouteAnchor(draft, walkable, MapRoomRole.Boss, out var boss, out var bossRoom))
             {
                 report.Errors.Add("Missing boss room.");
                 return;
             }
 
-            if (!TryFindRoomCenter(draft, MapRoomRole.Exit, out var exit, out var exitRoom))
+            if (!TryFindRequiredRouteAnchor(draft, walkable, MapRoomRole.Exit, out var exit, out var exitRoom))
             {
                 report.Errors.Add("Missing exit room.");
                 return;
@@ -512,6 +512,24 @@ namespace Conn.Editor.Maps
             }
 
             center = default;
+            room = default;
+            return false;
+        }
+
+        private static bool TryFindRequiredRouteAnchor(
+            EditableMapDraftAsset draft,
+            bool[,] walkable,
+            MapRoomRole role,
+            out Vector2Int target,
+            out EditableMapRoom room)
+        {
+            if (TryFindRoomCenter(draft, role, out var center, out room)
+                && TryResolveRoomTarget(draft, room, walkable, center, out target))
+            {
+                return true;
+            }
+
+            target = default;
             room = default;
             return false;
         }

@@ -170,6 +170,7 @@ namespace Conn.Editor.Maps
                 CreateSocketsForNode(target, node, roomOriginX, roomOriginY, profile, edges, nodes, sockets);
             }
 
+            CarveSocketConnections(target, sockets);
             target.Rooms = rooms.ToArray();
             target.Objects = objects.ToArray();
             target.Sockets = sockets.ToArray();
@@ -546,6 +547,146 @@ namespace Conn.Editor.Maps
         {
             var localId = string.IsNullOrWhiteSpace(sourceId) ? "object" : sourceId.Trim();
             return string.IsNullOrWhiteSpace(roomId) ? localId : $"{roomId}_{localId}";
+        }
+
+        private static void CarveSocketConnections(EditableMapDraftAsset target, List<EditableMapSocket> sockets)
+        {
+            if (target == null || sockets == null || sockets.Count == 0)
+            {
+                return;
+            }
+
+            var lookup = new Dictionary<string, EditableMapSocket>(StringComparer.Ordinal);
+            for (var i = 0; i < sockets.Count; i++)
+            {
+                var socket = sockets[i];
+                if (string.IsNullOrWhiteSpace(socket.RoomId) || string.IsNullOrWhiteSpace(socket.TargetRoomId))
+                {
+                    continue;
+                }
+
+                lookup[$"{socket.RoomId}->{socket.TargetRoomId}"] = socket;
+            }
+
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            for (var i = 0; i < sockets.Count; i++)
+            {
+                var socket = sockets[i];
+                if (string.IsNullOrWhiteSpace(socket.RoomId) || string.IsNullOrWhiteSpace(socket.TargetRoomId))
+                {
+                    continue;
+                }
+
+                var doorKey = BuildRoomPairKey(socket.RoomId, socket.TargetRoomId);
+                if (!seen.Add(doorKey))
+                {
+                    continue;
+                }
+
+                if (!lookup.TryGetValue($"{socket.TargetRoomId}->{socket.RoomId}", out var other))
+                {
+                    continue;
+                }
+
+                CarveConnection(target, socket, other);
+            }
+        }
+
+        private static void CarveConnection(EditableMapDraftAsset target, EditableMapSocket from, EditableMapSocket to)
+        {
+            var points = BuildAxisAlignedPath(new Vector2Int(from.X, from.Y), new Vector2Int(to.X, to.Y));
+            if (points.Count == 0)
+            {
+                return;
+            }
+
+            if (!target.TryGetCell(from.X, from.Y, out var fromCell) || !target.TryGetCell(to.X, to.Y, out var toCell))
+            {
+                return;
+            }
+
+            var materialId = !string.IsNullOrWhiteSpace(fromCell.MaterialId) ? fromCell.MaterialId : toCell.MaterialId;
+            var previousHeight = fromCell.Height;
+            for (var i = 0; i < points.Count; i++)
+            {
+                if (!target.TryGetCell(points[i].x, points[i].y, out var cell))
+                {
+                    continue;
+                }
+
+                var nextHeight = points.Count == 1
+                    ? fromCell.Height
+                    : Mathf.RoundToInt(Mathf.Lerp(fromCell.Height, toCell.Height, i / (float)(points.Count - 1)));
+                if (i > 0)
+                {
+                    nextHeight = Mathf.Clamp(nextHeight, previousHeight - 1, previousHeight + 1);
+                }
+
+                cell.Terrain = RoomChunkCellType.Floor;
+                cell.Height = nextHeight;
+                cell.Direction = ResolveStepDirection(points, i);
+                if (string.IsNullOrWhiteSpace(cell.MaterialId))
+                {
+                    cell.MaterialId = materialId ?? string.Empty;
+                }
+
+                target.TrySetCell(cell);
+                previousHeight = nextHeight;
+            }
+        }
+
+        private static List<Vector2Int> BuildAxisAlignedPath(Vector2Int from, Vector2Int to)
+        {
+            var points = new List<Vector2Int>();
+            var current = from;
+            points.Add(current);
+
+            while (current.x != to.x)
+            {
+                current.x += current.x < to.x ? 1 : -1;
+                points.Add(current);
+            }
+
+            while (current.y != to.y)
+            {
+                current.y += current.y < to.y ? 1 : -1;
+                points.Add(current);
+            }
+
+            return points;
+        }
+
+        private static MapDirection ResolveStepDirection(List<Vector2Int> points, int index)
+        {
+            if (points == null || points.Count <= 1)
+            {
+                return MapDirection.North;
+            }
+
+            var current = points[index];
+            var other = index < points.Count - 1 ? points[index + 1] : points[index - 1];
+            var delta = other - current;
+            if (delta.x > 0)
+            {
+                return MapDirection.East;
+            }
+
+            if (delta.x < 0)
+            {
+                return MapDirection.West;
+            }
+
+            return delta.y > 0 ? MapDirection.North : MapDirection.South;
+        }
+
+        private static string BuildRoomPairKey(string firstRoomId, string secondRoomId)
+        {
+            if (string.CompareOrdinal(firstRoomId, secondRoomId) <= 0)
+            {
+                return $"{firstRoomId}|{secondRoomId}";
+            }
+
+            return $"{secondRoomId}|{firstRoomId}";
         }
 
         private static string SanitizeFileName(string value)
