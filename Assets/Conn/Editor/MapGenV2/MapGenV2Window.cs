@@ -290,6 +290,13 @@ namespace Conn.MapGenV2.Editor
             return $"{result ?? string.Empty} Next: {nextAction}";
         }
 
+        public static string BuildPrimaryMockupUxSummary()
+        {
+            return "Primary mockup UX: MapGenV2 window supports Generate, Post-Process, Accept, selected-region inspect/edit, "
+                + "prop/post overlays, Materialize, Bake, and clear/frame/select output without requiring Scene View. "
+                + "Scene View remains a secondary inspection/materialization surface.";
+        }
+
         private static string NullLabel(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? "(none)" : value;
@@ -1225,6 +1232,7 @@ namespace Conn.MapGenV2.Editor
             var propPlacement = MapGenPropPlacementPlanner.BuildForDraft(draft);
             DrawPropPlacementPreviewSummary(propPlacement);
             DrawPostProcessPassSummary();
+            DrawWrappingHelpBox(BuildPrimaryMockupUxSummary(), MessageType.Info);
             DrawMockupPreview(previewData);
             DrawCellDetails(previewData);
         }

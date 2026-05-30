@@ -99,6 +99,20 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void MapGenV2WindowDeclaresPreviewAsPrimaryMockupUx()
+        {
+            var summary = MapGenV2Window.BuildPrimaryMockupUxSummary();
+
+            Assert.That(summary, Does.Contain("Primary mockup UX"));
+            Assert.That(summary, Does.Contain("Generate"));
+            Assert.That(summary, Does.Contain("selected-region inspect/edit"));
+            Assert.That(summary, Does.Contain("Materialize"));
+            Assert.That(summary, Does.Contain("Bake"));
+            Assert.That(summary, Does.Contain("without requiring Scene View"));
+            Assert.That(summary, Does.Contain("secondary inspection"));
+        }
+
+        [Test]
         public void ProfileInspectorSummaryIncludesAuthoringReadiness()
         {
             var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();

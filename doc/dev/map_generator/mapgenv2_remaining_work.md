@@ -200,7 +200,7 @@ tool, and generated output workflow.
   red room masses become floors/walls/ceilings/doors/props, black corridors
   become corridor floors/walls/doors, gray blocked cells become reserved or
   blocker output, and blue background remains empty/non-instantiated space.
-- [ ] The Scene View should not be required for mockup iteration; it is a
+- [x] The Scene View should not be required for mockup iteration; it is a
   secondary inspection/materialization view. The editor window preview remains
   the primary mockup UX.
 
