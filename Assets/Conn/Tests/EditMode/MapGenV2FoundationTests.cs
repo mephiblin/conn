@@ -113,6 +113,60 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void MockupPreviewDataExtractsCellsAndSummary()
+        {
+            var draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();
+
+            try
+            {
+                draft.GridSize = new Vector2Int(3, 2);
+                draft.Seed = 99;
+                draft.EnsureCellArray();
+                draft.Cells[0] = new MapGenMockupCell
+                {
+                    State = MapGenCellState.Room,
+                    RegionId = 7,
+                    RoomCategory = MapGenRoomCategory.Start
+                };
+                draft.Cells[1] = new MapGenMockupCell
+                {
+                    State = MapGenCellState.Corridor,
+                    RegionId = -1,
+                    PropChannel = "floor_loot"
+                };
+                draft.Cells[2] = new MapGenMockupCell
+                {
+                    State = MapGenCellState.Blocked,
+                    RegionId = -1
+                };
+                draft.LastGeneratedSignature = draft.ComputeSignature();
+                draft.Accept();
+
+                var preview = MapGenMockupPreviewData.FromDraft(draft);
+
+                Assert.That(preview.Width, Is.EqualTo(3));
+                Assert.That(preview.Height, Is.EqualTo(2));
+                Assert.That(preview.Seed, Is.EqualTo(99));
+                Assert.That(preview.LastGeneratedSignature, Is.EqualTo(draft.LastGeneratedSignature));
+                Assert.That(preview.Accepted, Is.True);
+                Assert.That(preview.AcceptedSignatureCurrent, Is.True);
+                Assert.That(preview.Summary.RoomCells, Is.EqualTo(1));
+                Assert.That(preview.Summary.CorridorCells, Is.EqualTo(1));
+                Assert.That(preview.Summary.BlockedCells, Is.EqualTo(1));
+                Assert.That(preview.Summary.PropChannelCells, Is.EqualTo(1));
+                Assert.That(preview.Summary.RegionCount, Is.EqualTo(1));
+
+                Assert.That(preview.TryGetCell(0, 0, out var roomCell), Is.True);
+                Assert.That(roomCell.RegionId, Is.EqualTo(7));
+                Assert.That(roomCell.RoomCategory, Is.EqualTo(MapGenRoomCategory.Start));
+            }
+            finally
+            {
+                Object.DestroyImmediate(draft);
+            }
+        }
+
+        [Test]
         public void MockupSolverIsDeterministicForSameSeed()
         {
             var required = new[] { MapGenRoomCategory.Start, MapGenRoomCategory.Quest, MapGenRoomCategory.Exit };

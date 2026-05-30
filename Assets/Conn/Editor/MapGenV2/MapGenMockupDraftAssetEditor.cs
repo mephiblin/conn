@@ -12,8 +12,8 @@ namespace Conn.MapGenV2.Editor
         private static readonly Color RoomColor = new Color(0.9f, 0f, 0f, 1f);
         private static readonly Color CorridorColor = new Color(0f, 0f, 0f, 1f);
         private static readonly Color BlockedColor = new Color(0.45f, 0.45f, 0.45f, 1f);
-        private static readonly Color ConnectorColor = new Color(1f, 1f, 1f, 1f);
-        private static readonly Color ReservedColor = new Color(1f, 0.8f, 0.1f, 1f);
+        private static readonly Color ConnectorColor = CorridorColor;
+        private static readonly Color ReservedColor = BlockedColor;
         private static readonly Color GridLineColor = new Color(0f, 0f, 0f, 0.28f);
         private MapGenValidationReport lastGenerationReport;
 

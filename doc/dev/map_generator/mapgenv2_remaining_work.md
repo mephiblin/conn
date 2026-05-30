@@ -206,16 +206,27 @@ tool, and generated output workflow.
 
 ## Phase 1: Visible Mockup Workflow
 
+Progress note 2026-05-31:
+
+- `MapGenV2Window` now draws the selected draft mockup grid directly after
+  generation with the documented color language, zoom/scroll support, summary
+  counts, hover cell details, and click selection/highlighting for generated
+  room regions.
+- `MapGenMockupPreviewData` provides testable draft preview extraction and
+  summary counts for the editor UI.
+- Remaining Phase 1 work is the interactive edit/lock/regenerate workflow and
+  persistence of manual region overrides.
+
 Goal: make the mockup stage obvious and usable.
 
 Tasks:
 
-- [ ] Add a mockup preview panel to `MapGenV2Window`.
-- [ ] Draw the selected draft grid after `Generate Mockup`.
-- [ ] Use the intended mockup color language:
+- [x] Add a mockup preview panel to `MapGenV2Window`.
+- [x] Draw the selected draft grid after `Generate Mockup`.
+- [x] Use the intended mockup color language:
   blue = base/empty, red = room, black = corridor/connector,
   gray = blocked/reserved.
-- [ ] Show selected/hovered cell coordinate, state, region id, room category,
+- [x] Show selected/hovered cell coordinate, state, region id, room category,
   socket kind/id, and prop channel.
 - [ ] Allow clicking a generated room/corridor cell to select the owning
   region, not only the individual grid cell.
@@ -230,7 +241,7 @@ Tasks:
 - [ ] Persist selected-region edits in `MapGenMockupDraftAsset`.
 - [ ] Mark accepted/materialized output stale when a selected-region edit
   changes the draft signature.
-- [ ] Show draft summary:
+- [x] Show draft summary:
   profile id, seed, grid size, generated signature, accepted signature,
   accepted/stale state, room cell count, corridor cell count, connector count.
 - [ ] Add `Randomize Seed` and `Randomize Seed + Generate`.
@@ -238,7 +249,7 @@ Tasks:
 - [ ] Add `Clear Draft`.
 - [ ] Keep mockup preview editor-only; do not create scene objects on
   `Generate Mockup`.
-- [ ] Add screenshot-friendly preview sizing and scroll/zoom for large grids.
+- [x] Add screenshot-friendly preview sizing and scroll/zoom for large grids.
 
 Acceptance:
 
