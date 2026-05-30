@@ -1021,6 +1021,8 @@ is partially complete.
     same locked-door key before the draft can be baked into runtime doors.
 - [x] Validate room entry sockets can reach required anchors.
 - [x] Validate every room bounds contains at least one walkable cell.
+  - 2026-05-30: draft validation now rejects cells whose `RoomId` points to a
+    real room but whose coordinate sits outside that room's authored bounds.
 - [x] Validate start-to-quest route.
 - [x] Validate quest-to-boss route.
 - [x] Validate boss-to-exit route.

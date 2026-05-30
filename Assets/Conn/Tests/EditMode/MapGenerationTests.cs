@@ -1190,6 +1190,16 @@ namespace Conn.Tests.EditMode
                 Height = 0,
                 Direction = MapDirection.North
             });
+            draft.TrySetCell(new EditableMapCell
+            {
+                X = 2,
+                Y = 0,
+                RoomId = "start",
+                ZoneId = "zone_a",
+                Terrain = RoomChunkCellType.Floor,
+                Height = 0,
+                Direction = MapDirection.North
+            });
 
             var report = EditableMapValidationService.Validate(draft);
 
@@ -1201,6 +1211,7 @@ namespace Conn.Tests.EditMode
             Assert.That(report.Errors.Exists(error => error.Contains("Room sealed contains no walkable cells")), Is.True);
             Assert.That(report.Errors.Exists(error => error.Contains("Cell (0, 0) references missing room id missing_room")), Is.True);
             Assert.That(report.Errors.Exists(error => error.Contains("Cell (0, 0) references missing zone id missing_cell_zone")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("Cell (2, 0) is outside room start bounds")), Is.True);
         }
 
         [Test]

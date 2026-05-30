@@ -32,9 +32,9 @@ As of 2026-05-30, the first draft-backed path is now in the project:
 - `EditableMapDraftMetadataBuilder` can rebuild minimal playable room, zone,
   socket, and required-route metadata from a drawn walkable cell map so a
   painted draft can validate and bake instead of remaining only a picture.
-- `EditableMapValidationService` now validates walkability, blocking object
-  footprints, socket legality, required room-to-room routes, and slope/stair
-  height transitions for editable drafts.
+- `EditableMapValidationService` now validates walkability, room cell ownership
+  bounds, blocking object footprints, socket legality, required room-to-room
+  routes, and slope/stair height transitions for editable drafts.
 - `MapTilePaletteAsset` and `MapObjectPaletteAsset` now provide registered tile
   and object ids for draft authoring, validation, and preview lookup. Drafts
   can reference palette ids instead of raw Unity object references, while the

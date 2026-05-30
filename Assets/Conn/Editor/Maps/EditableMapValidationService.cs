@@ -85,6 +85,7 @@ namespace Conn.Editor.Maps
         private static void ValidateRoomsAndZones(EditableMapDraftAsset draft, MapValidationReport report)
         {
             var roomIds = new HashSet<string>(StringComparer.Ordinal);
+            var roomsById = new Dictionary<string, EditableMapRoom>(StringComparer.Ordinal);
             foreach (var room in draft.Rooms ?? Array.Empty<EditableMapRoom>())
             {
                 if (string.IsNullOrWhiteSpace(room.Id))
@@ -94,6 +95,10 @@ namespace Conn.Editor.Maps
                 else if (!roomIds.Add(room.Id))
                 {
                     report.Errors.Add($"Duplicate room id: {room.Id}.");
+                }
+                else
+                {
+                    roomsById.Add(room.Id, room);
                 }
 
                 if (room.Width <= 0 || room.Height <= 0)
@@ -138,6 +143,12 @@ namespace Conn.Editor.Maps
                 if (!string.IsNullOrWhiteSpace(cell.RoomId) && !roomIds.Contains(cell.RoomId))
                 {
                     report.Errors.Add($"Cell ({cell.X}, {cell.Y}) references missing room id {cell.RoomId}.");
+                }
+                else if (!string.IsNullOrWhiteSpace(cell.RoomId)
+                    && roomsById.TryGetValue(cell.RoomId, out var room)
+                    && !IsInsideRoom(cell.X, cell.Y, room))
+                {
+                    report.Errors.Add($"Cell ({cell.X}, {cell.Y}) is outside room {cell.RoomId} bounds.");
                 }
 
                 if (!string.IsNullOrWhiteSpace(cell.ZoneId) && !zoneIds.Contains(cell.ZoneId))
