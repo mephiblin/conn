@@ -111,8 +111,9 @@ Use these steps after pulling the branch:
 2. Open the existing `MapGenerator` editor scene and select the
    `MapGeneratorWorkspace`.
 3. In the `Production Scene Workflow` section, click `Generate Preview`.
-   This creates selectable room, edge, and placement preview objects under the
-   workspace `Preview Root` without saving a draft asset.
+   This creates selectable `Preview Room - ...` box nodes, edge links, and
+   placement markers under the workspace `Preview Root` without saving a draft
+   asset.
 4. Use `Random Seed + Generate Preview` until the generated candidate shape is
    acceptable.
 5. Click `Accept Preview + Bake Map` to save the selected candidate as an
