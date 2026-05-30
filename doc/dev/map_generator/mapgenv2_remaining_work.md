@@ -1,204 +1,734 @@
-# MapGenV2 Remaining Work
+# MapGenV2 Production Completion Roadmap
 
 Date: 2026-05-31
-Status: follow-up checklist after hands-on starter workflow review.
+Status: handoff document for continuing MapGenV2 beyond the current MVP.
 
-## Current Reality
+## Purpose
 
-MapGenV2 can now create a starter profile setup, generate a mockup draft, accept
-it, materialize placeholder prefabs into the open scene, and bake runtime map
-data.
+This document is for a new session that needs to continue MapGenV2 toward an
+actual production-ready map generator, not just the current verified MVP.
 
-This is still not the intended production authoring experience. The visible
-result after `Materialize` is only gray placeholder geometry. `Generate Mockup`
-does not show an obvious mockup preview in the main window, so users can think
-nothing happened. The workflow works technically, but it does not yet feel like
-a usable MoraMapGen-style map production tool.
+The current implementation proves that the basic data path works:
 
-## Immediate UX Gaps
+```text
+Create starter setup
+  -> generate draft data
+  -> accept mockup
+  -> materialize placeholder prefabs
+  -> bake runtime data
+```
 
-- `Generate Mockup` changes draft data but does not visibly show the blue/red/
-  black mockup layout in the `MapGenV2` window.
-- The main window does not show the current generation state clearly:
-  no generated/accepted/stale labels, no signature, no used cell count, no room
-  count, no materialized output summary.
-- `Materialize` creates scene objects, but the starter prefabs are unstyled gray
-  primitives.
-- The starter output does not visually distinguish rooms, corridors, walls,
-  doors, ceilings, and props well enough.
-- The user cannot easily randomize the seed from the main window.
-- There is no clear “next action” guidance after each step.
-- There is no scene focus/select button for the latest materialized root.
-- There is no direct way to save the materialized output as a prefab from the
-  main window.
-- The window does not expose enough profile/rule controls for normal iteration.
+That is not enough. The target is a usable MoraMapGen-style authoring tool where
+the designer can generate and iterate a visible mockup layout first, then
+materialize it into real project modules, then bake reliable runtime data.
 
-## Phase 1: Make Mockup Generation Visible
+## Current Implementation State
 
-Tasks:
+Working today:
 
-- [ ] Add a `MapGenV2` window mockup preview panel.
-- [ ] Draw the draft grid directly in the window after `Generate Mockup`.
-- [ ] Use the intended color language:
-  blue = empty/base grid, red = room, black = corridor/connector,
-  gray = blocked/reserved.
-- [ ] Show grid coordinates on hover or selection.
-- [ ] Show state labels for selected cells.
-- [ ] Show draft summary:
-  seed, grid size, signature, room cells, corridor cells, accepted/stale state.
-- [ ] Add `Randomize Seed + Generate` button.
-- [ ] Keep `Generate Mockup` as a mockup-only action; it must not create scene
-  objects.
+- `Conn/MapGenV2/Map Generator` opens the main editor window.
+- `Create Starter Setup` creates a linked profile, rule set, style set, module
+  set, room shape, draft, and placeholder prefabs.
+- `Generate Mockup` writes generated layout data into the selected draft.
+- `Run Post-Process` applies the current simple post-process pass.
+- `Accept Mockup` records the accepted signature.
+- `Materialize` creates placeholder scene objects under a generated root.
+- `Bake Runtime` writes a `MapGenBakedMapAsset`.
+- Focused MapGenV2 EditMode tests passed: 12/12.
+- Deferred verification runner passed for seed sweep, style swap, persistence,
+  prefab output, and runtime baked-data query checks.
 
-Acceptance:
+Observed hands-on problems:
 
-- Pressing `Generate Mockup` produces an immediately visible mockup preview in
-  the window.
-- A user can understand the generated layout before pressing `Accept Mockup`.
-- Same seed/profile still produces the same signature.
+- `Generate Mockup` appears to do nothing because the main window does not draw
+  the mockup grid preview.
+- The materialized scene result is gray placeholder geometry and does not look
+  like an intentional room/corridor map.
+- The current solver is a simple connected-cell MVP, not a production-quality
+  rooms/corridors layout solver.
+- The data model still lacks several planned production concepts:
+  room templates, corridor templates, connector definitions, room/corridor pool
+  rules, prop rules, navigation adapter settings, and output settings.
+- The editor is still mostly an object picker and button panel, not a complete
+  authoring workspace.
 
-## Phase 2: Improve Step Guidance
+## Definition Of Done
 
-Tasks:
+MapGenV2 should not be called production-ready until all of these are true:
 
-- [ ] Add a workflow status strip:
-  `Setup -> Generate Mockup -> Post-Process -> Accept -> Materialize -> Bake`.
-- [ ] Highlight the next recommended button.
-- [ ] Disable or explain invalid actions with visible reasons.
-- [ ] Rename ambiguous buttons if needed:
-  `Accept Mockup`, `Materialize To Scene`, `Bake Runtime Asset`.
-- [ ] Show the output path after bake.
-- [ ] Show the latest materialized root name after materialization.
-
-Acceptance:
-
-- A first-time user can follow the window without asking which scene or button
-  is next.
-- The UI clearly explains why `Materialize` and `Bake Runtime` are disabled.
-
-## Phase 3: Better Starter Visuals
-
-Tasks:
-
-- [ ] Replace gray starter placeholder materials with color-coded materials.
-- [ ] Starter floor/corridor/wall/door/prop prefabs must be visually distinct.
-- [ ] Scale starter modules so generated maps are readable in Scene view.
-- [ ] Add names to materialized child objects that include category and grid
-  coordinate.
-- [ ] Add a generated root component or metadata marker for latest output.
-
-Acceptance:
-
-- Starter materialization makes it visually clear which pieces are rooms,
-  corridors, walls, doors, and props.
-- The output is still placeholder content, but it communicates structure.
-
-## Phase 4: Scene Output Controls
-
-Tasks:
-
-- [ ] Add `Select Materialized Root` button.
-- [ ] Add `Frame Materialized Root` action if possible.
-- [ ] Add `Clear Previous Materialization` option.
-- [ ] Add `Save Materialized As Prefab` button.
-- [ ] Add configurable output folder for scene/prefab output.
-- [ ] Avoid silently creating duplicate roots unless the user requests it.
-
-Acceptance:
-
-- A user can find, inspect, replace, and save the generated scene output from
-  the MapGenV2 window.
-
-## Phase 5: Authoring Controls In Main Window
-
-Tasks:
-
-- [ ] Expose profile map size and seed in the main window.
-- [ ] Expose required room categories in a compact editor.
-- [ ] Expose post-process toggles:
-  direct route, reduce dead ends, remove small rooms.
-- [ ] Show linked `StyleSet`, `ModuleSet`, `RuleSet`, and `RoomShape` assets
-  with quick select buttons.
-- [ ] Add a pool summary for module categories and missing prefab warnings.
-- [ ] Add room shape summary and validation warnings.
-
-Acceptance:
-
-- Basic iteration does not require constantly jumping between raw inspector
-  arrays.
-- Missing or invalid authoring data is visible from the main window.
-
-## Phase 6: Production-Grade Layout Quality
-
-Tasks:
-
-- [ ] Replace the current line-connected room MVP with a richer room/corridor
-  solver.
-- [ ] Support room area shapes from `MapGenRoomShapeAsset`, not just single-cell
-  room landmarks.
-- [ ] Support wider corridors and door connector cells.
-- [ ] Add loop creation and dead-end controls that visibly affect the mockup.
-- [ ] Add blocked/excluded regions to the profile.
-- [ ] Prevent rooms from collapsing into visually meaningless thin paths.
-
-Acceptance:
-
-- Generated mockups look like intentional room/corridor layouts, not just a
-  connected line of cells.
-- Different seeds produce meaningfully different but usable layouts.
-
-## Phase 7: Real Module Stamping
-
-Tasks:
-
-- [ ] Stamp floors, corridors, walls, corners, ceilings, and doors based on
-  neighbor analysis with correct transforms.
-- [ ] Align module pivots and dimensions using `CellSize`.
-- [ ] Add deterministic weighted prefab choice per module request.
-- [ ] Support door modules at connector boundaries.
-- [ ] Add prop placement pass using actual prop channels.
-- [ ] Validate that generated blockers do not break traversal.
-
-Acceptance:
-
-- Materialized output can be used as a readable prototype level with project
-  prefabs.
-- Runtime bake data matches the materialized structure.
-
-## Phase 8: Save/Reload And Regression Verification
-
-Tasks:
-
-- [ ] Add tests for starter setup creation.
-- [ ] Add tests for main-window workflow state after each action.
-- [ ] Add tests for mockup preview signatures.
-- [ ] Add tests for materialized root replacement behavior.
-- [ ] Add tests for prefab save output.
-- [ ] Add a focused MapGenV2-only Unity Test Runner command to the document.
-- [ ] Keep legacy map generator tests isolated from MapGenV2 completion gates.
-
-Acceptance:
-
-- MapGenV2-specific tests pass independently of quarantined legacy generator
+- A first-time user can create a starter setup, generate a visible mockup,
+  understand it, change the seed/rules, accept the mockup, materialize it, and
+  bake it without reading source code.
+- `Generate Mockup` immediately shows a blue/red/black/gray grid preview.
+- Mockup generation produces meaningful room/corridor layouts, not just a thin
+  connected line.
+- Room shapes and corridor templates are actually used by the solver.
+- Connectors/doors are represented explicitly and validated.
+- Materialization creates readable floor/wall/corner/door/ceiling/prop output
+  from real module pools.
+- Runtime bake data matches the accepted and materialized layout.
+- MapGenV2-specific tests are independent from quarantined legacy generator
   tests.
-- Future UI changes cannot regress the starter workflow silently.
+- There is clear user documentation for authoring profiles, shapes, modules,
+  mockups, materialization, and runtime bake output.
 
-## Non-Goals For This Follow-Up
+## Non-Negotiables
 
-- Do not revive legacy `MapGeneratorWorkspace`.
-- Do not make graph/node editing the primary workflow.
-- Do not hide profile requirements behind hardcoded chapter data.
-- Do not treat placeholder starter prefabs as final art.
-- Do not mark the tool production-ready until the mockup preview and scene
-  output controls are usable by a first-time user.
+- Do not revive `MapGeneratorWorkspace` as the MapGenV2 workflow.
+- Do not hide generation behind chapter-specific hardcoded data.
+- Do not make raw arrays the main production UX.
+- Do not use node/wire graph editing as the normal map creation path.
+- Do not treat starter placeholder prefabs as final art.
+- Do not claim completion from transient/batch verification alone; the editor
+  workflow must be usable by a person.
+- Do not let editor-only references leak into runtime baked data.
+- Do not make runtime generation the main target until editor generation and
+  bake are stable.
 
-## Recommended Next Commit Order
+## Phase 1: Visible Mockup Workflow
 
-- mockup preview panel and draft summary
-- workflow status/next-action UI
-- starter visual prefab/material improvement
-- scene output controls
-- profile/rule controls in main window
-- solver quality pass
-- module stamping pass
-- focused regression tests and updated usage docs
+Goal: make the mockup stage obvious and usable.
+
+Tasks:
+
+- [ ] Add a mockup preview panel to `MapGenV2Window`.
+- [ ] Draw the selected draft grid after `Generate Mockup`.
+- [ ] Use the intended mockup color language:
+  blue = base/empty, red = room, black = corridor/connector,
+  gray = blocked/reserved.
+- [ ] Show selected/hovered cell coordinate, state, region id, room category,
+  socket kind/id, and prop channel.
+- [ ] Show draft summary:
+  profile id, seed, grid size, generated signature, accepted signature,
+  accepted/stale state, room cell count, corridor cell count, connector count.
+- [ ] Add `Randomize Seed` and `Randomize Seed + Generate`.
+- [ ] Add `Regenerate Same Seed`.
+- [ ] Add `Clear Draft`.
+- [ ] Keep mockup preview editor-only; do not create scene objects on
+  `Generate Mockup`.
+- [ ] Add screenshot-friendly preview sizing and scroll/zoom for large grids.
+
+Acceptance:
+
+- After pressing `Generate Mockup`, the user can see the generated layout in the
+  window without checking the inspector or scene hierarchy.
+- The user can visually decide whether to accept or regenerate the mockup.
+- Same profile and same seed produce the same preview signature.
+
+Verification:
+
+- EditMode test for preview grid data extraction from a generated draft.
+- Manual Unity check: generate 3 seeds and confirm visible layout changes.
+- Manual Unity check: accept one mockup and confirm accepted/stale labels.
+
+## Phase 2: Guided Editor Workflow
+
+Goal: make the editor window explain what to do next.
+
+Tasks:
+
+- [ ] Add workflow status strip:
+  `Setup -> Generate -> Post-Process -> Accept -> Materialize -> Bake`.
+- [ ] Highlight the next valid action.
+- [ ] Show disabled-action reasons for `Materialize` and `Bake Runtime`.
+- [ ] Rename buttons:
+  `Materialize` -> `Materialize To Scene`,
+  `Bake Runtime` -> `Bake Runtime Asset`.
+- [ ] Show last operation result and failure reason.
+- [ ] Show generation result summary:
+  seed, retry count, room count, corridor count, changed post-process passes.
+- [ ] Add `Open/Select` buttons beside profile, rule set, style set, module set,
+  room shapes, draft, materialized root, and baked asset.
+- [ ] Add output paths for draft, materialized prefab, and baked asset.
+- [ ] Persist window state with `EditorPrefs` or a workspace asset.
+
+Acceptance:
+
+- A new user can follow the window from empty project state to baked asset.
+- The window explains why each unavailable action is unavailable.
+
+Verification:
+
+- Manual Unity check from a fresh empty scene.
+- EditMode tests for step-state calculation where possible.
+
+## Phase 3: Starter Content That Communicates Structure
+
+Goal: starter output should be visually understandable even before real art is
+plugged in.
+
+Tasks:
+
+- [ ] Give starter prefabs distinct materials:
+  room floor, corridor floor, wall, corner, ceiling, door, prop marker.
+- [ ] Use different heights/scales so walls/doors/props are visually readable.
+- [ ] Add simple labels or object names including category and grid coordinate.
+- [ ] Ensure starter prefabs have consistent pivots and cell-size alignment.
+- [ ] Ensure starter materialization does not produce z-fighting or overlapping
+  unreadable blocks.
+- [ ] Add starter profile notes explaining placeholder content.
+- [ ] Keep generated starter assets under `Assets/Conn/Authoring/MapGenV2/`
+  and do not commit user-generated starter outputs by default.
+
+Acceptance:
+
+- The starter map clearly shows room/corridor structure in the Scene view.
+- The user can distinguish generated categories without custom art.
+
+Verification:
+
+- Starter setup batch verification still passes.
+- Manual Unity check: materialized starter map is visually readable.
+
+## Phase 4: Scene Output Management
+
+Goal: make scene materialization manageable instead of dumping duplicate roots.
+
+Tasks:
+
+- [ ] Add generated root metadata component, e.g.
+  `MapGenV2GeneratedMapMarker`.
+- [ ] Store profile id, seed, draft signature, style id, generated time, and
+  source draft reference on the root marker.
+- [ ] Add `Select Materialized Root`.
+- [ ] Add `Frame Materialized Root`.
+- [ ] Add `Clear Previous Materialization`.
+- [ ] Add output mode:
+  create new root, replace previous root, or update selected root.
+- [ ] Add `Save Materialized As Prefab`.
+- [ ] Add configurable materialized prefab folder.
+- [ ] Avoid duplicate roots unless explicitly requested.
+- [ ] Add undo support for materialization and clear operations.
+
+Acceptance:
+
+- The user can find, inspect, replace, and save generated output from the
+  MapGenV2 window.
+- Repeated materialization does not silently clutter the scene.
+
+Verification:
+
+- EditMode test for marker component data.
+- EditMode test for replace/clear behavior.
+- Manual Unity check: materialize, select, frame, save prefab, clear.
+
+## Phase 5: Authoring Assets Completion
+
+Goal: close the gap between the planned production data model and current MVP
+assets.
+
+Missing or incomplete assets:
+
+- `MapGenRoomTemplateAsset`
+- `MapGenCorridorTemplateAsset`
+- `MapGenConnector`
+- room/corridor template pool rules
+- room quantity and corridor quantity rule structures
+- prop placement rule structures
+- output/bake settings
+- navigation adapter settings
+- profile validation severity levels
+
+Tasks:
+
+- [ ] Add `MapGenRoomTemplateAsset` with:
+  template id, footprint, room category, size class, connectors, floor cells,
+  wall cells, blocked cells, door hints, prop channels, weight.
+- [ ] Add `MapGenCorridorTemplateAsset` with:
+  corridor kind, width, turn kind, length range, connectors, prop channels,
+  weight.
+- [ ] Add `MapGenConnector` with:
+  side, local cell, socket id, socket kind, width, required flag, tags.
+- [ ] Add explicit template pool rules to profile/style data.
+- [ ] Add quantity rule structs:
+  min/max rooms, min/max corridor cells, required categories, optional
+  categories, density targets.
+- [ ] Add post-process rule struct instead of loose bools.
+- [ ] Add prop placement rule struct:
+  channel, prefab pool, distribution mode, spacing, offsets, rotation, blocker
+  policy, room/corridor filters.
+- [ ] Add output settings:
+  draft folder, materialized prefab folder, baked asset folder, overwrite mode.
+- [ ] Add migration-safe defaults for existing starter profiles.
+
+Acceptance:
+
+- Production authoring no longer depends on broad loose fields only.
+- Profiles can explain exactly which templates and modules participate in
+  generation.
+- Validation can name missing pool/template/connector/rule data.
+
+Verification:
+
+- EditMode tests for valid and invalid room templates.
+- EditMode tests for valid and invalid corridor templates.
+- EditMode tests for connector compatibility.
+- Manual Unity check: create a profile using explicit templates.
+
+## Phase 6: Room Shape And Template Authoring UX
+
+Goal: make room/chunk shapes editable as real grid assets.
+
+Tasks:
+
+- [ ] Improve `MapGenRoomShapeAssetEditor` with tools:
+  paint room, paint connector, paint blocked, erase.
+- [ ] Add drag painting.
+- [ ] Add dimension resize with data preservation preview.
+- [ ] Add connector side warnings next to the grid.
+- [ ] Add generated thumbnail/preview cache.
+- [ ] Add rotate/flip preview.
+- [ ] Add “create approved variant” actions for rotated/flipped variants.
+- [ ] Add template editor that references one or more room shapes.
+- [ ] Add corridor template editor for straight, turn, T, cross, and variable
+  length templates.
+- [ ] Add validation panel showing occupied cells, connector count, invalid
+  sockets, and footprint.
+
+Acceptance:
+
+- A designer can author custom red room chunks without editing raw arrays.
+- Invalid connector and footprint problems are visible immediately.
+
+Verification:
+
+- EditMode tests for resize preservation.
+- EditMode tests for rotate/flip variant generation.
+- Manual Unity check: author 3x3, 3x5, and 4x4 shapes like the reference video.
+
+## Phase 7: Production Layout Solver
+
+Goal: replace the current simple connected-cell MVP with a real rooms/corridors
+solver.
+
+Tasks:
+
+- [ ] Build a grid candidate domain from profile size, blocked regions,
+  room/corridor templates, quantity rules, density targets, and required rooms.
+- [ ] Place multi-cell room shapes, not only single-cell room landmarks.
+- [ ] Place first-class corridor templates.
+- [ ] Enforce connector/socket compatibility between rooms and corridors.
+- [ ] Reserve required landmarks:
+  start, exit, quest, boss, transition, custom required categories.
+- [ ] Add distance constraints:
+  start-to-exit minimum distance, boss near late path, quest before lock, etc.
+- [ ] Collapse lowest-entropy cells/regions.
+- [ ] Propagate footprint, connector, blocked-region, and adjacency
+  constraints.
+- [ ] Maintain graph connectivity during solve.
+- [ ] Add deterministic retries with detailed contradiction reports.
+- [ ] Add loop, branch, and dead-end policies.
+- [ ] Add layout signatures that include profile/template/rule versions.
+
+Acceptance:
+
+- Generated mockups look like intentional rooms/corridors layouts.
+- Same profile/seed is deterministic.
+- Different seeds produce meaningful variation.
+- Failure reports name the exact missing template, connector, or rule.
+
+Verification:
+
+- Seed sweep across multiple profiles and sizes.
+- Tests for required room presence and reachability.
+- Tests for connector compatibility.
+- Tests for impossible profile failure reports.
+- Manual Unity check: compare 10 seeds visually.
+
+## Phase 8: Post-Processing System
+
+Goal: make post-processing explicit, configurable, visible, and safe.
+
+Tasks:
+
+- [ ] Convert post-process options into a rule asset/struct.
+- [ ] Implement pass list:
+  remove small rooms, split large rooms, consolidate paths, add direct routes,
+  fill selected empty space, reduce dead ends, add loops, normalize route
+  lengths, widen/clean corridors, merge compatible adjacent rooms.
+- [ ] Each pass must report what changed.
+- [ ] Add per-pass before/after overlay in preview.
+- [ ] Add pass order configuration.
+- [ ] Add connectivity validation after every pass.
+- [ ] Add rollback if a pass breaks required traversal.
+
+Acceptance:
+
+- Designers can toggle passes and see how the mockup changes before
+  materialization.
+- Post-processing never silently breaks required connectivity.
+
+Verification:
+
+- Tests for every pass.
+- Tests for rollback on invalid pass result.
+- Manual Unity check: toggle each pass and inspect diff overlay.
+
+## Phase 9: Real Module Stamping And Materialization
+
+Goal: turn accepted mockups into readable project-prefab maps.
+
+Tasks:
+
+- [ ] Build a materialization plan from accepted draft cells and region graph.
+- [ ] Classify floors, corridors, straight walls, inside corners, outside
+  corners, ceilings, doors, props, and navigation helper objects.
+- [ ] Use `CellSize` consistently for positions.
+- [ ] Respect prefab footprint.
+- [ ] Respect allowed rotations and pivot rules.
+- [ ] Deterministically choose weighted module entries.
+- [ ] Support whole doors and split door frames/panels.
+- [ ] Support connector-width-aware door openings.
+- [ ] Add overlap detection.
+- [ ] Add missing-module warnings before instantiation.
+- [ ] Group output hierarchy:
+  floors, corridors, walls, ceilings, doors, props, navigation.
+- [ ] Add materialized output summary.
+
+Acceptance:
+
+- Materialized output visually matches the accepted mockup.
+- Real project prefabs can be used without code changes.
+- Missing prefab categories produce actionable warnings.
+
+Verification:
+
+- EditMode tests for category classification.
+- EditMode tests for deterministic weighted selection.
+- EditMode tests for missing prefab failure reports.
+- Manual Unity check with at least two style sets.
+
+## Phase 10: Prop Placement
+
+Goal: support procedural props without breaking traversal.
+
+Tasks:
+
+- [ ] Add prop rule assets or structs.
+- [ ] Add placement channels:
+  floor, wall, corner, room center, corridor edge, entrance, objective,
+  blocker, custom tags.
+- [ ] Add distribution modes:
+  random, weighted random, grid, perimeter, marker-based, one-per-region,
+  required unique.
+- [ ] Add min spacing and density limits.
+- [ ] Add category filters for rooms/corridors.
+- [ ] Add deterministic RNG stream for prop placement.
+- [ ] Validate blocker props against traversal graph.
+- [ ] Add prop placement preview overlay.
+- [ ] Add prop placement report.
+
+Acceptance:
+
+- Props appear in legal positions.
+- Blocker props cannot invalidate required traversal unless explicitly allowed
+  and validated.
+- Same seed creates the same prop layout.
+
+Verification:
+
+- Tests for deterministic prop placement.
+- Tests for blocker traversal validation.
+- Manual Unity check with floor, wall, and blocker props.
+
+## Phase 11: Runtime Bake And Adapters
+
+Goal: ensure editor output becomes useful runtime map data.
+
+Tasks:
+
+- [ ] Expand `MapGenBakedMapAsset` to include:
+  regions, doors/connectors, traversal graph, grid pathfinding data, spawn
+  markers, objective markers, prop instances, source profile/style/template
+  ids, generation signature.
+- [ ] Ensure baked data contains no `UnityEditor` references.
+- [ ] Add runtime loader/service for baked maps.
+- [ ] Add graph traversal adapter.
+- [ ] Add grid pathfinding adapter.
+- [ ] Add Unity AI Navigation build input or `NavMeshSurface` integration plan.
+- [ ] Add spawn/objective marker query API.
+- [ ] Add compatibility layer for existing combat/content systems if needed.
+- [ ] Add version field and migration handling for baked data.
+
+Acceptance:
+
+- Runtime code can load a baked map and query traversal, regions, doors, spawn
+  markers, objective markers, and props.
+- Baked data remains valid after reopening the project.
+
+Verification:
+
+- EditMode tests for runtime-safe serialization.
+- Runtime/playmode smoke test for loading a baked map.
+- Tests for traversal/pathfinding queries.
+
+## Phase 12: Validation And Diagnostics
+
+Goal: make failures actionable.
+
+Tasks:
+
+- [ ] Add structured issue severity:
+  info, warning, error, fatal.
+- [ ] Add context object/path/cell coordinate to every issue.
+- [ ] Validate profile graph:
+  profile -> style -> module set -> templates -> shapes -> rules.
+- [ ] Validate required pools and modules.
+- [ ] Validate connector compatibility matrix.
+- [ ] Validate impossible quantity/range constraints.
+- [ ] Validate blocked-region feasibility.
+- [ ] Validate post-process pass safety.
+- [ ] Validate materialization coverage before instantiation.
+- [ ] Validate runtime bake consistency after materialization.
+- [ ] Add diagnostics panel in `MapGenV2Window`.
+
+Acceptance:
+
+- A failed generation tells the designer what to fix and where.
+- The diagnostics panel is sufficient to repair common setup mistakes without
+  reading console logs.
+
+Verification:
+
+- Tests for each validation error class.
+- Manual Unity check with intentionally broken profiles.
+
+## Phase 13: Persistence, Versioning, And Regeneration
+
+Goal: make generated assets safe to keep in a real project.
+
+Tasks:
+
+- [ ] Add source signature to drafts, materialized roots, prefabs, and baked
+  assets.
+- [ ] Detect stale drafts when profile/style/rule/template assets change.
+- [ ] Detect stale materialized output when draft or module set changes.
+- [ ] Add `Regenerate`, `Repostprocess`, `Reaccept`, `Rematerialize`,
+  `Rebake` workflows.
+- [ ] Add explicit overwrite policy.
+- [ ] Add asset version fields and migration helpers.
+- [ ] Add safe cleanup for generated assets created by starter setup or tests.
+- [ ] Add changelog/notes field for generated drafts.
+
+Acceptance:
+
+- Users know when generated outputs are stale.
+- Regeneration is deterministic and does not destroy unrelated user edits.
+
+Verification:
+
+- Tests for stale detection.
+- Tests for safe overwrite behavior.
+- Manual Unity check: modify profile after bake and confirm stale indicators.
+
+## Phase 14: Documentation And User Workflow
+
+Goal: make the tool usable in a new session without oral explanation.
+
+Tasks:
+
+- [ ] Add concise user guide:
+  create starter setup, generate mockup, accept, materialize, bake.
+- [ ] Add production authoring guide:
+  create real module set, room templates, corridor templates, prop rules.
+- [ ] Add troubleshooting guide:
+  common validation errors and fixes.
+- [ ] Add visual examples/screenshots for mockup and materialized output.
+- [ ] Add glossary:
+  profile, style set, module set, room shape, template, connector, draft,
+  materialization, bake.
+- [ ] Add verification commands:
+  focused MapGenV2 EditMode tests, starter setup batch, deferred verification.
+- [ ] Add warning that legacy map generator tests are not MapGenV2 completion
+  gates.
+
+Acceptance:
+
+- A new developer or designer can continue work from documentation alone.
+
+Verification:
+
+- Follow the docs in a clean Unity session and complete a starter map.
+
+## Phase 15: Test Strategy
+
+Goal: separate MapGenV2 quality gates from quarantined legacy failures.
+
+Required automated tests:
+
+- [ ] starter setup creates valid linked assets.
+- [ ] starter setup generate/accept/materialize/bake works.
+- [ ] room shape resize/paint/connector validation.
+- [ ] room template and corridor template validation.
+- [ ] profile validation for missing style/module/rules/templates/connectors.
+- [ ] same seed/profile deterministic signature.
+- [ ] different seeds meaningful layout variation.
+- [ ] required rooms present and reachable.
+- [ ] impossible profile fails with actionable issue.
+- [ ] post-process passes preserve connectivity.
+- [ ] materialization deterministic weighted prefab selection.
+- [ ] materialization reports missing module categories.
+- [ ] prop placement deterministic and traversal-safe.
+- [ ] runtime baked data contains no editor-only references.
+- [ ] save/reload retains profile, draft, accepted state, materialized marker,
+  and baked data.
+
+Manual checks:
+
+- [ ] create starter setup from empty scene.
+- [ ] generate several mockup seeds and inspect preview.
+- [ ] edit room shapes and regenerate.
+- [ ] swap style sets without changing abstract layout.
+- [ ] materialize real project prefabs.
+- [ ] save materialized prefab.
+- [ ] bake runtime asset and load it in a runtime scene.
+- [ ] intentionally break profile data and confirm diagnostics are actionable.
+
+Suggested focused command:
+
+```bash
+"/home/inri/Unity/Hub/Editor/6000.4.8f1/Editor/Unity" \
+  -batchmode -nographics \
+  -projectPath "/home/inri/문서/UnityProjects/My project" \
+  -runTests -testPlatform EditMode \
+  -assemblyNames Conn.Tests \
+  -testFilter Conn.Tests.EditMode.MapGenV2 \
+  -testResults "Logs/MapGenV2OnlyEditModeTestResults.xml" \
+  -logFile "Logs/MapGenV2OnlyEditModeTestRunner.log"
+```
+
+## Phase 16: Performance And Scale
+
+Goal: make the generator usable for larger production maps without editor
+freezes or unbounded memory growth.
+
+Tasks:
+
+- [ ] Define target map sizes for this project:
+  small, medium, large, stress.
+- [ ] Add generation time budget per target size.
+- [ ] Add materialization time budget per target size.
+- [ ] Add memory allocation budget for solver and preview.
+- [ ] Add cancellation support for long generation runs.
+- [ ] Add progress reporting for solve, post-process, materialize, and bake.
+- [ ] Avoid excessive `AssetDatabase.Refresh` calls during normal generation.
+- [ ] Cache preview textures and invalidate them only when draft data changes.
+- [ ] Avoid scene object creation during mockup-only iteration.
+- [ ] Add profiling hooks or logs for retries, contradictions, and pass costs.
+
+Acceptance:
+
+- Large profile generation does not make the editor appear hung without
+  progress or cancellation.
+- The designer can iterate mockups repeatedly without scene/object leaks.
+
+Verification:
+
+- Add timing checks for representative map sizes.
+- Manual Unity check with repeated 50+ seed rerolls.
+
+## Phase 17: Package Hygiene And Team Workflow
+
+Goal: keep generated assets, sample assets, and production assets clearly
+separated so the repository remains maintainable.
+
+Tasks:
+
+- [ ] Decide which starter assets are committed samples and which are
+  user-generated throwaway assets.
+- [ ] Add folder conventions for:
+  samples, project production profiles, generated drafts, generated baked maps,
+  generated prefabs, temporary verification output.
+- [ ] Ensure verification-created assets are cleaned up automatically.
+- [ ] Add `.gitignore` rules or documentation for generated local outputs if
+  needed.
+- [ ] Add naming convention:
+  profile id, seed, draft id, style id, bake version.
+- [ ] Add ownership guidance for designers editing shared profiles and module
+  sets.
+- [ ] Add review checklist for new profile/style/module assets.
+
+Acceptance:
+
+- Running the generator does not leave confusing untracked files unless the user
+  intentionally creates production assets.
+- New sessions can distinguish committed examples from local generated output.
+
+Verification:
+
+- Run starter setup and confirm which files are expected to remain untracked.
+- Confirm verification runners clean up temporary assets.
+
+## Phase 18: Compatibility And Integration
+
+Goal: make MapGenV2 fit the existing Unity project instead of living as an
+isolated demo tool.
+
+Tasks:
+
+- [ ] Decide how generated maps are referenced by existing scene flow.
+- [ ] Decide how combat/content systems find spawn markers, objectives, doors,
+  interactables, and region metadata.
+- [ ] Add integration contract for runtime map loading.
+- [ ] Add optional adapter for existing dungeon runtime services.
+- [ ] Add build-time validation that production scenes do not depend on editor
+  types.
+- [ ] Add render-pipeline-neutral starter materials where possible.
+- [ ] Confirm generated prefabs survive player build serialization.
+- [ ] Confirm generated output can be used in source-controlled scenes without
+  hidden editor-only dependencies.
+
+Acceptance:
+
+- A baked MapGenV2 map can be referenced by game runtime code through a clear
+  API.
+- Generated authoring assets do not break player builds.
+
+Verification:
+
+- Runtime smoke scene or test loads a baked MapGenV2 map.
+- Build or build-like validation confirms no editor-only references.
+
+## Missing Items Found During Document Review
+
+The previous remaining-work document covered immediate UX gaps but missed these
+production-critical areas:
+
+- explicit room template asset
+- explicit corridor template asset
+- connector compatibility model
+- room/corridor pool and quantity rule models
+- post-process pass architecture and rollback
+- prop placement rules and distributions
+- navigation adapters and runtime query APIs
+- output settings and overwrite policy
+- stale detection and versioning
+- diagnostics severity/context model
+- save/reload and migration strategy
+- production documentation and troubleshooting
+- separation of MapGenV2 test gates from legacy map generator failures
+- performance budgets and cancellation
+- package hygiene for generated local assets
+- integration contracts with existing runtime systems
+
+These are now included above as required completion work.
+
+## Recommended Commit Order For Next Session
+
+1. mockup preview panel and draft summary
+2. workflow status/next-action UI
+3. starter visuals and generated root marker
+4. scene output controls
+5. authoring controls in main window
+6. room/corridor template assets and connector model
+7. production solver domain and required room placement
+8. post-process pass system
+9. real module stamping
+10. prop placement rules
+11. runtime bake expansion and adapters
+12. diagnostics and validation
+13. persistence/stale detection/versioning
+14. docs and focused regression tests
+15. performance and scale checks
+16. package hygiene and team workflow rules
+17. runtime/project integration adapters
