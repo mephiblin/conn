@@ -216,8 +216,12 @@ Progress note 2026-05-31:
   summary counts for the editor UI.
 - Seed controls now support randomize, randomize-and-generate, regenerate with
   the same seed, and clearing draft generated/accepted state.
-- Remaining Phase 1 work is the interactive edit/lock/regenerate workflow and
-  persistence of manual region overrides.
+- Selected generated regions can now be inspected in the main window, locked or
+  unlocked, assigned a category override, and cleared; category edits persist
+  in the draft cells and leave accepted output stale until reaccepted.
+- Remaining Phase 1 work is fuller selected-region edit coverage:
+  reroll/delete/regenerate/reroute/block/reserve actions and solver support for
+  locked regions during regeneration.
 
 Goal: make the mockup stage obvious and usable.
 
@@ -240,8 +244,8 @@ Tasks:
 - [ ] Add selected-region actions:
   lock/unlock, change category, reroll shape, delete/regenerate region,
   reroute connectors, mark blocked/reserved cells, and clear manual override.
-- [ ] Persist selected-region edits in `MapGenMockupDraftAsset`.
-- [ ] Mark accepted/materialized output stale when a selected-region edit
+- [x] Persist selected-region edits in `MapGenMockupDraftAsset`.
+- [x] Mark accepted/materialized output stale when a selected-region edit
   changes the draft signature.
 - [x] Show draft summary:
   profile id, seed, grid size, generated signature, accepted signature,

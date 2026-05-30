@@ -403,6 +403,53 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void MockupDraftRegionOverridePersistsLockAndCategoryEditStalesAcceptance()
+        {
+            var draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();
+
+            try
+            {
+                draft.GridSize = new Vector2Int(2, 1);
+                draft.EnsureCellArray();
+                draft.Cells[0] = new MapGenMockupCell
+                {
+                    State = MapGenCellState.Room,
+                    RegionId = 4,
+                    RoomCategory = MapGenRoomCategory.Start
+                };
+                draft.Cells[1] = new MapGenMockupCell
+                {
+                    State = MapGenCellState.Connector,
+                    RegionId = 4,
+                    RoomCategory = MapGenRoomCategory.Start,
+                    SocketKind = MapGenSocketKind.Door,
+                    SocketId = "main"
+                };
+                draft.Accept();
+
+                draft.SetRegionLocked(4, true);
+                draft.SetRegionCategory(4, MapGenRoomCategory.Boss);
+
+                Assert.That(draft.TryGetRegionOverride(4, out var regionOverride), Is.True);
+                Assert.That(regionOverride.Locked, Is.True);
+                Assert.That(regionOverride.HasCategoryOverride, Is.True);
+                Assert.That(regionOverride.CategoryOverride, Is.EqualTo(MapGenRoomCategory.Boss));
+                Assert.That(draft.Cells, Has.Exactly(2).Matches<MapGenMockupCell>(
+                    cell => cell.RegionId == 4 && cell.RoomCategory == MapGenRoomCategory.Boss));
+                Assert.That(draft.Accepted, Is.True);
+                Assert.That(draft.IsAcceptedSignatureCurrent, Is.False);
+
+                draft.ClearRegionOverride(4);
+
+                Assert.That(draft.TryGetRegionOverride(4, out _), Is.False);
+            }
+            finally
+            {
+                Object.DestroyImmediate(draft);
+            }
+        }
+
+        [Test]
         public void MockupPreviewDataExtractsCellsAndSummary()
         {
             var draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();

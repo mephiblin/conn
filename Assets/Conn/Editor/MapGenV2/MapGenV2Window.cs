@@ -739,6 +739,86 @@ namespace Conn.MapGenV2.Editor
                     EditorGUILayout.LabelField("선택 리전 / Selected Region", selectedRegionId >= 0 ? selectedRegionId.ToString() : "(none)");
                 }
             }
+
+            DrawSelectedRegionInspector(previewData);
+        }
+
+        private void DrawSelectedRegionInspector(MapGenMockupPreviewData previewData)
+        {
+            if (draft == null || !hasSelectedCell || selectedRegionId < 0)
+            {
+                return;
+            }
+
+            var cellCount = 0;
+            var connectorCount = 0;
+            var category = MapGenRoomCategory.Main;
+            var sawCategory = false;
+            for (var y = 0; y < previewData.Height; y++)
+            {
+                for (var x = 0; x < previewData.Width; x++)
+                {
+                    if (!previewData.TryGetCell(x, y, out var cell) || cell.RegionId != selectedRegionId)
+                    {
+                        continue;
+                    }
+
+                    cellCount++;
+                    if (!sawCategory)
+                    {
+                        category = cell.RoomCategory;
+                        sawCategory = true;
+                    }
+
+                    if (cell.State == MapGenCellState.Connector)
+                    {
+                        connectorCount++;
+                    }
+                }
+            }
+
+            draft.TryGetRegionOverride(selectedRegionId, out var regionOverride);
+            EditorGUILayout.Space(4f);
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                EditorGUILayout.LabelField("선택 리전 편집 / Selected Region", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField("Region Id", selectedRegionId.ToString());
+                EditorGUILayout.LabelField("Cell Count", cellCount.ToString());
+                EditorGUILayout.LabelField("Connector Count", connectorCount.ToString());
+                EditorGUILayout.LabelField("Locked", regionOverride.Locked ? "Yes" : "No");
+                EditorGUILayout.LabelField(
+                    "Override",
+                    regionOverride.HasCategoryOverride ? $"Category {regionOverride.CategoryOverride}" : "(none)");
+
+                EditorGUI.BeginChangeCheck();
+                var newCategory = (MapGenRoomCategory)EditorGUILayout.EnumPopup("Room Category", category);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    Undo.RecordObject(draft, "Change MapGen Region Category");
+                    draft.SetRegionCategory(selectedRegionId, newCategory);
+                    EditorUtility.SetDirty(draft);
+                    lastOperationResult = $"Changed region {selectedRegionId} category to {newCategory}. Accepted output is now stale until reaccepted.";
+                }
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (GUILayout.Button(regionOverride.Locked ? "Unlock Region" : "Lock Region"))
+                    {
+                        Undo.RecordObject(draft, "Toggle MapGen Region Lock");
+                        draft.SetRegionLocked(selectedRegionId, !regionOverride.Locked);
+                        EditorUtility.SetDirty(draft);
+                        lastOperationResult = $"{(regionOverride.Locked ? "Unlocked" : "Locked")} region {selectedRegionId}.";
+                    }
+
+                    if (GUILayout.Button("Clear Region Override"))
+                    {
+                        Undo.RecordObject(draft, "Clear MapGen Region Override");
+                        draft.ClearRegionOverride(selectedRegionId);
+                        EditorUtility.SetDirty(draft);
+                        lastOperationResult = $"Cleared region {selectedRegionId} override metadata.";
+                    }
+                }
+            }
         }
 
         private static void DrawCellLine(string label, MapGenMockupPreviewData previewData, bool hasCell, Vector2Int coord)

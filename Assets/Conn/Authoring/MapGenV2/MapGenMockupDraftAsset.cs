@@ -17,6 +17,7 @@ namespace Conn.MapGenV2.Authoring
         public int LastDirectRouteCellsAdded;
         public int LastDeadEndCorridorsRemoved;
         public int LastIsolatedRoomsRemoved;
+        public MapGenMockupRegionOverride[] RegionOverrides = Array.Empty<MapGenMockupRegionOverride>();
 
         public int Width => Mathf.Max(1, GridSize.x);
 
@@ -60,6 +61,7 @@ namespace Conn.MapGenV2.Authoring
             Accepted = false;
             AcceptedSignature = string.Empty;
             LastGeneratedSignature = result.Signature;
+            RegionOverrides = Array.Empty<MapGenMockupRegionOverride>();
             ClearPostProcessReport();
             return result.Report;
         }
@@ -157,8 +159,88 @@ namespace Conn.MapGenV2.Authoring
         {
             Cells = CreateEmptyCells(Width, Height);
             LastGeneratedSignature = string.Empty;
+            RegionOverrides = Array.Empty<MapGenMockupRegionOverride>();
             ClearPostProcessReport();
             ClearAcceptance();
+        }
+
+        public bool TryGetRegionOverride(int regionId, out MapGenMockupRegionOverride regionOverride)
+        {
+            foreach (var candidate in RegionOverrides ?? Array.Empty<MapGenMockupRegionOverride>())
+            {
+                if (candidate.RegionId == regionId)
+                {
+                    regionOverride = candidate;
+                    return true;
+                }
+            }
+
+            regionOverride = default;
+            return false;
+        }
+
+        public void SetRegionLocked(int regionId, bool locked)
+        {
+            if (regionId < 0)
+            {
+                return;
+            }
+
+            var regionOverride = GetOrCreateRegionOverride(regionId);
+            regionOverride.Locked = locked;
+            SetRegionOverride(regionOverride);
+        }
+
+        public void SetRegionCategory(int regionId, MapGenRoomCategory category)
+        {
+            if (regionId < 0)
+            {
+                return;
+            }
+
+            EnsureCellArray();
+            for (var i = 0; i < Cells.Length; i++)
+            {
+                if (Cells[i].RegionId == regionId)
+                {
+                    Cells[i].RoomCategory = category;
+                }
+            }
+
+            var regionOverride = GetOrCreateRegionOverride(regionId);
+            regionOverride.HasCategoryOverride = true;
+            regionOverride.CategoryOverride = category;
+            SetRegionOverride(regionOverride);
+            LastGeneratedSignature = ComputeSignature();
+        }
+
+        public void ClearRegionOverride(int regionId)
+        {
+            if (RegionOverrides == null || RegionOverrides.Length == 0)
+            {
+                return;
+            }
+
+            var kept = new MapGenMockupRegionOverride[RegionOverrides.Length];
+            var count = 0;
+            for (var i = 0; i < RegionOverrides.Length; i++)
+            {
+                if (RegionOverrides[i].RegionId == regionId)
+                {
+                    continue;
+                }
+
+                kept[count] = RegionOverrides[i];
+                count++;
+            }
+
+            if (count == RegionOverrides.Length)
+            {
+                return;
+            }
+
+            Array.Resize(ref kept, count);
+            RegionOverrides = kept;
         }
 
         private void ClearPostProcessReport()
@@ -171,6 +253,39 @@ namespace Conn.MapGenV2.Authoring
         private void OnValidate()
         {
             EnsureCellArray();
+            RegionOverrides ??= Array.Empty<MapGenMockupRegionOverride>();
+        }
+
+        private MapGenMockupRegionOverride GetOrCreateRegionOverride(int regionId)
+        {
+            if (TryGetRegionOverride(regionId, out var regionOverride))
+            {
+                return regionOverride;
+            }
+
+            return new MapGenMockupRegionOverride
+            {
+                RegionId = regionId,
+                Locked = false,
+                HasCategoryOverride = false,
+                CategoryOverride = MapGenRoomCategory.Main
+            };
+        }
+
+        private void SetRegionOverride(MapGenMockupRegionOverride regionOverride)
+        {
+            RegionOverrides ??= Array.Empty<MapGenMockupRegionOverride>();
+            for (var i = 0; i < RegionOverrides.Length; i++)
+            {
+                if (RegionOverrides[i].RegionId == regionOverride.RegionId)
+                {
+                    RegionOverrides[i] = regionOverride;
+                    return;
+                }
+            }
+
+            Array.Resize(ref RegionOverrides, RegionOverrides.Length + 1);
+            RegionOverrides[RegionOverrides.Length - 1] = regionOverride;
         }
 
         private static MapGenMockupCell[] CreateEmptyCells(int width, int height)
