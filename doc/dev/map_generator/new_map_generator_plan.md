@@ -1137,7 +1137,7 @@ be committed and pushed separately.
   objects, editor display.
 - [x] Mockup draft model: cells, regions, signatures, accepted/stale state,
   save/load.
-- [ ] Mockup preview: blue/red/black/gray grid renderer and overlays.
+- [x] Mockup preview: blue/red/black/gray grid renderer and overlays.
 - [ ] Solver MVP: deterministic connected mockup layout with required rooms and
   corridor paths.
 - [ ] Post-processing MVP: direct route, dead-end reduction, small room removal,
