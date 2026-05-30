@@ -78,6 +78,36 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void CompiledValidationReportsInvalidCellsAndObjects()
+        {
+            var profile = MapGenerationCatalog.ChapterTwoFirstSliceProfile();
+            var compiled = new CompiledMap
+            {
+                MapId = "compiled_invalid_probe",
+                ProfileId = profile.ProfileId,
+                Width = profile.Width,
+                Height = profile.Height,
+                CellSize = 1f,
+                HeightStep = 1f
+            };
+            compiled.Rooms.Add(new RoomGraphNode { Id = "start", Role = MapRoomRole.Start });
+            compiled.Zones.Add(new CompiledMapZoneRecord { Id = "zone_a", ThemeId = "ruins" });
+            compiled.Cells.Add(new CompiledMapCell { X = 0, Y = 0, RoomId = "missing_room", ZoneId = "missing_zone", Terrain = RoomChunkCellType.Floor });
+            compiled.Cells.Add(new CompiledMapCell { X = 1, Y = 0, RoomId = "start", ZoneId = "zone_a", Terrain = RoomChunkCellType.Wall });
+            compiled.Objects.Add(new CompiledMapObjectPlacement { PlacementId = "duplicate_object", X = 1, Y = 0, Width = 1, Depth = 1, Kind = RoomChunkObjectKind.Blocker });
+            compiled.Objects.Add(new CompiledMapObjectPlacement { PlacementId = "duplicate_object", X = profile.Width, Y = 0, Width = 1, Depth = 1, Kind = RoomChunkObjectKind.Chest });
+
+            var report = MapValidationService.ValidateCompiled(profile, compiled);
+
+            Assert.That(report.Passed, Is.False);
+            Assert.That(report.Errors.Exists(error => error.Contains("cell (0, 0)") && error.Contains("missing room missing_room")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("cell (0, 0)") && error.Contains("missing zone missing_zone")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("duplicate object placement id: duplicate_object")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("duplicate_object overlaps non-walkable or missing cell (1, 0)")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("duplicate_object footprint is outside map bounds")), Is.True);
+        }
+
+        [Test]
         public void ChunkPresetCellGridSurvivesUnityJsonSerialization()
         {
             var preset = new ChunkPreset

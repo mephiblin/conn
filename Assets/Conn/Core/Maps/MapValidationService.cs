@@ -55,6 +55,7 @@ namespace Conn.Core.Maps
             ExpectCompiledPlacements(profile, compiled, report);
             ExpectCompiledEncounterPlacements(compiled, report);
             ExpectCompiledDoors(compiled, report);
+            ExpectCompiledCellsAndObjects(compiled, report);
             return report;
         }
 
@@ -226,6 +227,84 @@ namespace Conn.Core.Maps
             }
         }
 
+        private static void ExpectCompiledCellsAndObjects(CompiledMap compiled, MapValidationReport report)
+        {
+            var roomIds = new HashSet<string>();
+            for (var i = 0; i < compiled.Rooms.Count; i++)
+            {
+                if (!string.IsNullOrWhiteSpace(compiled.Rooms[i].Id))
+                {
+                    roomIds.Add(compiled.Rooms[i].Id);
+                }
+            }
+
+            var zoneIds = new HashSet<string>();
+            foreach (var zone in compiled.Zones ?? new List<CompiledMapZoneRecord>())
+            {
+                if (!string.IsNullOrWhiteSpace(zone.Id))
+                {
+                    zoneIds.Add(zone.Id);
+                }
+            }
+
+            var walkableCells = new HashSet<string>();
+            foreach (var cell in compiled.Cells ?? new List<CompiledMapCell>())
+            {
+                if (cell.X < 0 || cell.Y < 0 || cell.X >= compiled.Width || cell.Y >= compiled.Height)
+                {
+                    report.Errors.Add($"Compiled map cell ({cell.X}, {cell.Y}) is outside map bounds.");
+                    continue;
+                }
+
+                if (!string.IsNullOrWhiteSpace(cell.RoomId) && !roomIds.Contains(cell.RoomId))
+                {
+                    report.Errors.Add($"Compiled map cell ({cell.X}, {cell.Y}) references missing room {cell.RoomId}.");
+                }
+
+                if (!string.IsNullOrWhiteSpace(cell.ZoneId) && zoneIds.Count > 0 && !zoneIds.Contains(cell.ZoneId))
+                {
+                    report.Errors.Add($"Compiled map cell ({cell.X}, {cell.Y}) references missing zone {cell.ZoneId}.");
+                }
+
+                if (cell.Terrain != RoomChunkCellType.Wall && cell.Terrain != RoomChunkCellType.Gap)
+                {
+                    walkableCells.Add(CellKey(cell.X, cell.Y));
+                }
+            }
+
+            var objectIds = new HashSet<string>();
+            foreach (var placement in compiled.Objects ?? new List<CompiledMapObjectPlacement>())
+            {
+                if (string.IsNullOrWhiteSpace(placement.PlacementId))
+                {
+                    report.Errors.Add("Compiled map contains an object placement with no id.");
+                }
+                else if (!objectIds.Add(placement.PlacementId))
+                {
+                    report.Errors.Add($"Compiled map contains duplicate object placement id: {placement.PlacementId}.");
+                }
+
+                for (var dy = 0; dy < Math.Max(1, placement.Depth); dy++)
+                {
+                    for (var dx = 0; dx < Math.Max(1, placement.Width); dx++)
+                    {
+                        var x = placement.X + dx;
+                        var y = placement.Y + dy;
+                        if (x < 0 || y < 0 || x >= compiled.Width || y >= compiled.Height)
+                        {
+                            report.Errors.Add($"Compiled map object {placement.PlacementId} footprint is outside map bounds at ({x}, {y}).");
+                            continue;
+                        }
+
+                        if (compiled.Cells.Count > 0 && !walkableCells.Contains(CellKey(x, y)))
+                        {
+                            report.Errors.Add($"Compiled map object {placement.PlacementId} overlaps non-walkable or missing cell ({x}, {y}).");
+                        }
+                    }
+                }
+            }
+        }
+
         private static void ExpectCompiledEncounterPlacements(CompiledMap compiled, MapValidationReport report)
         {
             var ids = new HashSet<string>();
@@ -359,6 +438,11 @@ namespace Conn.Core.Maps
             }
 
             return reached;
+        }
+
+        private static string CellKey(int x, int y)
+        {
+            return $"{x}:{y}";
         }
 
         private static RoomGraphNode FindNodeByRole(RoomGraph graph, MapRoomRole role)
