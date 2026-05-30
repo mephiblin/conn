@@ -128,7 +128,7 @@ tool, and generated output workflow.
 - [ ] Persist editor window state:
   last selected assets, preview zoom/pan, visible overlays, language, and
   advanced/debug foldout state.
-- [ ] Use stable icons/colors for:
+- [x] Use stable icons/colors for:
   valid, warning, error, stale, accepted, generated, manual override, locked,
   missing reference, and runtime-safe.
 

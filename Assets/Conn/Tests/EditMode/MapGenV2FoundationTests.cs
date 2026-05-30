@@ -339,6 +339,22 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void StatusPresentationDefinesStableWorkflowStates()
+        {
+            Assert.That(MapGenV2StatusPresentation.For(MapGenV2StatusKind.Valid).IconName, Is.EqualTo("TestPassed"));
+            Assert.That(MapGenV2StatusPresentation.For(MapGenV2StatusKind.Warning).Label, Is.EqualTo("Warning"));
+            Assert.That(MapGenV2StatusPresentation.For(MapGenV2StatusKind.Error).IconName, Is.EqualTo("console.erroricon"));
+            Assert.That(MapGenV2StatusPresentation.For(MapGenV2StatusKind.Stale).Label, Is.EqualTo("Stale"));
+            Assert.That(MapGenV2StatusPresentation.For(MapGenV2StatusKind.Accepted).Label, Is.EqualTo("Accepted"));
+            Assert.That(MapGenV2StatusPresentation.For(MapGenV2StatusKind.Generated).Label, Is.EqualTo("Generated"));
+            Assert.That(MapGenV2StatusPresentation.For(MapGenV2StatusKind.ManualOverride).Label, Is.EqualTo("Manual Override"));
+            Assert.That(MapGenV2StatusPresentation.For(MapGenV2StatusKind.Locked).Label, Is.EqualTo("Locked"));
+            Assert.That(MapGenV2StatusPresentation.For(MapGenV2StatusKind.MissingReference).Label, Is.EqualTo("Missing Reference"));
+            Assert.That(MapGenV2StatusPresentation.For(MapGenV2StatusKind.RuntimeSafe).Label, Is.EqualTo("Runtime Safe"));
+            Assert.That(MapGenV2StatusPresentation.For(MapGenV2StatusKind.Pending).Label, Is.EqualTo("Pending"));
+        }
+
+        [Test]
         public void DraftInspectorSummaryReportsSelectionOverridesAndReadiness()
         {
             var draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();

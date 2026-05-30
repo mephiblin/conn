@@ -303,9 +303,10 @@ namespace Conn.MapGenV2.Editor
         private static void DrawStepBadge(string label, bool complete, bool active)
         {
             var previousColor = GUI.backgroundColor;
-            GUI.backgroundColor = complete
-                ? new Color(0.38f, 0.72f, 0.42f, 1f)
-                : active ? new Color(0.95f, 0.73f, 0.24f, 1f) : new Color(0.42f, 0.42f, 0.42f, 1f);
+            var status = complete
+                ? MapGenV2StatusKind.Accepted
+                : active ? MapGenV2StatusKind.Stale : MapGenV2StatusKind.Pending;
+            GUI.backgroundColor = MapGenV2StatusPresentation.For(status).Color;
             GUILayout.Label(label, EditorStyles.miniButton, GUILayout.MinWidth(92f));
             GUI.backgroundColor = previousColor;
         }
