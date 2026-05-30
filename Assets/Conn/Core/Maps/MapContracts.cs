@@ -288,6 +288,7 @@ namespace Conn.Core.Maps
         public MapDirection Direction;
         public bool BlocksMovement;
         public string RuntimeReferenceId = string.Empty;
+        public string MaterialId = string.Empty;
     }
 
     [Serializable]

@@ -916,6 +916,8 @@ namespace Conn.Tests.EditMode
             Assert.That(loaded.Objects.Count, Is.EqualTo(compiled.Objects.Count));
             Assert.That(loaded.RoomRecords.Count, Is.EqualTo(compiled.RoomRecords.Count));
             Assert.That(loaded.Sockets.Count, Is.EqualTo(compiled.Sockets.Count));
+            Assert.That(CompiledMapRuntimeLoader.FindObjectPlacement(loaded, "spawn_hint")?.MaterialId, Is.EqualTo("spawn_marker"));
+            Assert.That(CompiledMapRuntimeLoader.FindObjectPlacement(loaded, "treasure")?.MaterialId, Is.EqualTo("treasure_gold"));
             Assert.That(loaded.Placements.Exists(placement => placement.Kind == MapPlacementKind.Start), Is.True);
             Assert.That(loaded.Placements.Exists(placement => placement.Kind == MapPlacementKind.Monster), Is.True);
             Assert.That(loaded.EncounterPlacements.Count, Is.EqualTo(compiled.EncounterPlacements.Count));
@@ -1334,7 +1336,8 @@ namespace Conn.Tests.EditMode
                     Y = 1,
                     Width = 1,
                     Depth = 1,
-                    RuntimeReferenceId = "spawn_runtime"
+                    RuntimeReferenceId = "spawn_runtime",
+                    MaterialId = "spawn_marker"
                 },
                 new EditableMapObjectPlacement
                 {
@@ -1345,7 +1348,8 @@ namespace Conn.Tests.EditMode
                     Y = 1,
                     Width = 1,
                     Depth = 1,
-                    RuntimeReferenceId = "treasure_runtime"
+                    RuntimeReferenceId = "treasure_runtime",
+                    MaterialId = "treasure_gold"
                 }
             };
             return draft;

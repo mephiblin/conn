@@ -99,7 +99,8 @@ namespace Conn.Editor.Maps
                     Depth = Mathf.Max(1, placement.Depth),
                     Direction = placement.Direction,
                     BlocksMovement = placement.BlocksMovement,
-                    RuntimeReferenceId = placement.RuntimeReferenceId ?? string.Empty
+                    RuntimeReferenceId = placement.RuntimeReferenceId ?? string.Empty,
+                    MaterialId = placement.MaterialId ?? string.Empty
                 });
 
                 if (placement.Kind == RoomChunkObjectKind.SpawnHint)
