@@ -579,13 +579,17 @@ Progress note 2026-05-31:
   widths before carving a corridor.
 - `MapGenMockupDraftAsset.GenerateFromProfile()` now uses the template solver
   when template pools exist and keeps the legacy single-cell solver as fallback.
+- Added a candidate-domain builder that summarizes profile size, template pools,
+  quantity rules, density targets, required/optional room categories, blocked
+  template cells, room footprint candidates, and corridor candidates; the
+  production solver now fails early when no room footprint can fit.
 
 Goal: replace the current simple connected-cell MVP with a real rooms/corridors
 solver.
 
 Tasks:
 
-- [ ] Build a grid candidate domain from profile size, blocked regions,
+- [x] Build a grid candidate domain from profile size, blocked regions,
   room/corridor templates, quantity rules, density targets, and required rooms.
 - [x] Place multi-cell room shapes, not only single-cell room landmarks.
 - [x] Place first-class corridor templates.
@@ -611,6 +615,7 @@ Acceptance:
 
 Verification:
 
+- EditMode test for candidate-domain summary from profile/templates/rules.
 - Seed sweep across multiple profiles and sizes.
 - Tests for required room presence and reachability.
 - Tests for connector compatibility.

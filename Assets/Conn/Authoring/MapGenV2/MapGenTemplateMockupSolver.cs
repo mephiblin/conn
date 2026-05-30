@@ -60,6 +60,17 @@ namespace Conn.MapGenV2.Authoring
             var corridorTemplates = profile.StyleSet != null
                 ? profile.StyleSet.CorridorTemplates
                 : Array.Empty<MapGenCorridorTemplateAsset>();
+            var domain = MapGenCandidateDomainBuilder.Build(profile);
+            if (domain.RoomFootprintCandidateCells <= 0)
+            {
+                report.Add(new MapGenIssue(
+                    MapGenGenerationPhase.SolveMockup,
+                    "production_solver_empty_room_candidate_domain",
+                    "No room template footprint can fit inside the profile map size.",
+                    "Increase map size or use smaller room templates."));
+                return Failed(width, height, seed, report);
+            }
+
             var cells = CreateEmptyCells(width, height);
             var placements = new RoomPlacement[categories.Length];
             var rng = new MapGenRandom(seed).Fork("template_solver");

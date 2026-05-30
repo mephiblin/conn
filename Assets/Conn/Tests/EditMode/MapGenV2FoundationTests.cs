@@ -300,6 +300,70 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void CandidateDomainSummarizesProfileTemplatesAndQuantityRules()
+        {
+            var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
+            var styleSet = ScriptableObject.CreateInstance<MapGenStyleSetAsset>();
+            var ruleSet = ScriptableObject.CreateInstance<MapGenRuleSetAsset>();
+            var roomShape = ScriptableObject.CreateInstance<MapGenRoomShapeAsset>();
+            var roomTemplate = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();
+            var corridorTemplate = ScriptableObject.CreateInstance<MapGenCorridorTemplateAsset>();
+            var profile = ScriptableObject.CreateInstance<MapGenProfileAsset>();
+            GameObject floor = null;
+            GameObject wall = null;
+
+            try
+            {
+                PopulateValidWorkflowProfile(profile, styleSet, moduleSet, ruleSet, roomShape, out floor, out wall);
+                profile.MapSize = new Vector2Int(8, 6);
+                ruleSet.QuantityRules = MapGenQuantityRules.Defaults();
+                ruleSet.QuantityRules.RequiredCategories = new[] { MapGenRoomCategory.Start, MapGenRoomCategory.Exit };
+                ruleSet.QuantityRules.OptionalCategories = new[] { MapGenRoomCategory.Boss };
+                ruleSet.QuantityRules.MinRooms = 2;
+                ruleSet.QuantityRules.MaxRooms = 5;
+                ruleSet.QuantityRules.MinCorridorCells = 3;
+                ruleSet.QuantityRules.MaxCorridorCells = 20;
+                ruleSet.QuantityRules.TargetRoomDensityPercent = 30;
+                ruleSet.QuantityRules.TargetCorridorDensityPercent = 10;
+                PopulateRoomTemplate(roomTemplate, "domain_room", MapGenRoomCategory.Main);
+                roomTemplate.BlockedCells = new[] { new Vector2Int(1, 1) };
+                PopulateCorridorTemplate(corridorTemplate, "main");
+                styleSet.RoomTemplates = new[] { roomTemplate };
+                styleSet.CorridorTemplates = new[] { corridorTemplate };
+
+                var domain = MapGenCandidateDomainBuilder.Build(profile);
+
+                Assert.That(domain.Width, Is.EqualTo(8));
+                Assert.That(domain.Height, Is.EqualTo(6));
+                Assert.That(domain.RoomTemplateCount, Is.EqualTo(1));
+                Assert.That(domain.CorridorTemplateCount, Is.EqualTo(1));
+                Assert.That(domain.RequiredCategoryCount, Is.EqualTo(2));
+                Assert.That(domain.OptionalCategoryCount, Is.EqualTo(1));
+                Assert.That(domain.MinRooms, Is.EqualTo(2));
+                Assert.That(domain.MaxRooms, Is.EqualTo(5));
+                Assert.That(domain.MinCorridorCells, Is.EqualTo(3));
+                Assert.That(domain.MaxCorridorCells, Is.EqualTo(20));
+                Assert.That(domain.TargetRoomDensityPercent, Is.EqualTo(30));
+                Assert.That(domain.TargetCorridorDensityPercent, Is.EqualTo(10));
+                Assert.That(domain.BlockedTemplateCellCount, Is.EqualTo(1));
+                Assert.That(domain.RoomFootprintCandidateCells, Is.GreaterThan(0));
+                Assert.That(domain.CorridorCandidateCells, Is.GreaterThan(0));
+            }
+            finally
+            {
+                Object.DestroyImmediate(profile);
+                Object.DestroyImmediate(corridorTemplate);
+                Object.DestroyImmediate(roomTemplate);
+                Object.DestroyImmediate(roomShape);
+                Object.DestroyImmediate(ruleSet);
+                Object.DestroyImmediate(styleSet);
+                Object.DestroyImmediate(moduleSet);
+                Object.DestroyImmediate(floor);
+                Object.DestroyImmediate(wall);
+            }
+        }
+
+        [Test]
         public void ProfileValidatorReportsMissingOutputFolders()
         {
             var profile = ScriptableObject.CreateInstance<MapGenProfileAsset>();
