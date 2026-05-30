@@ -24,6 +24,7 @@ namespace Conn.MapGenV2.Authoring
         public bool SplitLargeRooms;
         public bool RemoveSmallRooms;
         public MapGenQuantityRules QuantityRules = MapGenQuantityRules.Defaults();
+        public MapGenDistanceRules DistanceRules = MapGenDistanceRules.Defaults();
         public MapGenPostProcessRules PostProcessRules = MapGenPostProcessRules.Defaults();
         public MapGenPropPlacementRules[] PropPlacementRules = Array.Empty<MapGenPropPlacementRules>();
 
@@ -32,6 +33,7 @@ namespace Conn.MapGenV2.Authoring
             var report = new MapGenValidationReport();
             SyncStructuredRulesFromLegacyFields();
             ValidateQuantityRules(report);
+            ValidateDistanceRules(report);
             ValidatePostProcessRules(report);
             ValidatePropPlacementRules(report);
             return report;
@@ -92,6 +94,18 @@ namespace Conn.MapGenV2.Authoring
                     "rule_set_invalid_corridor_density",
                     "Target corridor density must be between 0 and 100.",
                     "Set TargetCorridorDensityPercent within 0..100."));
+            }
+        }
+
+        private void ValidateDistanceRules(MapGenValidationReport report)
+        {
+            if (DistanceRules.MinStartToExitDistance < 0)
+            {
+                report.Add(new MapGenIssue(
+                    MapGenGenerationPhase.ValidateProfile,
+                    "rule_set_invalid_start_exit_distance",
+                    "Start-to-exit minimum distance cannot be negative.",
+                    "Set MinStartToExitDistance to zero or higher."));
             }
         }
 

@@ -109,6 +109,11 @@ namespace Conn.MapGenV2.Authoring
                 }
             }
 
+            if (!ValidateDistanceRules(profile.LayoutRules.DistanceRules, landmarks, placements, report))
+            {
+                return Failed(width, height, seed, report);
+            }
+
             return new MapGenMockupSolverResult
             {
                 Success = true,
@@ -351,6 +356,56 @@ namespace Conn.MapGenV2.Authoring
 
             CarveCorridor(cells, width, height, fromCoord, toCoord, Mathf.Max(1, corridor.Width), corridor.TemplateId);
             return true;
+        }
+
+        private static bool ValidateDistanceRules(
+            MapGenDistanceRules rules,
+            MapGenRequiredLandmark[] landmarks,
+            RoomPlacement[] placements,
+            MapGenValidationReport report)
+        {
+            if (rules.MinStartToExitDistance <= 0)
+            {
+                return true;
+            }
+
+            if (!TryFindPlacement(MapGenRoomCategory.Start, landmarks, placements, out var start)
+                || !TryFindPlacement(MapGenRoomCategory.Exit, landmarks, placements, out var exit))
+            {
+                return true;
+            }
+
+            var distance = Mathf.Abs(start.Center.X - exit.Center.X) + Mathf.Abs(start.Center.Y - exit.Center.Y);
+            if (distance >= rules.MinStartToExitDistance)
+            {
+                return true;
+            }
+
+            report.Add(new MapGenIssue(
+                MapGenGenerationPhase.SolveMockup,
+                "production_solver_start_exit_distance_too_short",
+                $"Start-to-exit distance {distance} is shorter than required minimum {rules.MinStartToExitDistance}.",
+                "Lower MinStartToExitDistance, increase map size, or add placement rules/templates that allow more separation."));
+            return false;
+        }
+
+        private static bool TryFindPlacement(
+            MapGenRoomCategory category,
+            MapGenRequiredLandmark[] landmarks,
+            RoomPlacement[] placements,
+            out RoomPlacement placement)
+        {
+            for (var i = 0; i < landmarks.Length && i < placements.Length; i++)
+            {
+                if (landmarks[i].Category == category)
+                {
+                    placement = placements[i];
+                    return true;
+                }
+            }
+
+            placement = default;
+            return false;
         }
 
         private static MapGenCorridorTemplateAsset PickCompatibleCorridor(

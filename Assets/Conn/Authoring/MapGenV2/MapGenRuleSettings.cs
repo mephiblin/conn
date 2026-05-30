@@ -33,6 +33,20 @@ namespace Conn.MapGenV2.Authoring
     }
 
     [Serializable]
+    public struct MapGenDistanceRules
+    {
+        public int MinStartToExitDistance;
+
+        public static MapGenDistanceRules Defaults()
+        {
+            return new MapGenDistanceRules
+            {
+                MinStartToExitDistance = 0
+            };
+        }
+    }
+
+    [Serializable]
     public struct MapGenPostProcessRules
     {
         public bool UseDirectRoutes;

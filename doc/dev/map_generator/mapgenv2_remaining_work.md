@@ -586,6 +586,8 @@ Progress note 2026-05-31:
 - Added explicit required-landmark reservation data for structured required room
   categories; the production solver now places rooms from those reserved
   landmarks instead of reading the raw category array inline.
+- Added `MapGenDistanceRules.MinStartToExitDistance` and solver diagnostics for
+  start-to-exit distance contradictions.
 
 Goal: replace the current simple connected-cell MVP with a real rooms/corridors
 solver.
@@ -599,8 +601,9 @@ Tasks:
 - [x] Enforce connector/socket compatibility between rooms and corridors.
 - [x] Reserve required landmarks:
   start, exit, quest, boss, transition, custom required categories.
-- [ ] Add distance constraints:
-  start-to-exit minimum distance, boss near late path, quest before lock, etc.
+- [x] Add start-to-exit minimum distance constraint.
+- [ ] Add remaining distance constraints:
+  boss near late path, quest before lock, etc.
 - [ ] Collapse lowest-entropy cells/regions.
 - [ ] Propagate footprint, connector, blocked-region, and adjacency
   constraints.
@@ -620,6 +623,7 @@ Verification:
 
 - EditMode test for candidate-domain summary from profile/templates/rules.
 - EditMode test for required-landmark reservation ordering and ids.
+- EditMode test for start-to-exit distance contradiction diagnostics.
 - Seed sweep across multiple profiles and sizes.
 - Tests for required room presence and reachability.
 - Tests for connector compatibility.

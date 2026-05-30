@@ -265,6 +265,8 @@ namespace Conn.Tests.EditMode
                 ruleSet.MaxRooms = 1;
                 ruleSet.QuantityRules = MapGenQuantityRules.Defaults();
                 ruleSet.QuantityRules.TargetRoomDensityPercent = 101;
+                ruleSet.DistanceRules = MapGenDistanceRules.Defaults();
+                ruleSet.DistanceRules.MinStartToExitDistance = -1;
                 ruleSet.PostProcessRules = MapGenPostProcessRules.Defaults();
                 ruleSet.PostProcessRules.MaxPasses = -1;
                 ruleSet.PropPlacementRules = new[]
@@ -284,6 +286,8 @@ namespace Conn.Tests.EditMode
                     issue => issue.Code == "rule_set_invalid_room_range"));
                 Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
                     issue => issue.Code == "rule_set_invalid_room_density"));
+                Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "rule_set_invalid_start_exit_distance"));
                 Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
                     issue => issue.Code == "rule_set_invalid_post_process_passes"));
                 Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
@@ -1117,6 +1121,51 @@ namespace Conn.Tests.EditMode
                         && cell.SourceTemplateId == "exit_template"));
                 Assert.That(first.Cells, Has.Some.Matches<MapGenMockupCell>(
                     cell => cell.State == MapGenCellState.Corridor));
+            }
+            finally
+            {
+                Object.DestroyImmediate(profile);
+                Object.DestroyImmediate(exitTemplate);
+                Object.DestroyImmediate(startTemplate);
+                Object.DestroyImmediate(roomShape);
+                Object.DestroyImmediate(ruleSet);
+                Object.DestroyImmediate(styleSet);
+                Object.DestroyImmediate(moduleSet);
+                Object.DestroyImmediate(floor);
+                Object.DestroyImmediate(wall);
+            }
+        }
+
+        [Test]
+        public void TemplateMockupSolverReportsStartExitDistanceContradiction()
+        {
+            var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
+            var styleSet = ScriptableObject.CreateInstance<MapGenStyleSetAsset>();
+            var ruleSet = ScriptableObject.CreateInstance<MapGenRuleSetAsset>();
+            var roomShape = ScriptableObject.CreateInstance<MapGenRoomShapeAsset>();
+            var startTemplate = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();
+            var exitTemplate = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();
+            var profile = ScriptableObject.CreateInstance<MapGenProfileAsset>();
+            GameObject floor = null;
+            GameObject wall = null;
+
+            try
+            {
+                PopulateValidWorkflowProfile(profile, styleSet, moduleSet, ruleSet, roomShape, out floor, out wall);
+                profile.MapSize = new Vector2Int(10, 6);
+                ruleSet.RequiredRoomCategories = new[] { MapGenRoomCategory.Start, MapGenRoomCategory.Exit };
+                ruleSet.QuantityRules.RequiredCategories = ruleSet.RequiredRoomCategories;
+                ruleSet.DistanceRules = MapGenDistanceRules.Defaults();
+                ruleSet.DistanceRules.MinStartToExitDistance = 999;
+                PopulateRoomTemplate(startTemplate, "start_template", MapGenRoomCategory.Start);
+                PopulateRoomTemplate(exitTemplate, "exit_template", MapGenRoomCategory.Exit);
+                styleSet.RoomTemplates = new[] { startTemplate, exitTemplate };
+
+                var result = MapGenTemplateMockupSolver.Generate(profile, 7001);
+
+                Assert.That(result.Success, Is.False);
+                Assert.That(result.Report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "production_solver_start_exit_distance_too_short"));
             }
             finally
             {
