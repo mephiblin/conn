@@ -1104,14 +1104,14 @@ Required automated tests:
 
 Manual checks:
 
-- [ ] create starter setup from empty scene.
-- [ ] generate several mockup seeds and inspect preview.
-- [ ] edit room shapes and regenerate.
-- [ ] swap style sets without changing abstract layout.
-- [ ] materialize real project prefabs.
-- [ ] save materialized prefab.
-- [ ] bake runtime asset and load it in a runtime scene.
-- [ ] intentionally break profile data and confirm diagnostics are actionable.
+- [x] create starter setup from empty scene.
+- [x] generate several mockup seeds and inspect preview.
+- [x] edit room shapes and regenerate.
+- [x] swap style sets without changing abstract layout.
+- [x] materialize real project prefabs.
+- [x] save materialized prefab.
+- [x] bake runtime asset and load it in a runtime scene.
+- [x] intentionally break profile data and confirm diagnostics are actionable.
 
 Suggested focused command:
 

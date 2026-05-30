@@ -78,6 +78,21 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void ManualChecklistSummaryCoversPhase15Checks()
+        {
+            var summary = MapGenV2ManualVerification.BuildManualChecklistSummary();
+
+            Assert.That(summary, Does.Contain("starter setup"));
+            Assert.That(summary, Does.Contain("several mockup seeds"));
+            Assert.That(summary, Does.Contain("room-shape edit"));
+            Assert.That(summary, Does.Contain("style-set swap"));
+            Assert.That(summary, Does.Contain("real prefab materialization"));
+            Assert.That(summary, Does.Contain("materialized prefab save"));
+            Assert.That(summary, Does.Contain("runtime bake/load"));
+            Assert.That(summary, Does.Contain("broken-profile diagnostics"));
+        }
+
+        [Test]
         public void MapGenV2WindowDefinesMinimumSizeForLocalizedText()
         {
             Assert.That(MapGenV2Window.MinimumWindowSize.x, Is.GreaterThanOrEqualTo(860f));
