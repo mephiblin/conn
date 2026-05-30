@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Conn.Core.Maps;
 using UnityEngine;
 
@@ -19,6 +20,13 @@ namespace Conn.Runtime.Maps
                 throw new InvalidOperationException("Compiled map json could not be read.");
             }
 
+            return compiled;
+        }
+
+        public static CompiledMap LoadAndValidateFromJson(string json)
+        {
+            var compiled = LoadFromJson(json);
+            MapValidationService.ThrowIfFailed(MapValidationService.ValidateCompiled(BuildValidationProfile(compiled), compiled));
             return compiled;
         }
 
@@ -83,6 +91,23 @@ namespace Conn.Runtime.Maps
             }
 
             return null;
+        }
+
+        private static MapProfile BuildValidationProfile(CompiledMap compiled)
+        {
+            return new MapProfile
+            {
+                ProfileId = compiled.ProfileId ?? string.Empty,
+                Width = compiled.Width,
+                Height = compiled.Height,
+                RequiredAnchors = new List<MapAnchorKind>
+                {
+                    MapAnchorKind.Start,
+                    MapAnchorKind.QuestTarget,
+                    MapAnchorKind.Boss,
+                    MapAnchorKind.Exit
+                }
+            };
         }
     }
 }

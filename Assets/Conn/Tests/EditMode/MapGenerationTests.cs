@@ -1073,7 +1073,7 @@ namespace Conn.Tests.EditMode
 
             var compiled = EditableMapBakeService.Bake(draft);
             var json = JsonUtility.ToJson(compiled);
-            var loaded = CompiledMapRuntimeLoader.LoadFromJson(json);
+            var loaded = CompiledMapRuntimeLoader.LoadAndValidateFromJson(json);
 
             Assert.That(loaded.MapId, Is.EqualTo(compiled.MapId));
             Assert.That(loaded.Cells.Count, Is.EqualTo(compiled.Cells.Count));
@@ -1085,6 +1085,27 @@ namespace Conn.Tests.EditMode
             Assert.That(loaded.Placements.Exists(placement => placement.Kind == MapPlacementKind.Start), Is.True);
             Assert.That(loaded.Placements.Exists(placement => placement.Kind == MapPlacementKind.Monster), Is.True);
             Assert.That(loaded.EncounterPlacements.Count, Is.EqualTo(compiled.EncounterPlacements.Count));
+        }
+
+        [Test]
+        public void RuntimeLoaderRejectsInvalidCompiledJsonWithoutExternalProfile()
+        {
+            var compiled = new CompiledMap
+            {
+                MapId = "invalid_runtime_json_probe",
+                ProfileId = MapGenerationCatalog.ChapterTwoFirstSliceProfileId,
+                Width = 4,
+                Height = 4,
+                CellSize = 1f,
+                HeightStep = 1f
+            };
+            compiled.Rooms.Add(new RoomGraphNode { Id = "start", Role = MapRoomRole.Start });
+            compiled.Placements.Add(new MapPlacement { Id = "start", Kind = MapPlacementKind.Start, RoomId = "start", X = 0, Y = 0 });
+            compiled.Objects.Add(new CompiledMapObjectPlacement { PlacementId = "bad_runtime_object", Kind = RoomChunkObjectKind.Chest, X = 9, Y = 0, Width = 1, Depth = 1 });
+
+            var exception = Assert.Throws<System.InvalidOperationException>(() => CompiledMapRuntimeLoader.LoadAndValidateFromJson(JsonUtility.ToJson(compiled)));
+
+            Assert.That(exception.Message, Does.Contain("bad_runtime_object footprint is outside map bounds"));
         }
 
         [Test]
