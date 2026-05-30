@@ -197,6 +197,7 @@ namespace Conn.Core.Maps
             }
 
             var ids = new HashSet<string>();
+            var roomRecords = BuildCompiledRoomRecordLookup(compiled);
             for (var i = 0; i < compiled.Placements.Count; i++)
             {
                 var placement = compiled.Placements[i];
@@ -221,6 +222,12 @@ namespace Conn.Core.Maps
                 else if (compiled.Cells.Count > 0 && !walkableCells.Contains(CellKey(placement.X, placement.Y)))
                 {
                     report.Errors.Add($"Compiled map placement {placement.Id} is on a non-walkable or missing cell ({placement.X}, {placement.Y}).");
+                }
+
+                if (roomRecords.TryGetValue(placement.RoomId ?? string.Empty, out var room)
+                    && !IsInsideRoomRecord(placement.X, placement.Y, room))
+                {
+                    report.Errors.Add($"Compiled map placement {placement.Id} is outside room record {placement.RoomId}.");
                 }
             }
         }

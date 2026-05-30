@@ -1060,6 +1060,8 @@ is partially complete.
 - [x] Bake anchors and encounter placements.
   - 2026-05-30: required anchor placements resolve to walkable cells inside
     the room instead of blindly using rectangular room centers.
+  - 2026-05-30: compiled map validation now rejects placements whose
+    coordinates fall outside their referenced room record.
 - [x] Validate compiled map placements remain on walkable cells before runtime
   load.
   - 2026-05-30: compiled cell-map validation now rejects slope/stair cells with
