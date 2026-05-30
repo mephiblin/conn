@@ -60,5 +60,28 @@ namespace Conn.Tests.EditMode
                 Object.DestroyImmediate(moduleSet);
             }
         }
+
+        [Test]
+        public void ProfileValidatorRequiresStyleRuleAndRoomShapes()
+        {
+            var profile = ScriptableObject.CreateInstance<MapGenProfileAsset>();
+
+            try
+            {
+                var report = profile.Validate();
+
+                Assert.That(report.IsValid, Is.False);
+                Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "profile_missing_style_set"));
+                Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "profile_missing_rule_set"));
+                Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "profile_missing_room_shapes"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(profile);
+            }
+        }
     }
 }

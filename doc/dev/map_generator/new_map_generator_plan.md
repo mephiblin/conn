@@ -1131,7 +1131,7 @@ be committed and pushed separately.
   inspector, undo/redo, validation.
 - [x] Module set authoring: `MapGenModuleSetAsset`, weighted prefab entries,
   prefab grid validation.
-- [ ] Profile/style/rule assets: profile wiring, style set, rule set, creation
+- [x] Profile/style/rule assets: profile wiring, style set, rule set, creation
   menus, default folders.
 - [ ] Validation reports: structured issue codes, suggested fixes, context
   objects, editor display.

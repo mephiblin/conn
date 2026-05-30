@@ -17,5 +17,18 @@ namespace Conn.MapGenV2.Core
                 issues.Add(issue);
             }
         }
+
+        public void AddRange(MapGenValidationReport report)
+        {
+            if (report == null)
+            {
+                return;
+            }
+
+            foreach (var issue in report.Issues)
+            {
+                Add(issue);
+            }
+        }
     }
 }
