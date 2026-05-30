@@ -25,6 +25,31 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void MapGenV2EditorTextLocalizesPrimaryWorkflowKeys()
+        {
+            var previous = MapGenV2EditorText.LanguagePreference;
+
+            try
+            {
+                MapGenV2EditorText.LanguagePreference = MapGenV2EditorLanguage.Korean;
+
+                Assert.That(MapGenV2EditorText.Get("mapgenv2.generateMockup"), Is.EqualTo("목업 생성"));
+                Assert.That(MapGenV2EditorText.Get("mapgenv2.materializeToScene"), Is.EqualTo("씬 생성"));
+                Assert.That(MapGenV2EditorText.Get("mapgenv2.profileMissing"), Is.EqualTo("프로필을 지정하세요."));
+
+                MapGenV2EditorText.LanguagePreference = MapGenV2EditorLanguage.English;
+
+                Assert.That(MapGenV2EditorText.Get("mapgenv2.generateMockup"), Is.EqualTo("Generate Mockup"));
+                Assert.That(MapGenV2EditorText.Get("mapgenv2.materializeToScene"), Is.EqualTo("Materialize To Scene"));
+                Assert.That(MapGenV2EditorText.Get("mapgenv2.profileMissing"), Is.EqualTo("Assign a profile."));
+            }
+            finally
+            {
+                MapGenV2EditorText.LanguagePreference = previous;
+            }
+        }
+
+        [Test]
         public void RoomShapeValidatorRejectsConnectorAwayFromEdge()
         {
             var cells = new MapGenShapeCell[9];

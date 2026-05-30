@@ -136,15 +136,15 @@ tool, and generated output workflow.
 
 - [ ] Provide Korean UI text for all user-facing MapGenV2 labels, buttons,
   tooltips, warnings, errors, and documentation summaries.
-- [ ] Keep English stable ids internally; localize only display strings.
-- [ ] Add a MapGenV2 localization table or lightweight editor localization
+- [x] Keep English stable ids internally; localize only display strings.
+- [x] Add a MapGenV2 localization table or lightweight editor localization
   dictionary with keys such as:
   `mapgenv2.generateMockup`, `mapgenv2.acceptMockup`,
   `mapgenv2.materializeToScene`, `mapgenv2.bakeRuntimeAsset`,
   `mapgenv2.profileMissing`, `mapgenv2.draftStale`.
-- [ ] Add a language selector in the MapGenV2 window:
+- [x] Add a language selector in the MapGenV2 window:
   `Auto`, `한국어`, `English`.
-- [ ] Default to Korean labels/help when the editor locale or user setting is
+- [x] Default to Korean labels/help when the editor locale or user setting is
   Korean, but keep asset ids, enum names, and script/API names in English.
 - [ ] Avoid layout breakage from longer Korean text by using flexible widths,
   wrapping help boxes, scroll views, and minimum window sizes.

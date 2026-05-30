@@ -6,6 +6,78 @@ using UnityEngine;
 
 namespace Conn.MapGenV2.Editor
 {
+    public enum MapGenV2EditorLanguage
+    {
+        Auto,
+        Korean,
+        English
+    }
+
+    public static class MapGenV2EditorText
+    {
+        private const string LanguagePreferenceKey = "Conn.MapGenV2.Editor.Language";
+
+        public static MapGenV2EditorLanguage LanguagePreference
+        {
+            get => (MapGenV2EditorLanguage)EditorPrefs.GetInt(LanguagePreferenceKey, (int)MapGenV2EditorLanguage.Auto);
+            set => EditorPrefs.SetInt(LanguagePreferenceKey, (int)value);
+        }
+
+        public static MapGenV2EditorLanguage ActiveLanguage
+        {
+            get
+            {
+                var preference = LanguagePreference;
+                if (preference != MapGenV2EditorLanguage.Auto)
+                {
+                    return preference;
+                }
+
+                return Application.systemLanguage == SystemLanguage.Korean
+                    ? MapGenV2EditorLanguage.Korean
+                    : MapGenV2EditorLanguage.English;
+            }
+        }
+
+        public static string Get(string key)
+        {
+            var korean = ActiveLanguage == MapGenV2EditorLanguage.Korean;
+            switch (key)
+            {
+                case "mapgenv2.language":
+                    return korean ? "언어" : "Language";
+                case "mapgenv2.createStarterSetup":
+                    return korean ? "스타터 설정 생성" : "Create Starter Setup";
+                case "mapgenv2.createDefaultFolders":
+                    return korean ? "기본 폴더 생성" : "Create Default Folders";
+                case "mapgenv2.createDraft":
+                    return korean ? "드래프트 생성" : "Create Draft";
+                case "mapgenv2.generateMockup":
+                    return korean ? "목업 생성" : "Generate Mockup";
+                case "mapgenv2.regenerateMockup":
+                    return korean ? "목업 재생성" : "Regenerate Mockup";
+                case "mapgenv2.acceptMockup":
+                    return korean ? "목업 수락" : "Accept Mockup";
+                case "mapgenv2.reacceptMockup":
+                    return korean ? "목업 재수락" : "Reaccept Mockup";
+                case "mapgenv2.materializeToScene":
+                    return korean ? "씬 생성" : "Materialize To Scene";
+                case "mapgenv2.rematerializeToScene":
+                    return korean ? "씬 재생성" : "Rematerialize To Scene";
+                case "mapgenv2.bakeRuntimeAsset":
+                    return korean ? "런타임 베이크" : "Bake Runtime Asset";
+                case "mapgenv2.rebakeRuntimeAsset":
+                    return korean ? "런타임 재베이크" : "Rebake Runtime Asset";
+                case "mapgenv2.profileMissing":
+                    return korean ? "프로필을 지정하세요." : "Assign a profile.";
+                case "mapgenv2.draftStale":
+                    return korean ? "소스 변경됨: 재생성 필요" : "Stale: regenerate required";
+                default:
+                    return key;
+            }
+        }
+    }
+
     public sealed class MapGenV2Window : EditorWindow
     {
         private const string ProfilePathKey = "Conn.MapGenV2.Window.ProfilePath";
@@ -14,6 +86,7 @@ namespace Conn.MapGenV2.Editor
         private const string OutputModeKey = "Conn.MapGenV2.Window.OutputMode";
         private const string ShowPropOverlayKey = "Conn.MapGenV2.Window.ShowPropOverlay";
         private const string ShowPostProcessOverlayKey = "Conn.MapGenV2.Window.ShowPostProcessOverlay";
+        private static readonly string[] LanguageOptions = { "Auto", "한국어", "English" };
         private static readonly Color EmptyColor = new Color(0.04f, 0.08f, 0.9f, 1f);
         private static readonly Color RoomColor = new Color(0.9f, 0f, 0f, 1f);
         private static readonly Color CorridorColor = new Color(0f, 0f, 0f, 1f);
@@ -81,13 +154,14 @@ namespace Conn.MapGenV2.Editor
         {
             scroll = EditorGUILayout.BeginScrollView(scroll);
             EditorGUILayout.LabelField("MapGenV2", EditorStyles.boldLabel);
+            DrawLanguageSelector();
             var workflow = MapGenV2WorkflowStatus.From(profile, draft);
             DrawWorkflowStatus(workflow);
             DrawReferenceFields();
 
             using (new EditorGUILayout.HorizontalScope())
             {
-                if (GUILayout.Button("Create Starter Setup"))
+                if (GUILayout.Button(MapGenV2EditorText.Get("mapgenv2.createStarterSetup")))
                 {
                     var setup = MapGenV2StarterSetupBuilder.CreateStarterProfileSetup();
                     profile = setup.Profile;
@@ -97,13 +171,13 @@ namespace Conn.MapGenV2.Editor
                     SaveWindowState();
                 }
 
-                if (GUILayout.Button("Create Default Folders"))
+                if (GUILayout.Button(MapGenV2EditorText.Get("mapgenv2.createDefaultFolders")))
                 {
                     MapGenV2AssetFolderUtility.CreateDefaultFolders();
                     lastOperationResult = "Default MapGenV2 folders created or already existed.";
                 }
 
-                if (GUILayout.Button("Create Draft"))
+                if (GUILayout.Button(MapGenV2EditorText.Get("mapgenv2.createDraft")))
                 {
                     CreateDraft();
                     SaveWindowState();
@@ -165,6 +239,26 @@ namespace Conn.MapGenV2.Editor
             GUI.backgroundColor = previousColor;
         }
 
+        private void DrawLanguageSelector()
+        {
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                GUILayout.FlexibleSpace();
+                var preference = MapGenV2EditorText.LanguagePreference;
+                EditorGUI.BeginChangeCheck();
+                var selected = EditorGUILayout.Popup(
+                    MapGenV2EditorText.Get("mapgenv2.language"),
+                    (int)preference,
+                    LanguageOptions,
+                    GUILayout.Width(220f));
+                if (EditorGUI.EndChangeCheck())
+                {
+                    MapGenV2EditorText.LanguagePreference = (MapGenV2EditorLanguage)selected;
+                    Repaint();
+                }
+            }
+        }
+
         private void DrawReferenceFields()
         {
             EditorGUI.BeginChangeCheck();
@@ -185,7 +279,7 @@ namespace Conn.MapGenV2.Editor
         {
             if (profile == null)
             {
-                EditorGUILayout.HelpBox("Assign a profile.", MessageType.Info);
+                EditorGUILayout.HelpBox(MapGenV2EditorText.Get("mapgenv2.profileMissing"), MessageType.Info);
                 return;
             }
 
@@ -508,8 +602,8 @@ namespace Conn.MapGenV2.Editor
                 using (new EditorGUI.DisabledScope(!workflow.CanGenerate))
                 {
                     var generateLabel = workflow.HasGeneratedMockup && !workflow.GeneratedCurrent
-                        ? "Regenerate Mockup / 목업 재생성"
-                        : "Generate Mockup / 목업 생성";
+                        ? MapGenV2EditorText.Get("mapgenv2.regenerateMockup")
+                        : MapGenV2EditorText.Get("mapgenv2.generateMockup");
                     if (GUILayout.Button(generateLabel))
                     {
                         GenerateMockup("Generate Mockup");
@@ -535,8 +629,8 @@ namespace Conn.MapGenV2.Editor
                 using (new EditorGUI.DisabledScope(!workflow.CanAccept))
                 {
                     var acceptLabel = workflow.Accepted
-                        ? "Reaccept Mockup / 목업 재수락"
-                        : "Accept Mockup / 목업 수락";
+                        ? MapGenV2EditorText.Get("mapgenv2.reacceptMockup")
+                        : MapGenV2EditorText.Get("mapgenv2.acceptMockup");
                     if (GUILayout.Button(acceptLabel))
                     {
                         Undo.RecordObject(draft, "Accept Mockup");
@@ -590,8 +684,8 @@ namespace Conn.MapGenV2.Editor
                 using (new EditorGUI.DisabledScope(!workflow.CanMaterialize))
                 {
                     var materializeLabel = ShouldRematerialize()
-                        ? "Rematerialize To Scene / 씬 재생성"
-                        : "Materialize To Scene / 씬 생성";
+                        ? MapGenV2EditorText.Get("mapgenv2.rematerializeToScene")
+                        : MapGenV2EditorText.Get("mapgenv2.materializeToScene");
                     if (GUILayout.Button(materializeLabel))
                     {
                         MaterializeToScene();
@@ -601,8 +695,8 @@ namespace Conn.MapGenV2.Editor
                 using (new EditorGUI.DisabledScope(!workflow.CanBakeRuntime))
                 {
                     var bakeLabel = ShouldRebake()
-                        ? "Rebake Runtime Asset / 런타임 재베이크"
-                        : "Bake Runtime Asset / 런타임 베이크";
+                        ? MapGenV2EditorText.Get("mapgenv2.rebakeRuntimeAsset")
+                        : MapGenV2EditorText.Get("mapgenv2.bakeRuntimeAsset");
                     if (GUILayout.Button(bakeLabel))
                     {
                         BakeRuntimeAsset();
@@ -1030,7 +1124,9 @@ namespace Conn.MapGenV2.Editor
                 EditorGUILayout.LabelField("생성 서명 / Generated Signature", string.IsNullOrEmpty(previewData.LastGeneratedSignature) ? "(none)" : previewData.LastGeneratedSignature);
                 EditorGUILayout.LabelField("현재 서명 / Current Signature", previewData.CurrentSignature);
                 EditorGUILayout.LabelField("수락 서명 / Accepted Signature", string.IsNullOrEmpty(previewData.AcceptedSignature) ? "(none)" : previewData.AcceptedSignature);
-                EditorGUILayout.LabelField("생성 상태 / Generated State", previewData.GeneratedSignatureCurrent ? "최신 / Current" : "소스 변경됨: 재생성 필요 / Stale");
+                EditorGUILayout.LabelField(
+                    "생성 상태 / Generated State",
+                    previewData.GeneratedSignatureCurrent ? "최신 / Current" : MapGenV2EditorText.Get("mapgenv2.draftStale"));
                 EditorGUILayout.LabelField(
                     "상태 / State",
                     previewData.Accepted
