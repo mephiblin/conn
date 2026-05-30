@@ -725,6 +725,10 @@ Verification:
 The previous remaining-work document covered immediate UX gaps but missed these
 production-critical areas:
 
+- module bounds/chunk size contract for real prefabs
+- compiled module/template database or cache before generation
+- door connector/blocker prefab authoring for used and unused openings
+- connection tag allow/deny rules beyond socket ids
 - explicit room template asset
 - explicit corridor template asset
 - generated mockup room/corridor region selection and editing
@@ -737,14 +741,21 @@ production-critical areas:
 - output settings and overwrite policy
 - stale detection and versioning
 - diagnostics severity/context model
+- WFC candidate/entropy/contradiction diagnostics for designer debugging
+- explicit mockup override records instead of loose grid mutations
 - save/reload and migration strategy
 - production documentation and troubleshooting
 - separation of MapGenV2 test gates from legacy map generator failures
 - performance budgets and cancellation
+- optional sector/streaming partition metadata for large maps
 - package hygiene for generated local assets
 - integration contracts with existing runtime systems
 
 These are now included above as required completion work.
+
+See also:
+
+- `mapgenv2_external_reference_review.md`
 
 ## Recommended Commit Order For Next Session
 
