@@ -2181,11 +2181,14 @@ namespace Conn.Tests.EditMode
                 var floorMarker = System.Array.Find(moduleMarkers, marker => marker.ModuleCategory == MapGenModuleCategory.FloorA);
                 var navigationMarker = System.Array.Find(moduleMarkers, marker => marker.ModuleCategory == MapGenModuleCategory.NavigationHelper);
                 Assert.That(floorMarker, Is.Not.Null);
+                Assert.That(floorMarker.name, Does.Contain("FloorA_0_0_R3_Tstart_template"));
+                Assert.That(floorMarker.name, Does.Contain("Floor"));
                 Assert.That(floorMarker.RegionId, Is.EqualTo(3));
                 Assert.That(floorMarker.SourceTemplateId, Is.EqualTo("start_template"));
                 Assert.That(floorMarker.DraftSignature, Is.EqualTo(draft.AcceptedSignature));
                 Assert.That(floorMarker.ModuleSetSignature, Is.EqualTo(moduleSetSignature));
                 Assert.That(navigationMarker, Is.Not.Null);
+                Assert.That(navigationMarker.name, Does.Contain("NavigationHelper_0_0_R3_Tstart_template_NavigationHelper"));
                 Assert.That(navigationMarker.transform.parent.name, Is.EqualTo("Navigation"));
                 Assert.That(navigationMarker.RegionId, Is.EqualTo(3));
                 Assert.That(navigationMarker.SourceTemplateId, Is.EqualTo("start_template"));

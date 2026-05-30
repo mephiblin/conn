@@ -524,7 +524,29 @@ namespace Conn.MapGenV2.Editor
             MapGenModuleRequest request,
             string moduleId)
         {
-            return $"{request.Category}_{request.Coord.X}_{request.Coord.Y}_R{request.RegionId}_{moduleId}";
+            var template = string.IsNullOrWhiteSpace(request.SourceTemplateId)
+                ? "NoTemplate"
+                : SanitizeNameToken(request.SourceTemplateId);
+            return $"{request.Category}_{request.Coord.X}_{request.Coord.Y}_R{request.RegionId}_T{template}_{SanitizeNameToken(moduleId)}";
+        }
+
+        private static string SanitizeNameToken(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return "None";
+            }
+
+            var chars = value.ToCharArray();
+            for (var i = 0; i < chars.Length; i++)
+            {
+                if (!char.IsLetterOrDigit(chars[i]) && chars[i] != '_' && chars[i] != '-')
+                {
+                    chars[i] = '_';
+                }
+            }
+
+            return new string(chars);
         }
 
         private static void AttachSourceMarker(

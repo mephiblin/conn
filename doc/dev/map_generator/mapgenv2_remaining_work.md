@@ -191,7 +191,7 @@ tool, and generated output workflow.
   `MapGenV2_<Profile>_<Seed>`
   with child groups `Floors`, `Corridors`, `Walls`, `Ceilings`, `Doors`,
   `Blockers`, `Props`, `Navigation`, `Debug`.
-- [ ] Generated scene objects should have clear names:
+- [x] Generated scene objects should have clear names:
   category, grid coordinate, region id, template id, and module id where
   practical.
 - [ ] Materialized output should use real prefabs when available and readable
