@@ -1047,6 +1047,8 @@ is partially complete.
 - [x] Bake objects to runtime-safe records.
   - 2026-05-30: compiled object validation now rejects footprints that cross
     multiple room cell ids or sit on cells without room ownership.
+  - 2026-05-30: compiled object validation now rejects object records that
+    lack both `RuntimeReferenceId` and `PaletteObjectId`.
 - [x] Bake rooms and zones.
   - 2026-05-30: compiled room-record validation now rejects missing ids,
     duplicate ids, missing graph-room matches, invalid or out-of-bounds room

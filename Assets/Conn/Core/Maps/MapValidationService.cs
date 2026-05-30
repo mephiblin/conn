@@ -490,6 +490,12 @@ namespace Conn.Core.Maps
                     report.Errors.Add($"Compiled map contains duplicate object placement id: {placement.PlacementId}.");
                 }
 
+                if (string.IsNullOrWhiteSpace(placement.RuntimeReferenceId)
+                    && string.IsNullOrWhiteSpace(placement.PaletteObjectId))
+                {
+                    report.Errors.Add($"Compiled map object {placement.PlacementId} has no runtime reference or palette object id.");
+                }
+
                 var footprintRoomId = string.Empty;
                 for (var dy = 0; dy < Math.Max(1, placement.Depth); dy++)
                 {

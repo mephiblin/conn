@@ -111,6 +111,7 @@ namespace Conn.Tests.EditMode
             Assert.That(report.Errors.Exists(error => error.Contains("cell (0, 0)") && error.Contains("missing zone missing_zone")), Is.True);
             Assert.That(report.Errors.Exists(error => error.Contains("placement blocked_spawn") && error.Contains("non-walkable or missing cell (1, 0)")), Is.True);
             Assert.That(report.Errors.Exists(error => error.Contains("duplicate object placement id: duplicate_object")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("duplicate_object has no runtime reference or palette object id")), Is.True);
             Assert.That(report.Errors.Exists(error => error.Contains("duplicate_object overlaps non-walkable or missing cell (1, 0)")), Is.True);
             Assert.That(report.Errors.Exists(error => error.Contains("duplicate_object footprint is outside map bounds")), Is.True);
             Assert.That(report.Errors.Exists(error => error.Contains("overlap_b overlaps object overlap_a at (0, 0)")), Is.True);
