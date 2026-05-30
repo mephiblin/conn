@@ -524,6 +524,9 @@ Progress note 2026-05-31:
 - `MapGenRoomTemplateAsset` now stores source room-shape references, validates
   empty source-shape slots, and has a custom inspector with summary counts,
   source shape references, cell/connector data, and validation output.
+- `MapGenCorridorTemplateAsset` now has a custom inspector for straight, turn,
+  T, cross, and variable-length authoring data, showing kind, turn kind, width,
+  length range, max footprint, connectors, prop channels, and validation.
 
 Goal: make room/chunk shapes editable as real grid assets.
 
@@ -538,7 +541,7 @@ Tasks:
 - [x] Add rotate/flip preview.
 - [x] Add “create approved variant” actions for rotated/flipped variants.
 - [x] Add template editor that references one or more room shapes.
-- [ ] Add corridor template editor for straight, turn, T, cross, and variable
+- [x] Add corridor template editor for straight, turn, T, cross, and variable
   length templates.
 - [ ] Add validation panel showing occupied cells, connector count, invalid
   sockets, and footprint.
