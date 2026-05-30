@@ -10,6 +10,7 @@ namespace Conn.MapGenV2.Core
         public MapGenRoomCategory RoomCategory;
         public MapGenSocketKind SocketKind;
         public string SocketId;
+        public int SocketWidth;
         public string PropChannel;
         public string SourceTemplateId;
         public string SourceShapeId;
@@ -21,6 +22,7 @@ namespace Conn.MapGenV2.Core
             RoomCategory = MapGenRoomCategory.Main,
             SocketKind = MapGenSocketKind.None,
             SocketId = string.Empty,
+            SocketWidth = 0,
             PropChannel = string.Empty,
             SourceTemplateId = string.Empty,
             SourceShapeId = string.Empty

@@ -56,7 +56,11 @@ namespace Conn.MapGenV2.Core
 
                 if (cell.State == MapGenCellState.Connector && cell.SocketKind == MapGenSocketKind.Door)
                 {
-                    AddDoorRequests(requests, cell, coord, PickConnectorDirection(width, height, cells, coord));
+                    var doorDirection = PickConnectorDirection(width, height, cells, coord);
+                    if (!IsConnectorWidthContinuation(width, cells, coord, doorDirection, cell))
+                    {
+                        AddDoorRequests(requests, cell, coord, doorDirection);
+                    }
                 }
 
                 if (!string.IsNullOrWhiteSpace(cell.PropChannel))
@@ -101,6 +105,7 @@ namespace Conn.MapGenV2.Core
                 Coord = coord,
                 Direction = direction,
                 RegionId = cell.RegionId,
+                ConnectorWidth = cell.State == MapGenCellState.Connector ? System.Math.Max(1, cell.SocketWidth) : 0,
                 SourceTemplateId = cell.SourceTemplateId
             });
         }
@@ -116,11 +121,15 @@ namespace Conn.MapGenV2.Core
             var east = IsBoundary(width, height, cells, coord, MapGenGridDirection.East);
             var south = IsBoundary(width, height, cells, coord, MapGenGridDirection.South);
             var west = IsBoundary(width, height, cells, coord, MapGenGridDirection.West);
+            var cell = cells[coord.ToIndex(width)];
+            var doorOpening = cell.State == MapGenCellState.Connector && cell.SocketKind == MapGenSocketKind.Door
+                ? PickConnectorDirection(width, height, cells, coord)
+                : (MapGenGridDirection?)null;
 
-            AddWall(requests, cells, width, coord, MapGenGridDirection.North, north);
-            AddWall(requests, cells, width, coord, MapGenGridDirection.East, east);
-            AddWall(requests, cells, width, coord, MapGenGridDirection.South, south);
-            AddWall(requests, cells, width, coord, MapGenGridDirection.West, west);
+            AddWall(requests, cells, width, coord, MapGenGridDirection.North, north && doorOpening != MapGenGridDirection.North);
+            AddWall(requests, cells, width, coord, MapGenGridDirection.East, east && doorOpening != MapGenGridDirection.East);
+            AddWall(requests, cells, width, coord, MapGenGridDirection.South, south && doorOpening != MapGenGridDirection.South);
+            AddWall(requests, cells, width, coord, MapGenGridDirection.West, west && doorOpening != MapGenGridDirection.West);
             AddCorner(requests, cells, width, coord, north && east);
             AddCorner(requests, cells, width, coord, east && south);
             AddCorner(requests, cells, width, coord, south && west);
@@ -238,6 +247,33 @@ namespace Conn.MapGenV2.Core
             }
 
             return MapGenGridDirection.North;
+        }
+
+        private static bool IsConnectorWidthContinuation(
+            int width,
+            MapGenMockupCell[] cells,
+            MapGenGridCoord coord,
+            MapGenGridDirection doorDirection,
+            MapGenMockupCell cell)
+        {
+            var previous = coord.Offset(PreviousConnectorSegmentDirection(doorDirection));
+            if (!previous.IsInBounds(width, cells.Length / width))
+            {
+                return false;
+            }
+
+            var previousCell = cells[previous.ToIndex(width)];
+            return previousCell.State == MapGenCellState.Connector
+                && previousCell.SocketKind == MapGenSocketKind.Door
+                && previousCell.SocketWidth == cell.SocketWidth
+                && string.Equals(previousCell.SocketId ?? string.Empty, cell.SocketId ?? string.Empty, System.StringComparison.Ordinal);
+        }
+
+        private static MapGenGridDirection PreviousConnectorSegmentDirection(MapGenGridDirection doorDirection)
+        {
+            return doorDirection == MapGenGridDirection.North || doorDirection == MapGenGridDirection.South
+                ? MapGenGridDirection.West
+                : MapGenGridDirection.South;
         }
 
         private static int CountNavigableNeighbors(

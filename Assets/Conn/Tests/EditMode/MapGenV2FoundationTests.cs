@@ -195,6 +195,40 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void RoomTemplateValidatorReportsConnectorWidthOutsideSide()
+        {
+            var template = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();
+
+            try
+            {
+                template.TemplateId = "wide_door_template";
+                template.Footprint = new Vector2Int(2, 2);
+                template.FloorCells = new[] { Vector2Int.zero };
+                template.Connectors = new[]
+                {
+                    new MapGenConnector
+                    {
+                        Side = MapGenGridDirection.North,
+                        LocalCell = new Vector2Int(1, 1),
+                        SocketKind = MapGenSocketKind.Door,
+                        SocketId = "wide",
+                        Width = 2
+                    }
+                };
+
+                var report = template.Validate();
+
+                Assert.That(report.IsValid, Is.False);
+                Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "template_connector_width_out_of_bounds"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(template);
+            }
+        }
+
+        [Test]
         public void RoomTemplateValidatorReportsNullSourceShapeSlot()
         {
             var template = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();
@@ -1867,11 +1901,46 @@ namespace Conn.Tests.EditMode
             Assert.That(requests, Has.Exactly(1).Matches<MapGenModuleRequest>(
                 request => request.Category == MapGenModuleCategory.DoorWhole
                     && request.RegionId == 9
+                    && request.ConnectorWidth == 1
                     && request.SourceTemplateId == "door_template"));
             Assert.That(requests, Has.Exactly(1).Matches<MapGenModuleRequest>(
                 request => request.Category == MapGenModuleCategory.DoorFrameHalf));
             Assert.That(requests, Has.Exactly(1).Matches<MapGenModuleRequest>(
                 request => request.Category == MapGenModuleCategory.DoorPanelHalf));
+        }
+
+        [Test]
+        public void MaterializationClassifierUsesConnectorWidthForDoorOpenings()
+        {
+            var cells = new[]
+            {
+                new MapGenMockupCell
+                {
+                    State = MapGenCellState.Connector,
+                    RegionId = 9,
+                    SocketKind = MapGenSocketKind.Door,
+                    SocketId = "wide",
+                    SocketWidth = 2
+                },
+                new MapGenMockupCell
+                {
+                    State = MapGenCellState.Connector,
+                    RegionId = 9,
+                    SocketKind = MapGenSocketKind.Door,
+                    SocketId = "wide",
+                    SocketWidth = 2
+                }
+            };
+
+            var requests = MapGenMaterializationClassifier.Classify(2, 1, cells);
+
+            Assert.That(requests, Has.Exactly(1).Matches<MapGenModuleRequest>(
+                request => request.Category == MapGenModuleCategory.DoorWhole
+                    && request.ConnectorWidth == 2
+                    && request.Coord == new MapGenGridCoord(0, 0)));
+            Assert.That(requests, Has.None.Matches<MapGenModuleRequest>(
+                request => request.Category == MapGenModuleCategory.WallStraight
+                    && request.Direction == MapGenGridDirection.North));
         }
 
         [Test]
@@ -2134,7 +2203,7 @@ namespace Conn.Tests.EditMode
                     continue;
                 }
 
-                signature += $"{i}:{cell.State}:{cell.RegionId}:{cell.RoomCategory}:{cell.SocketKind}:{cell.SocketId}:{cell.SourceTemplateId}:{cell.SourceShapeId}|";
+                signature += $"{i}:{cell.State}:{cell.RegionId}:{cell.RoomCategory}:{cell.SocketKind}:{cell.SocketId}:{cell.SocketWidth}:{cell.SourceTemplateId}:{cell.SourceShapeId}|";
             }
 
             return signature;

@@ -9,6 +9,7 @@ namespace Conn.MapGenV2.Core
         public MapGenGridCoord Coord;
         public MapGenGridDirection Direction;
         public int RegionId;
+        public int ConnectorWidth;
         public string SourceTemplateId;
     }
 }

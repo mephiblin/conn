@@ -582,6 +582,7 @@ namespace Conn.MapGenV2.Authoring
             cell.RegionId = regionId;
             cell.SocketKind = state == MapGenCellState.Blocked ? MapGenSocketKind.Blocked : MapGenSocketKind.None;
             cell.SocketId = string.Empty;
+            cell.SocketWidth = state == MapGenCellState.Blocked ? 1 : 0;
             cell.PropChannel = string.Empty;
             return cell;
         }
@@ -750,6 +751,7 @@ namespace Conn.MapGenV2.Authoring
                 Add(ref hash, connector.LocalCell.y);
                 Add(ref hash, (int)connector.SocketKind);
                 Add(ref hash, connector.SocketId);
+                Add(ref hash, connector.Width);
             }
         }
 

@@ -725,6 +725,9 @@ Progress note 2026-05-31:
   reports prefab root pivot/rotation/scale mismatches before materialization.
 - Ceiling classification now distinguishes room interior ceilings from
   corridor/connector exterior ceilings.
+- Door connector width is now preserved on mockup cells and materialization
+  requests. Multi-cell door openings suppress overlapping wall requests and
+  emit a single door module request carrying the connector width.
 
 Goal: turn accepted mockups into readable project-prefab maps.
 
@@ -744,7 +747,7 @@ Tasks:
 - [x] Add explicit pivot-rule validation.
 - [x] Deterministically choose weighted module entries.
 - [x] Support whole doors and split door frames/panels.
-- [ ] Support connector-width-aware door openings.
+- [x] Support connector-width-aware door openings.
 - [x] Add overlap detection.
 - [x] Add missing-module warnings before instantiation.
 - [x] Group output hierarchy:
@@ -772,6 +775,8 @@ Verification:
 - EditMode test for exterior ceiling classification.
 - EditMode test for navigation-helper scene grouping and source metadata.
 - EditMode test for module bounds contract prefab root validation.
+- EditMode tests for connector-width validation and door-opening
+  materialization requests.
 - EditMode test for missing prefab/module reports.
 - Manual Unity check with at least two style sets.
 

@@ -49,6 +49,15 @@ namespace Conn.MapGenV2.Authoring
                     $"{ownerId} connector {index} is not on its declared side.",
                     "Move the connector to the matching footprint edge."));
             }
+
+            if (!ConnectorWidthFits(connector, footprint))
+            {
+                report.Add(new MapGenIssue(
+                    MapGenGenerationPhase.ValidateProfile,
+                    "template_connector_width_out_of_bounds",
+                    $"{ownerId} connector {index} width exceeds the template side.",
+                    "Move the connector start cell or reduce its width so the full opening remains on the declared side."));
+            }
         }
 
         public static bool AreCompatible(MapGenConnector a, MapGenConnector b)
@@ -81,6 +90,20 @@ namespace Conn.MapGenV2.Authoring
         public static bool IsInBounds(Vector2Int cell, Vector2Int footprint)
         {
             return cell.x >= 0 && cell.y >= 0 && cell.x < footprint.x && cell.y < footprint.y;
+        }
+
+        private static bool ConnectorWidthFits(MapGenConnector connector, Vector2Int footprint)
+        {
+            var width = Math.Max(1, connector.Width);
+            var lastCell = connector.LocalCell + ConnectorTangentOffset(connector.Side, width - 1);
+            return IsInBounds(lastCell, footprint) && IsOnSide(lastCell, footprint, connector.Side);
+        }
+
+        private static Vector2Int ConnectorTangentOffset(MapGenGridDirection side, int distance)
+        {
+            return side == MapGenGridDirection.North || side == MapGenGridDirection.South
+                ? new Vector2Int(distance, 0)
+                : new Vector2Int(0, distance);
         }
 
         private static bool SocketKindsCompatible(MapGenSocketKind a, MapGenSocketKind b)

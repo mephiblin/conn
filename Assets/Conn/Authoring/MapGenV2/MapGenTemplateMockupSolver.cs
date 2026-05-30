@@ -473,6 +473,7 @@ namespace Conn.MapGenV2.Authoring
                     RoomCategory = category,
                     SocketKind = MapGenSocketKind.Blocked,
                     SocketId = string.Empty,
+                    SocketWidth = 1,
                     PropChannel = string.Empty,
                     SourceTemplateId = template.TemplateId,
                     SourceShapeId = string.Empty
@@ -481,17 +482,22 @@ namespace Conn.MapGenV2.Authoring
 
             foreach (var connector in template.Connectors ?? Array.Empty<MapGenConnector>())
             {
-                SetCell(cells, width, origin, connector.LocalCell, new MapGenMockupCell
+                var connectorWidth = Mathf.Max(1, connector.Width);
+                for (var i = 0; i < connectorWidth; i++)
                 {
-                    State = MapGenCellState.Connector,
-                    RegionId = regionId,
-                    RoomCategory = category,
-                    SocketKind = connector.SocketKind,
-                    SocketId = connector.SocketId ?? string.Empty,
-                    PropChannel = string.Empty,
-                    SourceTemplateId = template.TemplateId,
-                    SourceShapeId = string.Empty
-                });
+                    SetCell(cells, width, origin, connector.LocalCell + ConnectorTangentOffset(connector.Side, i), new MapGenMockupCell
+                    {
+                        State = MapGenCellState.Connector,
+                        RegionId = regionId,
+                        RoomCategory = category,
+                        SocketKind = connector.SocketKind,
+                        SocketId = connector.SocketId ?? string.Empty,
+                        SocketWidth = connectorWidth,
+                        PropChannel = string.Empty,
+                        SourceTemplateId = template.TemplateId,
+                        SourceShapeId = string.Empty
+                    });
+                }
             }
         }
 
@@ -812,6 +818,13 @@ namespace Conn.MapGenV2.Authoring
                 cells[index].SourceTemplateId = sourceTemplateId ?? string.Empty;
                 cells[index].SourceShapeId = string.Empty;
             }
+        }
+
+        private static Vector2Int ConnectorTangentOffset(MapGenGridDirection side, int distance)
+        {
+            return side == MapGenGridDirection.North || side == MapGenGridDirection.South
+                ? new Vector2Int(distance, 0)
+                : new Vector2Int(0, distance);
         }
 
         private static MapGenMockupCell[] CreateEmptyCells(int width, int height)
