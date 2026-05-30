@@ -184,7 +184,13 @@ namespace Conn.UI.Runtime
                 key.Append('|').Append(session.Combat.Active)
                     .Append('|').Append(session.Combat.Enemy.Hp)
                     .Append('|').Append(session.Combat.LastMessage)
-                    .Append('|').Append(session.Combat.SelectedDiceCount);
+                    .Append('|').Append(session.Combat.SelectedDiceCount)
+                    .Append('|').Append(session.Combat.ReelSpinActive)
+                    .Append('|').Append(session.Combat.ReelStopCount);
+                if (session.Combat.ReelSpinActive)
+                {
+                    key.Append('|').Append(Mathf.FloorToInt(Time.unscaledTime * 8f));
+                }
             }
 
             return key.ToString();
@@ -739,7 +745,15 @@ namespace Conn.UI.Runtime
             var command = Panel("CombatCommandPanel");
             BuildPanel(command, $"Round {session.Combat.Round}", true);
             AddText(command, session.Combat.LastMessage);
-            AddButton(command, "Flee", () => CombatRuntimeService.Flee(session));
+            AddText(
+                command,
+                session.Combat.ReelSpinActive
+                    ? $"SPINNING {session.Combat.DiceFaces.Count} REELS"
+                    : $"READY {session.Combat.SelectedDiceCount}/3");
+            var commandRow = AddHorizontalGroup(command, 10f);
+            AddButton(commandRow, "STOP", () => CombatRuntimeService.StopReels(session), CombatRuntimeService.CanStopReels(session));
+            AddButton(commandRow, "Attack", () => CombatRuntimeService.ResolveSelectedDice(session), !session.Combat.ReelSpinActive);
+            AddButton(commandRow, "Flee", () => CombatRuntimeService.Flee(session));
 
             var status = Panel("CombatStatusPanel");
             BuildPanel(status, "Player", true);
@@ -748,14 +762,18 @@ namespace Conn.UI.Runtime
             AddText(status, CombatRuntimeService.DescribeCombatantStatuses(session.Combat.Player));
 
             var dice = Panel("CombatDicePanel");
-            BuildPanel(dice, $"Dice {session.Combat.SelectedDiceCount}/3", true);
+            BuildPanel(dice, "Skill Roulette", true);
+            AddText(
+                dice,
+                session.Combat.ReelSpinActive
+                    ? "모든 릴이 동시에 회전 중이다. STOP을 누르면 슬롯머신처럼 전체 결과가 한 번에 확정된다."
+                    : "멈춘 결과 중 최대 3개를 선택해 공격을 만든다.");
+            AddText(dice, $"선택 {session.Combat.SelectedDiceCount}/3 · 릴 {session.Combat.DiceFaces.Count}개");
+            var reelTray = AddHorizontalGroup(dice, 14f);
             for (var i = 0; i < session.Combat.DiceFaces.Count; i++)
             {
-                var faceIndex = i;
-                AddButton(dice, CombatRuntimeService.DescribeDiceFace(session.Combat.DiceFaces[i]), () => CombatRuntimeService.ToggleDieSelection(session, faceIndex), !session.Combat.DiceFaces[i].IsCoolingDown);
+                AddCombatReelCard(reelTray, session, session.Combat.DiceFaces[i]);
             }
-
-            AddButton(dice, "Attack", () => CombatRuntimeService.ResolveSelectedDice(session));
 
             HidePanel("CombatLogPanel");
         }
@@ -907,6 +925,144 @@ namespace Conn.UI.Runtime
             text.horizontalOverflow = HorizontalWrapMode.Wrap;
             text.raycastTarget = false;
             return button;
+        }
+
+        private RectTransform AddHorizontalGroup(Transform parent, float spacing)
+        {
+            var obj = new GameObject("Row");
+            obj.transform.SetParent(ContentParent(parent), false);
+            var rect = obj.AddComponent<RectTransform>();
+            var layout = obj.AddComponent<HorizontalLayoutGroup>();
+            layout.spacing = spacing;
+            layout.childControlWidth = true;
+            layout.childControlHeight = true;
+            layout.childForceExpandWidth = true;
+            layout.childForceExpandHeight = false;
+            obj.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            return rect;
+        }
+
+        private void AddCombatReelCard(Transform parent, GameSessionState session, Conn.Core.Combat.DiceFaceState face)
+        {
+            var obj = new GameObject($"Reel{face.Index + 1}");
+            obj.transform.SetParent(parent, false);
+            var image = obj.AddComponent<Image>();
+            image.color = face.Selected
+                ? new Color(0.52f, 0.34f, 0.16f, 0.92f)
+                : new Color(0.16f, 0.19f, 0.27f, 0.96f);
+            var button = obj.AddComponent<Button>();
+            button.interactable = face.ReelStopped && !session.Combat.ReelSpinActive && !face.IsCoolingDown;
+            var faceIndex = face.Index;
+            button.onClick.AddListener(() => CombatRuntimeService.ToggleDieSelection(session, faceIndex));
+
+            var layout = obj.AddComponent<LayoutElement>();
+            layout.minWidth = 150f;
+            layout.preferredWidth = 170f;
+            layout.minHeight = 242f;
+
+            var vertical = obj.AddComponent<VerticalLayoutGroup>();
+            vertical.padding = new RectOffset(12, 12, 12, 12);
+            vertical.spacing = 8f;
+            vertical.childAlignment = TextAnchor.UpperCenter;
+            vertical.childControlWidth = true;
+            vertical.childControlHeight = false;
+            vertical.childForceExpandHeight = false;
+
+            AddTextRaw(obj.transform, $"R{face.Index + 1}", 18, FontStyle.Bold);
+            if (face.IsCoolingDown)
+            {
+                AddTextRaw(obj.transform, $"Cooldown {face.Cooldown}", 12, FontStyle.Bold);
+            }
+            else if (face.Selected)
+            {
+                AddTextRaw(obj.transform, "Selected", 12, FontStyle.Bold);
+            }
+            else
+            {
+                AddTextRaw(obj.transform, face.ReelStopped ? "Locked" : "Spinning", 12, FontStyle.Bold);
+            }
+
+            var window = new GameObject("Window");
+            window.transform.SetParent(obj.transform, false);
+            var windowImage = window.AddComponent<Image>();
+            windowImage.color = new Color(0.87f, 0.88f, 0.93f, 0.96f);
+            var windowLayout = window.AddComponent<LayoutElement>();
+            windowLayout.minHeight = 132f;
+            var windowVertical = window.AddComponent<VerticalLayoutGroup>();
+            windowVertical.padding = new RectOffset(8, 8, 8, 8);
+            windowVertical.spacing = 4f;
+            windowVertical.childControlWidth = true;
+            windowVertical.childControlHeight = true;
+            windowVertical.childForceExpandHeight = true;
+
+            var centerIndex = ResolveVisibleReelCenterIndex(face);
+            for (var offset = -1; offset <= 1; offset++)
+            {
+                var cellSkillId = ResolveReelSkillId(face, centerIndex + offset);
+                var skill = RuntimeContentDatabase.FindSkill(cellSkillId);
+                var cell = new GameObject("Cell");
+                cell.transform.SetParent(window.transform, false);
+                var cellImage = cell.AddComponent<Image>();
+                var isFocus = offset == 0;
+                cellImage.color = isFocus
+                    ? new Color(0.95f, 0.87f, 0.72f, 0.95f)
+                    : new Color(0.79f, 0.82f, 0.9f, 0.62f);
+                var cellLayout = cell.AddComponent<LayoutElement>();
+                cellLayout.minHeight = 34f;
+                var cellVertical = cell.AddComponent<VerticalLayoutGroup>();
+                cellVertical.padding = new RectOffset(6, 6, 4, 4);
+                cellVertical.spacing = 1f;
+                cellVertical.childAlignment = TextAnchor.MiddleCenter;
+                cellVertical.childControlWidth = true;
+                cellVertical.childControlHeight = true;
+                cellVertical.childForceExpandHeight = true;
+
+                var rolledValue = isFocus && face.ReelStopped ? face.RolledValue : ResolvePreviewValue(face, offset);
+                AddTextRaw(cell.transform, rolledValue.ToString(), 18, FontStyle.Bold);
+                AddTextRaw(cell.transform, skill != null ? skill.DisplayName : "기본공격", 11, FontStyle.Normal);
+            }
+
+            AddTextRaw(
+                obj.transform,
+                face.ReelStopped
+                    ? $"{face.RolledValue} · {face.DisplayName} · {face.EffectKind} +{face.Power}"
+                    : "STOP으로 결과 고정",
+                12,
+                FontStyle.Normal);
+        }
+
+        private static int ResolveVisibleReelCenterIndex(Conn.Core.Combat.DiceFaceState face)
+        {
+            var length = face.ReelSkillIds != null && face.ReelSkillIds.Length > 0 ? face.ReelSkillIds.Length : 1;
+            if (face.ReelStopped)
+            {
+                return Mathf.Abs(face.ReelStopIndex) % length;
+            }
+
+            return Mathf.FloorToInt(Time.unscaledTime * 8f + face.Index * 1.7f) % length;
+        }
+
+        private static string ResolveReelSkillId(Conn.Core.Combat.DiceFaceState face, int rawIndex)
+        {
+            if (face.ReelSkillIds == null || face.ReelSkillIds.Length == 0)
+            {
+                return string.Empty;
+            }
+
+            var length = face.ReelSkillIds.Length;
+            var index = rawIndex % length;
+            if (index < 0)
+            {
+                index += length;
+            }
+
+            return face.ReelSkillIds[index];
+        }
+
+        private static int ResolvePreviewValue(Conn.Core.Combat.DiceFaceState face, int offset)
+        {
+            var value = Mathf.Abs(Mathf.FloorToInt(Time.unscaledTime * 9f) + face.Index * 2 + offset) % 6;
+            return value + 1;
         }
 
         private Button AddSquareButton(Transform parent, string label, UnityEngine.Events.UnityAction action, bool interactable = true)

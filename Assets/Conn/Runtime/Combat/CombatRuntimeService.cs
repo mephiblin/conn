@@ -30,6 +30,7 @@ namespace Conn.Runtime.Combat
             session.Combat.EncounterPattern = ResolveEncounterPattern(encounter);
             session.Combat.EncounterRewardId = encounter != null ? encounter.RewardId : string.Empty;
             session.Combat.MonsterId = monster != null ? monster.MonsterId : monsterId;
+            session.Combat.EnemySpecies = monster != null ? monster.Species : string.Empty;
             session.Combat.EnemyActionName = ResolveEnemyActionName(monster);
             session.Combat.EnemyAttackPower = monster != null && monster.EnemyActionPower > 0 ? monster.EnemyActionPower : 4;
             session.Combat.XpReward = ResolveXpReward(encounter, monster);
@@ -39,7 +40,7 @@ namespace Conn.Runtime.Combat
                 monster != null ? monster.MaxHp : 12);
             BuildEnemySlots(session, encounter, monster);
             BuildDiceFaces(session);
-            session.Combat.LastMessage = $"Combat started. Dice: {session.Combat.PlayerDiceCount}";
+            BeginReelSpin(session, $"전투 시작. 릴 {session.Combat.PlayerDiceCount}개가 동시에 회전한다.");
         }
 
         public static void ToggleDieSelection(GameSessionState session, int dieIndex)
@@ -51,6 +52,12 @@ namespace Conn.Runtime.Combat
             }
 
             var face = session.Combat.DiceFaces[dieIndex];
+            if (session.Combat.ReelSpinActive || !face.ReelStopped)
+            {
+                session.Combat.LastMessage = "릴 전체가 아직 회전 중이다. STOP으로 모든 결과를 확정한 뒤 선택한다.";
+                return;
+            }
+
             if (face.IsCoolingDown)
             {
                 session.Combat.LastMessage = $"Die {dieIndex + 1} is cooling down.";
@@ -69,6 +76,12 @@ namespace Conn.Runtime.Combat
         public static void ResolveSelectedDice(GameSessionState session)
         {
             EnsureCombat(session);
+            if (session.Combat.ReelSpinActive)
+            {
+                session.Combat.LastMessage = "릴 전체가 회전 중이다. STOP으로 모든 릴을 함께 멈춘 뒤 선택한다.";
+                return;
+            }
+
             var selected = session.Combat.SelectedDiceCount;
             if (selected == 0)
             {
@@ -91,32 +104,40 @@ namespace Conn.Runtime.Combat
                         selectedFaces.Append(", ");
                     }
 
-                    selectedFaces.Append($"Die {face.Index + 1} {face.DisplayName} ({face.EffectKind} +{face.Power})");
+                    var adjustedPower = AdjustPowerForEnemySpecies(face, session.Combat.EnemySpecies);
+                    var resolvedAmount = face.RolledValue + adjustedPower;
+                    selectedFaces.Append($"Die {face.Index + 1} {face.RolledValue} {face.DisplayName} ({face.EffectKind} +{face.Power}");
+                    if (adjustedPower != face.Power)
+                    {
+                        selectedFaces.Append($" -> +{adjustedPower} vs {session.Combat.EnemySpecies}");
+                    }
+
+                    selectedFaces.Append(')');
                     if (face.EffectKind == SkillEffectKind.Guard)
                     {
-                        guard += face.Power;
+                        guard += resolvedAmount;
                     }
                     else if (face.EffectKind == SkillEffectKind.Heal)
                     {
-                        healing += face.Power;
+                        healing += resolvedAmount;
                     }
                     else if (face.EffectKind == SkillEffectKind.Guard || face.EffectKind == SkillEffectKind.Support || face.EffectKind == SkillEffectKind.Buff)
                     {
-                        guard += face.Power;
+                        guard += resolvedAmount;
                     }
                     else if (face.EffectKind == SkillEffectKind.Debuff)
                     {
-                        attack += face.Power;
-                        appliedBleed = face.Power > 0;
+                        attack += resolvedAmount;
+                        appliedBleed = adjustedPower > 0;
                     }
                     else if (face.EffectKind == SkillEffectKind.Lifesteal)
                     {
-                        attack += 1 + face.Power;
-                        healing += face.Power > 0 ? face.Power : 1;
+                        attack += resolvedAmount;
+                        healing += resolvedAmount > 0 ? resolvedAmount : 1;
                     }
                     else
                     {
-                        attack += 1 + face.Power;
+                        attack += resolvedAmount;
                         if (HasSpecialEffect(face, "bleed"))
                         {
                             attack += 1;
@@ -161,13 +182,26 @@ namespace Conn.Runtime.Combat
                 return;
             }
 
+            ApplyEnemySpeciesTurnRegen(session);
+            if (!session.Combat.Active)
+            {
+                return;
+            }
+
             session.Combat.Round++;
             TickCooldowns(session);
+            BeginReelSpin(session, "다음 라운드 시작. 릴 전체가 다시 회전한다.");
         }
 
         public static void ResolveEmptySelectionTurn(GameSessionState session)
         {
             EnsureCombat(session);
+            if (session.Combat.ReelSpinActive)
+            {
+                session.Combat.LastMessage = "릴 전체가 회전 중이다. STOP으로 결과를 확정한 뒤에만 턴을 넘길 수 있다.";
+                return;
+            }
+
             ClearDiceSelection(session);
             session.Combat.LastMessage = "No dice selected. Advanced turn.";
             EnemyAttack(session, 0);
@@ -184,6 +218,7 @@ namespace Conn.Runtime.Combat
 
             session.Combat.Round++;
             TickCooldowns(session);
+            BeginReelSpin(session, "선택 없이 턴이 넘어갔다. 다음 라운드에서 릴 전체가 다시 회전한다.");
         }
 
         public static void PlayerAttack(GameSessionState session)
@@ -214,7 +249,35 @@ namespace Conn.Runtime.Combat
                 ? $"cooldown {face.Cooldown}"
                 : face.Selected ? "selected" : "ready";
             var special = HasSpecialEffect(face, "bleed") ? " / effect Bleed" : string.Empty;
-            return $"Die {face.Index + 1}: {face.DisplayName} / {face.EffectKind} +{face.Power} / {state}{special}";
+            return $"Die {face.Index + 1}: {face.RolledValue} {face.DisplayName} / {face.EffectKind} +{face.Power} / {state}{special}";
+        }
+
+        public static bool CanStopReels(GameSessionState session)
+        {
+            return session != null
+                && session.Combat != null
+                && session.Combat.Active
+                && session.Combat.ReelSpinActive;
+        }
+
+        public static void StopReels(GameSessionState session)
+        {
+            EnsureCombat(session);
+            if (!CanStopReels(session))
+            {
+                session.Combat.LastMessage = "멈출 릴이 없다.";
+                return;
+            }
+
+            for (var i = 0; i < session.Combat.DiceFaces.Count; i++)
+            {
+                var face = session.Combat.DiceFaces[i];
+                ApplyStoppedRoll(session, face);
+            }
+
+            session.Combat.ReelSpinActive = false;
+            session.Combat.ReelStopCount = session.Combat.DiceFaces.Count;
+            session.Combat.LastMessage = $"모든 릴이 동시에 멈췄다. {session.Combat.SelectedDiceCount}/3 선택 후 Attack을 실행한다.";
         }
 
         public static string DescribeCombatantStatuses(CombatantState combatant)
@@ -492,28 +555,132 @@ namespace Conn.Runtime.Combat
             session.Combat.DiceFaces.Clear();
             for (var i = 0; i < session.Combat.PlayerDiceCount; i++)
             {
-                var skillId = i < session.Skills.EquippedSkillIds.Count
-                    ? session.Skills.EquippedSkillIds[i]
-                    : string.Empty;
-                var skill = RuntimeContentDatabase.FindSkill(skillId);
-                var displayName = skill != null ? skill.DisplayName : "기본공격";
                 session.Combat.DiceFaces.Add(new DiceFaceState
                 {
                     Index = i,
-                    SkillId = skillId,
-                    DisplayName = displayName,
-                    EffectKind = skill != null ? skill.EffectKind : SkillEffectKind.Attack,
-                    SpecialEffectId = skill != null ? skill.SpecialEffectId : string.Empty,
-                    Power = skill != null ? skill.Power : 0,
+                    SkillId = string.Empty,
+                    DisplayName = "릴 회전",
+                    RolledValue = 1,
+                    EffectKind = SkillEffectKind.Attack,
+                    SpecialEffectId = string.Empty,
+                    Power = 0,
                     Selected = false,
-                    Cooldown = 0
+                    Cooldown = 0,
+                    ReelStopped = false,
+                    ReelSkillIds = BuildReelSkillPool(session, i),
+                    ReelStopIndex = 0
                 });
             }
+        }
+
+        private static string[] BuildReelSkillPool(GameSessionState session, int dieIndex)
+        {
+            var pool = new System.Collections.Generic.List<string>();
+            var owned = session != null && session.Skills != null
+                ? session.Skills.OwnedSkillIds
+                : null;
+            if (owned != null)
+            {
+                for (var i = 0; i < owned.Count; i++)
+                {
+                    var skillId = owned[i];
+                    if (string.IsNullOrWhiteSpace(skillId) || pool.Contains(skillId))
+                    {
+                        continue;
+                    }
+
+                    pool.Add(skillId);
+                }
+            }
+
+            if (pool.Count == 0)
+            {
+                var fallbackSkillId = dieIndex < session.Skills.EquippedSkillIds.Count
+                    ? session.Skills.EquippedSkillIds[dieIndex]
+                    : string.Empty;
+                pool.Add(fallbackSkillId);
+            }
+
+            if (pool.Count == 0)
+            {
+                pool.Add(string.Empty);
+            }
+
+            return pool.ToArray();
+        }
+
+        private static void BeginReelSpin(GameSessionState session, string message)
+        {
+            ClearDiceSelection(session);
+            session.Combat.ReelSpinActive = true;
+            session.Combat.ReelStopCount = 0;
+            for (var i = 0; i < session.Combat.DiceFaces.Count; i++)
+            {
+                var face = session.Combat.DiceFaces[i];
+                face.ReelStopped = false;
+                face.RolledValue = 1;
+                face.SkillId = string.Empty;
+                face.DisplayName = "릴 회전";
+                face.EffectKind = SkillEffectKind.Attack;
+                face.SpecialEffectId = string.Empty;
+                face.Power = 0;
+                face.ReelStopIndex = 0;
+                face.ReelSkillIds = BuildReelSkillPool(session, i);
+            }
+
+            session.Combat.LastMessage = message;
+        }
+
+        private static void ApplyStoppedRoll(GameSessionState session, DiceFaceState face)
+        {
+            face.ReelStopped = true;
+            face.Selected = false;
+            face.RolledValue = Random.Range(1, 7);
+            face.ReelStopIndex = face.ReelSkillIds != null && face.ReelSkillIds.Length > 0
+                ? Random.Range(0, face.ReelSkillIds.Length)
+                : 0;
+            var skillId = face.ReelSkillIds != null && face.ReelSkillIds.Length > 0
+                ? face.ReelSkillIds[face.ReelStopIndex]
+                : string.Empty;
+            var skill = RuntimeContentDatabase.FindSkill(skillId);
+            face.SkillId = skillId;
+            face.DisplayName = skill != null ? skill.DisplayName : "기본공격";
+            face.EffectKind = skill != null ? skill.EffectKind : SkillEffectKind.Attack;
+            face.SpecialEffectId = skill != null ? skill.SpecialEffectId : string.Empty;
+            face.Power = skill != null ? skill.Power : 0;
         }
 
         private static bool HasSpecialEffect(DiceFaceState face, string effectId)
         {
             return face != null && string.Equals(face.SpecialEffectId, effectId, System.StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static int AdjustPowerForEnemySpecies(DiceFaceState face, string enemySpecies)
+        {
+            if (face == null || string.IsNullOrWhiteSpace(face.SkillId) || string.IsNullOrWhiteSpace(enemySpecies))
+            {
+                return face != null ? face.Power : 0;
+            }
+
+            var skill = RuntimeContentDatabase.FindSkill(face.SkillId);
+            return skill != null ? skill.AdjustPowerForSpecies(enemySpecies, face.Power) : face.Power;
+        }
+
+        private static void ApplyEnemySpeciesTurnRegen(GameSessionState session)
+        {
+            if (session?.Combat == null || !session.Combat.Active || session.Combat.Enemy.IsDead)
+            {
+                return;
+            }
+
+            var profile = RuntimeContentDatabase.FindMonsterSpeciesProfile(session.Combat.EnemySpecies);
+            if (profile == null || profile.TurnRegenHp <= 0)
+            {
+                return;
+            }
+
+            session.Combat.Enemy.Heal(profile.TurnRegenHp);
+            session.Combat.LastMessage += $" {session.Combat.Enemy.DisplayName} regenerates {profile.TurnRegenHp} HP.";
         }
 
         private static void TickCooldowns(GameSessionState session)

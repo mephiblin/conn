@@ -14,6 +14,7 @@ namespace Conn.Core.Combat
         public string EncounterPattern = string.Empty;
         public string EncounterRewardId = string.Empty;
         public string MonsterId = string.Empty;
+        public string EnemySpecies = string.Empty;
         public string EnemyActionName = string.Empty;
         public int EnemyAttackPower;
         public int XpReward;
@@ -22,6 +23,8 @@ namespace Conn.Core.Combat
         public List<EncounterEnemySlotState> EnemySlots = new List<EncounterEnemySlotState>();
         public List<DiceFaceState> DiceFaces = new List<DiceFaceState>();
         public string LastMessage = string.Empty;
+        public bool ReelSpinActive;
+        public int ReelStopCount;
 
         public int SelectedDiceCount
         {
@@ -51,6 +54,7 @@ namespace Conn.Core.Combat
             EncounterPattern = string.Empty;
             EncounterRewardId = string.Empty;
             MonsterId = string.Empty;
+            EnemySpecies = string.Empty;
             EnemyActionName = string.Empty;
             EnemyAttackPower = 0;
             XpReward = 0;
@@ -61,6 +65,8 @@ namespace Conn.Core.Combat
             EnemySlots.Clear();
             DiceFaces.Clear();
             LastMessage = string.Empty;
+            ReelSpinActive = false;
+            ReelStopCount = 0;
         }
     }
 
