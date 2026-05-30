@@ -98,69 +98,12 @@ namespace Conn.Editor.Maps
                 }
             }
 
-            EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Legacy Snapshot Workflow", EditorStyles.boldLabel);
-            EditorGUILayout.HelpBox(
-                "Capture Layout Snapshot generates once from the current seed and serializes PreviewRooms, PreviewEdges, and PreviewPlacements for gizmos. Build Scene Preview From Captured Snapshot uses only those serialized arrays.",
-                MessageType.Info);
             using (new EditorGUILayout.HorizontalScope())
             {
-                if (GUILayout.Button("Capture Layout Snapshot"))
-                {
-                    serializedObject.ApplyModifiedProperties();
-                    GenerateLayoutSnapshot(workspace);
-                }
-
-                using (new EditorGUI.DisabledScope(!workspace.HasPreviewSnapshot))
-                {
-                    if (GUILayout.Button("Build Scene Preview From Captured Snapshot"))
-                    {
-                        serializedObject.ApplyModifiedProperties();
-                        BuildScenePreviewFromSnapshot(workspace);
-                    }
-                }
-            }
-
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                if (GUILayout.Button("Generate Preview (Capture + Build)"))
-                {
-                    serializedObject.ApplyModifiedProperties();
-                    GeneratePreview(workspace);
-                }
-
-                if (GUILayout.Button("Random Seed + Capture Snapshot"))
-                {
-                    serializedObject.ApplyModifiedProperties();
-                    Undo.RecordObject(workspace, "Random Map Seed");
-                    workspace.Seed = UnityEngine.Random.Range(1, int.MaxValue);
-                    GenerateLayoutSnapshot(workspace);
-                }
-            }
-
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                using (new EditorGUI.DisabledScope(workspace.LastCompiled == null))
-                {
-                    if (GUILayout.Button("Save Compiled Map"))
-                    {
-                        SaveCompiledMap(workspace);
-                    }
-                }
-
                 if (GUILayout.Button("Clear Scene Preview Objects"))
                 {
                     ClearPreviewWithUndo(workspace, "Clear Map Preview");
                     MarkSceneDirty(workspace);
-                }
-            }
-
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                if (GUILayout.Button("Create Editable Draft Asset"))
-                {
-                    serializedObject.ApplyModifiedProperties();
-                    CreateEditableDraftAsset(workspace);
                 }
             }
 
