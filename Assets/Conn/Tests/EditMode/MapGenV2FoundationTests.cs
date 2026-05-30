@@ -68,6 +68,27 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void MapGenV2WindowStatusStripIncludesWorkflowOutputs()
+        {
+            var status = MapGenV2Window.BuildTopStatusStripText(
+                "profile_a",
+                "draft_a",
+                2001,
+                "Valid",
+                "Accepted current",
+                "MapGenV2_profile_a_2001",
+                "Assets/Conn/Core/Maps/profile_a_2001_BakedMap.asset");
+
+            Assert.That(status, Does.Contain("Profile profile_a"));
+            Assert.That(status, Does.Contain("Draft draft_a"));
+            Assert.That(status, Does.Contain("Seed 2001"));
+            Assert.That(status, Does.Contain("Validation Valid"));
+            Assert.That(status, Does.Contain("Accepted Accepted current"));
+            Assert.That(status, Does.Contain("Materialized Root MapGenV2_profile_a_2001"));
+            Assert.That(status, Does.Contain("Baked Asset Assets/Conn/Core/Maps/profile_a_2001_BakedMap.asset"));
+        }
+
+        [Test]
         public void RoomShapeValidatorRejectsConnectorAwayFromEdge()
         {
             var cells = new MapGenShapeCell[9];

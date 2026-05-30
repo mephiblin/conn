@@ -239,16 +239,50 @@ namespace Conn.MapGenV2.Editor
                     DrawStepBadge("Generate", workflow.HasGeneratedMockup, workflow.CanGenerate && !workflow.HasGeneratedMockup);
                     DrawStepBadge("Post-Process", workflow.HasGeneratedMockup, workflow.CanPostProcess && !workflow.Accepted);
                     DrawStepBadge("Accept", workflow.Accepted && workflow.AcceptedCurrent, workflow.CanAccept && (!workflow.Accepted || !workflow.AcceptedCurrent));
-                    DrawStepBadge("Materialize", false, workflow.CanMaterialize);
-                    DrawStepBadge("Bake", false, workflow.CanBakeRuntime);
+                    DrawStepBadge("Materialize", ResolveMaterializedRoot() != null, workflow.CanMaterialize);
+                    DrawStepBadge("Bake", LoadExpectedBakedAsset() != null, workflow.CanBakeRuntime);
                 }
 
                 var profileName = profile != null ? profile.ProfileId : "(none)";
                 var draftName = draft != null ? draft.name : "(none)";
-                var seed = draft != null ? draft.Seed.ToString() : "-";
-                EditorGUILayout.LabelField("현재 / Current", $"Profile {profileName}, Draft {draftName}, Seed {seed}");
+                var seed = draft != null ? draft.Seed : (int?)null;
+                var validationState = workflow.HasProfile ? (workflow.ProfileValid ? "Valid" : "Invalid") : "(none)";
+                var acceptedState = workflow.Accepted
+                    ? workflow.AcceptedCurrent ? "Accepted current" : "Accepted stale"
+                    : "Not accepted";
+                var materializedRoot = ResolveMaterializedRoot();
+                var bakedAsset = LoadExpectedBakedAsset();
+                EditorGUILayout.LabelField(
+                    "현재 / Current",
+                    BuildTopStatusStripText(
+                        profileName,
+                        draftName,
+                        seed,
+                        validationState,
+                        acceptedState,
+                        materializedRoot != null ? materializedRoot.name : "(none)",
+                        bakedAsset != null ? AssetDatabase.GetAssetPath(bakedAsset) : "(none)"));
                 EditorGUILayout.LabelField("마지막 작업 / Last Result", lastOperationResult);
             }
+        }
+
+        public static string BuildTopStatusStripText(
+            string profileName,
+            string draftName,
+            int? seed,
+            string validationState,
+            string acceptedState,
+            string materializedRootName,
+            string bakedAssetPath)
+        {
+            return $"Profile {NullLabel(profileName)}, Draft {NullLabel(draftName)}, Seed {(seed.HasValue ? seed.Value.ToString() : "-")}, "
+                + $"Validation {NullLabel(validationState)}, Accepted {NullLabel(acceptedState)}, "
+                + $"Materialized Root {NullLabel(materializedRootName)}, Baked Asset {NullLabel(bakedAssetPath)}";
+        }
+
+        private static string NullLabel(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? "(none)" : value;
         }
 
         private static void DrawStepBadge(string label, bool complete, bool active)

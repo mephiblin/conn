@@ -107,7 +107,7 @@ tool, and generated output workflow.
 - [ ] Every primary action must show:
   what it will change, why it is enabled/disabled, and where the output will be
   created.
-- [ ] Add a persistent top status strip:
+- [x] Add a persistent top status strip:
   current profile, draft, seed, validation state, accepted/stale state,
   materialized root, and baked asset.
 - [ ] Add clear next-step guidance after each action:
