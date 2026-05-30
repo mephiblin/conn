@@ -583,6 +583,9 @@ Progress note 2026-05-31:
   quantity rules, density targets, required/optional room categories, blocked
   template cells, room footprint candidates, and corridor candidates; the
   production solver now fails early when no room footprint can fit.
+- Added explicit required-landmark reservation data for structured required room
+  categories; the production solver now places rooms from those reserved
+  landmarks instead of reading the raw category array inline.
 
 Goal: replace the current simple connected-cell MVP with a real rooms/corridors
 solver.
@@ -594,7 +597,7 @@ Tasks:
 - [x] Place multi-cell room shapes, not only single-cell room landmarks.
 - [x] Place first-class corridor templates.
 - [x] Enforce connector/socket compatibility between rooms and corridors.
-- [ ] Reserve required landmarks:
+- [x] Reserve required landmarks:
   start, exit, quest, boss, transition, custom required categories.
 - [ ] Add distance constraints:
   start-to-exit minimum distance, boss near late path, quest before lock, etc.
@@ -616,6 +619,7 @@ Acceptance:
 Verification:
 
 - EditMode test for candidate-domain summary from profile/templates/rules.
+- EditMode test for required-landmark reservation ordering and ids.
 - Seed sweep across multiple profiles and sizes.
 - Tests for required room presence and reachability.
 - Tests for connector compatibility.

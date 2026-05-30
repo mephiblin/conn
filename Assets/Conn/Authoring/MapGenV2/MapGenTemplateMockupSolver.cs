@@ -56,7 +56,7 @@ namespace Conn.MapGenV2.Authoring
                 return Failed(width, height, seed, templateReport);
             }
 
-            var categories = GetRequiredCategories(profile);
+            var landmarks = MapGenRequiredLandmarkReservation.Build(profile);
             var corridorTemplates = profile.StyleSet != null
                 ? profile.StyleSet.CorridorTemplates
                 : Array.Empty<MapGenCorridorTemplateAsset>();
@@ -72,23 +72,24 @@ namespace Conn.MapGenV2.Authoring
             }
 
             var cells = CreateEmptyCells(width, height);
-            var placements = new RoomPlacement[categories.Length];
+            var placements = new RoomPlacement[landmarks.Length];
             var rng = new MapGenRandom(seed).Fork("template_solver");
 
-            for (var i = 0; i < categories.Length; i++)
+            for (var i = 0; i < landmarks.Length; i++)
             {
-                var template = PickTemplateForCategory(roomTemplates, categories[i], ref rng);
+                var category = landmarks[i].Category;
+                var template = PickTemplateForCategory(roomTemplates, category, ref rng);
                 if (template == null)
                 {
                     report.Add(new MapGenIssue(
                         MapGenGenerationPhase.SolveMockup,
                         "production_solver_no_template_for_category",
-                        $"No room template can satisfy required category {categories[i]}.",
+                        $"No room template can satisfy required category {category}.",
                         "Add a matching room template or a Main fallback template."));
                     return Failed(width, height, seed, report);
                 }
 
-                if (!TryPlaceRoom(cells, width, height, template, categories[i], i, categories.Length, ref rng, out var placement))
+                if (!TryPlaceRoom(cells, width, height, template, category, i, landmarks.Length, ref rng, out var placement))
                 {
                     report.Add(new MapGenIssue(
                         MapGenGenerationPhase.SolveMockup,
@@ -130,25 +131,6 @@ namespace Conn.MapGenV2.Authoring
                 Cells = Array.Empty<MapGenMockupCell>(),
                 Report = report
             };
-        }
-
-        private static MapGenRoomCategory[] GetRequiredCategories(MapGenProfileAsset profile)
-        {
-            if (profile.LayoutRules != null
-                && profile.LayoutRules.QuantityRules.RequiredCategories != null
-                && profile.LayoutRules.QuantityRules.RequiredCategories.Length > 0)
-            {
-                return profile.LayoutRules.QuantityRules.RequiredCategories;
-            }
-
-            if (profile.LayoutRules != null
-                && profile.LayoutRules.RequiredRoomCategories != null
-                && profile.LayoutRules.RequiredRoomCategories.Length > 0)
-            {
-                return profile.LayoutRules.RequiredRoomCategories;
-            }
-
-            return new[] { MapGenRoomCategory.Start, MapGenRoomCategory.Exit };
         }
 
         private static MapGenRoomTemplateAsset PickTemplateForCategory(

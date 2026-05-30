@@ -364,6 +364,40 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void RequiredLandmarkReservationUsesStructuredRequiredCategories()
+        {
+            var ruleSet = ScriptableObject.CreateInstance<MapGenRuleSetAsset>();
+            var profile = ScriptableObject.CreateInstance<MapGenProfileAsset>();
+
+            try
+            {
+                ruleSet.QuantityRules = MapGenQuantityRules.Defaults();
+                ruleSet.QuantityRules.RequiredCategories = new[]
+                {
+                    MapGenRoomCategory.Start,
+                    MapGenRoomCategory.Quest,
+                    MapGenRoomCategory.Boss,
+                    MapGenRoomCategory.Exit
+                };
+                profile.LayoutRules = ruleSet;
+
+                var landmarks = MapGenRequiredLandmarkReservation.Build(profile);
+
+                Assert.That(landmarks, Has.Length.EqualTo(4));
+                Assert.That(landmarks[0].Category, Is.EqualTo(MapGenRoomCategory.Start));
+                Assert.That(landmarks[1].Category, Is.EqualTo(MapGenRoomCategory.Quest));
+                Assert.That(landmarks[2].Category, Is.EqualTo(MapGenRoomCategory.Boss));
+                Assert.That(landmarks[3].Category, Is.EqualTo(MapGenRoomCategory.Exit));
+                Assert.That(landmarks[2].LandmarkId, Is.EqualTo("2_Boss"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(profile);
+                Object.DestroyImmediate(ruleSet);
+            }
+        }
+
+        [Test]
         public void ProfileValidatorReportsMissingOutputFolders()
         {
             var profile = ScriptableObject.CreateInstance<MapGenProfileAsset>();
