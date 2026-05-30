@@ -9,3 +9,4 @@ notes, execution checklists, and draft workflow documents are kept under
 Current replacement planning:
 
 - [New Map Generator Plan](new_map_generator_plan.md)
+- [MapGenV2 Remaining Work](mapgenv2_remaining_work.md)
