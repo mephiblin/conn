@@ -477,6 +477,7 @@ namespace Conn.MapGenV2.Editor
             var walls = CreateGroup(root.transform, "Walls");
             var ceilings = CreateGroup(root.transform, "Ceilings");
             var doors = CreateGroup(root.transform, "Doors");
+            CreateGroup(root.transform, "Blockers");
             var props = CreateGroup(root.transform, "Props");
             var navigation = CreateGroup(root.transform, "Navigation");
             CreateGroup(root.transform, "Debug");

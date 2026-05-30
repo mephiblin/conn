@@ -2168,7 +2168,14 @@ namespace Conn.Tests.EditMode
                 Assert.That(firstRoot.GetComponent<MapGenV2GeneratedMapMarker>().MaterializationInstantiatedCount, Is.GreaterThan(0));
                 Assert.That(firstRoot.GetComponent<MapGenV2GeneratedMapMarker>().ModuleSetSignature, Is.EqualTo(moduleSetSignature));
                 Assert.That(firstRoot.transform.Find("Floors"), Is.Not.Null);
+                Assert.That(firstRoot.transform.Find("Corridors"), Is.Not.Null);
+                Assert.That(firstRoot.transform.Find("Walls"), Is.Not.Null);
+                Assert.That(firstRoot.transform.Find("Ceilings"), Is.Not.Null);
+                Assert.That(firstRoot.transform.Find("Doors"), Is.Not.Null);
+                Assert.That(firstRoot.transform.Find("Blockers"), Is.Not.Null);
+                Assert.That(firstRoot.transform.Find("Props"), Is.Not.Null);
                 Assert.That(firstRoot.transform.Find("Navigation"), Is.Not.Null);
+                Assert.That(firstRoot.transform.Find("Debug"), Is.Not.Null);
                 Assert.That(MapGenMockupMaterializer.FindExistingMarker(draft).gameObject, Is.SameAs(firstRoot));
                 var moduleMarkers = firstRoot.GetComponentsInChildren<MapGenV2MaterializedModuleMarker>();
                 var floorMarker = System.Array.Find(moduleMarkers, marker => marker.ModuleCategory == MapGenModuleCategory.FloorA);

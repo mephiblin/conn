@@ -187,7 +187,7 @@ tool, and generated output workflow.
   output, baked runtime output.
 - [ ] Clicking a materialized room object should be able to select its source
   mockup region or show source metadata in the inspector.
-- [ ] Scene output hierarchy should be predictable:
+- [x] Scene output hierarchy should be predictable:
   `MapGenV2_<Profile>_<Seed>`
   with child groups `Floors`, `Corridors`, `Walls`, `Ceilings`, `Doors`,
   `Blockers`, `Props`, `Navigation`, `Debug`.
