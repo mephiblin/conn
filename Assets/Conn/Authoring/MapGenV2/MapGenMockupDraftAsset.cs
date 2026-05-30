@@ -21,6 +21,42 @@ namespace Conn.MapGenV2.Authoring
 
         public bool IsAcceptedSignatureCurrent => !Accepted || AcceptedSignature == ComputeSignature();
 
+        public MapGenValidationReport GenerateFromProfile()
+        {
+            if (Profile == null)
+            {
+                var report = new MapGenValidationReport();
+                report.Add(new MapGenIssue(
+                    MapGenGenerationPhase.SolveMockup,
+                    "mockup_draft_missing_profile",
+                    "Mockup draft has no profile.",
+                    "Assign a MapGenProfileAsset before generating."));
+                return report;
+            }
+
+            var profileReport = Profile.Validate();
+            if (!profileReport.IsValid)
+            {
+                return profileReport;
+            }
+
+            var requiredCategories = Profile.LayoutRules != null
+                ? Profile.LayoutRules.RequiredRoomCategories
+                : Array.Empty<MapGenRoomCategory>();
+            var result = MapGenMockupSolver.Generate(Profile.MapSize.x, Profile.MapSize.y, Seed, requiredCategories);
+            if (!result.Success)
+            {
+                return result.Report;
+            }
+
+            GridSize = new Vector2Int(result.Width, result.Height);
+            Cells = result.Cells;
+            Accepted = false;
+            AcceptedSignature = string.Empty;
+            LastGeneratedSignature = result.Signature;
+            return result.Report;
+        }
+
         public void EnsureCellArray()
         {
             var width = Width;

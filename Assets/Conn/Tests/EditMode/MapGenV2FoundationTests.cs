@@ -111,5 +111,32 @@ namespace Conn.Tests.EditMode
                 Object.DestroyImmediate(draft);
             }
         }
+
+        [Test]
+        public void MockupSolverIsDeterministicForSameSeed()
+        {
+            var required = new[] { MapGenRoomCategory.Start, MapGenRoomCategory.Quest, MapGenRoomCategory.Exit };
+
+            var first = MapGenMockupSolver.Generate(8, 6, 42, required);
+            var second = MapGenMockupSolver.Generate(8, 6, 42, required);
+
+            Assert.That(first.Success, Is.True);
+            Assert.That(second.Signature, Is.EqualTo(first.Signature));
+        }
+
+        [Test]
+        public void MockupSolverPlacesRequiredRooms()
+        {
+            var required = new[] { MapGenRoomCategory.Start, MapGenRoomCategory.Boss, MapGenRoomCategory.Exit };
+
+            var result = MapGenMockupSolver.Generate(8, 6, 42, required);
+
+            Assert.That(result.Success, Is.True);
+            foreach (var category in required)
+            {
+                Assert.That(result.Cells, Has.Exactly(1).Matches<MapGenMockupCell>(
+                    cell => cell.State == MapGenCellState.Room && cell.RoomCategory == category));
+            }
+        }
     }
 }

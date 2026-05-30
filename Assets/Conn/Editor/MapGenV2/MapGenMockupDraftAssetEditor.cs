@@ -15,6 +15,7 @@ namespace Conn.MapGenV2.Editor
         private static readonly Color ConnectorColor = new Color(1f, 1f, 1f, 1f);
         private static readonly Color ReservedColor = new Color(1f, 0.8f, 0.1f, 1f);
         private static readonly Color GridLineColor = new Color(0f, 0f, 0f, 0.28f);
+        private MapGenValidationReport lastGenerationReport;
 
         public override void OnInspectorGUI()
         {
@@ -27,6 +28,13 @@ namespace Conn.MapGenV2.Editor
 
             using (new EditorGUILayout.HorizontalScope())
             {
+                if (GUILayoutButton("Generate From Profile"))
+                {
+                    Undo.RecordObject(draft, "Generate Mockup Draft");
+                    lastGenerationReport = draft.GenerateFromProfile();
+                    EditorUtility.SetDirty(draft);
+                }
+
                 if (GUILayoutButton("Accept Mockup"))
                 {
                     Undo.RecordObject(draft, "Accept Mockup Draft");
@@ -40,6 +48,11 @@ namespace Conn.MapGenV2.Editor
                     draft.ClearAcceptance();
                     EditorUtility.SetDirty(draft);
                 }
+            }
+
+            if (lastGenerationReport != null)
+            {
+                MapGenValidationReportEditorGUI.Draw(lastGenerationReport, draft, "Mockup generated.");
             }
         }
 
