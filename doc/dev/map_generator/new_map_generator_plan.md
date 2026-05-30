@@ -1145,7 +1145,7 @@ be committed and pushed separately.
 - [x] Mockup acceptance flow: accept, reject, regenerate, stale detection.
 - [x] Materialization MVP: floor/wall/corner/ceiling/door module classification
   and deterministic weighted prefab placement.
-- [ ] Prop placement MVP: prop channels, deterministic weighted placement,
+- [x] Prop placement MVP: prop channels, deterministic weighted placement,
   traversal-safe validation.
 - [ ] Runtime bake MVP: runtime-safe grid, regions, doors, traversal graph,
   markers.

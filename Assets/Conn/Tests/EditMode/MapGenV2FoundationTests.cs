@@ -177,5 +177,20 @@ namespace Conn.Tests.EditMode
             Assert.That(requests, Has.Exactly(4).Matches<MapGenModuleRequest>(
                 request => request.Category == MapGenModuleCategory.WallCornerOutside));
         }
+
+        [Test]
+        public void PropPlacementValidatorRejectsNonNavigableChannel()
+        {
+            var cells = new[]
+            {
+                new MapGenMockupCell { State = MapGenCellState.Empty, PropChannel = "floor_loot" }
+            };
+
+            var report = MapGenPropPlacementValidator.Validate(1, 1, cells);
+
+            Assert.That(report.IsValid, Is.False);
+            Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                issue => issue.Code == "prop_channel_on_non_navigable_cell"));
+        }
     }
 }

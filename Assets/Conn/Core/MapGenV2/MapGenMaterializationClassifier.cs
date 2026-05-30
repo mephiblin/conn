@@ -48,6 +48,16 @@ namespace Conn.MapGenV2.Core
                     });
                 }
 
+                if (!string.IsNullOrWhiteSpace(cell.PropChannel))
+                {
+                    requests.Add(new MapGenModuleRequest
+                    {
+                        Category = MapGenModuleCategory.Prop,
+                        Coord = coord,
+                        Direction = MapGenGridDirection.North
+                    });
+                }
+
                 AddBoundaryRequests(requests, width, height, cells, coord);
             }
 

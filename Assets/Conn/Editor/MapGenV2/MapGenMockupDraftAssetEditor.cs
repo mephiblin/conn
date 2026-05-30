@@ -75,6 +75,11 @@ namespace Conn.MapGenV2.Editor
             {
                 MapGenValidationReportEditorGUI.Draw(lastGenerationReport, draft, "Mockup generated.");
             }
+
+            MapGenValidationReportEditorGUI.Draw(
+                MapGenPropPlacementValidator.Validate(draft.Width, draft.Height, draft.Cells),
+                draft,
+                "Prop channels are valid.");
         }
 
         private static bool GUILayoutButton(string text)

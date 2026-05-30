@@ -10,6 +10,7 @@ namespace Conn.MapGenV2.Core
         public MapGenRoomCategory RoomCategory;
         public MapGenSocketKind SocketKind;
         public string SocketId;
+        public string PropChannel;
 
         public static MapGenMockupCell Empty => new MapGenMockupCell
         {
@@ -17,7 +18,8 @@ namespace Conn.MapGenV2.Core
             RegionId = -1,
             RoomCategory = MapGenRoomCategory.Main,
             SocketKind = MapGenSocketKind.None,
-            SocketId = string.Empty
+            SocketId = string.Empty,
+            PropChannel = string.Empty
         };
     }
 }

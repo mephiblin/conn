@@ -20,6 +20,11 @@ namespace Conn.MapGenV2.Editor
                 return null;
             }
 
+            if (!MapGenPropPlacementValidator.Validate(draft.Width, draft.Height, draft.Cells).IsValid)
+            {
+                return null;
+            }
+
             var moduleSet = draft.Profile.StyleSet.ModuleSet;
             var requests = MapGenMaterializationClassifier.Classify(draft.Width, draft.Height, draft.Cells);
             var root = new GameObject($"GeneratedMap_{draft.Profile.ProfileId}_{draft.Seed}");
