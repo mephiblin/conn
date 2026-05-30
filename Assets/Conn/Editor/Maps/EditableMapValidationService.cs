@@ -334,7 +334,20 @@ namespace Conn.Editor.Maps
                     }
                 }
 
-                if (!string.IsNullOrWhiteSpace(socket.TargetRoomId) && !HasReciprocalSocket(draft, socket))
+                if (!string.IsNullOrWhiteSpace(socket.TargetRoomId)
+                    && TryFindReciprocalSocket(draft, socket, out var reciprocal))
+                {
+                    if (reciprocal.Direction != OppositeDirection(socket.Direction))
+                    {
+                        report.Errors.Add($"Socket {socket.Id} reciprocal socket {reciprocal.Id} has direction {reciprocal.Direction}, expected {OppositeDirection(socket.Direction)}.");
+                    }
+
+                    if (!string.Equals(socket.LockedDoorKeyId ?? string.Empty, reciprocal.LockedDoorKeyId ?? string.Empty, StringComparison.Ordinal))
+                    {
+                        report.Errors.Add($"Socket {socket.Id} locked key does not match reciprocal socket {reciprocal.Id}.");
+                    }
+                }
+                else if (!string.IsNullOrWhiteSpace(socket.TargetRoomId))
                 {
                     report.Errors.Add($"Socket {socket.Id} from room {socket.RoomId} to {socket.TargetRoomId} has no reciprocal socket.");
                 }
@@ -851,17 +864,36 @@ namespace Conn.Editor.Maps
             return false;
         }
 
-        private static bool HasReciprocalSocket(EditableMapDraftAsset draft, EditableMapSocket socket)
+        private static bool TryFindReciprocalSocket(EditableMapDraftAsset draft, EditableMapSocket socket, out EditableMapSocket reciprocal)
         {
             foreach (var candidate in draft.Sockets ?? Array.Empty<EditableMapSocket>())
             {
                 if (candidate.RoomId == socket.TargetRoomId && candidate.TargetRoomId == socket.RoomId)
                 {
+                    reciprocal = candidate;
                     return true;
                 }
             }
 
+            reciprocal = default;
             return false;
+        }
+
+        private static MapDirection OppositeDirection(MapDirection direction)
+        {
+            switch (direction)
+            {
+                case MapDirection.North:
+                    return MapDirection.South;
+                case MapDirection.East:
+                    return MapDirection.West;
+                case MapDirection.South:
+                    return MapDirection.North;
+                case MapDirection.West:
+                    return MapDirection.East;
+                default:
+                    return MapDirection.None;
+            }
         }
 
         private static Vector2Int RoomCenter(EditableMapRoom room)

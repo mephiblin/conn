@@ -875,6 +875,21 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void EditableValidationReportsMismatchedReciprocalSockets()
+        {
+            var draft = BuildWideLinearValidationDraft();
+            draft.Sockets[0].LockedDoorKeyId = "key_a";
+            draft.Sockets[1].Direction = MapDirection.East;
+            draft.Sockets[1].LockedDoorKeyId = "key_b";
+
+            var report = EditableMapValidationService.Validate(draft);
+
+            Assert.That(report.Passed, Is.False);
+            Assert.That(report.Errors.Exists(error => error.Contains("start_quest") && error.Contains("expected West")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("start_quest") && error.Contains("locked key")), Is.True);
+        }
+
+        [Test]
         public void EditableValidationReportsInvalidRoomAndZoneReferences()
         {
             var draft = BuildLinearValidationDraft();

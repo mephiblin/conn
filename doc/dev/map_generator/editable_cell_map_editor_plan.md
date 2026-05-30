@@ -1008,6 +1008,8 @@ is partially complete.
   - 2026-05-30: socket validation now also rejects non-cardinal directions,
     socket widths that leave the owning room, and sockets whose direction is
     not placed on the matching room boundary.
+  - 2026-05-30: reciprocal sockets must face the opposite direction and use the
+    same locked-door key before the draft can be baked into runtime doors.
 - [x] Validate room entry sockets can reach required anchors.
 - [x] Validate every room bounds contains at least one walkable cell.
 - [x] Validate start-to-quest route.
