@@ -1128,6 +1128,9 @@ is partially complete.
   - 2026-05-30: Added `wfc_rooms_corridors_rebuild_plan.md` and explicit sample
     profile asset generation so the workspace can use real profile/chunk assets
     instead of hidden hardcoded catalog fallback.
+  - 2026-05-30: Added `wfc_rooms_corridors_next_work.md` as the execution
+    checklist for replacing the graph-first generator with typed room pools,
+    socket constraints, and a WFC-like layout solver.
 - [x] Add screenshots or saved sample assets when the first usable version
   exists.
   - 2026-05-30: Chapter 2 saved `CompiledMapAsset` samples are regenerated
