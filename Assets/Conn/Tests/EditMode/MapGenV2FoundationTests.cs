@@ -1160,6 +1160,7 @@ namespace Conn.Tests.EditMode
                 var second = MapGenTemplateMockupSolver.Generate(profile, 7001);
 
                 Assert.That(first.Success, Is.True);
+                Assert.That(first.AttemptCount, Is.EqualTo(1));
                 Assert.That(second.Signature, Is.EqualTo(first.Signature));
                 Assert.That(first.Cells, Has.Exactly(4).Matches<MapGenMockupCell>(
                     cell => IsRoomFootprintCell(cell)
@@ -1211,11 +1212,14 @@ namespace Conn.Tests.EditMode
                 PopulateRoomTemplate(exitTemplate, "exit_template", MapGenRoomCategory.Exit);
                 styleSet.RoomTemplates = new[] { startTemplate, exitTemplate };
 
-                var result = MapGenTemplateMockupSolver.Generate(profile, 7001);
+                var result = MapGenTemplateMockupSolver.Generate(profile, 7001, maxAttempts: 3);
 
                 Assert.That(result.Success, Is.False);
+                Assert.That(result.AttemptCount, Is.EqualTo(3));
                 Assert.That(result.Report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
                     issue => issue.Code == "production_solver_start_exit_distance_too_short"));
+                Assert.That(result.Report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "production_solver_retry_exhausted"));
             }
             finally
             {

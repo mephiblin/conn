@@ -10,6 +10,8 @@ namespace Conn.MapGenV2.Core
 
         public int Seed { get; set; }
 
+        public int AttemptCount { get; set; }
+
         public MapGenMockupCell[] Cells { get; set; }
 
         public MapGenValidationReport Report { get; set; }

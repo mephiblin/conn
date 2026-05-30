@@ -6,6 +6,8 @@ namespace Conn.MapGenV2.Authoring
 {
     public static class MapGenTemplateMockupSolver
     {
+        private const int DefaultMaxAttempts = 4;
+
         public static bool CanUseTemplates(MapGenProfileAsset profile)
         {
             return profile != null
@@ -14,9 +16,10 @@ namespace Conn.MapGenV2.Authoring
                 && profile.StyleSet.RoomTemplates.Length > 0;
         }
 
-        public static MapGenMockupSolverResult Generate(MapGenProfileAsset profile, int seed)
+        public static MapGenMockupSolverResult Generate(MapGenProfileAsset profile, int seed, int maxAttempts = DefaultMaxAttempts)
         {
             var report = new MapGenValidationReport();
+            maxAttempts = Mathf.Max(1, maxAttempts);
             if (profile == null)
             {
                 report.Add(new MapGenIssue(
@@ -24,7 +27,7 @@ namespace Conn.MapGenV2.Authoring
                     "production_solver_missing_profile",
                     "Production solver requires a profile.",
                     "Assign a MapGenProfileAsset."));
-                return Failed(0, 0, seed, report);
+                return Failed(0, 0, seed, report, 1);
             }
 
             var width = profile.MapSize.x;
@@ -36,7 +39,7 @@ namespace Conn.MapGenV2.Authoring
                     "production_solver_invalid_grid_size",
                     "Production solver requires a positive grid size.",
                     "Use a profile map size of at least 1x1."));
-                return Failed(width, height, seed, report);
+                return Failed(width, height, seed, report, 1);
             }
 
             var roomTemplates = profile.StyleSet != null ? profile.StyleSet.RoomTemplates : Array.Empty<MapGenRoomTemplateAsset>();
@@ -47,13 +50,13 @@ namespace Conn.MapGenV2.Authoring
                     "production_solver_missing_room_templates",
                     "Production solver requires at least one room template.",
                     "Assign room templates to the style set."));
-                return Failed(width, height, seed, report);
+                return Failed(width, height, seed, report, 1);
             }
 
             var templateReport = profile.Validate();
             if (!templateReport.IsValid)
             {
-                return Failed(width, height, seed, templateReport);
+                return Failed(width, height, seed, templateReport, 1);
             }
 
             var landmarks = MapGenRequiredLandmarkReservation.Build(profile);
@@ -68,13 +71,46 @@ namespace Conn.MapGenV2.Authoring
                     "production_solver_empty_room_candidate_domain",
                     "No room template footprint can fit inside the profile map size.",
                     "Increase map size or use smaller room templates."));
-                return Failed(width, height, seed, report);
+                return Failed(width, height, seed, report, 1);
             }
 
+            MapGenMockupSolverResult lastFailure = null;
+            for (var attempt = 0; attempt < maxAttempts; attempt++)
+            {
+                var attemptSeed = GetAttemptSeed(seed, attempt);
+                var result = GenerateAttempt(profile, seed, attemptSeed, attempt + 1, width, height, roomTemplates, corridorTemplates, landmarks);
+                if (result.Success)
+                {
+                    return result;
+                }
+
+                lastFailure = result;
+                if (!ShouldRetry(result.Report))
+                {
+                    return result;
+                }
+            }
+
+            AddRetryExhaustedIssue(lastFailure.Report, maxAttempts);
+            return lastFailure;
+        }
+
+        private static MapGenMockupSolverResult GenerateAttempt(
+            MapGenProfileAsset profile,
+            int seed,
+            int attemptSeed,
+            int attemptCount,
+            int width,
+            int height,
+            MapGenRoomTemplateAsset[] roomTemplates,
+            MapGenCorridorTemplateAsset[] corridorTemplates,
+            MapGenRequiredLandmark[] landmarks)
+        {
+            var report = new MapGenValidationReport();
             var cells = CreateEmptyCells(width, height);
             var placements = new RoomPlacement[landmarks.Length];
             var placed = new bool[landmarks.Length];
-            var rng = new MapGenRandom(seed).Fork("template_solver");
+            var rng = new MapGenRandom(attemptSeed).Fork("template_solver");
 
             for (var step = 0; step < landmarks.Length; step++)
             {
@@ -95,7 +131,7 @@ namespace Conn.MapGenV2.Authoring
                         "production_solver_no_template_for_category",
                         $"No room template can satisfy required category {category}.",
                         "Add a matching room template or a Main fallback template."));
-                    return Failed(width, height, seed, report);
+                    return Failed(width, height, seed, report, attemptCount);
                 }
 
                 if (candidateCount <= 0)
@@ -105,7 +141,7 @@ namespace Conn.MapGenV2.Authoring
                         "production_solver_no_room_placement_candidates",
                         $"No remaining placement candidates can satisfy required category {category}.",
                         "Increase map size, reduce required rooms, or use smaller templates with non-overlapping footprints/connectors/blockers."));
-                    return Failed(width, height, seed, report);
+                    return Failed(width, height, seed, report, attemptCount);
                 }
 
                 if (!TryPlaceRoom(cells, width, height, template, category, i, landmarks.Length, ref rng, out var placement))
@@ -115,7 +151,7 @@ namespace Conn.MapGenV2.Authoring
                         "production_solver_cannot_place_room",
                         $"Could not place room template {template.TemplateId}.",
                         "Increase map size, reduce required rooms, or use smaller templates."));
-                    return Failed(width, height, seed, report);
+                    return Failed(width, height, seed, report, attemptCount);
                 }
 
                 placements[i] = placement;
@@ -126,13 +162,13 @@ namespace Conn.MapGenV2.Authoring
             {
                 if (!TryConnectRooms(cells, width, height, placements[i - 1], placements[i], corridorTemplates, report))
                 {
-                    return Failed(width, height, seed, report);
+                    return Failed(width, height, seed, report, attemptCount);
                 }
             }
 
             if (!ValidateDistanceRules(profile.LayoutRules.DistanceRules, landmarks, placements, report))
             {
-                return Failed(width, height, seed, report);
+                return Failed(width, height, seed, report, attemptCount);
             }
 
             return new MapGenMockupSolverResult
@@ -141,12 +177,13 @@ namespace Conn.MapGenV2.Authoring
                 Width = width,
                 Height = height,
                 Seed = seed,
+                AttemptCount = attemptCount,
                 Cells = cells,
                 Report = report
             };
         }
 
-        private static MapGenMockupSolverResult Failed(int width, int height, int seed, MapGenValidationReport report)
+        private static MapGenMockupSolverResult Failed(int width, int height, int seed, MapGenValidationReport report, int attemptCount)
         {
             return new MapGenMockupSolverResult
             {
@@ -154,9 +191,40 @@ namespace Conn.MapGenV2.Authoring
                 Width = Mathf.Max(0, width),
                 Height = Mathf.Max(0, height),
                 Seed = seed,
+                AttemptCount = attemptCount,
                 Cells = Array.Empty<MapGenMockupCell>(),
                 Report = report
             };
+        }
+
+        private static int GetAttemptSeed(int seed, int attempt)
+        {
+            unchecked
+            {
+                return seed + (attempt * 104729);
+            }
+        }
+
+        private static bool ShouldRetry(MapGenValidationReport report)
+        {
+            foreach (var issue in report.Issues)
+            {
+                if (issue.Code == "production_solver_start_exit_distance_too_short")
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static void AddRetryExhaustedIssue(MapGenValidationReport report, int maxAttempts)
+        {
+            report.Add(new MapGenIssue(
+                MapGenGenerationPhase.SolveMockup,
+                "production_solver_retry_exhausted",
+                $"Production solver exhausted {maxAttempts} deterministic attempts.",
+                "Relax conflicting rules, increase map size, or adjust templates so a retry can satisfy the constraints."));
         }
 
         private static MapGenRoomTemplateAsset PickTemplateForCategory(

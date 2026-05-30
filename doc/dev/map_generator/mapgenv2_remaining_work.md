@@ -594,6 +594,8 @@ Progress note 2026-05-31:
 - Added candidate-exhaustion diagnostics after already placed
   footprint/connector/blocker cells remove all candidates for a remaining
   required landmark.
+- Added bounded deterministic retries for retryable solver contradictions, with
+  attempt counts on solver results and an explicit retry-exhausted diagnostic.
 
 Goal: replace the current simple connected-cell MVP with a real rooms/corridors
 solver.
@@ -617,7 +619,9 @@ Tasks:
 - [ ] Propagate footprint, connector, blocked-region, and adjacency
   constraints beyond occupied-cell candidate filtering.
 - [x] Maintain graph connectivity during solve.
-- [ ] Add deterministic retries with detailed contradiction reports.
+- [x] Add deterministic retries with detailed contradiction reports for
+  retryable distance contradictions.
+- [ ] Expand deterministic retries to additional retryable contradiction types.
 - [ ] Add loop, branch, and dead-end policies.
 - [ ] Add layout signatures that include profile/template/rule versions.
 
@@ -635,6 +639,7 @@ Verification:
 - EditMode test for start-to-exit distance contradiction diagnostics.
 - EditMode test for lowest-entropy required-landmark domain summary.
 - EditMode test for candidate exhaustion after footprint propagation.
+- EditMode test for deterministic retry exhaustion diagnostics.
 - Seed sweep across multiple profiles and sizes.
 - Tests for required room presence and reachability.
 - Tests for connector compatibility.
