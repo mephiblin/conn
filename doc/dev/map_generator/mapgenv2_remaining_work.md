@@ -230,6 +230,9 @@ Progress note 2026-05-31:
 - The selected-region inspector now shows region type, state counts,
   template/shape availability, and materialization hints with Korean/English
   labels where useful.
+- The preview now highlights the selected region, selected connector cells, and
+  adjacent corridor/connector links so region connectivity is visible before
+  acceptance.
 - Remaining Phase 1 work is fuller selected-region edit coverage:
   reroll/regenerate/reroute actions.
 
@@ -246,7 +249,7 @@ Tasks:
   socket kind/id, and prop channel.
 - [x] Allow clicking a generated room/corridor cell to select the owning
   region, not only the individual grid cell.
-- [ ] Highlight the selected region, its connectors, and adjacent corridor
+- [x] Highlight the selected region, its connectors, and adjacent corridor
   links in the preview.
 - [ ] Add selected-region inspector fields:
   region id, type, category, template/shape id, lock state, cell count,

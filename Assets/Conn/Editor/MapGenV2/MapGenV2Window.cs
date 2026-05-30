@@ -19,6 +19,8 @@ namespace Conn.MapGenV2.Editor
         private static readonly Color ReservedColor = BlockedColor;
         private static readonly Color GridLineColor = new Color(0f, 0f, 0f, 0.28f);
         private static readonly Color SelectedRegionColor = new Color(1f, 1f, 1f, 0.38f);
+        private static readonly Color SelectedConnectorColor = new Color(1f, 0.72f, 0.05f, 0.58f);
+        private static readonly Color AdjacentLinkColor = new Color(0.1f, 0.95f, 1f, 0.48f);
         private static readonly Color HoverColor = new Color(1f, 1f, 1f, 0.22f);
         private MapGenProfileAsset profile;
         private MapGenMockupDraftAsset draft;
@@ -666,6 +668,16 @@ namespace Conn.MapGenV2.Editor
                         EditorGUI.DrawRect(cellRect, SelectedRegionColor);
                     }
 
+                    if (hasSelectedCell && IsSelectedRegionConnector(cell))
+                    {
+                        EditorGUI.DrawRect(cellRect, SelectedConnectorColor);
+                    }
+
+                    if (hasSelectedCell && IsAdjacentRegionLink(previewData, cell, x, y))
+                    {
+                        EditorGUI.DrawRect(cellRect, AdjacentLinkColor);
+                    }
+
                     if (hasHoveredCell && hoveredCell.x == x && hoveredCell.y == y)
                     {
                         EditorGUI.DrawRect(cellRect, HoverColor);
@@ -756,6 +768,7 @@ namespace Conn.MapGenV2.Editor
             var roomCount = 0;
             var corridorCount = 0;
             var connectorCount = 0;
+            var adjacentLinkCount = 0;
             var blockedCount = 0;
             var reservedCount = 0;
             var category = MapGenRoomCategory.Main;
@@ -797,6 +810,7 @@ namespace Conn.MapGenV2.Editor
                 }
             }
 
+            adjacentLinkCount = CountAdjacentRegionLinks(previewData);
             draft.TryGetRegionOverride(selectedRegionId, out var regionOverride);
             EditorGUILayout.Space(4f);
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
@@ -809,6 +823,7 @@ namespace Conn.MapGenV2.Editor
                     "State Counts",
                     $"Room {roomCount}, Corridor {corridorCount}, Connector {connectorCount}, Blocked {blockedCount}, Reserved {reservedCount}");
                 EditorGUILayout.LabelField("Connector Count", connectorCount.ToString());
+                EditorGUILayout.LabelField("Adjacent Links / 인접 링크", adjacentLinkCount.ToString());
                 EditorGUILayout.LabelField("Locked", regionOverride.Locked ? "Yes" : "No");
                 EditorGUILayout.LabelField(
                     "Override",
@@ -960,6 +975,72 @@ namespace Conn.MapGenV2.Editor
             }
 
             return selectedCell.x == x && selectedCell.y == y;
+        }
+
+        private bool IsSelectedRegionConnector(MapGenMockupCell cell)
+        {
+            return selectedRegionId >= 0
+                && cell.RegionId == selectedRegionId
+                && cell.State == MapGenCellState.Connector;
+        }
+
+        private bool IsAdjacentRegionLink(MapGenMockupPreviewData previewData, MapGenMockupCell cell, int x, int y)
+        {
+            if (selectedRegionId < 0 || cell.RegionId == selectedRegionId || !IsLinkState(cell.State))
+            {
+                return false;
+            }
+
+            return HasSelectedNeighbor(previewData, x + 1, y)
+                || HasSelectedNeighbor(previewData, x - 1, y)
+                || HasSelectedNeighbor(previewData, x, y + 1)
+                || HasSelectedNeighbor(previewData, x, y - 1);
+        }
+
+        private bool HasSelectedNeighbor(MapGenMockupPreviewData previewData, int x, int y)
+        {
+            return previewData.TryGetCell(x, y, out var neighbor)
+                && neighbor.RegionId == selectedRegionId
+                && IsLinkAnchorState(neighbor.State);
+        }
+
+        private int CountAdjacentRegionLinks(MapGenMockupPreviewData previewData)
+        {
+            if (selectedRegionId < 0)
+            {
+                return 0;
+            }
+
+            var count = 0;
+            for (var y = 0; y < previewData.Height; y++)
+            {
+                for (var x = 0; x < previewData.Width; x++)
+                {
+                    if (!previewData.TryGetCell(x, y, out var cell))
+                    {
+                        continue;
+                    }
+
+                    if (IsAdjacentRegionLink(previewData, cell, x, y))
+                    {
+                        count++;
+                    }
+                }
+            }
+
+            return count;
+        }
+
+        private static bool IsLinkState(MapGenCellState state)
+        {
+            return state == MapGenCellState.Corridor || state == MapGenCellState.Connector;
+        }
+
+        private static bool IsLinkAnchorState(MapGenCellState state)
+        {
+            return state == MapGenCellState.Room
+                || state == MapGenCellState.Corridor
+                || state == MapGenCellState.Connector;
         }
 
         private void ClearSelection()
