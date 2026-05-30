@@ -530,6 +530,9 @@ Progress note 2026-05-31:
 - Room template inspector validation now explicitly shows footprint, occupied
   cells, connector count, and invalid socket count before the full validation
   issue list.
+- Room template inspector now includes an immediate footprint preview using the
+  mockup color language for floor, connector, wall, blocked, and empty cells;
+  generated preview-thumbnail caching remains separate work.
 
 Goal: make room/chunk shapes editable as real grid assets.
 

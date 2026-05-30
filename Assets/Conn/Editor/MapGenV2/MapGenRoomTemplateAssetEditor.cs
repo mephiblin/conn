@@ -25,6 +25,7 @@ namespace Conn.MapGenV2.Editor
             }
 
             DrawValidationSummary(template);
+            DrawFootprintPreview(template);
 
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("기본 정보 / Identity", EditorStyles.boldLabel);
@@ -67,6 +68,85 @@ namespace Conn.MapGenV2.Editor
                 EditorGUILayout.LabelField("Connector Count / 커넥터 수", (template.Connectors?.Length ?? 0).ToString());
                 EditorGUILayout.LabelField("Invalid Socket Cells / 잘못된 소켓", invalidSockets.ToString());
             }
+        }
+
+        private static void DrawFootprintPreview(MapGenRoomTemplateAsset template)
+        {
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("풋프린트 미리보기 / Footprint Preview", EditorStyles.boldLabel);
+            var width = Mathf.Max(1, template.Footprint.x);
+            var height = Mathf.Max(1, template.Footprint.y);
+            var availableWidth = EditorGUIUtility.currentViewWidth - 36f;
+            var cellSize = Mathf.Clamp(availableWidth / width, 12f, 30f);
+            var rect = GUILayoutUtility.GetRect(width * cellSize, height * cellSize, GUILayout.ExpandWidth(false));
+            for (var y = height - 1; y >= 0; y--)
+            {
+                for (var x = 0; x < width; x++)
+                {
+                    var cell = new Vector2Int(x, y);
+                    var cellRect = new Rect(
+                        rect.x + x * cellSize,
+                        rect.y + (height - 1 - y) * cellSize,
+                        cellSize,
+                        cellSize);
+                    EditorGUI.DrawRect(cellRect, ColorForCell(template, cell));
+                    EditorGUI.DrawRect(new Rect(cellRect.x, cellRect.y, cellRect.width, 1f), Color.black);
+                    EditorGUI.DrawRect(new Rect(cellRect.x, cellRect.yMax - 1f, cellRect.width, 1f), Color.black);
+                    EditorGUI.DrawRect(new Rect(cellRect.x, cellRect.y, 1f, cellRect.height), Color.black);
+                    EditorGUI.DrawRect(new Rect(cellRect.xMax - 1f, cellRect.y, 1f, cellRect.height), Color.black);
+                }
+            }
+        }
+
+        private static Color ColorForCell(MapGenRoomTemplateAsset template, Vector2Int cell)
+        {
+            if (Contains(template.Connectors, cell))
+            {
+                return Color.white;
+            }
+
+            if (Contains(template.BlockedCells, cell))
+            {
+                return new Color(0.45f, 0.45f, 0.45f, 1f);
+            }
+
+            if (Contains(template.WallCells, cell))
+            {
+                return new Color(0.2f, 0.32f, 0.85f, 1f);
+            }
+
+            if (Contains(template.FloorCells, cell))
+            {
+                return new Color(0.9f, 0f, 0f, 1f);
+            }
+
+            return new Color(0.04f, 0.08f, 0.9f, 1f);
+        }
+
+        private static bool Contains(Vector2Int[] cells, Vector2Int cell)
+        {
+            foreach (var candidate in cells ?? System.Array.Empty<Vector2Int>())
+            {
+                if (candidate == cell)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool Contains(MapGenConnector[] connectors, Vector2Int cell)
+        {
+            foreach (var connector in connectors ?? System.Array.Empty<MapGenConnector>())
+            {
+                if (connector.LocalCell == cell)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static int CountUniqueOccupiedCells(MapGenRoomTemplateAsset template)
