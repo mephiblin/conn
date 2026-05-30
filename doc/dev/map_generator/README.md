@@ -1,7 +1,7 @@
 # Map Generator and Monster Editor Cooperation Plan
 
 Date: 2026-05-25
-Status: first-pass authoring, validation, workbench, and runtime bundle bridge implemented; manual Game view verification remains.
+Status: first-pass authoring, validation, workspace flow, and runtime bundle bridge implemented.
 
 ## Current Planning Update
 
@@ -10,8 +10,8 @@ next target is a new editable cell-map workflow rather than further expansion
 of temporary preview objects. See `editable_cell_map_editor_plan.md` for the
 plan to introduce an `EditableMapDraftAsset`, tileable cell layers, object
 palettes, paint/stamp tools, mesh preview, validation, and runtime bake.
-`MapGeneratorWorkspace` should remain legacy debug/reference tooling until the
-new draft pipeline can fully replace it.
+`MapGeneratorWorkspace` is the current profile-driven editor entry point, while
+`EditableMapDraftAsset` becomes the source of truth after a preview is accepted.
 
 As of 2026-05-30, the first draft-backed path is now in the project:
 
@@ -74,12 +74,11 @@ gameplay integration are still pending.
 
 ## Workspace Boundary
 
-`MapGeneratorWorkspace` is still intentionally treated as legacy debug/reference
-UI. It can generate a graph result and bridge that result into a new
-`EditableMapDraftAsset`, but it is not the source of truth once the draft
-exists.
+`MapGeneratorWorkspace` owns profile validation, preview generation, and draft
+acceptance. Once a draft exists, `EditableMapDraftAsset` becomes the source of
+truth.
 
-Intentional incompatibilities today:
+Intentional boundaries today:
 
 - Draft painting, validation overlays, bake output, and runtime payloads do not
   sync back into `MapGeneratorWorkspace`.
@@ -108,16 +107,14 @@ the legacy graph snapshot.
 Use these steps after pulling the branch:
 
 1. Open Unity and let the project recompile.
-2. Open the existing `MapGenerator` editor scene and select the
-   `MapGeneratorWorkspace`.
-3. Assign a `MapProfileAsset` to `Map Profile`. The workspace does not use a
-   hidden fallback profile when this field is empty. The selected profile owns
-   generation rules such as `Room Count Min/Max`, critical path range, side
-   branch count, and the room asset pools (`OptionalChunks`,
-   `RequiredLandmarkRooms`, and `OptionalLandmarks`).
-   If no profile asset exists yet, click `Create Chapter 2 Sample Profile
-   Assets` to create an explicit sample profile and room chunk pool under
-   `Assets/Conn/Authoring/Maps/Profiles/ChapterTwoFirstSlice`.
+2. Run `Conn/Map/Create Map Generator Workspace Scene` and select the
+   `Map Generator Workspace`.
+3. Prepare `Map Profile`.
+   - Assign an existing `MapProfileAsset`, or
+   - click `Create New Profile`, or
+   - click `Create Example Profile` when you need a sample authoring set.
+   The selected profile owns generation rules such as `Room Count Min/Max`,
+   critical path range, side branch count, and room pools.
 4. In `Preview`, set `Room Spacing Min` and `Room Spacing Max`. Matching values
    produce fixed spacing; different values produce deterministic spacing
    variation for the preview layout.
@@ -185,7 +182,6 @@ Local references:
   - `Assets/Conn/Core/Maps/MapContracts.cs`
   - `Assets/Conn/Core/Maps/MapGenerationService.cs`
   - `Assets/Conn/Core/Maps/MapGenerationCatalog.cs`
-  - `Assets/Conn/Editor/Maps/GeneratorWorkbenchWindow.cs`
   - `Assets/Conn/Core/Content/ContentDatabaseDefinition.cs`
 
 User-provided video references:
@@ -214,7 +210,6 @@ Already implemented:
 - `MapPlacement`
 - `GeneratedMapDraft`
 - `CompiledMap`
-- `GeneratorWorkbenchWindow`
 - seed-based generation
 - start / quest target / boss / exit / monster / loot placement contracts
 - saved `CompiledMapAsset` Runtime-first load
@@ -239,36 +234,15 @@ First-pass authoring asset schemas now exist in `Conn.Authoring`:
 - `GenerationWeightProfileAsset`
 - `SpawnTableAsset`
 
-These assets are the source for future workbench selection and validation. They
+These assets are the source for profile selection and validation. They
 do not make maps own monster data; map profiles reference spawn tables, tag
 filters, and direct encounter overrides.
-
-The Generator Workbench now exposes a first-pass authoring validation panel that
-discovers map profiles, resource sets, chunks, landmark rooms, spawn tables, and
-generation weight profiles. The validator checks id uniqueness, resource set
-presence/theme compatibility, chunk sockets/anchors/population rules, required
-landmark anchors, spawn table references, resolved spawn pools, invalid
-weight/floor/difficulty ranges, encounter/monster theme or map-kind
-compatibility, direct encounter overrides, weight profile references, and broken
-Unity object references inside resource sets and chunks. Landmark validation
-also checks required landmark roles, duplicate required roles, unique landmark
-reuse, and invalid landmark count/repeat ranges in generation weights. Profile
-validation checks linked chunk/landmark room size against the profile room size
-and verifies representative role/socket chunk coverage before runtime generation.
-
-The workbench can now select a `MapProfileAsset`, show its resource set,
-landmark/chunk counts, spawn tables, tag filters, direct encounter overrides,
-and generation weight profile, then generate from the selected profile through a
-runtime bundle plus seed. If no profile is selected, it still uses the Chapter 2
-catalog profile for existing validation and debug workflows.
 
 A first-pass runtime-safe `RuntimeMapGenerationBundle` path now exists. The
 bundle stores runtime map profile entries and chunk presets using ids/plain data,
 and `RuntimeMapGenerationService` can generate a compiled map from
-`bundle + profileId + seed`. The Generator Workbench can save a catalog bundle
-or build one from validated authoring assets. Workbench generation context now
-includes floor and difficulty, which are written into the runtime profile entry
-before seed generation. This is still a minimal bridge: future work needs
+`bundle + profileId + seed`. Runtime bundle build/save remains available for
+validated authoring assets. This is still a minimal bridge: future work needs
 resource realization ids and deeper progression UX beyond the first-pass
 floor/difficulty inputs. Batch validation now reflects over the runtime bundle
 contract and fails if bundle data types store `UnityEngine.Object`,
@@ -352,7 +326,7 @@ placements point at the correct map placement kind and resolve through
 
 The map editor owns spaces and anchors. The monster DB owns monsters and
 encounters. The map editor only references spawn sources from that DB. The
-generator workbench owns the merge:
+generator pipeline owns the merge:
 
 ```text
 MapPlacement(anchor, room, theme, role)

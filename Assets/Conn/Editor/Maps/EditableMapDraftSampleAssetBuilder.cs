@@ -9,7 +9,6 @@ namespace Conn.Editor.Maps
     {
         public const string SampleDraftAssetPath = "Assets/Conn/Authoring/Maps/Drafts/EditableMapDraft_Sample.asset";
 
-        [MenuItem("Conn/Maps/Create Or Update Sample Editable Draft")]
         public static void CreateOrUpdateSampleDraftAsset()
         {
             EnsureDraftFolder();
