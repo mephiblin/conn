@@ -179,7 +179,7 @@ namespace Conn.Editor.Maps
                     ChunkId = node.ChunkId ?? string.Empty
                 });
 
-                CreateSocketsForNode(target, node, chunkLookup, roomOriginX, roomOriginY, roomWidth, roomHeight, edges, nodes, sockets);
+                CreateSocketsForNode(node, chunkLookup, roomOriginX, roomOriginY, roomWidth, roomHeight, edges, nodes, sockets);
             }
 
             CarveSocketConnections(target, sockets);
@@ -416,13 +416,13 @@ namespace Conn.Editor.Maps
         {
             var width = Mathf.Max(1, profile.RoomWidth);
             var height = Mathf.Max(1, profile.RoomHeight);
-            foreach (var node in graph?.Nodes ?? Array.Empty<RoomGraphNode>())
+            if (graph == null)
             {
-                if (node == null)
-                {
-                    continue;
-                }
+                return new Vector2Int(width, height);
+            }
 
+            foreach (var node in graph.Nodes)
+            {
                 if (chunkLookup.TryGetValue(node.ChunkId ?? string.Empty, out var chunk))
                 {
                     width = Mathf.Max(width, chunk.Width);

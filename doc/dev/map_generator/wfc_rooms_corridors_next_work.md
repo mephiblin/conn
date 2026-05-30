@@ -139,14 +139,14 @@ graph preview.
 
 ### Automated Tests
 
-- [ ] Profile with missing start pool fails validation.
-- [ ] Profile with incompatible sockets fails validation.
-- [ ] Same seed/profile produces identical draft.
-- [ ] Different seeds produce different layout signatures.
-- [ ] Room count min/max is enforced.
-- [ ] Required room roles are always present.
-- [ ] Generated draft validates and bakes.
-- [ ] Runtime compiled map has no Unity/editor references.
+- [x] Profile with missing start pool fails validation.
+- [x] Profile with incompatible sockets fails validation.
+- [x] Same seed/profile produces identical draft.
+- [x] Different seeds produce different layout signatures.
+- [x] Room count min/max is enforced.
+- [x] Required room roles are always present.
+- [x] Generated draft validates and bakes.
+- [x] Runtime compiled map has no Unity/editor references.
 
 ### Manual Unity Checks
 

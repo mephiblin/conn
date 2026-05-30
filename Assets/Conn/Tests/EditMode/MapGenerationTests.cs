@@ -1,4 +1,5 @@
 using Conn.Authoring.Maps;
+using Conn.Authoring.Content;
 using Conn.Core.Maps;
 using Conn.Core.Session;
 using Conn.Editor.Maps;
