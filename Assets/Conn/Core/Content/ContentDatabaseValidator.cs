@@ -60,6 +60,8 @@ namespace Conn.Core.Content
 
             ValidateItems(database, report);
             ValidateEquipment(database, report);
+            ValidateSpeciesProfiles(database, report);
+            ValidateMonsterTraits(database, report);
             ValidateSkills(database, report);
             ValidateMonsters(database, report);
             ValidateEncounters(database, registry, report);
@@ -162,6 +164,83 @@ namespace Conn.Core.Content
                 {
                     report.Error($"Skill {skill.Id} special effect id is not runtime-supported: {skill.SpecialEffectId}");
                 }
+
+                foreach (var speciesModifier in skill.SpeciesModifiers ?? Array.Empty<ContentSkillSpeciesModifierDefinition>())
+                {
+                    if (speciesModifier == null)
+                    {
+                        continue;
+                    }
+
+                    if (!MonsterSpeciesCatalog.IsSupported(speciesModifier.Species))
+                    {
+                        report.Error($"Skill {skill.Id} species modifier is not runtime-supported: {speciesModifier.Species}");
+                    }
+
+                    if (speciesModifier.PowerMultiplier < 0f)
+                    {
+                        report.Error($"Skill {skill.Id} species modifier multiplier must not be negative.");
+                    }
+                }
+            }
+        }
+
+        private static void ValidateSpeciesProfiles(ContentDatabaseDefinition database, ContentValidationReport report)
+        {
+            var species = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var profile in database.SpeciesProfiles ?? Array.Empty<ContentMonsterSpeciesProfileDefinition>())
+            {
+                if (profile == null)
+                {
+                    continue;
+                }
+
+                if (!MonsterSpeciesCatalog.IsSupported(profile.Species))
+                {
+                    report.Error($"Monster species profile is not runtime-supported: {profile.Species}");
+                }
+                else if (!species.Add(profile.Species))
+                {
+                    report.Error($"Monster species profile is duplicated: {profile.Species}");
+                }
+
+                if (profile.TurnRegenHp < 0)
+                {
+                    report.Error($"Monster species profile {profile.Species} turn regen must not be negative.");
+                }
+            }
+        }
+
+        private static void ValidateMonsterTraits(ContentDatabaseDefinition database, ContentValidationReport report)
+        {
+            var ids = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var trait in database.MonsterTraits ?? Array.Empty<ContentMonsterTraitDefinition>())
+            {
+                if (trait == null)
+                {
+                    continue;
+                }
+
+                RequireName(trait.Id, trait.DisplayName, "monster trait", report);
+                if (!string.IsNullOrWhiteSpace(trait.Id) && !ids.Add(trait.Id))
+                {
+                    report.Error($"Monster trait is duplicated: {trait.Id}");
+                }
+
+                if (trait.TurnRegenHp < 0)
+                {
+                    report.Error($"Monster trait {trait.Id} turn regen must not be negative.");
+                }
+
+                if (trait.FlatDamageReduction < 0)
+                {
+                    report.Error($"Monster trait {trait.Id} flat damage reduction must not be negative.");
+                }
+
+                if (trait.IncomingDamageMultiplier < 0f || trait.OutgoingDamageMultiplier < 0f)
+                {
+                    report.Error($"Monster trait {trait.Id} damage multipliers must not be negative.");
+                }
             }
         }
 
@@ -195,6 +274,15 @@ namespace Conn.Core.Content
                     report.Error($"Monster {monster.Id} evasion rate must be between 0 and 1.");
                 }
 
+                if (string.IsNullOrWhiteSpace(monster.Species))
+                {
+                    report.Warning($"Monster {monster.Id} species is empty. Runtime will default it to {MonsterSpeciesCatalog.Human} until the content is rebaked.");
+                }
+                else if (!MonsterSpeciesCatalog.IsSupported(monster.Species))
+                {
+                    report.Error($"Monster {monster.Id} species is not runtime-supported: {monster.Species}");
+                }
+
                 if (monster.FieldAiProfile == null)
                 {
                     report.Error($"Monster {monster.Id} field AI profile must not be null.");
@@ -224,6 +312,41 @@ namespace Conn.Core.Content
                 if (monster.FieldAiProfile.ContactCooldownSeconds < 0f)
                 {
                     report.Error($"Monster {monster.Id} field AI contact cooldown must not be negative.");
+                }
+
+                ValidateMonsterTraitRefs(database, monster, report);
+            }
+        }
+
+        private static void ValidateMonsterTraitRefs(ContentDatabaseDefinition database, ContentMonsterDefinition monster, ContentValidationReport report)
+        {
+            var localIds = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var traitId in monster.TraitIds ?? Array.Empty<string>())
+            {
+                if (string.IsNullOrWhiteSpace(traitId))
+                {
+                    report.Error($"Monster {monster.Id} trait id must not be empty.");
+                    continue;
+                }
+
+                if (!localIds.Add(traitId))
+                {
+                    report.Error($"Monster {monster.Id} trait is duplicated: {traitId}");
+                }
+
+                var found = false;
+                foreach (var trait in database.MonsterTraits ?? Array.Empty<ContentMonsterTraitDefinition>())
+                {
+                    if (trait != null && string.Equals(trait.Id, traitId, StringComparison.Ordinal))
+                    {
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found)
+                {
+                    report.Error($"Monster {monster.Id} trait is missing: {traitId}");
                 }
             }
         }

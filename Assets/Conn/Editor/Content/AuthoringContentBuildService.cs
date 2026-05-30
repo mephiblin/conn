@@ -15,6 +15,8 @@ namespace Conn.Editor.Content
         {
             return new AuthoringContentSnapshot
             {
+                SpeciesProfiles = FindAssets<MonsterSpeciesProfileAsset>(),
+                MonsterTraits = FindAssets<MonsterTraitAsset>(),
                 Monsters = FindAssets<MonsterDefinitionAsset>(),
                 Encounters = FindAssets<EncounterDefinitionAsset>(),
                 SpawnTables = FindAssets<SpawnTableAsset>(),
@@ -29,7 +31,9 @@ namespace Conn.Editor.Content
         {
             var report = new ContentValidationReport();
             snapshot ??= new AuthoringContentSnapshot();
-            ValidateMonsters(snapshot.Monsters, report);
+            ValidateSpeciesProfiles(snapshot.SpeciesProfiles, report);
+            ValidateMonsterTraits(snapshot.MonsterTraits, report);
+            ValidateMonsters(snapshot.Monsters, snapshot.MonsterTraits, report);
             ValidateEncounters(snapshot, report);
             ValidateSpawnTables(snapshot, report);
             ValidateQuests(snapshot, report);
@@ -53,6 +57,18 @@ namespace Conn.Editor.Content
                 return report;
             }
 
+            var speciesProfiles = new List<ContentMonsterSpeciesProfileDefinition>(database.SpeciesProfiles ?? Array.Empty<ContentMonsterSpeciesProfileDefinition>());
+            foreach (var asset in snapshot.SpeciesProfiles ?? Array.Empty<MonsterSpeciesProfileAsset>())
+            {
+                UpsertSpeciesProfile(speciesProfiles, asset.ToContentDefinition());
+            }
+
+            var monsterTraits = new List<ContentMonsterTraitDefinition>(database.MonsterTraits ?? Array.Empty<ContentMonsterTraitDefinition>());
+            foreach (var asset in snapshot.MonsterTraits ?? Array.Empty<MonsterTraitAsset>())
+            {
+                UpsertMonsterTrait(monsterTraits, asset.ToContentDefinition());
+            }
+
             var monsters = new List<ContentMonsterDefinition>(database.Monsters ?? Array.Empty<ContentMonsterDefinition>());
             foreach (var asset in snapshot.Monsters ?? Array.Empty<MonsterDefinitionAsset>())
             {
@@ -65,6 +81,8 @@ namespace Conn.Editor.Content
                 UpsertEncounter(encounters, asset.ToContentDefinition());
             }
 
+            database.SpeciesProfiles = speciesProfiles.ToArray();
+            database.MonsterTraits = monsterTraits.ToArray();
             database.Monsters = monsters.ToArray();
             database.Encounters = encounters.ToArray();
             var quests = new List<ContentQuestDefinition>(database.Quests ?? Array.Empty<ContentQuestDefinition>());
@@ -122,6 +140,7 @@ namespace Conn.Editor.Content
             var npc = ScriptableObject.CreateInstance<NpcDefinitionAsset>();
             var skill = ScriptableObject.CreateInstance<SkillDefinitionAsset>();
             var vendor = ScriptableObject.CreateInstance<VendorDefinitionAsset>();
+            var speciesProfile = ScriptableObject.CreateInstance<MonsterSpeciesProfileAsset>();
             var database = ScriptableObject.CreateInstance<ContentDatabaseDefinition>();
 
             try
@@ -132,8 +151,13 @@ namespace Conn.Editor.Content
                 monster.AttackPower = 3;
                 monster.XpReward = 5;
                 monster.Ai = "Probe Attack";
+                monster.Species = MonsterSpecies.Beast;
                 monster.ThemeTags = new[] { "probe" };
                 monster.SpawnRoleTags = new[] { "trash" };
+
+                speciesProfile.Species = MonsterSpecies.Beast;
+                speciesProfile.TurnRegenHp = 1;
+                speciesProfile.TraitTags = new[] { "regen" };
 
                 encounter.Id = "authoring_runtime_probe_encounter";
                 encounter.DisplayName = "Authoring Runtime Probe Encounter";
@@ -166,6 +190,15 @@ namespace Conn.Editor.Content
                 skill.BuyPrice = 3;
                 skill.SellPrice = 1;
                 skill.Power = 2;
+                skill.SpeciesModifiers = new[]
+                {
+                    new SkillSpeciesModifierAsset
+                    {
+                        Species = MonsterSpecies.Beast,
+                        FlatPowerDelta = 2,
+                        PowerMultiplier = 1f
+                    }
+                };
                 skill.CatalogIds = new[] { "probe_skill_catalog" };
 
                 vendor.Id = "authoring_runtime_probe_vendor";
@@ -188,6 +221,7 @@ namespace Conn.Editor.Content
 
                 var snapshot = new AuthoringContentSnapshot
                 {
+                    SpeciesProfiles = new[] { speciesProfile },
                     Monsters = new[] { monster },
                     Encounters = new[] { encounter },
                     SpawnTables = Array.Empty<SpawnTableAsset>(),
@@ -210,7 +244,7 @@ namespace Conn.Editor.Content
                 var runtimeSkill = RuntimeContentDatabase.FindSkill(skill.Id);
                 var runtimeVendor = RuntimeContentDatabase.FindVendor(vendor.Id);
 
-                if (runtimeMonster.MonsterId != monster.Id || runtimeMonster.MaxHp != monster.MaxHp)
+                if (runtimeMonster.MonsterId != monster.Id || runtimeMonster.MaxHp != monster.MaxHp || runtimeMonster.Species != "Beast")
                 {
                     throw new InvalidOperationException("RuntimeContentDatabase failed to read baked authoring monster data.");
                 }
@@ -225,9 +259,19 @@ namespace Conn.Editor.Content
                     throw new InvalidOperationException("RuntimeContentDatabase failed to read baked authoring NPC data.");
                 }
 
-                if (runtimeSkill == null || runtimeSkill.SkillId != skill.Id || runtimeSkill.EffectKind != SkillEffectKind.Guard || runtimeSkill.Power != skill.Power)
+                if (runtimeSkill == null
+                    || runtimeSkill.SkillId != skill.Id
+                    || runtimeSkill.EffectKind != SkillEffectKind.Guard
+                    || runtimeSkill.Power != skill.Power
+                    || runtimeSkill.AdjustPowerForSpecies("Beast", skill.Power) != skill.Power + 2)
                 {
                     throw new InvalidOperationException("RuntimeContentDatabase failed to read baked authoring skill data.");
+                }
+
+                var runtimeSpeciesProfile = RuntimeContentDatabase.FindMonsterSpeciesProfile("Beast");
+                if (runtimeSpeciesProfile == null || runtimeSpeciesProfile.TurnRegenHp != 1)
+                {
+                    throw new InvalidOperationException("RuntimeContentDatabase failed to read baked authoring monster species profile data.");
                 }
 
                 if (runtimeVendor == null || runtimeVendor.Id != vendor.Id || runtimeVendor.StockSkillIds.Length != 1)
@@ -255,6 +299,7 @@ namespace Conn.Editor.Content
                 UnityEngine.Object.DestroyImmediate(npc);
                 UnityEngine.Object.DestroyImmediate(skill);
                 UnityEngine.Object.DestroyImmediate(vendor);
+                UnityEngine.Object.DestroyImmediate(speciesProfile);
                 UnityEngine.Object.DestroyImmediate(database);
             }
         }
@@ -277,9 +322,64 @@ namespace Conn.Editor.Content
             return assets.ToArray();
         }
 
-        private static void ValidateMonsters(MonsterDefinitionAsset[] monsters, ContentValidationReport report)
+        private static void ValidateSpeciesProfiles(MonsterSpeciesProfileAsset[] speciesProfiles, ContentValidationReport report)
+        {
+            var speciesIds = new HashSet<string>();
+            foreach (var speciesProfile in speciesProfiles ?? Array.Empty<MonsterSpeciesProfileAsset>())
+            {
+                if (speciesProfile == null)
+                {
+                    continue;
+                }
+
+                var species = speciesProfile.Species.ToString();
+                if (!speciesIds.Add(species))
+                {
+                    report.Error($"Monster species profile authoring is duplicated: {species}");
+                }
+
+                if (speciesProfile.TurnRegenHp < 0)
+                {
+                    report.Error($"Monster species profile authoring {species} turn regen must not be negative.");
+                }
+            }
+        }
+
+        private static void ValidateMonsterTraits(MonsterTraitAsset[] monsterTraits, ContentValidationReport report)
         {
             var ids = new HashSet<string>();
+            foreach (var trait in monsterTraits ?? Array.Empty<MonsterTraitAsset>())
+            {
+                if (trait == null)
+                {
+                    continue;
+                }
+
+                RequireId(trait.Id, "Monster trait authoring asset", report);
+                if (!string.IsNullOrWhiteSpace(trait.Id) && !ids.Add(trait.Id))
+                {
+                    report.Error($"Monster trait authoring id is duplicated: {trait.Id}");
+                }
+
+                if (string.IsNullOrWhiteSpace(trait.DisplayName))
+                {
+                    report.Error($"Monster trait authoring {trait.Id} display name must not be empty.");
+                }
+
+                if (trait.TurnRegenHp < 0
+                    || trait.FlatDamageReduction < 0
+                    || trait.IncomingDamageMultiplier < 0f
+                    || trait.OutgoingDamageMultiplier < 0f)
+                {
+                    report.Error($"Monster trait authoring {trait.Id} numeric values must not be negative.");
+                }
+            }
+        }
+
+        private static void ValidateMonsters(MonsterDefinitionAsset[] monsters, MonsterTraitAsset[] monsterTraits, ContentValidationReport report)
+        {
+            var ids = new HashSet<string>();
+            var traitIds = MonsterTraitIds(monsterTraits);
             foreach (var monster in monsters ?? Array.Empty<MonsterDefinitionAsset>())
             {
                 if (monster == null)
@@ -341,6 +441,32 @@ namespace Conn.Editor.Content
                     {
                         report.Error($"Monster authoring {monster.Id} field AI profile numeric values must not be negative.");
                     }
+                }
+
+                ValidateMonsterTraitRefs(monster, traitIds, report);
+            }
+        }
+
+        private static void ValidateMonsterTraitRefs(MonsterDefinitionAsset monster, HashSet<string> traitIds, ContentValidationReport report)
+        {
+            var localIds = new HashSet<string>();
+            foreach (var trait in monster.Traits ?? Array.Empty<MonsterTraitAsset>())
+            {
+                var traitId = trait != null ? trait.Id : string.Empty;
+                if (string.IsNullOrWhiteSpace(traitId))
+                {
+                    report.Error($"Monster authoring {monster.Id} has an empty trait reference.");
+                    continue;
+                }
+
+                if (!localIds.Add(traitId))
+                {
+                    report.Error($"Monster authoring {monster.Id} trait is duplicated: {traitId}");
+                }
+
+                if (!traitIds.Contains(traitId))
+                {
+                    report.Error($"Monster authoring {monster.Id} trait is missing: {traitId}");
                 }
             }
         }
@@ -557,6 +683,34 @@ namespace Conn.Editor.Content
             monsters.Add(definition);
         }
 
+        private static void UpsertSpeciesProfile(List<ContentMonsterSpeciesProfileDefinition> speciesProfiles, ContentMonsterSpeciesProfileDefinition definition)
+        {
+            for (var i = 0; i < speciesProfiles.Count; i++)
+            {
+                if (speciesProfiles[i].Species == definition.Species)
+                {
+                    speciesProfiles[i] = definition;
+                    return;
+                }
+            }
+
+            speciesProfiles.Add(definition);
+        }
+
+        private static void UpsertMonsterTrait(List<ContentMonsterTraitDefinition> monsterTraits, ContentMonsterTraitDefinition definition)
+        {
+            for (var i = 0; i < monsterTraits.Count; i++)
+            {
+                if (monsterTraits[i].Id == definition.Id)
+                {
+                    monsterTraits[i] = definition;
+                    return;
+                }
+            }
+
+            monsterTraits.Add(definition);
+        }
+
         private static void UpsertEncounter(List<ContentEncounterDefinition> encounters, ContentEncounterDefinition definition)
         {
             for (var i = 0; i < encounters.Count; i++)
@@ -635,6 +789,20 @@ namespace Conn.Editor.Content
                 if (monster != null && !string.IsNullOrWhiteSpace(monster.Id))
                 {
                     ids.Add(monster.Id);
+                }
+            }
+
+            return ids;
+        }
+
+        private static HashSet<string> MonsterTraitIds(MonsterTraitAsset[] monsterTraits)
+        {
+            var ids = new HashSet<string>();
+            foreach (var trait in monsterTraits ?? Array.Empty<MonsterTraitAsset>())
+            {
+                if (trait != null && !string.IsNullOrWhiteSpace(trait.Id))
+                {
+                    ids.Add(trait.Id);
                 }
             }
 
@@ -735,6 +903,19 @@ namespace Conn.Editor.Content
                 {
                     report.Error($"Skill authoring {skill.Id} special effect id is not runtime-supported: {skill.SpecialEffectId}");
                 }
+
+                foreach (var speciesModifier in skill.SpeciesModifiers ?? Array.Empty<SkillSpeciesModifierAsset>())
+                {
+                    if (speciesModifier == null)
+                    {
+                        continue;
+                    }
+
+                    if (speciesModifier.PowerMultiplier < 0f)
+                    {
+                        report.Error($"Skill authoring {skill.Id} species modifier multiplier must not be negative.");
+                    }
+                }
             }
         }
 
@@ -800,6 +981,8 @@ namespace Conn.Editor.Content
 
     public sealed class AuthoringContentSnapshot
     {
+        public MonsterSpeciesProfileAsset[] SpeciesProfiles = Array.Empty<MonsterSpeciesProfileAsset>();
+        public MonsterTraitAsset[] MonsterTraits = Array.Empty<MonsterTraitAsset>();
         public MonsterDefinitionAsset[] Monsters = Array.Empty<MonsterDefinitionAsset>();
         public EncounterDefinitionAsset[] Encounters = Array.Empty<EncounterDefinitionAsset>();
         public SpawnTableAsset[] SpawnTables = Array.Empty<SpawnTableAsset>();

@@ -10,6 +10,8 @@ namespace Conn.Core.Content
         public ContentItemDefinition[] Items = Array.Empty<ContentItemDefinition>();
         public ContentEquipmentDefinition[] Equipment = Array.Empty<ContentEquipmentDefinition>();
         public ContentSkillDefinition[] Skills = Array.Empty<ContentSkillDefinition>();
+        public ContentMonsterSpeciesProfileDefinition[] SpeciesProfiles = Array.Empty<ContentMonsterSpeciesProfileDefinition>();
+        public ContentMonsterTraitDefinition[] MonsterTraits = Array.Empty<ContentMonsterTraitDefinition>();
         public ContentMonsterDefinition[] Monsters = Array.Empty<ContentMonsterDefinition>();
         public ContentEncounterDefinition[] Encounters = Array.Empty<ContentEncounterDefinition>();
         public ContentQuestDefinition[] Quests = Array.Empty<ContentQuestDefinition>();
@@ -24,6 +26,7 @@ namespace Conn.Core.Content
             registry.RegisterItems(Items);
             registry.RegisterEquipment(Equipment);
             registry.RegisterSkills(Skills);
+            registry.RegisterMonsterTraits(MonsterTraits);
             registry.RegisterMonsters(Monsters);
             registry.RegisterEncounters(Encounters);
             registry.RegisterQuests(Quests);
@@ -84,6 +87,7 @@ namespace Conn.Core.Content
         public int BuyPrice;
         public int SellPrice;
         public int Power;
+        public ContentSkillSpeciesModifierDefinition[] SpeciesModifiers = Array.Empty<ContentSkillSpeciesModifierDefinition>();
         public string[] CatalogIds = Array.Empty<string>();
     }
 
@@ -103,6 +107,7 @@ namespace Conn.Core.Content
         public string Grade;
         public int DefaultGroupCount = 1;
         public FieldMonsterAiProfile FieldAiProfile = FieldMonsterAiProfile.Default();
+        public string[] TraitIds = Array.Empty<string>();
         public string[] ThemeTags = Array.Empty<string>();
         public string[] BiomeTags = Array.Empty<string>();
         public string[] SpawnRoleTags = Array.Empty<string>();

@@ -45,6 +45,7 @@ namespace Conn.Authoring.Content
 
         [Header("Field AI")]
         public FieldMonsterAiProfile FieldAiProfile = FieldMonsterAiProfile.Default();
+        public MonsterTraitAsset[] Traits = Array.Empty<MonsterTraitAsset>();
 
         [Header("Authoring References")]
         public GameObject Prefab;
@@ -76,6 +77,7 @@ namespace Conn.Authoring.Content
                 Grade = Grade.ToString(),
                 DefaultGroupCount = DefaultGroupCount,
                 FieldAiProfile = FieldAiProfile != null ? FieldAiProfile.Clone() : FieldMonsterAiProfile.Default(),
+                TraitIds = ResolveTraitIds(Traits),
                 ThemeTags = ThemeTags ?? Array.Empty<string>(),
                 BiomeTags = BiomeTags ?? Array.Empty<string>(),
                 SpawnRoleTags = SpawnRoleTags ?? Array.Empty<string>(),
@@ -91,6 +93,22 @@ namespace Conn.Authoring.Content
             Defense = Mathf.Max(0, Defense);
             EvasionRate = Mathf.Clamp01(EvasionRate);
             XpReward = Mathf.Max(0, XpReward);
+        }
+
+        private static string[] ResolveTraitIds(MonsterTraitAsset[] traits)
+        {
+            if (traits == null || traits.Length == 0)
+            {
+                return Array.Empty<string>();
+            }
+
+            var ids = new string[traits.Length];
+            for (var i = 0; i < traits.Length; i++)
+            {
+                ids[i] = !string.IsNullOrWhiteSpace(traits[i]?.Id) ? traits[i].Id : string.Empty;
+            }
+
+            return ids;
         }
     }
 }

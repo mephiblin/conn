@@ -8,6 +8,7 @@ namespace Conn.Core.Content
         Item,
         Equipment,
         Skill,
+        MonsterTrait,
         Monster,
         Encounter,
         Quest,
@@ -20,6 +21,7 @@ namespace Conn.Core.Content
         private readonly Dictionary<string, ContentItemDefinition> items = new Dictionary<string, ContentItemDefinition>();
         private readonly Dictionary<string, ContentEquipmentDefinition> equipment = new Dictionary<string, ContentEquipmentDefinition>();
         private readonly Dictionary<string, ContentSkillDefinition> skills = new Dictionary<string, ContentSkillDefinition>();
+        private readonly Dictionary<string, ContentMonsterTraitDefinition> monsterTraits = new Dictionary<string, ContentMonsterTraitDefinition>();
         private readonly Dictionary<string, ContentMonsterDefinition> monsters = new Dictionary<string, ContentMonsterDefinition>();
         private readonly Dictionary<string, ContentEncounterDefinition> encounters = new Dictionary<string, ContentEncounterDefinition>();
         private readonly Dictionary<string, ContentQuestDefinition> quests = new Dictionary<string, ContentQuestDefinition>();
@@ -29,6 +31,7 @@ namespace Conn.Core.Content
         public ContentItemDefinition FindItem(string id) => Find(items, id);
         public ContentEquipmentDefinition FindEquipment(string id) => Find(equipment, id);
         public ContentSkillDefinition FindSkill(string id) => Find(skills, id);
+        public ContentMonsterTraitDefinition FindMonsterTrait(string id) => Find(monsterTraits, id);
         public ContentMonsterDefinition FindMonster(string id) => Find(monsters, id);
         public ContentEncounterDefinition FindEncounter(string id) => Find(encounters, id);
         public ContentQuestDefinition FindQuest(string id) => Find(quests, id);
@@ -38,6 +41,7 @@ namespace Conn.Core.Content
         public bool TryFindItem(string id, out ContentItemDefinition definition) => TryFind(items, id, out definition);
         public bool TryFindEquipment(string id, out ContentEquipmentDefinition definition) => TryFind(equipment, id, out definition);
         public bool TryFindSkill(string id, out ContentSkillDefinition definition) => TryFind(skills, id, out definition);
+        public bool TryFindMonsterTrait(string id, out ContentMonsterTraitDefinition definition) => TryFind(monsterTraits, id, out definition);
         public bool TryFindMonster(string id, out ContentMonsterDefinition definition) => TryFind(monsters, id, out definition);
         public bool TryFindEncounter(string id, out ContentEncounterDefinition definition) => TryFind(encounters, id, out definition);
         public bool TryFindQuest(string id, out ContentQuestDefinition definition) => TryFind(quests, id, out definition);
@@ -62,6 +66,11 @@ namespace Conn.Core.Content
         public void RegisterSkills(IEnumerable<ContentSkillDefinition> definitions)
         {
             Register(skills, definitions, skill => skill.Id, ContentIdKind.Skill);
+        }
+
+        public void RegisterMonsterTraits(IEnumerable<ContentMonsterTraitDefinition> definitions)
+        {
+            Register(monsterTraits, definitions, trait => trait.Id, ContentIdKind.MonsterTrait);
         }
 
         public void RegisterMonsters(IEnumerable<ContentMonsterDefinition> definitions)

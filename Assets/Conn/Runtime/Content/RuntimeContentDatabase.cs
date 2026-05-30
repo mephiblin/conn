@@ -69,6 +69,7 @@ namespace Conn.Runtime.Content
             var actionName = string.IsNullOrWhiteSpace(contentMonster.Ai)
                 ? "Attack"
                 : contentMonster.Ai;
+            var species = MonsterSpeciesCatalog.NormalizeOrDefault(contentMonster.Species);
             return new MonsterDefinition(
                 contentMonster.Id,
                 contentMonster.DisplayName,
@@ -76,13 +77,73 @@ namespace Conn.Runtime.Content
                 contentMonster.AttackPower,
                 contentMonster.XpReward,
                 actionName,
-                contentMonster.AttackPower);
+                contentMonster.AttackPower,
+                species,
+                contentMonster.TraitIds);
         }
 
         public static FieldMonsterAiProfile FindFieldMonsterAiProfile(string monsterId)
         {
             var profile = activeRegistry?.FindMonster(monsterId)?.FieldAiProfile;
             return profile != null ? profile.Clone() : FieldMonsterAiProfile.Default();
+        }
+
+        public static MonsterSpeciesProfile FindMonsterSpeciesProfile(string species)
+        {
+            species = MonsterSpeciesCatalog.NormalizeOrDefault(species);
+            foreach (var profile in activeDatabase?.SpeciesProfiles ?? Array.Empty<ContentMonsterSpeciesProfileDefinition>())
+            {
+                if (profile != null && string.Equals(profile.Species, species, StringComparison.Ordinal))
+                {
+                    return new MonsterSpeciesProfile(
+                        profile.Species,
+                        profile.TurnRegenHp,
+                        profile.TraitTags ?? Array.Empty<string>());
+                }
+            }
+
+            return new MonsterSpeciesProfile(species, 0, Array.Empty<string>());
+        }
+
+        public static MonsterTraitDefinition FindMonsterTrait(string traitId)
+        {
+            var trait = activeRegistry?.FindMonsterTrait(traitId);
+            if (trait == null)
+            {
+                return null;
+            }
+
+            return new MonsterTraitDefinition(
+                trait.Id,
+                trait.DisplayName,
+                trait.TraitTags ?? Array.Empty<string>(),
+                trait.TurnRegenHp,
+                trait.FlatDamageReduction,
+                trait.IncomingDamageMultiplier,
+                trait.OutgoingDamageMultiplier,
+                trait.StatusImmunityIds ?? Array.Empty<string>(),
+                trait.ReactiveEffectId,
+                trait.Notes ?? Array.Empty<string>());
+        }
+
+        public static MonsterTraitDefinition[] FindMonsterTraits(string[] traitIds)
+        {
+            if (traitIds == null || traitIds.Length == 0)
+            {
+                return Array.Empty<MonsterTraitDefinition>();
+            }
+
+            var traits = new List<MonsterTraitDefinition>(traitIds.Length);
+            for (var i = 0; i < traitIds.Length; i++)
+            {
+                var trait = FindMonsterTrait(traitIds[i]);
+                if (trait != null)
+                {
+                    traits.Add(trait);
+                }
+            }
+
+            return traits.ToArray();
         }
 
         public static EquipmentItemDefinition FindEquipment(string itemId)
@@ -133,7 +194,8 @@ namespace Conn.Runtime.Content
                 contentSkill.BuyPrice,
                 contentSkill.SellPrice,
                 contentSkill.Power,
-                contentSkill.SpecialEffectId);
+                contentSkill.SpecialEffectId,
+                SkillSpeciesModifiersFor(contentSkill.SpeciesModifiers));
         }
 
         public static QuestDefinition FindQuest(string questId)
@@ -495,6 +557,28 @@ namespace Conn.Runtime.Content
                 "summon" => SkillEffectKind.Summon,
                 _ => SkillEffectKind.Attack
             };
+        }
+
+        private static SkillSpeciesModifier[] SkillSpeciesModifiersFor(ContentSkillSpeciesModifierDefinition[] modifiers)
+        {
+            if (modifiers == null || modifiers.Length == 0)
+            {
+                return Array.Empty<SkillSpeciesModifier>();
+            }
+
+            var runtime = new SkillSpeciesModifier[modifiers.Length];
+            for (var i = 0; i < modifiers.Length; i++)
+            {
+                var modifier = modifiers[i];
+                runtime[i] = modifier == null
+                    ? new SkillSpeciesModifier(string.Empty, 0, 1f)
+                    : new SkillSpeciesModifier(
+                        modifier.Species,
+                        modifier.FlatPowerDelta,
+                        modifier.PowerMultiplier);
+            }
+
+            return runtime;
         }
 
         private static EncounterEnemySlotDefinition[] ConvertEnemySlots(ContentEncounterEnemySlot[] slots)
