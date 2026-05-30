@@ -1259,6 +1259,42 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void PerformanceProfileSelectsTargetBudgetsByMapSize()
+        {
+            Assert.That(MapGenV2PerformanceProfile.SelectBudget(8, 8).Target, Is.EqualTo(MapGenV2PerformanceTarget.Small));
+            Assert.That(MapGenV2PerformanceProfile.SelectBudget(32, 32).Target, Is.EqualTo(MapGenV2PerformanceTarget.Medium));
+            Assert.That(MapGenV2PerformanceProfile.SelectBudget(64, 64).Target, Is.EqualTo(MapGenV2PerformanceTarget.Large));
+            Assert.That(MapGenV2PerformanceProfile.SelectBudget(128, 128).Target, Is.EqualTo(MapGenV2PerformanceTarget.Stress));
+            Assert.That(MapGenV2PerformanceProfile.Large.GenerationBudgetMs, Is.GreaterThan(MapGenV2PerformanceProfile.Medium.GenerationBudgetMs));
+            Assert.That(MapGenV2PerformanceProfile.Stress.PreviewMemoryBudgetKb, Is.GreaterThan(MapGenV2PerformanceProfile.Large.PreviewMemoryBudgetKb));
+        }
+
+        [Test]
+        public void PerformanceProfilerWritesOperationSamples()
+        {
+            if (System.IO.File.Exists(MapGenV2PerformanceProfiler.LogPath))
+            {
+                System.IO.File.Delete(MapGenV2PerformanceProfiler.LogPath);
+            }
+
+            var result = MapGenV2PerformanceProfiler.Measure(
+                "UnitTestOperation",
+                12,
+                12,
+                MapGenV2PerformanceProfile.Small.GenerationBudgetMs,
+                () => 17,
+                "Detail=unit",
+                out var sample);
+
+            Assert.That(result, Is.EqualTo(17));
+            Assert.That(sample.Operation, Is.EqualTo("UnitTestOperation"));
+            Assert.That(sample.Target, Is.EqualTo(MapGenV2PerformanceTarget.Small));
+            Assert.That(sample.BudgetMs, Is.EqualTo(MapGenV2PerformanceProfile.Small.GenerationBudgetMs));
+            Assert.That(System.IO.File.Exists(MapGenV2PerformanceProfiler.LogPath), Is.True);
+            Assert.That(System.IO.File.ReadAllText(MapGenV2PerformanceProfiler.LogPath), Does.Contain("UnitTestOperation"));
+        }
+
+        [Test]
         public void AuthoringAssetMigrationAddsVersionAndNormalizesDefaults()
         {
             var profile = ScriptableObject.CreateInstance<MapGenProfileAsset>();

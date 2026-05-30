@@ -1095,18 +1095,27 @@ Suggested focused command:
 
 ## Phase 16: Performance And Scale
 
+Progress note 2026-05-31:
+
+- `MapGenV2PerformanceProfile` defines small, medium, large, and stress target
+  map sizes with generation, materialization, and preview memory budgets.
+- Main window Generate, Repostprocess, Materialize, and Bake actions now show
+  editor progress bars, record operation-level elapsed time and managed memory
+  delta, and append samples to `Logs/MapGenV2Performance.log`.
+- Focused tests cover budget classification and profiler sample logging.
+
 Goal: make the generator usable for larger production maps without editor
 freezes or unbounded memory growth.
 
 Tasks:
 
-- [ ] Define target map sizes for this project:
+- [x] Define target map sizes for this project:
   small, medium, large, stress.
-- [ ] Add generation time budget per target size.
-- [ ] Add materialization time budget per target size.
-- [ ] Add memory allocation budget for solver and preview.
+- [x] Add generation time budget per target size.
+- [x] Add materialization time budget per target size.
+- [x] Add memory allocation budget for solver and preview.
 - [ ] Add cancellation support for long generation runs.
-- [ ] Add progress reporting for solve, post-process, materialize, and bake.
+- [x] Add progress reporting for solve, post-process, materialize, and bake.
 - [ ] Avoid excessive `AssetDatabase.Refresh` calls during normal generation.
 - [ ] Cache preview textures and invalidate them only when draft data changes.
 - [ ] Avoid scene object creation during mockup-only iteration.

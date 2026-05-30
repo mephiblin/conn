@@ -521,10 +521,7 @@ namespace Conn.MapGenV2.Editor
                 {
                     if (GUILayout.Button("Repostprocess Mockup / 후처리 재실행"))
                     {
-                        Undo.RecordObject(draft, "Post-Process Mockup");
-                        var report = draft.ApplyPostProcessingFromProfile();
-                        EditorUtility.SetDirty(draft);
-                        lastOperationResult = $"Post-process complete. Direct routes +{report.DirectRouteCellsAdded}, dead ends removed {report.DeadEndCorridorsRemoved}, isolated rooms removed {report.IsolatedRoomsRemoved}.";
+                        RunPostProcess();
                     }
                 }
 
@@ -590,11 +587,7 @@ namespace Conn.MapGenV2.Editor
                         : "Materialize To Scene / 씬 생성";
                     if (GUILayout.Button(materializeLabel))
                     {
-                        var root = MapGenMockupMaterializer.Materialize(draft, GetSceneOutputMode(), selectedMaterializedRoot);
-                        selectedMaterializedRoot = root;
-                        lastOperationResult = root != null
-                            ? $"Materialized scene root: {root.name}."
-                            : "Materialize To Scene failed. Check accepted state and module coverage.";
+                        MaterializeToScene();
                     }
                 }
 
@@ -605,10 +598,7 @@ namespace Conn.MapGenV2.Editor
                         : "Bake Runtime Asset / 런타임 베이크";
                     if (GUILayout.Button(bakeLabel))
                     {
-                        var bakedAsset = MapGenRuntimeBakeUtility.Bake(draft);
-                        lastOperationResult = bakedAsset != null
-                            ? $"Baked runtime asset: {AssetDatabase.GetAssetPath(bakedAsset)}."
-                            : "Bake Runtime Asset failed. Check accepted state.";
+                        BakeRuntimeAsset();
                     }
                 }
             }
@@ -641,15 +631,148 @@ namespace Conn.MapGenV2.Editor
                 Undo.RecordObject(draft, operationName);
             }
 
-            var report = preserveLockedRegions
-                ? draft.RegenerateUnlockedFromProfile()
-                : draft.GenerateFromProfile();
-            ClearSelection();
-            EditorUtility.SetDirty(draft);
-            var preview = MapGenMockupPreviewData.FromDraft(draft);
-            lastOperationResult = report.IsValid
-                ? $"{operationName} complete. Seed {draft.Seed}, Retry 0, Rooms {preview.Summary.RoomCells}, Corridors {preview.Summary.CorridorCells}."
-                : $"{operationName} failed. See validation messages above.";
+            var budget = MapGenV2PerformanceProfile.SelectBudget(draft.Width, draft.Height);
+            if (MapGenV2EditorProgress.Begin(operationName, "Solving mockup layout..."))
+            {
+                lastOperationResult = $"{operationName} cancelled before solving.";
+                MapGenV2EditorProgress.End();
+                return;
+            }
+
+            try
+            {
+                MapGenV2EditorProgress.Report(operationName, "Solving mockup layout...", 0.35f);
+                var report = MapGenV2PerformanceProfiler.Measure(
+                    operationName,
+                    draft.Width,
+                    draft.Height,
+                    budget.GenerationBudgetMs,
+                    () => preserveLockedRegions
+                        ? draft.RegenerateUnlockedFromProfile()
+                        : draft.GenerateFromProfile(),
+                    $"Seed={draft.Seed}",
+                    out var sample);
+                MapGenV2EditorProgress.Report(operationName, "Building preview summary...", 0.85f);
+                ClearSelection();
+                EditorUtility.SetDirty(draft);
+                var preview = MapGenMockupPreviewData.FromDraft(draft);
+                lastOperationResult = report.IsValid
+                    ? $"{operationName} complete. Seed {draft.Seed}, Retry 0, Rooms {preview.Summary.RoomCells}, Corridors {preview.Summary.CorridorCells}. Perf {sample.ElapsedMs}ms/{sample.BudgetMs}ms {sample.Target}."
+                    : $"{operationName} failed. See validation messages above. Perf {sample.ElapsedMs}ms/{sample.BudgetMs}ms {sample.Target}.";
+            }
+            finally
+            {
+                MapGenV2EditorProgress.End();
+            }
+        }
+
+        private void RunPostProcess()
+        {
+            if (draft == null)
+            {
+                return;
+            }
+
+            var budget = MapGenV2PerformanceProfile.SelectBudget(draft.Width, draft.Height);
+            if (MapGenV2EditorProgress.Begin("Post-Process Mockup", "Running post-process passes..."))
+            {
+                lastOperationResult = "Post-process cancelled before running.";
+                MapGenV2EditorProgress.End();
+                return;
+            }
+
+            try
+            {
+                Undo.RecordObject(draft, "Post-Process Mockup");
+                MapGenV2EditorProgress.Report("Post-Process Mockup", "Applying pass list...", 0.5f);
+                var report = MapGenV2PerformanceProfiler.Measure(
+                    "Post-Process Mockup",
+                    draft.Width,
+                    draft.Height,
+                    budget.GenerationBudgetMs,
+                    () => draft.ApplyPostProcessingFromProfile(),
+                    $"Seed={draft.Seed}",
+                    out var sample);
+                EditorUtility.SetDirty(draft);
+                lastOperationResult = $"Post-process complete. Direct routes +{report.DirectRouteCellsAdded}, dead ends removed {report.DeadEndCorridorsRemoved}, isolated rooms removed {report.IsolatedRoomsRemoved}. Perf {sample.ElapsedMs}ms/{sample.BudgetMs}ms {sample.Target}.";
+            }
+            finally
+            {
+                MapGenV2EditorProgress.End();
+            }
+        }
+
+        private void MaterializeToScene()
+        {
+            if (draft == null)
+            {
+                return;
+            }
+
+            var budget = MapGenV2PerformanceProfile.SelectBudget(draft.Width, draft.Height);
+            if (MapGenV2EditorProgress.Begin("Materialize To Scene", "Instantiating prefab modules..."))
+            {
+                lastOperationResult = "Materialize To Scene cancelled before instantiation.";
+                MapGenV2EditorProgress.End();
+                return;
+            }
+
+            try
+            {
+                MapGenV2EditorProgress.Report("Materialize To Scene", "Stamping modules...", 0.45f);
+                var root = MapGenV2PerformanceProfiler.Measure(
+                    "Materialize To Scene",
+                    draft.Width,
+                    draft.Height,
+                    budget.MaterializationBudgetMs,
+                    () => MapGenMockupMaterializer.Materialize(draft, GetSceneOutputMode(), selectedMaterializedRoot),
+                    $"Seed={draft.Seed}",
+                    out var sample);
+                selectedMaterializedRoot = root;
+                lastOperationResult = root != null
+                    ? $"Materialized scene root: {root.name}. Perf {sample.ElapsedMs}ms/{sample.BudgetMs}ms {sample.Target}."
+                    : $"Materialize To Scene failed. Check accepted state and module coverage. Perf {sample.ElapsedMs}ms/{sample.BudgetMs}ms {sample.Target}.";
+            }
+            finally
+            {
+                MapGenV2EditorProgress.End();
+            }
+        }
+
+        private void BakeRuntimeAsset()
+        {
+            if (draft == null)
+            {
+                return;
+            }
+
+            var budget = MapGenV2PerformanceProfile.SelectBudget(draft.Width, draft.Height);
+            if (MapGenV2EditorProgress.Begin("Bake Runtime Asset", "Writing runtime-safe baked map..."))
+            {
+                lastOperationResult = "Bake Runtime Asset cancelled before writing.";
+                MapGenV2EditorProgress.End();
+                return;
+            }
+
+            try
+            {
+                MapGenV2EditorProgress.Report("Bake Runtime Asset", "Building baked cells and traversal...", 0.55f);
+                var bakedAsset = MapGenV2PerformanceProfiler.Measure(
+                    "Bake Runtime Asset",
+                    draft.Width,
+                    draft.Height,
+                    budget.GenerationBudgetMs,
+                    () => MapGenRuntimeBakeUtility.Bake(draft),
+                    $"Seed={draft.Seed}",
+                    out var sample);
+                lastOperationResult = bakedAsset != null
+                    ? $"Baked runtime asset: {AssetDatabase.GetAssetPath(bakedAsset)}. Perf {sample.ElapsedMs}ms/{sample.BudgetMs}ms {sample.Target}."
+                    : $"Bake Runtime Asset failed. Check accepted state. Perf {sample.ElapsedMs}ms/{sample.BudgetMs}ms {sample.Target}.";
+            }
+            finally
+            {
+                MapGenV2EditorProgress.End();
+            }
         }
 
         private string BuildGuidedNextAction(MapGenV2WorkflowStatus workflow)
