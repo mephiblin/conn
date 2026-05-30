@@ -58,7 +58,9 @@ As of 2026-05-30, the first draft-backed path is now in the project:
 - `MapGenerationQualityService` adds a production-shape gate for generated
   graphs: the current ruins slice must include non-overlapping rooms, branches
   on both sides of the main path, at least one loop, and the required hub,
-  corridor, dead-end, and height-transition room kinds.
+  corridor, dead-end, and height-transition room kinds. Runtime bundle
+  generation runs this gate before compile, so production runtime maps cannot
+  bypass the graph shape contract.
 - The high-level editor flow now treats `EditableMapDraftAsset` and
   `CompiledMap` as the primary outputs. The old `GeneratedMapDraft` graph
   remains only as an internal adapter stage inside the draft builder and core

@@ -995,6 +995,8 @@ is partially complete.
   - 2026-05-30: `MapGenerationQualityService` now rejects generated graphs
     without non-overlapping rooms, both-side branches, loop edges, and required
     hub/corridor/dead-end/height-transition room kinds.
+  - 2026-05-30: runtime bundle generation now runs the production-shape gate
+    before compiling, so runtime maps cannot bypass the graph quality contract.
 - [x] Choose chunks by role, layout kind, sockets, theme, and size.
 - [x] Rasterize selected chunk cells into the draft grid.
 - [x] Stamp selected chunk object placements into the draft.

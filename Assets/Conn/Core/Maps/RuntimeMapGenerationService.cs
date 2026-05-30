@@ -10,6 +10,7 @@ namespace Conn.Core.Maps
             var entry = RequireEntry(bundle, profileId);
             var draft = MapGenerationService.Generate(entry.Profile, entry.Chunks, seed);
             MapValidationService.ThrowIfFailed(MapValidationService.Validate(entry.Profile, draft));
+            MapValidationService.ThrowIfFailed(MapGenerationQualityService.ValidateProductionShape(entry.Profile, draft));
             var compiled = MapGenerationService.Compile(entry.Profile, draft);
             ApplyEncounterPlacements(entry, compiled);
             MapValidationService.ThrowIfFailed(MapValidationService.ValidateCompiled(entry.Profile, compiled));

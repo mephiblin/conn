@@ -78,6 +78,33 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void RuntimeGenerationRejectsProductionShapeFailures()
+        {
+            var profile = MapGenerationCatalog.ChapterTwoFirstSliceProfile();
+            profile.RequiredAnchors.Remove(MapAnchorKind.Loot);
+            profile.SideBranchCount = 1;
+            profile.LoopMin = 1;
+            profile.LoopMax = 1;
+            var bundle = new RuntimeMapGenerationBundle
+            {
+                BundleId = "quality_failure_probe",
+                Profiles = new System.Collections.Generic.List<RuntimeMapProfileEntry>
+                {
+                    new RuntimeMapProfileEntry
+                    {
+                        Profile = profile,
+                        Chunks = MapGenerationCatalog.ChapterTwoFirstSliceChunks()
+                    }
+                }
+            };
+
+            var exception = Assert.Throws<System.InvalidOperationException>(() =>
+                RuntimeMapGenerationService.GenerateCompiled(bundle, profile.ProfileId, 2001));
+
+            Assert.That(exception.Message.Contains("Generated map has 0 loop edge"), Is.True);
+        }
+
+        [Test]
         public void RuntimeLoaderReadsGeneratedCompiledMapPlacements()
         {
             var profile = MapGenerationCatalog.ChapterTwoFirstSliceProfile();
