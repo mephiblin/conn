@@ -102,7 +102,13 @@ namespace Conn.MapGenV2.Core
                     MapGenPostProcessPassKind.AddDirectRoutes,
                     MapGenPostProcessPassKind.FillEnclosedEmptySpace,
                     MapGenPostProcessPassKind.ReduceDeadEnds,
-                    MapGenPostProcessPassKind.RemoveSmallRooms
+                    MapGenPostProcessPassKind.RemoveSmallRooms,
+                    MapGenPostProcessPassKind.SplitLargeRooms,
+                    MapGenPostProcessPassKind.ConsolidatePaths,
+                    MapGenPostProcessPassKind.AddLoops,
+                    MapGenPostProcessPassKind.NormalizeRouteLengths,
+                    MapGenPostProcessPassKind.WidenCleanCorridors,
+                    MapGenPostProcessPassKind.MergeCompatibleAdjacentRooms
                 };
         }
 
@@ -118,6 +124,18 @@ namespace Conn.MapGenV2.Core
                     return options.ReduceDeadEnds;
                 case MapGenPostProcessPassKind.RemoveSmallRooms:
                     return options.RemoveSmallRooms;
+                case MapGenPostProcessPassKind.SplitLargeRooms:
+                    return options.SplitLargeRooms;
+                case MapGenPostProcessPassKind.ConsolidatePaths:
+                    return options.ConsolidatePaths;
+                case MapGenPostProcessPassKind.AddLoops:
+                    return options.AddLoops;
+                case MapGenPostProcessPassKind.NormalizeRouteLengths:
+                    return options.NormalizeRouteLengths;
+                case MapGenPostProcessPassKind.WidenCleanCorridors:
+                    return options.WidenCleanCorridors;
+                case MapGenPostProcessPassKind.MergeCompatibleAdjacentRooms:
+                    return options.MergeCompatibleAdjacentRooms;
                 default:
                     return false;
             }
@@ -140,6 +158,18 @@ namespace Conn.MapGenV2.Core
                     return RemoveDeadEndCorridors(width, height, cells);
                 case MapGenPostProcessPassKind.RemoveSmallRooms:
                     return RemoveIsolatedRooms(width, height, cells);
+                case MapGenPostProcessPassKind.SplitLargeRooms:
+                    return SplitLargeRooms(width, height, cells);
+                case MapGenPostProcessPassKind.ConsolidatePaths:
+                    return ConsolidatePaths(width, height, cells);
+                case MapGenPostProcessPassKind.AddLoops:
+                    return AddLoop(width, height, cells);
+                case MapGenPostProcessPassKind.NormalizeRouteLengths:
+                    return NormalizeRouteLengths(width, height, cells);
+                case MapGenPostProcessPassKind.WidenCleanCorridors:
+                    return WidenCleanCorridors(width, height, cells);
+                case MapGenPostProcessPassKind.MergeCompatibleAdjacentRooms:
+                    return MergeCompatibleAdjacentRooms(width, height, cells);
                 default:
                     return 0;
             }
@@ -408,6 +438,167 @@ namespace Conn.MapGenV2.Core
             return removed;
         }
 
+        private static int SplitLargeRooms(int width, int height, MapGenMockupCell[] cells)
+        {
+            var changed = 0;
+            for (var i = 0; i < cells.Length; i++)
+            {
+                if (cells[i].State != MapGenCellState.Room)
+                {
+                    continue;
+                }
+
+                var coord = MapGenGridCoord.FromIndex(i, width);
+                var horizontalRoomSpan = IsRoomAt(width, height, cells, coord.X - 1, coord.Y)
+                    && IsRoomAt(width, height, cells, coord.X + 1, coord.Y);
+                var verticalRoomSpan = IsRoomAt(width, height, cells, coord.X, coord.Y - 1)
+                    && IsRoomAt(width, height, cells, coord.X, coord.Y + 1);
+                if (!horizontalRoomSpan || !verticalRoomSpan)
+                {
+                    continue;
+                }
+
+                cells[i].State = MapGenCellState.Corridor;
+                cells[i].SourceTemplateId = "post_split_large_room";
+                changed++;
+            }
+
+            return changed;
+        }
+
+        private static int ConsolidatePaths(int width, int height, MapGenMockupCell[] cells)
+        {
+            var candidates = new bool[cells.Length];
+            var changed = 0;
+            for (var i = 0; i < cells.Length; i++)
+            {
+                if (cells[i].State != MapGenCellState.Empty)
+                {
+                    continue;
+                }
+
+                var coord = MapGenGridCoord.FromIndex(i, width);
+                var eastWest = IsNavigableAt(width, height, cells, coord.X - 1, coord.Y)
+                    && IsNavigableAt(width, height, cells, coord.X + 1, coord.Y);
+                var northSouth = IsNavigableAt(width, height, cells, coord.X, coord.Y - 1)
+                    && IsNavigableAt(width, height, cells, coord.X, coord.Y + 1);
+                if (!eastWest && !northSouth)
+                {
+                    continue;
+                }
+
+                candidates[i] = true;
+                changed++;
+            }
+
+            ApplyCorridorCandidates(cells, candidates, "post_consolidate_paths");
+            return changed;
+        }
+
+        private static int AddLoop(int width, int height, MapGenMockupCell[] cells)
+        {
+            if (!TryFindRoom(cells, width, MapGenRoomCategory.Start, out var start)
+                || !TryFindRoom(cells, width, MapGenRoomCategory.Exit, out var exit))
+            {
+                return 0;
+            }
+
+            var loopY = FindLoopY(height, start.Y, exit.Y);
+            if (loopY < 0)
+            {
+                return 0;
+            }
+
+            var changed = 0;
+            changed += CarveCorridorLine(cells, width, start, new MapGenGridCoord(start.X, loopY), "post_add_loop");
+            changed += CarveCorridorLine(cells, width, new MapGenGridCoord(start.X, loopY), new MapGenGridCoord(exit.X, loopY), "post_add_loop");
+            changed += CarveCorridorLine(cells, width, new MapGenGridCoord(exit.X, loopY), exit, "post_add_loop");
+            return changed;
+        }
+
+        private static int NormalizeRouteLengths(int width, int height, MapGenMockupCell[] cells)
+        {
+            return HasRequiredTraversal(width, height, cells, true)
+                ? 0
+                : AddDirectRoute(width, height, cells);
+        }
+
+        private static int WidenCleanCorridors(int width, int height, MapGenMockupCell[] cells)
+        {
+            var candidates = new bool[cells.Length];
+            var changed = 0;
+            for (var i = 0; i < cells.Length; i++)
+            {
+                if (cells[i].State != MapGenCellState.Corridor)
+                {
+                    continue;
+                }
+
+                var coord = MapGenGridCoord.FromIndex(i, width);
+                foreach (MapGenGridDirection direction in Enum.GetValues(typeof(MapGenGridDirection)))
+                {
+                    var neighbor = coord.Offset(direction);
+                    if (!neighbor.IsInBounds(width, height))
+                    {
+                        continue;
+                    }
+
+                    var index = neighbor.ToIndex(width);
+                    if (cells[index].State == MapGenCellState.Empty && CountNavigableNeighbors(width, height, cells, neighbor) >= 2)
+                    {
+                        candidates[index] = true;
+                    }
+                }
+            }
+
+            for (var i = 0; i < candidates.Length; i++)
+            {
+                if (candidates[i])
+                {
+                    changed++;
+                }
+            }
+
+            ApplyCorridorCandidates(cells, candidates, "post_widen_clean_corridors");
+            return changed;
+        }
+
+        private static int MergeCompatibleAdjacentRooms(int width, int height, MapGenMockupCell[] cells)
+        {
+            var changed = 0;
+            for (var i = 0; i < cells.Length; i++)
+            {
+                if (cells[i].State != MapGenCellState.Corridor && cells[i].State != MapGenCellState.Connector)
+                {
+                    continue;
+                }
+
+                var coord = MapGenGridCoord.FromIndex(i, width);
+                if (!TryGetRoomNeighbor(width, height, cells, coord.X - 1, coord.Y, out var left)
+                    || !TryGetRoomNeighbor(width, height, cells, coord.X + 1, coord.Y, out var right))
+                {
+                    if (!TryGetRoomNeighbor(width, height, cells, coord.X, coord.Y - 1, out left)
+                        || !TryGetRoomNeighbor(width, height, cells, coord.X, coord.Y + 1, out right))
+                    {
+                        continue;
+                    }
+                }
+
+                if (left.RegionId == right.RegionId || left.RoomCategory != right.RoomCategory)
+                {
+                    continue;
+                }
+
+                cells[i].State = MapGenCellState.Room;
+                cells[i].RoomCategory = left.RoomCategory;
+                cells[i].RegionId = left.RegionId;
+                cells[i].SourceTemplateId = "post_merge_adjacent_rooms";
+                changed++;
+            }
+
+            return changed;
+        }
+
         private static int SetCorridorIfEmpty(MapGenMockupCell[] cells, int width, int x, int y)
         {
             var index = new MapGenGridCoord(x, y).ToIndex(width);
@@ -419,6 +610,60 @@ namespace Conn.MapGenV2.Core
             cells[index].State = MapGenCellState.Corridor;
             cells[index].RegionId = -1;
             return 1;
+        }
+
+        private static int CarveCorridorLine(
+            MapGenMockupCell[] cells,
+            int width,
+            MapGenGridCoord from,
+            MapGenGridCoord to,
+            string sourceTemplateId)
+        {
+            var changed = 0;
+            var x = from.X;
+            var y = from.Y;
+            while (x != to.X)
+            {
+                x += x < to.X ? 1 : -1;
+                changed += SetCorridorIfEmpty(cells, width, x, y, sourceTemplateId);
+            }
+
+            while (y != to.Y)
+            {
+                y += y < to.Y ? 1 : -1;
+                changed += SetCorridorIfEmpty(cells, width, x, y, sourceTemplateId);
+            }
+
+            return changed;
+        }
+
+        private static int SetCorridorIfEmpty(MapGenMockupCell[] cells, int width, int x, int y, string sourceTemplateId)
+        {
+            var index = new MapGenGridCoord(x, y).ToIndex(width);
+            if (cells[index].State != MapGenCellState.Empty)
+            {
+                return 0;
+            }
+
+            cells[index].State = MapGenCellState.Corridor;
+            cells[index].RegionId = -1;
+            cells[index].SourceTemplateId = sourceTemplateId ?? string.Empty;
+            return 1;
+        }
+
+        private static void ApplyCorridorCandidates(MapGenMockupCell[] cells, bool[] candidates, string sourceTemplateId)
+        {
+            for (var i = 0; i < candidates.Length; i++)
+            {
+                if (!candidates[i])
+                {
+                    continue;
+                }
+
+                cells[i].State = MapGenCellState.Corridor;
+                cells[i].RegionId = -1;
+                cells[i].SourceTemplateId = sourceTemplateId ?? string.Empty;
+            }
         }
 
         private static bool TryFindRoom(
@@ -491,6 +736,23 @@ namespace Conn.MapGenV2.Core
             return false;
         }
 
+        private static int FindLoopY(int height, int startY, int exitY)
+        {
+            var above = Math.Max(startY, exitY) + 2;
+            if (above < height)
+            {
+                return above;
+            }
+
+            var below = Math.Min(startY, exitY) - 2;
+            if (below >= 0)
+            {
+                return below;
+            }
+
+            return -1;
+        }
+
         private static int CountNavigableNeighbors(int width, int height, MapGenMockupCell[] cells, MapGenGridCoord coord)
         {
             var count = 0;
@@ -510,6 +772,37 @@ namespace Conn.MapGenV2.Core
             }
 
             return count;
+        }
+
+        private static bool IsRoomAt(int width, int height, MapGenMockupCell[] cells, int x, int y)
+        {
+            var coord = new MapGenGridCoord(x, y);
+            return coord.IsInBounds(width, height) && cells[coord.ToIndex(width)].State == MapGenCellState.Room;
+        }
+
+        private static bool IsNavigableAt(int width, int height, MapGenMockupCell[] cells, int x, int y)
+        {
+            var coord = new MapGenGridCoord(x, y);
+            return coord.IsInBounds(width, height) && IsNavigable(cells[coord.ToIndex(width)].State);
+        }
+
+        private static bool TryGetRoomNeighbor(
+            int width,
+            int height,
+            MapGenMockupCell[] cells,
+            int x,
+            int y,
+            out MapGenMockupCell cell)
+        {
+            var coord = new MapGenGridCoord(x, y);
+            if (coord.IsInBounds(width, height))
+            {
+                cell = cells[coord.ToIndex(width)];
+                return cell.State == MapGenCellState.Room;
+            }
+
+            cell = default;
+            return false;
         }
 
         private static bool IsNavigable(MapGenCellState state)

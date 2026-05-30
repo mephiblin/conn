@@ -200,6 +200,12 @@ namespace Conn.MapGenV2.Authoring
                 options.UseDirectRoutes = rules.UseDirectRoutes;
                 options.ReduceDeadEnds = rules.ReduceDeadEnds;
                 options.RemoveSmallRooms = rules.RemoveSmallRooms;
+                options.SplitLargeRooms = rules.SplitLargeRooms;
+                options.ConsolidatePaths = rules.ConsolidatePaths;
+                options.AddLoops = rules.AddLoops;
+                options.NormalizeRouteLengths = rules.NormalizeRouteLengths;
+                options.WidenCleanCorridors = rules.WidenCleanCorridors;
+                options.MergeCompatibleAdjacentRooms = rules.MergeCompatibleAdjacentRooms;
                 options.FillEnclosedEmptySpace = rules.FillEnclosedEmptySpace;
                 options.FillReservedMasks = rules.FillReservedMasks;
                 options.MaxPasses = rules.MaxPasses;
@@ -710,6 +716,11 @@ namespace Conn.MapGenV2.Authoring
             Add(ref hash, ruleSet.PostProcessRules.ReduceDeadEnds ? 1 : 0);
             Add(ref hash, ruleSet.PostProcessRules.SplitLargeRooms ? 1 : 0);
             Add(ref hash, ruleSet.PostProcessRules.RemoveSmallRooms ? 1 : 0);
+            Add(ref hash, ruleSet.PostProcessRules.ConsolidatePaths ? 1 : 0);
+            Add(ref hash, ruleSet.PostProcessRules.AddLoops ? 1 : 0);
+            Add(ref hash, ruleSet.PostProcessRules.NormalizeRouteLengths ? 1 : 0);
+            Add(ref hash, ruleSet.PostProcessRules.WidenCleanCorridors ? 1 : 0);
+            Add(ref hash, ruleSet.PostProcessRules.MergeCompatibleAdjacentRooms ? 1 : 0);
             Add(ref hash, ruleSet.PostProcessRules.FillEnclosedEmptySpace ? 1 : 0);
             Add(ref hash, ruleSet.PostProcessRules.FillReservedMasks ? 1 : 0);
             Add(ref hash, ruleSet.PostProcessRules.MaxPasses);

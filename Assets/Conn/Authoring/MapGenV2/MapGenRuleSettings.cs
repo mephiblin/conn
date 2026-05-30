@@ -53,6 +53,11 @@ namespace Conn.MapGenV2.Authoring
         public bool ReduceDeadEnds;
         public bool SplitLargeRooms;
         public bool RemoveSmallRooms;
+        public bool ConsolidatePaths;
+        public bool AddLoops;
+        public bool NormalizeRouteLengths;
+        public bool WidenCleanCorridors;
+        public bool MergeCompatibleAdjacentRooms;
         public bool FillEnclosedEmptySpace;
         public bool FillReservedMasks;
         public int MaxPasses;
@@ -66,6 +71,11 @@ namespace Conn.MapGenV2.Authoring
                 ReduceDeadEnds = false,
                 SplitLargeRooms = false,
                 RemoveSmallRooms = false,
+                ConsolidatePaths = false,
+                AddLoops = false,
+                NormalizeRouteLengths = false,
+                WidenCleanCorridors = false,
+                MergeCompatibleAdjacentRooms = false,
                 FillEnclosedEmptySpace = false,
                 FillReservedMasks = false,
                 MaxPasses = 1,

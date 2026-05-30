@@ -687,13 +687,17 @@ Progress note 2026-05-31:
 - Designer-selected `Reserved` cells can now be used as fill masks; when
   `FillReservedMasks` is enabled, adjacent reserved mask cells are converted to
   corridor cells and reported separately from normal enclosed-empty fills.
+- The post-process pass list now includes concrete, configurable passes for
+  small-room removal, large-room splitting, path consolidation, direct route
+  creation, dead-end reduction, loop creation, route normalization,
+  corridor widening/cleanup, and compatible adjacent-room merging.
 
 Goal: make post-processing explicit, configurable, visible, and safe.
 
 Tasks:
 
 - [x] Convert post-process options into a rule asset/struct.
-- [ ] Implement pass list:
+- [x] Implement pass list:
   remove small rooms, split large rooms, consolidate paths, add direct routes,
   reduce dead ends, add loops, normalize route lengths, widen/clean corridors,
   merge compatible adjacent rooms.

@@ -2474,6 +2474,61 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void PostProcessorExecutesFullConfiguredPassList()
+        {
+            var cells = new MapGenMockupCell[25];
+            for (var i = 0; i < cells.Length; i++)
+            {
+                cells[i] = MapGenMockupCell.Empty;
+            }
+
+            for (var y = 1; y <= 3; y++)
+            {
+                for (var x = 1; x <= 3; x++)
+                {
+                    cells[(y * 5) + x] = new MapGenMockupCell
+                    {
+                        State = MapGenCellState.Room,
+                        RegionId = 1,
+                        RoomCategory = MapGenRoomCategory.Main
+                    };
+                }
+            }
+
+            var passOrder = new[]
+            {
+                MapGenPostProcessPassKind.SplitLargeRooms,
+                MapGenPostProcessPassKind.ConsolidatePaths,
+                MapGenPostProcessPassKind.AddLoops,
+                MapGenPostProcessPassKind.NormalizeRouteLengths,
+                MapGenPostProcessPassKind.WidenCleanCorridors,
+                MapGenPostProcessPassKind.MergeCompatibleAdjacentRooms
+            };
+            var report = MapGenMockupPostProcessor.Apply(5, 5, cells, new MapGenPostProcessOptions
+            {
+                SplitLargeRooms = true,
+                ConsolidatePaths = true,
+                AddLoops = true,
+                NormalizeRouteLengths = true,
+                WidenCleanCorridors = true,
+                MergeCompatibleAdjacentRooms = true,
+                MaxPasses = 1,
+                PassOrder = passOrder
+            });
+
+            Assert.That(report.PassReports, Has.Length.EqualTo(passOrder.Length));
+            for (var i = 0; i < passOrder.Length; i++)
+            {
+                Assert.That(report.PassReports[i].PassKind, Is.EqualTo(passOrder[i]));
+            }
+
+            Assert.That(report.PassReports, Has.Some.Matches<MapGenPostProcessPassReport>(
+                pass => pass.PassKind == MapGenPostProcessPassKind.SplitLargeRooms
+                    && pass.ChangedCells > 0));
+            Assert.That(report.Changed, Is.True);
+        }
+
+        [Test]
         public void PostProcessorReportsConfiguredPassOrderAndSignatures()
         {
             var cells = new MapGenMockupCell[25];

@@ -47,7 +47,8 @@ namespace Conn.MapGenV2.Core
             || DeadEndCorridorsRemoved > 0
             || IsolatedRoomsRemoved > 0
             || EnclosedEmptyCellsFilled > 0
-            || ReservedMaskCellsFilled > 0;
+            || ReservedMaskCellsFilled > 0
+            || HasChangedPassReports();
 
         public void AddPassReport(MapGenPostProcessPassReport passReport)
         {
@@ -58,6 +59,19 @@ namespace Conn.MapGenV2.Core
 
             System.Array.Resize(ref passReports, passReports.Length + 1);
             passReports[passReports.Length - 1] = passReport;
+        }
+
+        private bool HasChangedPassReports()
+        {
+            foreach (var passReport in passReports)
+            {
+                if (passReport != null && passReport.ChangedCells > 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }
