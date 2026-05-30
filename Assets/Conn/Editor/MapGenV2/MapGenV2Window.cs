@@ -240,10 +240,53 @@ namespace Conn.MapGenV2.Editor
             DrawLanguageSelector();
             var workflow = MapGenV2WorkflowStatus.From(profile, draft);
             DrawWorkflowStatus(workflow);
-            DrawReferenceFields();
+            workflow = MapGenV2WorkflowStatus.From(profile, draft);
+            DrawThreePaneWorkspace(workflow);
+            EditorGUILayout.EndScrollView();
+        }
 
+        public static string BuildThreePaneLayoutSummary()
+        {
+            return "Three-pane authoring layout: left setup/assets/output, center mockup actions and visual preview, right next action, validation, diagnostics, and scene output details.";
+        }
+
+        private void DrawThreePaneWorkspace(MapGenV2WorkflowStatus workflow)
+        {
+            DrawWrappingHelpBox(BuildThreePaneLayoutSummary(), MessageType.Info);
             using (new EditorGUILayout.HorizontalScope())
             {
+                using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox, GUILayout.MinWidth(260f), GUILayout.MaxWidth(340f)))
+                {
+                    EditorGUILayout.LabelField("설정/에셋 / Setup & Assets", EditorStyles.boldLabel);
+                    DrawReferenceFields();
+                    DrawSetupActions();
+                    DrawOutputPaths();
+                    DrawLinkedAssetShortcuts();
+                }
+
+                using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox, GUILayout.MinWidth(360f), GUILayout.ExpandWidth(true)))
+                {
+                    EditorGUILayout.LabelField("목업 제작 / Mockup Authoring", EditorStyles.boldLabel);
+                    DrawDraftActions(workflow);
+                    DrawDraftSummaryAndPreview();
+                }
+
+                using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox, GUILayout.MinWidth(280f), GUILayout.MaxWidth(380f)))
+                {
+                    EditorGUILayout.LabelField("상세/진단 / Details & Diagnostics", EditorStyles.boldLabel);
+                    DrawNextAction(workflow);
+                    DrawProfileValidation();
+                    DrawDiagnosticsPanel();
+                    DrawSceneOutputControls(workflow);
+                }
+            }
+        }
+
+        private void DrawSetupActions()
+        {
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                EditorGUILayout.LabelField("빠른 설정 / Quick Setup", EditorStyles.boldLabel);
                 if (GUILayout.Button(MapGenV2EditorText.Get("mapgenv2.createStarterSetup")))
                 {
                     var setup = MapGenV2StarterSetupBuilder.CreateStarterProfileSetup();
@@ -265,28 +308,13 @@ namespace Conn.MapGenV2.Editor
                     CreateDraft();
                     SaveWindowState();
                 }
-            }
 
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                GUILayout.FlexibleSpace();
-                if (GUILayout.Button("Cleanup Starter Generated Assets", GUILayout.Width(240f)))
+                if (GUILayout.Button("Cleanup Starter Generated Assets"))
                 {
                     var deleted = MapGenV2StarterSetupBuilder.CleanupStarterGeneratedAssets();
                     SetLastOperationResult($"Starter generated asset cleanup deleted {deleted} assets.");
                 }
             }
-
-            workflow = MapGenV2WorkflowStatus.From(profile, draft);
-            DrawNextAction(workflow);
-            DrawProfileValidation();
-            DrawDiagnosticsPanel();
-            DrawDraftActions(workflow);
-            DrawOutputPaths();
-            DrawLinkedAssetShortcuts();
-            DrawSceneOutputControls(workflow);
-            DrawDraftSummaryAndPreview();
-            EditorGUILayout.EndScrollView();
         }
 
         private void DrawWorkflowStatus(MapGenV2WorkflowStatus workflow)

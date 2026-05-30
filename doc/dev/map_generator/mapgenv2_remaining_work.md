@@ -102,7 +102,7 @@ tool, and generated output workflow.
 
 - [ ] Use UI Toolkit for new editor windows and complex custom inspectors unless
   an existing IMGUI path is simpler to maintain.
-- [ ] Use a consistent three-pane authoring layout where possible:
+- [x] Use a consistent three-pane authoring layout where possible:
   left = setup/assets, center = visual preview, right = selected item/details.
 - [x] Every primary action must show:
   what it will change, why it is enabled/disabled, and where the output will be

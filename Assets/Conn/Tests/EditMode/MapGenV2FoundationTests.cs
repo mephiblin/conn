@@ -113,6 +113,17 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void MapGenV2WindowDeclaresThreePaneAuthoringLayout()
+        {
+            var summary = MapGenV2Window.BuildThreePaneLayoutSummary();
+
+            Assert.That(summary, Does.Contain("Three-pane authoring layout"));
+            Assert.That(summary, Does.Contain("left setup/assets/output"));
+            Assert.That(summary, Does.Contain("center mockup actions and visual preview"));
+            Assert.That(summary, Does.Contain("right next action, validation, diagnostics"));
+        }
+
+        [Test]
         public void MapGenV2WindowStateSummaryCoversPersistedPreviewAndFoldouts()
         {
             var state = new MapGenV2WindowStateSnapshot(
