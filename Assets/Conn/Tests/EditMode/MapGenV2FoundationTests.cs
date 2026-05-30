@@ -167,6 +167,62 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void WorkflowStatusReportsNextActionAndDisabledReasons()
+        {
+            var emptyStatus = MapGenV2WorkflowStatus.From(null, null);
+            Assert.That(emptyStatus.CanGenerate, Is.False);
+            Assert.That(emptyStatus.GenerateReason, Is.EqualTo("Create or assign a draft first."));
+            Assert.That(emptyStatus.NextAction, Is.EqualTo("Create Starter Setup or assign a profile."));
+
+            var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
+            var styleSet = ScriptableObject.CreateInstance<MapGenStyleSetAsset>();
+            var ruleSet = ScriptableObject.CreateInstance<MapGenRuleSetAsset>();
+            var roomShape = ScriptableObject.CreateInstance<MapGenRoomShapeAsset>();
+            var profile = ScriptableObject.CreateInstance<MapGenProfileAsset>();
+            var draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();
+            GameObject floor = null;
+            GameObject wall = null;
+
+            try
+            {
+                PopulateValidWorkflowProfile(profile, styleSet, moduleSet, ruleSet, roomShape, out floor, out wall);
+                draft.Profile = profile;
+                draft.Seed = 11;
+
+                var readyToGenerate = MapGenV2WorkflowStatus.From(profile, draft);
+                Assert.That(readyToGenerate.CanGenerate, Is.True);
+                Assert.That(readyToGenerate.NextAction, Is.EqualTo("Generate Mockup."));
+
+                draft.GenerateFromProfile();
+                var generated = MapGenV2WorkflowStatus.From(profile, draft);
+                Assert.That(generated.CanAccept, Is.True);
+                Assert.That(generated.CanMaterialize, Is.False);
+                Assert.That(generated.MaterializeReason, Is.EqualTo("Accept Mockup first."));
+
+                draft.Accept();
+                var accepted = MapGenV2WorkflowStatus.From(profile, draft);
+                Assert.That(accepted.CanMaterialize, Is.True);
+                Assert.That(accepted.CanBakeRuntime, Is.True);
+
+                draft.Cells[0].State = MapGenCellState.Blocked;
+                var stale = MapGenV2WorkflowStatus.From(profile, draft);
+                Assert.That(stale.CanMaterialize, Is.False);
+                Assert.That(stale.MaterializeReason, Is.EqualTo("The accepted signature is stale. Accept the current mockup again."));
+            }
+            finally
+            {
+                Object.DestroyImmediate(draft);
+                Object.DestroyImmediate(profile);
+                Object.DestroyImmediate(roomShape);
+                Object.DestroyImmediate(ruleSet);
+                Object.DestroyImmediate(styleSet);
+                Object.DestroyImmediate(moduleSet);
+                Object.DestroyImmediate(floor);
+                Object.DestroyImmediate(wall);
+            }
+        }
+
+        [Test]
         public void MockupSolverIsDeterministicForSameSeed()
         {
             var required = new[] { MapGenRoomCategory.Start, MapGenRoomCategory.Quest, MapGenRoomCategory.Exit };
@@ -261,6 +317,50 @@ namespace Conn.Tests.EditMode
 
             Assert.That(bakedCells, Has.Length.EqualTo(2));
             Assert.That(edges, Has.Length.EqualTo(1));
+        }
+
+        private static void PopulateValidWorkflowProfile(
+            MapGenProfileAsset profile,
+            MapGenStyleSetAsset styleSet,
+            MapGenModuleSetAsset moduleSet,
+            MapGenRuleSetAsset ruleSet,
+            MapGenRoomShapeAsset roomShape,
+            out GameObject floor,
+            out GameObject wall)
+        {
+            floor = new GameObject("FloorModule");
+            wall = new GameObject("WallModule");
+            moduleSet.FloorsA = new[]
+            {
+                new MapGenModuleEntry
+                {
+                    Prefab = floor,
+                    Weight = 1,
+                    Footprint = Vector2Int.one
+                }
+            };
+            moduleSet.WallsStraight = new[]
+            {
+                new MapGenModuleEntry
+                {
+                    Prefab = wall,
+                    Weight = 1,
+                    Footprint = Vector2Int.one
+                }
+            };
+            roomShape.Resize(new Vector2Int(3, 3));
+            roomShape.SetCell(1, 1, new MapGenShapeCell
+            {
+                State = MapGenCellState.Room,
+                SocketKind = MapGenSocketKind.None,
+                SocketId = string.Empty
+            });
+            styleSet.ModuleSet = moduleSet;
+            profile.ProfileId = "workflow_profile";
+            profile.MapSize = new Vector2Int(8, 6);
+            profile.StyleSet = styleSet;
+            profile.LayoutRules = ruleSet;
+            profile.RoomShapes = new[] { roomShape };
         }
     }
 }

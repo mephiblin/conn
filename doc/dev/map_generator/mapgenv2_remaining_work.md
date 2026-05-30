@@ -273,24 +273,37 @@ Verification:
 
 ## Phase 2: Guided Editor Workflow
 
+Progress note 2026-05-31:
+
+- `MapGenV2Window` now shows a top workflow strip for
+  `Setup -> Generate -> Post-Process -> Accept -> Materialize -> Bake`,
+  highlights the current next action, reports the last operation result, and
+  explains disabled Generate/Materialize/Bake actions.
+- The main materialization and bake buttons are renamed to
+  `Materialize To Scene` and `Bake Runtime Asset`.
+- Linked asset rows now expose `Ping`, `Select`, and `Open` shortcuts for the
+  selected profile, draft, rule set, style set, module set, and room shapes.
+- Draft/materialized-prefab/baked-asset output paths and window state
+  persistence are implemented with `EditorPrefs`.
+
 Goal: make the editor window explain what to do next.
 
 Tasks:
 
-- [ ] Add workflow status strip:
+- [x] Add workflow status strip:
   `Setup -> Generate -> Post-Process -> Accept -> Materialize -> Bake`.
-- [ ] Highlight the next valid action.
-- [ ] Show disabled-action reasons for `Materialize` and `Bake Runtime`.
-- [ ] Rename buttons:
+- [x] Highlight the next valid action.
+- [x] Show disabled-action reasons for `Materialize` and `Bake Runtime`.
+- [x] Rename buttons:
   `Materialize` -> `Materialize To Scene`,
   `Bake Runtime` -> `Bake Runtime Asset`.
-- [ ] Show last operation result and failure reason.
-- [ ] Show generation result summary:
+- [x] Show last operation result and failure reason.
+- [x] Show generation result summary:
   seed, retry count, room count, corridor count, changed post-process passes.
 - [ ] Add `Open/Select` buttons beside profile, rule set, style set, module set,
   room shapes, draft, materialized root, and baked asset.
-- [ ] Add output paths for draft, materialized prefab, and baked asset.
-- [ ] Persist window state with `EditorPrefs` or a workspace asset.
+- [x] Add output paths for draft, materialized prefab, and baked asset.
+- [x] Persist window state with `EditorPrefs` or a workspace asset.
 
 Acceptance:
 

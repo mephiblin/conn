@@ -7,6 +7,12 @@ namespace Conn.MapGenV2.Editor
 {
     public sealed class MapGenV2Window : EditorWindow
     {
+        private const string ProfilePathKey = "Conn.MapGenV2.Window.ProfilePath";
+        private const string DraftPathKey = "Conn.MapGenV2.Window.DraftPath";
+        private const string PreviewCellSizeKey = "Conn.MapGenV2.Window.PreviewCellSize";
+        private const string DraftFolder = "Assets/Conn/Authoring/MapGenV2/Drafts";
+        private const string MaterializedPrefabFolder = "Assets/Conn/Authoring/MapGenV2/MaterializedPrefabs";
+        private const string BakedMapFolder = "Assets/Conn/Core/MapGenV2/BakedMaps";
         private static readonly Color EmptyColor = new Color(0.04f, 0.08f, 0.9f, 1f);
         private static readonly Color RoomColor = new Color(0.9f, 0f, 0f, 1f);
         private static readonly Color CorridorColor = new Color(0f, 0f, 0f, 1f);
@@ -26,6 +32,7 @@ namespace Conn.MapGenV2.Editor
         private bool hasSelectedCell;
         private int selectedRegionId = -1;
         private float previewCellSize = 18f;
+        private string lastOperationResult = "아직 실행한 작업이 없습니다. / No operation has run yet.";
 
         [MenuItem("Conn/MapGenV2/Map Generator")]
         public static void Open()
@@ -41,12 +48,25 @@ namespace Conn.MapGenV2.Editor
             window.Repaint();
         }
 
+        private void OnEnable()
+        {
+            previewCellSize = EditorPrefs.GetFloat(PreviewCellSizeKey, previewCellSize);
+            profile = LoadAssetFromEditorPrefs<MapGenProfileAsset>(ProfilePathKey);
+            draft = LoadAssetFromEditorPrefs<MapGenMockupDraftAsset>(DraftPathKey);
+        }
+
+        private void OnDisable()
+        {
+            SaveWindowState();
+        }
+
         private void OnGUI()
         {
             scroll = EditorGUILayout.BeginScrollView(scroll);
             EditorGUILayout.LabelField("MapGenV2", EditorStyles.boldLabel);
-            profile = (MapGenProfileAsset)EditorGUILayout.ObjectField("Profile", profile, typeof(MapGenProfileAsset), false);
-            draft = (MapGenMockupDraftAsset)EditorGUILayout.ObjectField("Draft", draft, typeof(MapGenMockupDraftAsset), false);
+            var workflow = MapGenV2WorkflowStatus.From(profile, draft);
+            DrawWorkflowStatus(workflow);
+            DrawReferenceFields();
 
             using (new EditorGUILayout.HorizontalScope())
             {
@@ -56,23 +76,80 @@ namespace Conn.MapGenV2.Editor
                     profile = setup.Profile;
                     draft = setup.Draft;
                     Selection.activeObject = draft != null ? draft : profile;
+                    lastOperationResult = "Starter setup created. Next: Generate Mockup.";
+                    SaveWindowState();
                 }
 
                 if (GUILayout.Button("Create Default Folders"))
                 {
                     MapGenV2AssetFolderUtility.CreateDefaultFolders();
+                    lastOperationResult = "Default MapGenV2 folders created or already existed.";
                 }
 
                 if (GUILayout.Button("Create Draft"))
                 {
                     CreateDraft();
+                    SaveWindowState();
                 }
             }
 
+            workflow = MapGenV2WorkflowStatus.From(profile, draft);
+            DrawNextAction(workflow);
             DrawProfileValidation();
-            DrawDraftActions();
+            DrawDraftActions(workflow);
+            DrawOutputPaths();
+            DrawLinkedAssetShortcuts();
             DrawDraftSummaryAndPreview();
             EditorGUILayout.EndScrollView();
+        }
+
+        private void DrawWorkflowStatus(MapGenV2WorkflowStatus workflow)
+        {
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                EditorGUILayout.LabelField("워크플로우 상태 / Workflow Status", EditorStyles.boldLabel);
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    DrawStepBadge("Setup", workflow.HasProfile && workflow.ProfileValid && workflow.HasDraft, !workflow.HasProfile || !workflow.ProfileValid || !workflow.HasDraft);
+                    DrawStepBadge("Generate", workflow.HasGeneratedMockup, workflow.CanGenerate && !workflow.HasGeneratedMockup);
+                    DrawStepBadge("Post-Process", workflow.HasGeneratedMockup, workflow.CanPostProcess && !workflow.Accepted);
+                    DrawStepBadge("Accept", workflow.Accepted && workflow.AcceptedCurrent, workflow.CanAccept && (!workflow.Accepted || !workflow.AcceptedCurrent));
+                    DrawStepBadge("Materialize", false, workflow.CanMaterialize);
+                    DrawStepBadge("Bake", false, workflow.CanBakeRuntime);
+                }
+
+                var profileName = profile != null ? profile.ProfileId : "(none)";
+                var draftName = draft != null ? draft.name : "(none)";
+                var seed = draft != null ? draft.Seed.ToString() : "-";
+                EditorGUILayout.LabelField("현재 / Current", $"Profile {profileName}, Draft {draftName}, Seed {seed}");
+                EditorGUILayout.LabelField("마지막 작업 / Last Result", lastOperationResult);
+            }
+        }
+
+        private static void DrawStepBadge(string label, bool complete, bool active)
+        {
+            var previousColor = GUI.backgroundColor;
+            GUI.backgroundColor = complete
+                ? new Color(0.38f, 0.72f, 0.42f, 1f)
+                : active ? new Color(0.95f, 0.73f, 0.24f, 1f) : new Color(0.42f, 0.42f, 0.42f, 1f);
+            GUILayout.Label(label, EditorStyles.miniButton, GUILayout.MinWidth(92f));
+            GUI.backgroundColor = previousColor;
+        }
+
+        private void DrawReferenceFields()
+        {
+            EditorGUI.BeginChangeCheck();
+            profile = (MapGenProfileAsset)EditorGUILayout.ObjectField("프로필 / Profile", profile, typeof(MapGenProfileAsset), false);
+            draft = (MapGenMockupDraftAsset)EditorGUILayout.ObjectField("드래프트 / Draft", draft, typeof(MapGenMockupDraftAsset), false);
+            if (EditorGUI.EndChangeCheck())
+            {
+                SaveWindowState();
+            }
+        }
+
+        private void DrawNextAction(MapGenV2WorkflowStatus workflow)
+        {
+            EditorGUILayout.HelpBox($"다음 작업 / Next Action: {workflow.NextAction}", MessageType.Info);
         }
 
         private void DrawProfileValidation()
@@ -86,7 +163,71 @@ namespace Conn.MapGenV2.Editor
             MapGenValidationReportEditorGUI.Draw(profile.Validate(), profile, "Profile is valid.");
         }
 
-        private void DrawDraftActions()
+        private void DrawOutputPaths()
+        {
+            EditorGUILayout.Space(4f);
+            EditorGUILayout.LabelField("출력 경로 / Output Paths", EditorStyles.boldLabel);
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                EditorGUILayout.LabelField("Draft Folder", DraftFolder);
+                EditorGUILayout.LabelField("Selected Draft", draft != null ? AssetDatabase.GetAssetPath(draft) : "(none)");
+                EditorGUILayout.LabelField("Materialized Prefab Folder", MaterializedPrefabFolder);
+                EditorGUILayout.LabelField("Baked Asset", BuildExpectedBakedAssetPath());
+            }
+        }
+
+        private void DrawLinkedAssetShortcuts()
+        {
+            EditorGUILayout.Space(4f);
+            EditorGUILayout.LabelField("연결 에셋 / Linked Assets", EditorStyles.boldLabel);
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                DrawObjectShortcutRow("Profile", profile);
+                DrawObjectShortcutRow("Draft", draft);
+
+                if (profile == null)
+                {
+                    return;
+                }
+
+                DrawObjectShortcutRow("Rule Set", profile.LayoutRules);
+                DrawObjectShortcutRow("Style Set", profile.StyleSet);
+                DrawObjectShortcutRow("Module Set", profile.StyleSet != null ? profile.StyleSet.ModuleSet : null);
+
+                var roomShapes = profile.RoomShapes ?? System.Array.Empty<MapGenRoomShapeAsset>();
+                for (var i = 0; i < roomShapes.Length; i++)
+                {
+                    DrawObjectShortcutRow($"Room Shape {i}", roomShapes[i]);
+                }
+            }
+        }
+
+        private static void DrawObjectShortcutRow(string label, Object target)
+        {
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUILayout.ObjectField(label, target, typeof(Object), false);
+                using (new EditorGUI.DisabledScope(target == null))
+                {
+                    if (GUILayout.Button("Ping", GUILayout.Width(52f)))
+                    {
+                        EditorGUIUtility.PingObject(target);
+                    }
+
+                    if (GUILayout.Button("Select", GUILayout.Width(58f)))
+                    {
+                        Selection.activeObject = target;
+                    }
+
+                    if (GUILayout.Button("Open", GUILayout.Width(52f)))
+                    {
+                        AssetDatabase.OpenAsset(target);
+                    }
+                }
+            }
+        }
+
+        private void DrawDraftActions(MapGenV2WorkflowStatus workflow)
         {
             if (draft == null)
             {
@@ -101,48 +242,89 @@ namespace Conn.MapGenV2.Editor
                     Undo.RecordObject(draft, "Assign MapGen Profile");
                     draft.Profile = profile;
                     EditorUtility.SetDirty(draft);
+                    lastOperationResult = "Selected profile assigned to draft.";
+                    SaveWindowState();
                 }
             }
 
             using (new EditorGUILayout.HorizontalScope())
             {
-                if (GUILayout.Button("Generate Mockup"))
+                using (new EditorGUI.DisabledScope(!workflow.CanGenerate))
                 {
-                    Undo.RecordObject(draft, "Generate Mockup");
-                    draft.GenerateFromProfile();
-                    ClearSelection();
-                    EditorUtility.SetDirty(draft);
+                    if (GUILayout.Button("Generate Mockup"))
+                    {
+                        Undo.RecordObject(draft, "Generate Mockup");
+                        var report = draft.GenerateFromProfile();
+                        ClearSelection();
+                        EditorUtility.SetDirty(draft);
+                        var preview = MapGenMockupPreviewData.FromDraft(draft);
+                        lastOperationResult = report.IsValid
+                            ? $"Generated mockup. Seed {draft.Seed}, Retry 0, Rooms {preview.Summary.RoomCells}, Corridors {preview.Summary.CorridorCells}."
+                            : "Generate Mockup failed. See validation messages above.";
+                    }
                 }
 
-                if (GUILayout.Button("Run Post-Process"))
+                using (new EditorGUI.DisabledScope(!workflow.CanPostProcess))
                 {
-                    Undo.RecordObject(draft, "Post-Process Mockup");
-                    draft.ApplyPostProcessingFromProfile();
-                    EditorUtility.SetDirty(draft);
+                    if (GUILayout.Button("Run Post-Process"))
+                    {
+                        Undo.RecordObject(draft, "Post-Process Mockup");
+                        var report = draft.ApplyPostProcessingFromProfile();
+                        EditorUtility.SetDirty(draft);
+                        lastOperationResult = $"Post-process complete. Direct routes +{report.DirectRouteCellsAdded}, dead ends removed {report.DeadEndCorridorsRemoved}, isolated rooms removed {report.IsolatedRoomsRemoved}.";
+                    }
                 }
 
-                if (GUILayout.Button("Accept Mockup"))
+                using (new EditorGUI.DisabledScope(!workflow.CanAccept))
                 {
-                    Undo.RecordObject(draft, "Accept Mockup");
-                    draft.Accept();
-                    EditorUtility.SetDirty(draft);
+                    if (GUILayout.Button("Accept Mockup"))
+                    {
+                        Undo.RecordObject(draft, "Accept Mockup");
+                        draft.Accept();
+                        EditorUtility.SetDirty(draft);
+                        lastOperationResult = $"Accepted mockup signature {draft.AcceptedSignature}.";
+                    }
                 }
             }
 
             using (new EditorGUILayout.HorizontalScope())
             {
-                using (new EditorGUI.DisabledScope(!draft.Accepted || !draft.IsAcceptedSignatureCurrent))
+                using (new EditorGUI.DisabledScope(!workflow.CanMaterialize))
                 {
-                    if (GUILayout.Button("Materialize"))
+                    if (GUILayout.Button("Materialize To Scene"))
                     {
-                        MapGenMockupMaterializer.Materialize(draft);
-                    }
-
-                    if (GUILayout.Button("Bake Runtime"))
-                    {
-                        MapGenRuntimeBakeUtility.Bake(draft);
+                        var root = MapGenMockupMaterializer.Materialize(draft);
+                        lastOperationResult = root != null
+                            ? $"Materialized scene root: {root.name}."
+                            : "Materialize To Scene failed. Check accepted state and module coverage.";
                     }
                 }
+
+                using (new EditorGUI.DisabledScope(!workflow.CanBakeRuntime))
+                {
+                    if (GUILayout.Button("Bake Runtime Asset"))
+                    {
+                        var bakedAsset = MapGenRuntimeBakeUtility.Bake(draft);
+                        lastOperationResult = bakedAsset != null
+                            ? $"Baked runtime asset: {AssetDatabase.GetAssetPath(bakedAsset)}."
+                            : "Bake Runtime Asset failed. Check accepted state.";
+                    }
+                }
+            }
+
+            if (!workflow.CanGenerate)
+            {
+                EditorGUILayout.HelpBox($"Generate Mockup disabled: {workflow.GenerateReason}", MessageType.Info);
+            }
+
+            if (!workflow.CanMaterialize)
+            {
+                EditorGUILayout.HelpBox($"Materialize To Scene disabled: {workflow.MaterializeReason}", MessageType.Info);
+            }
+
+            if (!workflow.CanBakeRuntime)
+            {
+                EditorGUILayout.HelpBox($"Bake Runtime Asset disabled: {workflow.BakeRuntimeReason}", MessageType.Info);
             }
         }
 
@@ -155,6 +337,41 @@ namespace Conn.MapGenV2.Editor
             AssetDatabase.CreateAsset(draft, path);
             AssetDatabase.SaveAssets();
             Selection.activeObject = draft;
+            lastOperationResult = $"Created draft: {path}.";
+        }
+
+        private string BuildExpectedBakedAssetPath()
+        {
+            if (draft == null || draft.Profile == null)
+            {
+                return BakedMapFolder;
+            }
+
+            return $"{BakedMapFolder}/{draft.Profile.ProfileId}_{draft.Seed}_BakedMap.asset";
+        }
+
+        private void SaveWindowState()
+        {
+            SaveAssetToEditorPrefs(ProfilePathKey, profile);
+            SaveAssetToEditorPrefs(DraftPathKey, draft);
+            EditorPrefs.SetFloat(PreviewCellSizeKey, previewCellSize);
+        }
+
+        private static void SaveAssetToEditorPrefs(string key, Object asset)
+        {
+            if (asset == null)
+            {
+                EditorPrefs.DeleteKey(key);
+                return;
+            }
+
+            EditorPrefs.SetString(key, AssetDatabase.GetAssetPath(asset));
+        }
+
+        private static T LoadAssetFromEditorPrefs<T>(string key) where T : Object
+        {
+            var path = EditorPrefs.GetString(key, string.Empty);
+            return string.IsNullOrEmpty(path) ? null : AssetDatabase.LoadAssetAtPath<T>(path);
         }
 
         private void DrawDraftSummaryAndPreview()
