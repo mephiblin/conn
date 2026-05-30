@@ -1096,5 +1096,9 @@ is partially complete.
 - [x] Add manual Unity test steps for new editor tools.
 - [x] Add screenshots or saved sample assets when the first usable version
   exists.
+  - 2026-05-30: Chapter 2 saved `CompiledMapAsset` samples are regenerated
+    through generated editable drafts and `EditableMapBakeService`, so the
+    checked-in samples include cells, room records, sockets, and object payloads
+    instead of graph-only JSON.
 - [x] Before commit, run `git diff --check`.
 - [x] Before commit, run Unity compile or note why it could not be run.

@@ -124,6 +124,29 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void SavedChapterTwoCompiledMapAssetsContainBakedCellPayload()
+        {
+            var asset = AssetDatabase.LoadAssetAtPath<CompiledMapAsset>("Assets/Conn/Core/Maps/ch2_first_slice_ruins_2001_CompiledMap.asset");
+
+            Assert.That(asset, Is.Not.Null);
+            var compiled = JsonUtility.FromJson<CompiledMap>(asset.Json);
+            var profile = new MapProfile
+            {
+                ProfileId = asset.ProfileId,
+                Width = compiled.Width,
+                Height = compiled.Height,
+                RequiredAnchors = MapGenerationCatalog.ChapterTwoFirstSliceProfile().RequiredAnchors
+            };
+            var report = MapValidationService.ValidateCompiled(profile, compiled);
+
+            Assert.That(report.Passed, Is.True, string.Join("\n", report.Errors.ToArray()));
+            Assert.That(compiled.Cells.Count, Is.EqualTo(compiled.Width * compiled.Height));
+            Assert.That(compiled.RoomRecords.Count, Is.GreaterThan(0));
+            Assert.That(compiled.Sockets.Count, Is.GreaterThan(0));
+            Assert.That(compiled.Objects.Count, Is.GreaterThan(0));
+        }
+
+        [Test]
         public void CompiledValidationReportsInvalidCellsAndObjects()
         {
             var profile = MapGenerationCatalog.ChapterTwoFirstSliceProfile();
@@ -788,6 +811,10 @@ namespace Conn.Tests.EditMode
             {
                 Assert.That(result.Report.Passed, Is.True, string.Join("\n", result.Report.Errors));
                 Assert.That(result.Compiled, Is.Not.Null);
+                Assert.That(result.Compiled.Cells.Count, Is.EqualTo(result.Draft.Width * result.Draft.Height));
+                Assert.That(result.Compiled.RoomRecords.Count, Is.EqualTo(result.Draft.Rooms.Length));
+                Assert.That(result.Compiled.Sockets.Count, Is.EqualTo(result.Draft.Sockets.Length));
+                Assert.That(result.Compiled.Objects.Count, Is.EqualTo(result.Draft.Objects.Length));
                 Assert.That(result.Compiled.Doors.Count, Is.GreaterThan(0));
             }
             finally

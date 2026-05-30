@@ -455,97 +455,18 @@ namespace Conn.Editor.Maps
         {
             var centerX = originX + Mathf.Max(0, roomWidth / 2);
             var centerY = originY + Mathf.Max(0, roomHeight / 2);
-            if (TryFindSocketPositionOnSide(target, originX, originY, roomWidth, roomHeight, direction, out var found))
-            {
-                return found;
-            }
 
             switch (direction)
             {
                 case MapDirection.East:
-                    return new Vector2Int(originX + Mathf.Max(0, roomWidth - 2), centerY);
+                    return new Vector2Int(originX + Mathf.Max(0, roomWidth - 1), centerY);
                 case MapDirection.South:
-                    return new Vector2Int(centerX, originY + Mathf.Min(1, Mathf.Max(0, roomHeight - 1)));
+                    return new Vector2Int(centerX, originY);
                 case MapDirection.West:
-                    return new Vector2Int(originX + Mathf.Min(1, Mathf.Max(0, roomWidth - 1)), centerY);
+                    return new Vector2Int(originX, centerY);
                 default:
-                    return new Vector2Int(centerX, originY + Mathf.Max(0, roomHeight - 2));
+                    return new Vector2Int(centerX, originY + Mathf.Max(0, roomHeight - 1));
             }
-        }
-
-        private static bool TryFindSocketPositionOnSide(
-            EditableMapDraftAsset target,
-            int originX,
-            int originY,
-            int roomWidth,
-            int roomHeight,
-            MapDirection direction,
-            out Vector2Int position)
-        {
-            if (target == null)
-            {
-                position = default;
-                return false;
-            }
-
-            if (direction == MapDirection.East || direction == MapDirection.West)
-            {
-                var step = direction == MapDirection.East ? -1 : 1;
-                var startX = direction == MapDirection.East ? originX + roomWidth - 1 : originX;
-                for (var yOffset = 0; yOffset < roomHeight; yOffset++)
-                {
-                    var y = originY + OrderedOffset(yOffset, roomHeight / 2);
-                    for (var x = startX; x >= originX && x < originX + roomWidth; x += step)
-                    {
-                        if (IsWalkableSocketCell(target, x, y))
-                        {
-                            position = new Vector2Int(x, y);
-                            return true;
-                        }
-                    }
-                }
-            }
-            else
-            {
-                var step = direction == MapDirection.North ? -1 : 1;
-                var startY = direction == MapDirection.North ? originY + roomHeight - 1 : originY;
-                for (var xOffset = 0; xOffset < roomWidth; xOffset++)
-                {
-                    var x = originX + OrderedOffset(xOffset, roomWidth / 2);
-                    for (var y = startY; y >= originY && y < originY + roomHeight; y += step)
-                    {
-                        if (IsWalkableSocketCell(target, x, y))
-                        {
-                            position = new Vector2Int(x, y);
-                            return true;
-                        }
-                    }
-                }
-            }
-
-            position = default;
-            return false;
-        }
-
-        private static int OrderedOffset(int index, int center)
-        {
-            if (index == 0)
-            {
-                return center;
-            }
-
-            var delta = (index + 1) / 2;
-            return index % 2 == 1 ? center - delta : center + delta;
-        }
-
-        private static bool IsWalkableSocketCell(EditableMapDraftAsset target, int x, int y)
-        {
-            if (!target.TryGetCell(x, y, out var cell))
-            {
-                return false;
-            }
-
-            return cell.Terrain != RoomChunkCellType.Wall && cell.Terrain != RoomChunkCellType.Gap;
         }
 
         private static string BuildPlacedObjectId(string roomId, string sourceId)
@@ -560,6 +481,8 @@ namespace Conn.Editor.Maps
             {
                 return;
             }
+
+            CarveSocketInteriorConnections(target, sockets);
 
             var lookup = new Dictionary<string, EditableMapSocket>(StringComparer.Ordinal);
             for (var i = 0; i < sockets.Count; i++)
@@ -594,6 +517,62 @@ namespace Conn.Editor.Maps
                 }
 
                 CarveConnection(target, socket, other);
+            }
+        }
+
+        private static void CarveSocketInteriorConnections(EditableMapDraftAsset target, List<EditableMapSocket> sockets)
+        {
+            foreach (var socket in sockets)
+            {
+                var inward = Opposite(socket.Direction);
+                var current = new Vector2Int(socket.X, socket.Y);
+                var points = new List<Vector2Int> { current };
+                while (target.IsInBounds(current.x, current.y))
+                {
+                    if (target.TryGetCell(current.x, current.y, out var currentCell)
+                        && currentCell.Terrain != RoomChunkCellType.Wall
+                        && currentCell.Terrain != RoomChunkCellType.Gap
+                        && points.Count > 1)
+                    {
+                        CarveSocketInteriorPath(target, points, currentCell);
+                        break;
+                    }
+
+                    current += DirectionOffset(inward);
+                    if (!target.IsInBounds(current.x, current.y))
+                    {
+                        break;
+                    }
+
+                    if (target.TryGetCell(current.x, current.y, out var nextCell)
+                        && !string.Equals(nextCell.RoomId, socket.RoomId, StringComparison.Ordinal))
+                    {
+                        break;
+                    }
+
+                    points.Add(current);
+                }
+            }
+        }
+
+        private static void CarveSocketInteriorPath(EditableMapDraftAsset target, List<Vector2Int> points, EditableMapCell targetCell)
+        {
+            foreach (var point in points)
+            {
+                if (!target.TryGetCell(point.x, point.y, out var cell))
+                {
+                    continue;
+                }
+
+                cell.Terrain = RoomChunkCellType.Floor;
+                cell.Height = targetCell.Height;
+                cell.Direction = targetCell.Direction;
+                if (string.IsNullOrWhiteSpace(cell.MaterialId))
+                {
+                    cell.MaterialId = targetCell.MaterialId ?? string.Empty;
+                }
+
+                target.TrySetCell(cell);
             }
         }
 
@@ -682,6 +661,36 @@ namespace Conn.Editor.Maps
             }
 
             return delta.y > 0 ? MapDirection.North : MapDirection.South;
+        }
+
+        private static Vector2Int DirectionOffset(MapDirection direction)
+        {
+            switch (direction)
+            {
+                case MapDirection.East:
+                    return new Vector2Int(1, 0);
+                case MapDirection.South:
+                    return new Vector2Int(0, -1);
+                case MapDirection.West:
+                    return new Vector2Int(-1, 0);
+                default:
+                    return new Vector2Int(0, 1);
+            }
+        }
+
+        private static MapDirection Opposite(MapDirection direction)
+        {
+            switch (direction)
+            {
+                case MapDirection.North:
+                    return MapDirection.South;
+                case MapDirection.East:
+                    return MapDirection.West;
+                case MapDirection.South:
+                    return MapDirection.North;
+                default:
+                    return MapDirection.East;
+            }
         }
 
         private static string BuildRoomPairKey(string firstRoomId, string secondRoomId)

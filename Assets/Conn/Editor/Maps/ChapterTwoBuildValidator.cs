@@ -58,11 +58,14 @@ namespace Conn.Editor.Maps
             CompiledMap lastCompiled = null;
             foreach (var seed in RequiredCompiledMapSeeds)
             {
-                var compiled = MapGenerationService.GenerateCompiled(profile, chunks, seed);
-                MapValidationService.ThrowIfFailed(MapValidationService.ValidateCompiled(profile, compiled));
-                MapValidationService.ThrowIfFailed(MapValidationService.ValidateQuestMapContract(QuestCatalog.Find(QuestCatalog.TestHuntId), profile, compiled));
-                ValidateDatabaseQuestMapContracts(database, profile, compiled);
+                var draft = EditableMapDraftBuilder.BuildGeneratedDraft(profile, chunks, seed, floor: 1, difficulty: 0, cellSize: 0.28f, heightStep: 0.28f);
+                var compiled = EditableMapBakeService.Bake(draft);
+                var compiledProfile = BuildCompiledValidationProfile(profile, compiled);
+                MapValidationService.ThrowIfFailed(MapValidationService.ValidateCompiled(compiledProfile, compiled));
+                MapValidationService.ThrowIfFailed(MapValidationService.ValidateQuestMapContract(QuestCatalog.Find(QuestCatalog.TestHuntId), compiledProfile, compiled));
+                ValidateDatabaseQuestMapContracts(database, compiledProfile, compiled);
                 SaveCompiledMapAsset(compiled, seed);
+                Object.DestroyImmediate(draft);
                 savedCount++;
                 lastCompiled = compiled;
             }
@@ -75,6 +78,19 @@ namespace Conn.Editor.Maps
             }
 
             Debug.Log($"Conn Chapter 2 map slice validation passed. compiledMaps={savedCount} lastMap={lastCompiled.MapId} rooms={lastCompiled.Rooms.Count} placements={lastCompiled.Placements.Count}");
+        }
+
+        private static MapProfile BuildCompiledValidationProfile(MapProfile sourceProfile, CompiledMap compiled)
+        {
+            return new MapProfile
+            {
+                ProfileId = sourceProfile.ProfileId,
+                MapKind = sourceProfile.MapKind,
+                Theme = sourceProfile.Theme,
+                Width = compiled.Width,
+                Height = compiled.Height,
+                RequiredAnchors = new System.Collections.Generic.List<MapAnchorKind>(sourceProfile.RequiredAnchors)
+            };
         }
 
         private static void ValidateDatabaseQuestMapContracts(ContentDatabaseDefinition database, MapProfile profile, CompiledMap compiled)
