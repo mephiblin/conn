@@ -544,8 +544,10 @@ namespace Conn.Tests.EditMode
                 Assert.That(result.Draft.Objects.Count(placement => placement.RuntimeReferenceId == "door"), Is.GreaterThanOrEqualTo(4));
                 Assert.That(result.Draft.Rooms.Any(room => room.Id == "hub" && room.LayoutKind == RoomChunkLayoutKind.Hub), Is.True);
                 Assert.That(result.Draft.Rooms.Any(room => room.Id == "boss" && room.LayoutKind == RoomChunkLayoutKind.HeightTransition), Is.True);
-                Assert.That(result.Draft.Rooms.Count(room => room.LayoutKind == RoomChunkLayoutKind.DeadEnd), Is.GreaterThanOrEqualTo(2));
+                Assert.That(result.Draft.Rooms.Count(room => room.LayoutKind == RoomChunkLayoutKind.DeadEnd), Is.GreaterThanOrEqualTo(1));
                 Assert.That(result.Draft.Sockets.Any(socket => socket.RoomId == "hub" && socket.TargetRoomId == "treasure_branch"), Is.True);
+                Assert.That(result.Draft.Sockets.Any(socket => socket.RoomId == "treasure_branch" && socket.TargetRoomId == "quest"), Is.True);
+                Assert.That(result.Compiled.Doors.Any(edge => edge.FromNodeId == "treasure_branch" && edge.ToNodeId == "quest"), Is.True);
                 Assert.That(result.Compiled.Cells.Count, Is.EqualTo(result.Draft.Cells.Length));
                 Assert.That(result.Compiled.Cells.Count(cell => cell.WallVariantId == "wall_corner"), Is.EqualTo(wallCornerCount));
                 Assert.That(result.Compiled.Objects.Count(placement => placement.RuntimeReferenceId == "door"), Is.GreaterThanOrEqualTo(4));

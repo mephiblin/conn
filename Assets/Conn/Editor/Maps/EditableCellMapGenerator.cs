@@ -48,6 +48,7 @@ namespace Conn.Editor.Maps
             ConnectRooms(draft, random, rooms[4], rooms[5]);
             ConnectRooms(draft, random, rooms[2], rooms[6]);
             ConnectRooms(draft, random, rooms[2], rooms[7]);
+            ConnectRooms(draft, random, rooms[6], rooms[3]);
             AddHeightTransitionFeature(draft, rooms[4]);
             CarveWallsAroundFloors(draft);
             ClassifyWallVariants(draft);
@@ -433,7 +434,7 @@ namespace Conn.Editor.Maps
                 BuildRoomRecord("quest", MapRoomRole.QuestTarget, RoomChunkLayoutKind.Room, rooms[3], zoneId),
                 BuildRoomRecord("boss", MapRoomRole.Boss, RoomChunkLayoutKind.HeightTransition, rooms[4], zoneId),
                 BuildRoomRecord("exit", MapRoomRole.Exit, RoomChunkLayoutKind.Room, rooms[5], zoneId),
-                BuildRoomRecord("treasure_branch", MapRoomRole.SideBranch, RoomChunkLayoutKind.DeadEnd, rooms[6], zoneId),
+                BuildRoomRecord("treasure_branch", MapRoomRole.SideBranch, RoomChunkLayoutKind.Room, rooms[6], zoneId),
                 BuildRoomRecord("side_branch", MapRoomRole.SideBranch, RoomChunkLayoutKind.DeadEnd, rooms[7], zoneId)
             };
 
@@ -452,6 +453,8 @@ namespace Conn.Editor.Maps
                 BuildSocket("exit_to_boss", "exit", RoomCenter(rooms[5]), MapDirection.West, "boss"),
                 BuildSocket("hub_to_treasure_branch", "hub", RoomCenter(rooms[2]), MapDirection.North, "treasure_branch"),
                 BuildSocket("treasure_branch_to_hub", "treasure_branch", RoomCenter(rooms[6]), MapDirection.South, "hub"),
+                BuildSocket("treasure_branch_to_quest", "treasure_branch", RoomCenter(rooms[6]), MapDirection.East, "quest"),
+                BuildSocket("quest_to_treasure_branch", "quest", RoomCenter(rooms[3]), MapDirection.West, "treasure_branch"),
                 BuildSocket("hub_to_side_branch", "hub", RoomCenter(rooms[2]), MapDirection.South, "side_branch"),
                 BuildSocket("side_branch_to_hub", "side_branch", RoomCenter(rooms[7]), MapDirection.North, "hub")
             };
