@@ -54,7 +54,6 @@ namespace Conn.Editor.Maps
             CarveWallsAroundFloors(draft);
             ClassifyWallVariants(draft);
             AddGeneratedObjects(draft, rooms);
-            EditableMapDraftMetadataBuilder.BuildPlayableMetadataFromDrawing(draft);
             ApplyGeneratedRoomMetadata(draft, rooms);
             return draft;
         }

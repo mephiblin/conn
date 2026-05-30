@@ -26,6 +26,7 @@ namespace Conn.Editor.Maps
             }
 
             ValidateCells(draft, report);
+            ValidateRoomsAndZones(draft, report);
             ValidatePaletteReferences(draft, report);
             var walkable = BuildWalkabilityMap(draft, report);
             ValidateObjects(draft, report);
@@ -50,6 +51,66 @@ namespace Conn.Editor.Maps
                 if (!draft.IsInBounds(cell.X, cell.Y))
                 {
                     report.Errors.Add($"Cell out of bounds at ({cell.X}, {cell.Y}).");
+                }
+            }
+        }
+
+        private static void ValidateRoomsAndZones(EditableMapDraftAsset draft, MapValidationReport report)
+        {
+            var roomIds = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var room in draft.Rooms ?? Array.Empty<EditableMapRoom>())
+            {
+                if (string.IsNullOrWhiteSpace(room.Id))
+                {
+                    report.Errors.Add("Room id is missing.");
+                }
+                else if (!roomIds.Add(room.Id))
+                {
+                    report.Errors.Add($"Duplicate room id: {room.Id}.");
+                }
+
+                if (room.Width <= 0 || room.Height <= 0)
+                {
+                    report.Errors.Add($"Room {room.Id} has invalid size {room.Width}x{room.Height}.");
+                }
+
+                if (room.X < 0 || room.Y < 0 || room.X + room.Width > draft.Width || room.Y + room.Height > draft.Height)
+                {
+                    report.Errors.Add($"Room {room.Id} bounds leave the draft at ({room.X}, {room.Y}) size {room.Width}x{room.Height}.");
+                }
+            }
+
+            var zoneIds = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var zone in draft.Zones ?? Array.Empty<EditableMapZone>())
+            {
+                if (string.IsNullOrWhiteSpace(zone.Id))
+                {
+                    report.Errors.Add("Zone id is missing.");
+                }
+                else if (!zoneIds.Add(zone.Id))
+                {
+                    report.Errors.Add($"Duplicate zone id: {zone.Id}.");
+                }
+            }
+
+            foreach (var room in draft.Rooms ?? Array.Empty<EditableMapRoom>())
+            {
+                if (!string.IsNullOrWhiteSpace(room.ZoneId) && !zoneIds.Contains(room.ZoneId))
+                {
+                    report.Errors.Add($"Room {room.Id} references missing zone id {room.ZoneId}.");
+                }
+            }
+
+            foreach (var cell in draft.Cells ?? Array.Empty<EditableMapCell>())
+            {
+                if (!string.IsNullOrWhiteSpace(cell.RoomId) && !roomIds.Contains(cell.RoomId))
+                {
+                    report.Errors.Add($"Cell ({cell.X}, {cell.Y}) references missing room id {cell.RoomId}.");
+                }
+
+                if (!string.IsNullOrWhiteSpace(cell.ZoneId) && !zoneIds.Contains(cell.ZoneId))
+                {
+                    report.Errors.Add($"Cell ({cell.X}, {cell.Y}) references missing zone id {cell.ZoneId}.");
                 }
             }
         }

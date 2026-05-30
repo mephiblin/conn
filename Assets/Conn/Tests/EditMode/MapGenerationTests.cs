@@ -745,6 +745,44 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void EditableValidationReportsInvalidRoomAndZoneReferences()
+        {
+            var draft = BuildLinearValidationDraft();
+            draft.Zones = new[]
+            {
+                new EditableMapZone { Id = "zone_a", ThemeId = "ruins" },
+                new EditableMapZone { Id = "zone_a", ThemeId = "duplicate" }
+            };
+            draft.Rooms = new[]
+            {
+                new EditableMapRoom { Id = "start", Role = MapRoomRole.Start, X = 0, Y = 0, Width = 1, Height = 1, ZoneId = "missing_zone" },
+                new EditableMapRoom { Id = "start", Role = MapRoomRole.QuestTarget, X = 1, Y = 0, Width = 1, Height = 1, ZoneId = "zone_a" },
+                new EditableMapRoom { Id = "boss", Role = MapRoomRole.Boss, X = 2, Y = 0, Width = 1, Height = 1, ZoneId = "zone_a" },
+                new EditableMapRoom { Id = "exit", Role = MapRoomRole.Exit, X = 7, Y = 0, Width = 3, Height = 1, ZoneId = "zone_a" }
+            };
+            draft.TrySetCell(new EditableMapCell
+            {
+                X = 0,
+                Y = 0,
+                RoomId = "missing_room",
+                ZoneId = "missing_cell_zone",
+                Terrain = RoomChunkCellType.Floor,
+                Height = 0,
+                Direction = MapDirection.North
+            });
+
+            var report = EditableMapValidationService.Validate(draft);
+
+            Assert.That(report.Passed, Is.False);
+            Assert.That(report.Errors.Exists(error => error.Contains("Duplicate room id: start")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("Duplicate zone id: zone_a")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("Room start references missing zone id missing_zone")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("Room exit bounds leave the draft")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("Cell (0, 0) references missing room id missing_room")), Is.True);
+            Assert.That(report.Errors.Exists(error => error.Contains("Cell (0, 0) references missing zone id missing_cell_zone")), Is.True);
+        }
+
+        [Test]
         public void EditableValidationReportsBlockedOptionalTreasureRoute()
         {
             var draft = BuildOptionalTreasureValidationDraft();
