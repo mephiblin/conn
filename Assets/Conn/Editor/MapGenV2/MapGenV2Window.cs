@@ -189,14 +189,14 @@ namespace Conn.MapGenV2.Editor
                     profile = setup.Profile;
                     draft = setup.Draft;
                     Selection.activeObject = draft != null ? draft : profile;
-                    lastOperationResult = "Starter setup created. Next: Generate Mockup.";
                     SaveWindowState();
+                    SetLastOperationResult("Starter setup created.");
                 }
 
                 if (GUILayout.Button(MapGenV2EditorText.Get("mapgenv2.createDefaultFolders")))
                 {
                     MapGenV2AssetFolderUtility.CreateDefaultFolders();
-                    lastOperationResult = "Default MapGenV2 folders created or already existed.";
+                    SetLastOperationResult("Default MapGenV2 folders created or already existed.");
                 }
 
                 if (GUILayout.Button(MapGenV2EditorText.Get("mapgenv2.createDraft")))
@@ -212,7 +212,7 @@ namespace Conn.MapGenV2.Editor
                 if (GUILayout.Button("Cleanup Starter Generated Assets", GUILayout.Width(240f)))
                 {
                     var deleted = MapGenV2StarterSetupBuilder.CleanupStarterGeneratedAssets();
-                    lastOperationResult = $"Starter generated asset cleanup deleted {deleted} assets.";
+                    SetLastOperationResult($"Starter generated asset cleanup deleted {deleted} assets.");
                 }
             }
 
@@ -280,9 +280,24 @@ namespace Conn.MapGenV2.Editor
                 + $"Materialized Root {NullLabel(materializedRootName)}, Baked Asset {NullLabel(bakedAssetPath)}";
         }
 
+        public static string AppendNextStep(string result, string nextAction)
+        {
+            if (string.IsNullOrWhiteSpace(nextAction))
+            {
+                return result ?? string.Empty;
+            }
+
+            return $"{result ?? string.Empty} Next: {nextAction}";
+        }
+
         private static string NullLabel(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? "(none)" : value;
+        }
+
+        private void SetLastOperationResult(string result)
+        {
+            lastOperationResult = AppendNextStep(result, BuildGuidedNextAction(MapGenV2WorkflowStatus.From(profile, draft)));
         }
 
         private static void DrawStepBadge(string label, bool complete, bool active)
@@ -543,9 +558,9 @@ namespace Conn.MapGenV2.Editor
                     {
                         var marker = MapGenMockupMaterializer.FindExistingMarker(draft);
                         selectedMaterializedRoot = marker != null ? marker.gameObject : null;
-                        lastOperationResult = selectedMaterializedRoot != null
+                        SetLastOperationResult(selectedMaterializedRoot != null
                             ? $"Found materialized root: {selectedMaterializedRoot.name}."
-                            : "No previous materialized root found for the selected draft.";
+                            : "No previous materialized root found for the selected draft.");
                     }
 
                     using (new EditorGUI.DisabledScope(selectedMaterializedRoot == null))
@@ -571,7 +586,7 @@ namespace Conn.MapGenV2.Editor
                         {
                             MapGenMockupMaterializer.ClearRoot(selectedMaterializedRoot);
                             selectedMaterializedRoot = null;
-                            lastOperationResult = "Cleared selected materialized root.";
+                            SetLastOperationResult("Cleared selected materialized root.");
                         }
 
                         if (GUILayout.Button("Save Materialized As Prefab"))
@@ -608,7 +623,7 @@ namespace Conn.MapGenV2.Editor
                     if (GUILayout.Button("Ensure Prefab Folder", GUILayout.Width(170f)))
                     {
                         MapGenV2AssetFolderUtility.EnsureAssetFolder(GetMaterializedPrefabFolder());
-                        lastOperationResult = $"Materialized prefab folder ready: {GetMaterializedPrefabFolder()}.";
+                        SetLastOperationResult($"Materialized prefab folder ready: {GetMaterializedPrefabFolder()}.");
                     }
                 }
             }
@@ -640,9 +655,9 @@ namespace Conn.MapGenV2.Editor
             MapGenV2AssetFolderUtility.EnsureAssetFolder(prefabFolder);
             var path = AssetDatabase.GenerateUniqueAssetPath($"{prefabFolder}/{selectedMaterializedRoot.name}.prefab");
             var prefab = PrefabUtility.SaveAsPrefabAsset(selectedMaterializedRoot, path);
-            lastOperationResult = prefab != null
+            SetLastOperationResult(prefab != null
                 ? $"Saved materialized prefab: {path}."
-                : "Save Materialized As Prefab failed.";
+                : "Save Materialized As Prefab failed.");
         }
 
         private void DrawDraftActions(MapGenV2WorkflowStatus workflow)
@@ -660,8 +675,8 @@ namespace Conn.MapGenV2.Editor
                     Undo.RecordObject(draft, "Assign MapGen Profile");
                     draft.Profile = profile;
                     EditorUtility.SetDirty(draft);
-                    lastOperationResult = "Selected profile assigned to draft.";
                     SaveWindowState();
+                    SetLastOperationResult("Selected profile assigned to draft.");
                 }
             }
 
@@ -704,7 +719,7 @@ namespace Conn.MapGenV2.Editor
                         Undo.RecordObject(draft, "Accept Mockup");
                         draft.Accept();
                         EditorUtility.SetDirty(draft);
-                        lastOperationResult = $"Accepted mockup signature {draft.AcceptedSignature}.";
+                        SetLastOperationResult($"Accepted mockup signature {draft.AcceptedSignature}.");
                     }
                 }
             }
@@ -720,7 +735,7 @@ namespace Conn.MapGenV2.Editor
                         draft.ClearDraft();
                         ClearSelection();
                         EditorUtility.SetDirty(draft);
-                        lastOperationResult = $"Randomized seed to {draft.Seed}. Generate Mockup to preview it.";
+                        SetLastOperationResult($"Randomized seed to {draft.Seed}.");
                     }
                 }
 
@@ -742,7 +757,7 @@ namespace Conn.MapGenV2.Editor
                         draft.ClearDraft();
                         ClearSelection();
                         EditorUtility.SetDirty(draft);
-                        lastOperationResult = "Cleared draft cells, generated signature, post-process report, and acceptance.";
+                        SetLastOperationResult("Cleared draft cells, generated signature, post-process report, and acceptance.");
                     }
                 }
             }
@@ -803,7 +818,7 @@ namespace Conn.MapGenV2.Editor
             var budget = MapGenV2PerformanceProfile.SelectBudget(draft.Width, draft.Height);
             if (MapGenV2EditorProgress.Begin(operationName, "Solving mockup layout..."))
             {
-                lastOperationResult = $"{operationName} cancelled before solving.";
+                SetLastOperationResult($"{operationName} cancelled before solving.");
                 MapGenV2EditorProgress.End();
                 return;
             }
@@ -825,9 +840,9 @@ namespace Conn.MapGenV2.Editor
                 ClearSelection();
                 EditorUtility.SetDirty(draft);
                 var preview = MapGenMockupPreviewData.FromDraft(draft);
-                lastOperationResult = report.IsValid
+                SetLastOperationResult(report.IsValid
                     ? $"{operationName} complete. Seed {draft.Seed}, Retry 0, Rooms {preview.Summary.RoomCells}, Corridors {preview.Summary.CorridorCells}. Perf {sample.ElapsedMs}ms/{sample.BudgetMs}ms {sample.Target}."
-                    : $"{operationName} failed. See validation messages above. Perf {sample.ElapsedMs}ms/{sample.BudgetMs}ms {sample.Target}.";
+                    : $"{operationName} failed. See validation messages above. Perf {sample.ElapsedMs}ms/{sample.BudgetMs}ms {sample.Target}.");
             }
             finally
             {
@@ -845,7 +860,7 @@ namespace Conn.MapGenV2.Editor
             var budget = MapGenV2PerformanceProfile.SelectBudget(draft.Width, draft.Height);
             if (MapGenV2EditorProgress.Begin("Post-Process Mockup", "Running post-process passes..."))
             {
-                lastOperationResult = "Post-process cancelled before running.";
+                SetLastOperationResult("Post-process cancelled before running.");
                 MapGenV2EditorProgress.End();
                 return;
             }
@@ -868,7 +883,7 @@ namespace Conn.MapGenV2.Editor
                     0,
                     Mathf.Max(0, (report.PassReports?.Length ?? 1) - 1));
                 EditorUtility.SetDirty(draft);
-                lastOperationResult = $"Post-process complete. Passes {report.PassesRun}, Direct routes +{report.DirectRouteCellsAdded}, reserved masks filled {report.ReservedMaskCellsFilled}, dead ends removed {report.DeadEndCorridorsRemoved}, isolated rooms removed {report.IsolatedRoomsRemoved}. Perf {sample.ElapsedMs}ms/{sample.BudgetMs}ms {sample.Target}.";
+                SetLastOperationResult($"Post-process complete. Passes {report.PassesRun}, Direct routes +{report.DirectRouteCellsAdded}, reserved masks filled {report.ReservedMaskCellsFilled}, dead ends removed {report.DeadEndCorridorsRemoved}, isolated rooms removed {report.IsolatedRoomsRemoved}. Perf {sample.ElapsedMs}ms/{sample.BudgetMs}ms {sample.Target}.");
             }
             finally
             {
@@ -886,7 +901,7 @@ namespace Conn.MapGenV2.Editor
             var budget = MapGenV2PerformanceProfile.SelectBudget(draft.Width, draft.Height);
             if (MapGenV2EditorProgress.Begin("Materialize To Scene", "Instantiating prefab modules..."))
             {
-                lastOperationResult = "Materialize To Scene cancelled before instantiation.";
+                SetLastOperationResult("Materialize To Scene cancelled before instantiation.");
                 MapGenV2EditorProgress.End();
                 return;
             }
@@ -912,9 +927,9 @@ namespace Conn.MapGenV2.Editor
                         $"Seed={draft.Seed}"),
                     out var sample);
                 selectedMaterializedRoot = root;
-                lastOperationResult = root != null
+                SetLastOperationResult(root != null
                     ? $"Materialized scene root: {root.name}. Perf {sample.ElapsedMs}ms/{sample.BudgetMs}ms {sample.Target}."
-                    : $"Materialize To Scene failed. Check accepted state and module coverage. Perf {sample.ElapsedMs}ms/{sample.BudgetMs}ms {sample.Target}.";
+                    : $"Materialize To Scene failed. Check accepted state and module coverage. Perf {sample.ElapsedMs}ms/{sample.BudgetMs}ms {sample.Target}.");
             }
             finally
             {
@@ -932,7 +947,7 @@ namespace Conn.MapGenV2.Editor
             var budget = MapGenV2PerformanceProfile.SelectBudget(draft.Width, draft.Height);
             if (MapGenV2EditorProgress.Begin("Bake Runtime Asset", "Writing runtime-safe baked map..."))
             {
-                lastOperationResult = "Bake Runtime Asset cancelled before writing.";
+                SetLastOperationResult("Bake Runtime Asset cancelled before writing.");
                 MapGenV2EditorProgress.End();
                 return;
             }
@@ -950,9 +965,9 @@ namespace Conn.MapGenV2.Editor
                         () => MapGenV2EditorProgress.Begin("Bake Runtime Asset", "Writing runtime-safe baked map...")),
                     result => MapGenV2PerformanceDetails.ForBakedMap(result, $"Seed={draft.Seed}"),
                     out var sample);
-                lastOperationResult = bakedAsset != null
+                SetLastOperationResult(bakedAsset != null
                     ? $"Baked runtime asset: {AssetDatabase.GetAssetPath(bakedAsset)}. Perf {sample.ElapsedMs}ms/{sample.BudgetMs}ms {sample.Target}."
-                    : $"Bake Runtime Asset failed. Check accepted state. Perf {sample.ElapsedMs}ms/{sample.BudgetMs}ms {sample.Target}.";
+                    : $"Bake Runtime Asset failed. Check accepted state. Perf {sample.ElapsedMs}ms/{sample.BudgetMs}ms {sample.Target}.");
             }
             finally
             {
@@ -1106,7 +1121,7 @@ namespace Conn.MapGenV2.Editor
             AssetDatabase.CreateAsset(draft, path);
             AssetDatabase.SaveAssets();
             Selection.activeObject = draft;
-            lastOperationResult = $"Created draft: {path}.";
+            SetLastOperationResult($"Created draft: {path}.");
         }
 
         private string BuildExpectedBakedAssetPath()
@@ -1607,7 +1622,7 @@ namespace Conn.MapGenV2.Editor
                     Undo.RecordObject(draft, "Change MapGen Region Category");
                     draft.SetRegionCategory(selectedRegionId, newCategory);
                     EditorUtility.SetDirty(draft);
-                    lastOperationResult = $"Changed region {selectedRegionId} category to {newCategory}. Accepted output is now stale until reaccepted.";
+                    SetLastOperationResult($"Changed region {selectedRegionId} category to {newCategory}. Accepted output is now stale until reaccepted.");
                 }
 
                 using (new EditorGUILayout.HorizontalScope())
@@ -1617,7 +1632,7 @@ namespace Conn.MapGenV2.Editor
                         Undo.RecordObject(draft, "Toggle MapGen Region Lock");
                         draft.SetRegionLocked(selectedRegionId, !regionOverride.Locked);
                         EditorUtility.SetDirty(draft);
-                        lastOperationResult = $"{(regionOverride.Locked ? "Unlocked" : "Locked")} region {selectedRegionId}.";
+                        SetLastOperationResult($"{(regionOverride.Locked ? "Unlocked" : "Locked")} region {selectedRegionId}.");
                     }
 
                     if (GUILayout.Button("Clear Region Override"))
@@ -1625,7 +1640,7 @@ namespace Conn.MapGenV2.Editor
                         Undo.RecordObject(draft, "Clear MapGen Region Override");
                         draft.ClearRegionOverride(selectedRegionId);
                         EditorUtility.SetDirty(draft);
-                        lastOperationResult = $"Cleared region {selectedRegionId} override metadata.";
+                        SetLastOperationResult($"Cleared region {selectedRegionId} override metadata.");
                     }
                 }
 
@@ -1681,9 +1696,9 @@ namespace Conn.MapGenV2.Editor
             var report = draft.RegenerateRegionFromProfile(selectedRegionId);
             EditorUtility.SetDirty(draft);
             var preview = MapGenMockupPreviewData.FromDraft(draft);
-            lastOperationResult = report.IsValid
+            SetLastOperationResult(report.IsValid
                 ? $"{actionLabel} for region {selectedRegionId}. Seed {draft.Seed}, Rooms {preview.Summary.RoomCells}, Corridors {preview.Summary.CorridorCells}."
-                : $"Regenerate region failed: {report.Issues[0].Message}";
+                : $"Regenerate region failed: {report.Issues[0].Message}");
             Repaint();
         }
 
@@ -1783,7 +1798,7 @@ namespace Conn.MapGenV2.Editor
             Undo.RecordObject(draft, $"MapGen {actionLabel} Region");
             draft.SetRegionState(selectedRegionId, state);
             EditorUtility.SetDirty(draft);
-            lastOperationResult = $"{actionLabel} region {selectedRegionId}. Accepted output is now stale until reaccepted.";
+            SetLastOperationResult($"{actionLabel} region {selectedRegionId}. Accepted output is now stale until reaccepted.");
             Repaint();
         }
 

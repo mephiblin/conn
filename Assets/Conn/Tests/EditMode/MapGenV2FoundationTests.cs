@@ -89,6 +89,16 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void MapGenV2WindowOperationResultsAppendNextStepGuidance()
+        {
+            var result = MapGenV2Window.AppendNextStep(
+                "Generate Mockup complete.",
+                "Inspect the preview, then Accept Mockup.");
+
+            Assert.That(result, Is.EqualTo("Generate Mockup complete. Next: Inspect the preview, then Accept Mockup."));
+        }
+
+        [Test]
         public void RoomShapeValidatorRejectsConnectorAwayFromEdge()
         {
             var cells = new MapGenShapeCell[9];

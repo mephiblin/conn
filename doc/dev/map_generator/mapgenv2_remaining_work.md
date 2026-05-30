@@ -110,7 +110,7 @@ tool, and generated output workflow.
 - [x] Add a persistent top status strip:
   current profile, draft, seed, validation state, accepted/stale state,
   materialized root, and baked asset.
-- [ ] Add clear next-step guidance after each action:
+- [x] Add clear next-step guidance after each action:
   after starter setup, after mockup generation, after post-process, after accept,
   after materialize, and after bake.
 - [ ] Add inline help text and tooltips for profile, rule set, style set,
