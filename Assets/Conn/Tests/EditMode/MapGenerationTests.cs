@@ -1113,8 +1113,8 @@ namespace Conn.Tests.EditMode
 
             var report = new MapValidationReport();
             report.Errors.Add("Cell (2, 0) is invalid.");
-            report.Errors.Add("Object barrel_a overlaps non-walkable cell.");
-            report.Errors.Add("Socket socket_a does not touch a walkable cell.");
+            report.Errors.Add("Object barrel_a overlaps non-walkable cell (1, 0).");
+            report.Errors.Add("Socket socket_a does not touch a walkable cell at (0, 0).");
             var markers = EditableMapDraftSceneTools.BuildValidationMarkers(draft, report).ToArray();
 
             Assert.That(markers.Length, Is.EqualTo(3));

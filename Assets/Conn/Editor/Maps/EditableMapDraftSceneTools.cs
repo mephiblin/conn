@@ -40,7 +40,7 @@ namespace Conn.Editor.Maps
 
             foreach (var error in report.Errors)
             {
-                if (TryBuildCellMarker(error, out var cellMarker))
+                if (IsCellError(error) && TryBuildCellMarker(error, out var cellMarker))
                 {
                     yield return cellMarker;
                     continue;
@@ -61,8 +61,20 @@ namespace Conn.Editor.Maps
                 if (TryBuildRoomMarker(draft, error, out var roomMarker))
                 {
                     yield return roomMarker;
+                    continue;
+                }
+
+                if (TryBuildCellMarker(error, out cellMarker))
+                {
+                    yield return cellMarker;
                 }
             }
+        }
+
+        private static bool IsCellError(string error)
+        {
+            return error?.StartsWith("Cell ", StringComparison.Ordinal) == true
+                || error?.StartsWith("Compiled map cell ", StringComparison.Ordinal) == true;
         }
 
         private static bool TryBuildCellMarker(string error, out ValidationMarker marker)
