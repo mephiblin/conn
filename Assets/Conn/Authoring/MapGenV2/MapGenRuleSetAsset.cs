@@ -165,6 +165,19 @@ namespace Conn.MapGenV2.Authoring
                         $"Prop placement rule {i} has invalid spacing.",
                         "Set MinSpacingCells to zero or higher."));
                 }
+
+                if (rule.RequiredUnique || rule.DistributionMode == MapGenPropDistributionMode.RequiredUnique)
+                {
+                    var hasPrefabHint = !string.IsNullOrWhiteSpace(rule.Channel);
+                    if (!hasPrefabHint)
+                    {
+                        report.Add(new MapGenIssue(
+                            MapGenGenerationPhase.ValidateProfile,
+                            "rule_set_prop_rule_required_unique_missing_channel",
+                            $"Required unique prop placement rule {i} has no channel.",
+                            "Assign a stable channel id so the unique prop can be tracked."));
+                    }
+                }
             }
         }
 

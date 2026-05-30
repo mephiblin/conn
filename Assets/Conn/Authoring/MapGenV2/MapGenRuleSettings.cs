@@ -74,23 +74,53 @@ namespace Conn.MapGenV2.Authoring
     public struct MapGenPropPlacementRules
     {
         public string Channel;
+        public MapGenPropPlacementChannelKind ChannelKind;
+        public MapGenPropDistributionMode DistributionMode;
         public string[] RoomCategoryFilters;
         public string[] CorridorKindFilters;
         public int DensityPercent;
         public int MinSpacingCells;
         public bool AllowTraversalBlocking;
+        public bool RequiredUnique;
 
         public static MapGenPropPlacementRules Defaults()
         {
             return new MapGenPropPlacementRules
             {
                 Channel = string.Empty,
+                ChannelKind = MapGenPropPlacementChannelKind.Custom,
+                DistributionMode = MapGenPropDistributionMode.MarkerBased,
                 RoomCategoryFilters = Array.Empty<string>(),
                 CorridorKindFilters = Array.Empty<string>(),
                 DensityPercent = 0,
                 MinSpacingCells = 1,
-                AllowTraversalBlocking = false
+                AllowTraversalBlocking = false,
+                RequiredUnique = false
             };
         }
+    }
+
+    public enum MapGenPropPlacementChannelKind
+    {
+        Floor,
+        Wall,
+        Corner,
+        RoomCenter,
+        CorridorEdge,
+        Entrance,
+        Objective,
+        Blocker,
+        Custom
+    }
+
+    public enum MapGenPropDistributionMode
+    {
+        Random,
+        WeightedRandom,
+        Grid,
+        Perimeter,
+        MarkerBased,
+        OnePerRegion,
+        RequiredUnique
     }
 }

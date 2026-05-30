@@ -112,12 +112,30 @@ namespace Conn.MapGenV2.Editor
                 return new MapGenMaterializationPlan();
             }
 
+            MapGenGridCoord[] propCoords = null;
+            var propRules = draft.Profile.LayoutRules != null ? draft.Profile.LayoutRules.PropPlacementRules : null;
+            if (propRules != null && propRules.Length > 0)
+            {
+                var propPlacement = MapGenPropPlacementPlanner.Build(
+                    draft.Width,
+                    draft.Height,
+                    draft.Cells,
+                    propRules,
+                    draft.Seed);
+                propCoords = new MapGenGridCoord[propPlacement.PlacedProps.Length];
+                for (var i = 0; i < propPlacement.PlacedProps.Length; i++)
+                {
+                    propCoords[i] = propPlacement.PlacedProps[i].Coord;
+                }
+            }
+
             return MapGenMaterializationPlanner.Build(
                 draft.Width,
                 draft.Height,
                 draft.Profile.CellSize,
                 draft.AcceptedSignature,
-                draft.Cells);
+                draft.Cells,
+                propCoords);
         }
 
         public static MapGenMaterializationReport BuildReport(

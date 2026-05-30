@@ -782,23 +782,34 @@ Verification:
 
 ## Phase 10: Prop Placement
 
+Progress note 2026-05-31:
+
+- Added a deterministic prop placement planner that consumes structured prop
+  placement rules, channel kinds, distribution modes, density, spacing, and room
+  category filters to produce placed prop records plus a placement report.
+- Materialization planning now filters prop module requests through the prop
+  placement planner when a profile rule set defines prop placement rules.
+- Blocker prop rules now validate planned placements against the traversable
+  mockup graph and report traversal-breaking blocker positions unless traversal
+  blocking is explicitly allowed.
+
 Goal: support procedural props without breaking traversal.
 
 Tasks:
 
-- [ ] Add prop rule assets or structs.
+- [x] Add prop rule assets or structs.
 - [ ] Add placement channels:
   floor, wall, corner, room center, corridor edge, entrance, objective,
   blocker, custom tags.
 - [ ] Add distribution modes:
   random, weighted random, grid, perimeter, marker-based, one-per-region,
   required unique.
-- [ ] Add min spacing and density limits.
+- [x] Add min spacing and density limits.
 - [ ] Add category filters for rooms/corridors.
-- [ ] Add deterministic RNG stream for prop placement.
-- [ ] Validate blocker props against traversal graph.
+- [x] Add deterministic RNG stream for prop placement.
+- [x] Validate blocker props against traversal graph.
 - [ ] Add prop placement preview overlay.
-- [ ] Add prop placement report.
+- [x] Add prop placement report.
 
 Acceptance:
 
@@ -809,8 +820,10 @@ Acceptance:
 
 Verification:
 
-- Tests for deterministic prop placement.
-- Tests for blocker traversal validation.
+- EditMode tests for deterministic prop placement.
+- EditMode tests for blocker traversal validation.
+- EditMode test for one-per-region prop distribution.
+- EditMode test for materialization prop requests using placement rules.
 - Manual Unity check with floor, wall, and blocker props.
 
 ## Phase 11: Runtime Bake And Adapters

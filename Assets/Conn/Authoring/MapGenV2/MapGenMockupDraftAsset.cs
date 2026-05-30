@@ -772,11 +772,14 @@ namespace Conn.MapGenV2.Authoring
             foreach (var rule in rules ?? Array.Empty<MapGenPropPlacementRules>())
             {
                 Add(ref hash, rule.Channel);
+                Add(ref hash, (int)rule.ChannelKind);
+                Add(ref hash, (int)rule.DistributionMode);
                 AddStrings(ref hash, rule.RoomCategoryFilters);
                 AddStrings(ref hash, rule.CorridorKindFilters);
                 Add(ref hash, rule.DensityPercent);
                 Add(ref hash, rule.MinSpacingCells);
                 Add(ref hash, rule.AllowTraversalBlocking ? 1 : 0);
+                Add(ref hash, rule.RequiredUnique ? 1 : 0);
             }
         }
 

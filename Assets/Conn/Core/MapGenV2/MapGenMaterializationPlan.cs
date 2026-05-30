@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Conn.MapGenV2.Core
 {
@@ -22,7 +23,19 @@ namespace Conn.MapGenV2.Core
             string sourceSignature,
             MapGenMockupCell[] cells)
         {
-            var requests = MapGenMaterializationClassifier.Classify(width, height, cells);
+            return Build(width, height, cellSize, sourceSignature, cells, null);
+        }
+
+        public static MapGenMaterializationPlan Build(
+            int width,
+            int height,
+            float cellSize,
+            string sourceSignature,
+            MapGenMockupCell[] cells,
+            IEnumerable<MapGenGridCoord> allowedPropCoords)
+        {
+            var propCoordSet = allowedPropCoords != null ? new HashSet<MapGenGridCoord>(allowedPropCoords) : null;
+            var requests = MapGenMaterializationClassifier.Classify(width, height, cells, propCoordSet);
             return new MapGenMaterializationPlan
             {
                 Width = width,

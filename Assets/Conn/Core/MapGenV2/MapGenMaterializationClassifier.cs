@@ -6,6 +6,15 @@ namespace Conn.MapGenV2.Core
     {
         public static List<MapGenModuleRequest> Classify(int width, int height, MapGenMockupCell[] cells)
         {
+            return Classify(width, height, cells, null);
+        }
+
+        public static List<MapGenModuleRequest> Classify(
+            int width,
+            int height,
+            MapGenMockupCell[] cells,
+            HashSet<MapGenGridCoord> allowedPropCoords)
+        {
             var requests = new List<MapGenModuleRequest>();
             if (!MapGenGridCoord.IsValidSize(width, height) || cells == null || cells.Length != width * height)
             {
@@ -63,7 +72,8 @@ namespace Conn.MapGenV2.Core
                     }
                 }
 
-                if (!string.IsNullOrWhiteSpace(cell.PropChannel))
+                if (!string.IsNullOrWhiteSpace(cell.PropChannel)
+                    && (allowedPropCoords == null || allowedPropCoords.Contains(coord)))
                 {
                     requests.Add(new MapGenModuleRequest
                     {

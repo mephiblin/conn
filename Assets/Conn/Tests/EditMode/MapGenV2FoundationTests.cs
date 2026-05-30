@@ -1944,6 +1944,48 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void MaterializationPlanUsesPropPlacementRulesForPropRequests()
+        {
+            var ruleSet = ScriptableObject.CreateInstance<MapGenRuleSetAsset>();
+            var profile = ScriptableObject.CreateInstance<MapGenProfileAsset>();
+            var draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();
+
+            try
+            {
+                ruleSet.PropPlacementRules = new[]
+                {
+                    new MapGenPropPlacementRules
+                    {
+                        Channel = "loot",
+                        ChannelKind = MapGenPropPlacementChannelKind.Custom,
+                        DistributionMode = MapGenPropDistributionMode.RequiredUnique,
+                        DensityPercent = 100,
+                        MinSpacingCells = 0,
+                        RequiredUnique = true
+                    }
+                };
+                profile.LayoutRules = ruleSet;
+                draft.Profile = profile;
+                draft.Seed = 101;
+                draft.GridSize = new Vector2Int(2, 1);
+                draft.EnsureCellArray();
+                draft.Cells[0] = new MapGenMockupCell { State = MapGenCellState.Room, RegionId = 1, PropChannel = "loot" };
+                draft.Cells[1] = new MapGenMockupCell { State = MapGenCellState.Room, RegionId = 1, PropChannel = "loot" };
+
+                var plan = MapGenMockupMaterializer.BuildPlan(draft);
+
+                Assert.That(plan.Requests, Has.Exactly(1).Matches<MapGenModuleRequest>(
+                    request => request.Category == MapGenModuleCategory.Prop));
+            }
+            finally
+            {
+                Object.DestroyImmediate(draft);
+                Object.DestroyImmediate(profile);
+                Object.DestroyImmediate(ruleSet);
+            }
+        }
+
+        [Test]
         public void MaterializationClassifierDoesNotRequestDoorsForCorridorSockets()
         {
             var cells = new[]
@@ -2079,6 +2121,110 @@ namespace Conn.Tests.EditMode
             Assert.That(report.IsValid, Is.False);
             Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
                 issue => issue.Code == "prop_channel_on_non_navigable_cell"));
+        }
+
+        [Test]
+        public void PropPlacementPlannerIsDeterministicAndRespectsSpacing()
+        {
+            var cells = new[]
+            {
+                new MapGenMockupCell { State = MapGenCellState.Room, RegionId = 1, PropChannel = "loot" },
+                new MapGenMockupCell { State = MapGenCellState.Room, RegionId = 1, PropChannel = "loot" },
+                new MapGenMockupCell { State = MapGenCellState.Room, RegionId = 1, PropChannel = "loot" },
+                new MapGenMockupCell { State = MapGenCellState.Room, RegionId = 1, PropChannel = "loot" }
+            };
+            var rules = new[]
+            {
+                new MapGenPropPlacementRules
+                {
+                    Channel = "loot",
+                    ChannelKind = MapGenPropPlacementChannelKind.Custom,
+                    DistributionMode = MapGenPropDistributionMode.MarkerBased,
+                    DensityPercent = 100,
+                    MinSpacingCells = 1
+                }
+            };
+
+            var first = MapGenPropPlacementPlanner.Build(4, 1, cells, rules, 42);
+            var second = MapGenPropPlacementPlanner.Build(4, 1, cells, rules, 42);
+
+            Assert.That(first.Report.IsValid, Is.True);
+            Assert.That(first.PlacedProps.Length, Is.EqualTo(second.PlacedProps.Length));
+            for (var i = 0; i < first.PlacedProps.Length; i++)
+            {
+                Assert.That(first.PlacedProps[i].Coord, Is.EqualTo(second.PlacedProps[i].Coord));
+            }
+
+            for (var a = 0; a < first.PlacedProps.Length; a++)
+            {
+                for (var b = a + 1; b < first.PlacedProps.Length; b++)
+                {
+                    var distance = Mathf.Abs(first.PlacedProps[a].Coord.X - first.PlacedProps[b].Coord.X)
+                        + Mathf.Abs(first.PlacedProps[a].Coord.Y - first.PlacedProps[b].Coord.Y);
+                    Assert.That(distance, Is.GreaterThan(1));
+                }
+            }
+        }
+
+        [Test]
+        public void PropPlacementPlannerPlacesOnePropPerRegion()
+        {
+            var cells = new[]
+            {
+                new MapGenMockupCell { State = MapGenCellState.Room, RegionId = 1, RoomCategory = MapGenRoomCategory.Start },
+                new MapGenMockupCell { State = MapGenCellState.Room, RegionId = 1, RoomCategory = MapGenRoomCategory.Start },
+                new MapGenMockupCell { State = MapGenCellState.Room, RegionId = 2, RoomCategory = MapGenRoomCategory.Exit },
+                new MapGenMockupCell { State = MapGenCellState.Room, RegionId = 2, RoomCategory = MapGenRoomCategory.Exit }
+            };
+            var rules = new[]
+            {
+                new MapGenPropPlacementRules
+                {
+                    Channel = "reward",
+                    ChannelKind = MapGenPropPlacementChannelKind.Floor,
+                    DistributionMode = MapGenPropDistributionMode.OnePerRegion,
+                    DensityPercent = 100,
+                    MinSpacingCells = 0
+                }
+            };
+
+            var result = MapGenPropPlacementPlanner.Build(4, 1, cells, rules, 7);
+
+            Assert.That(result.Report.IsValid, Is.True);
+            Assert.That(result.PlacedProps, Has.Length.EqualTo(2));
+            Assert.That(result.PlacedProps[0].RegionId, Is.Not.EqualTo(result.PlacedProps[1].RegionId));
+        }
+
+        [Test]
+        public void PropPlacementPlannerReportsBlockerTraversalBreaks()
+        {
+            var cells = new[]
+            {
+                new MapGenMockupCell { State = MapGenCellState.Room, RegionId = 1 },
+                new MapGenMockupCell { State = MapGenCellState.Room, RegionId = 1, PropChannel = "blocker" },
+                new MapGenMockupCell { State = MapGenCellState.Room, RegionId = 1 }
+            };
+            var rules = new[]
+            {
+                new MapGenPropPlacementRules
+                {
+                    Channel = "blocker",
+                    ChannelKind = MapGenPropPlacementChannelKind.Blocker,
+                    DistributionMode = MapGenPropDistributionMode.MarkerBased,
+                    DensityPercent = 100,
+                    MinSpacingCells = 0,
+                    AllowTraversalBlocking = false
+                }
+            };
+
+            var result = MapGenPropPlacementPlanner.Build(3, 1, cells, rules, 11);
+
+            Assert.That(result.Report.IsValid, Is.False);
+            Assert.That(result.Report.BlockerTraversalIssues, Is.EqualTo(1));
+            Assert.That(result.Report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                issue => issue.Code == "prop_placement_blocker_breaks_traversal"
+                    && issue.Cell == new MapGenGridCoord(1, 0)));
+            Assert.That(result.PlacedProps, Is.Empty);
         }
 
         [Test]
