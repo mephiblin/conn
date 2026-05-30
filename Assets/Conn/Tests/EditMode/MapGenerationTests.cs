@@ -235,6 +235,20 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void EditableMapPreviewRectMapsMouseToDraftCell()
+        {
+            var rect = new Rect(10f, 20f, 80f, 40f);
+
+            Assert.That(EditableMapDraftEditor.TryGetCellFromPreviewRect(rect, 8, 4, new Vector2(15f, 25f), out var topLeft), Is.True);
+            Assert.That(topLeft, Is.EqualTo(new Vector2Int(0, 3)));
+
+            Assert.That(EditableMapDraftEditor.TryGetCellFromPreviewRect(rect, 8, 4, new Vector2(85f, 55f), out var bottomRight), Is.True);
+            Assert.That(bottomRight, Is.EqualTo(new Vector2Int(7, 0)));
+
+            Assert.That(EditableMapDraftEditor.TryGetCellFromPreviewRect(rect, 8, 4, new Vector2(5f, 25f), out _), Is.False);
+        }
+
+        [Test]
         public void EditableMapDraftAssetCanBeSavedClosedAndReopenedWithoutDataLoss()
         {
             var draft = ScriptableObject.CreateInstance<EditableMapDraftAsset>();

@@ -44,9 +44,11 @@ namespace Conn.Editor.Maps
         private int cellY;
         private bool scenePaintEnabled = true;
         private bool scenePaintActive;
+        private bool previewPaintActive;
         private bool showRawData;
         private Vector2Int hoveredCell = new Vector2Int(-1, -1);
         private Vector2Int lastScenePaintCell = new Vector2Int(int.MinValue, int.MinValue);
+        private Vector2Int lastPreviewPaintCell = new Vector2Int(int.MinValue, int.MinValue);
         private MapValidationReport lastValidationReport;
 
         private void OnEnable()
@@ -111,6 +113,34 @@ namespace Conn.Editor.Maps
             {
                 DrawPreviewGrid(rect, draft.Width, draft.Height, cellWidth, cellHeight);
             }
+
+            HandlePreviewPainting(draft, rect, Event.current);
+        }
+
+        public static bool TryGetCellFromPreviewRect(
+            Rect previewRect,
+            int width,
+            int height,
+            Vector2 mousePosition,
+            out Vector2Int cell)
+        {
+            cell = default;
+            if (width <= 0 || height <= 0 || previewRect.width <= 0f || previewRect.height <= 0f)
+            {
+                return false;
+            }
+
+            if (!previewRect.Contains(mousePosition))
+            {
+                return false;
+            }
+
+            var normalizedX = Mathf.Clamp01((mousePosition.x - previewRect.x) / previewRect.width);
+            var normalizedY = Mathf.Clamp01((mousePosition.y - previewRect.y) / previewRect.height);
+            var x = Mathf.Clamp(Mathf.FloorToInt(normalizedX * width), 0, width - 1);
+            var y = Mathf.Clamp(height - 1 - Mathf.FloorToInt(normalizedY * height), 0, height - 1);
+            cell = new Vector2Int(x, y);
+            return true;
         }
 
         private static void DrawPreviewGrid(Rect rect, int width, int height, float cellWidth, float cellHeight)
@@ -169,7 +199,7 @@ namespace Conn.Editor.Maps
                     EditorUtility.SetDirty(draft);
                 }
 
-                if (GUILayout.Button("Rebuild Preview"))
+                if (GUILayout.Button("Build Scene Map"))
                 {
                     EditableMapPreviewMeshBuilder.RebuildPreview(draft);
                 }
@@ -328,6 +358,68 @@ namespace Conn.Editor.Maps
         {
             lastValidationReport = EditableMapValidationService.Validate(draft);
             SceneView.RepaintAll();
+        }
+
+        private void HandlePreviewPainting(EditableMapDraftAsset draft, Rect previewRect, Event currentEvent)
+        {
+            if (currentEvent == null)
+            {
+                return;
+            }
+
+            if (!TryGetCellFromPreviewRect(previewRect, draft.Width, draft.Height, currentEvent.mousePosition, out var cell))
+            {
+                if (currentEvent.type == EventType.MouseUp)
+                {
+                    previewPaintActive = false;
+                    lastPreviewPaintCell = new Vector2Int(int.MinValue, int.MinValue);
+                }
+
+                return;
+            }
+
+            cellX = cell.x;
+            cellY = cell.y;
+            if (currentEvent.button != 0 || currentEvent.alt)
+            {
+                return;
+            }
+
+            switch (currentEvent.type)
+            {
+                case EventType.MouseDown:
+                    previewPaintActive = true;
+                    lastPreviewPaintCell = new Vector2Int(int.MinValue, int.MinValue);
+                    PaintPreviewCellIfNeeded(draft, cell);
+                    currentEvent.Use();
+                    break;
+                case EventType.MouseDrag:
+                    if (!previewPaintActive)
+                    {
+                        break;
+                    }
+
+                    PaintPreviewCellIfNeeded(draft, cell);
+                    currentEvent.Use();
+                    break;
+                case EventType.MouseUp:
+                    previewPaintActive = false;
+                    lastPreviewPaintCell = new Vector2Int(int.MinValue, int.MinValue);
+                    currentEvent.Use();
+                    break;
+            }
+        }
+
+        private void PaintPreviewCellIfNeeded(EditableMapDraftAsset draft, Vector2Int cell)
+        {
+            if (lastPreviewPaintCell == cell)
+            {
+                return;
+            }
+
+            PaintBrush(draft, cell.x, cell.y);
+            lastPreviewPaintCell = cell;
+            Repaint();
         }
 
         private void PaintBrush(EditableMapDraftAsset draft, int centerX, int centerY)
