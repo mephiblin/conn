@@ -212,14 +212,10 @@ namespace Conn.Editor.Maps
 
         private static void AddFloorQuad(MeshBuffer buffer, EditableMapDraftAsset draft, EditableMapCell cell, float baseHeight)
         {
-            var x = cell.X * draft.CellSize;
-            var z = cell.Y * draft.CellSize;
-            var y = baseHeight;
-            var a = new Vector3(x, y, z);
-            var b = new Vector3(x + draft.CellSize, y, z);
-            var c = new Vector3(x + draft.CellSize, y, z + draft.CellSize);
-            var d = new Vector3(x, y, z + draft.CellSize);
-            AddQuad(buffer, a, b, c, d, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(0f, 1f));
+            var min = new Vector3(cell.X * draft.CellSize, baseHeight, cell.Y * draft.CellSize);
+            var thickness = Mathf.Max(0.01f, Mathf.Min(draft.CellSize, draft.HeightStep) * 0.05f);
+            var max = new Vector3(min.x + draft.CellSize, baseHeight + thickness, min.z + draft.CellSize);
+            AddCube(buffer, min, max);
         }
 
         private static void AddWallCube(MeshBuffer buffer, EditableMapDraftAsset draft, EditableMapCell cell, float baseHeight)
@@ -510,7 +506,7 @@ namespace Conn.Editor.Maps
 
                 if (!Cache.TryGetValue(id, out var material))
                 {
-                    material = new Material(Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard"))
+                    material = new Material(ResolvePreviewShader())
                     {
                         name = $"Editable Map Preview {id}",
                         color = ColorForId(id)
@@ -533,6 +529,15 @@ namespace Conn.Editor.Maps
                 var saturation = 0.35f + Mathf.Abs((hash / 7) % 250) / 1000f;
                 var value = 0.55f + Mathf.Abs((hash / 13) % 250) / 1000f;
                 return Color.HSVToRGB(hue, Mathf.Clamp01(saturation), Mathf.Clamp01(value));
+            }
+
+            private static Shader ResolvePreviewShader()
+            {
+                return Shader.Find("Universal Render Pipeline/Unlit")
+                    ?? Shader.Find("Universal Render Pipeline/Lit")
+                    ?? Shader.Find("Unlit/Color")
+                    ?? Shader.Find("Sprites/Default")
+                    ?? Shader.Find("Standard");
             }
         }
     }
