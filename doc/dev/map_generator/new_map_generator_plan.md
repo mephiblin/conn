@@ -1153,6 +1153,14 @@ be committed and pushed separately.
   materialize, bake.
 - [ ] Integration tests and manual Unity checks.
 
+Current verification status:
+
+- Integration EditMode tests have been added for profile validation, mockup
+  generation, acceptance, materialization classification, prop validation, and
+  runtime bake data.
+- Manual Unity checks are still pending because the local command environment
+  does not expose a Unity executable.
+
 ### Milestone 1: Data Contracts
 
 - Add `MapGenV2` runtime namespace and authoring assets.
