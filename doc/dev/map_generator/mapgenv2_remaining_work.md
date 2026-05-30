@@ -965,6 +965,9 @@ Progress note 2026-05-31:
 - The editor next-action guide now switches to explicit Regenerate,
   Repostprocess, Reaccept, Rematerialize, and Rebake actions based on stale
   draft/materialized/baked state, with matching Korean/English button labels.
+- Profile overwrite policy is now exposed in the Scene Output panel:
+  CreateUnique creates a new root, ReplacePrevious deletes the previous tracked
+  root, and UpdateSelected only updates an explicitly selected scene root.
 
 Goal: make generated assets safe to keep in a real project.
 
@@ -976,7 +979,7 @@ Tasks:
 - [x] Detect stale materialized output when draft or module set changes.
 - [x] Add `Regenerate`, `Repostprocess`, `Reaccept`, `Rematerialize`,
   `Rebake` workflows.
-- [ ] Add explicit overwrite policy.
+- [x] Add explicit overwrite policy.
 - [ ] Add asset version fields and migration helpers.
 - [ ] Add safe cleanup for generated assets created by starter setup or tests.
 - [x] Add changelog/notes field for generated drafts.

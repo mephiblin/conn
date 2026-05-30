@@ -1451,6 +1451,67 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void MaterializerUpdateSelectedPolicyRequiresSelectedSceneRoot()
+        {
+            const string tempFolder = "Assets/Conn/Tests/TempMapGenV2MaterializerOverwrite";
+            var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
+            var styleSet = ScriptableObject.CreateInstance<MapGenStyleSetAsset>();
+            var profile = ScriptableObject.CreateInstance<MapGenProfileAsset>();
+            var draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();
+            GameObject selectedRoot = null;
+
+            try
+            {
+                EnsureTempFolder(tempFolder);
+                var floorPrefab = CreateTempPrefab($"{tempFolder}/Floor.prefab", "Floor");
+                var wallPrefab = CreateTempPrefab($"{tempFolder}/Wall.prefab", "Wall");
+                moduleSet.FloorsA = new[] { new MapGenModuleEntry { Prefab = floorPrefab, Weight = 1, Footprint = Vector2Int.one } };
+                moduleSet.WallsStraight = new[] { new MapGenModuleEntry { Prefab = wallPrefab, Weight = 1, Footprint = Vector2Int.one } };
+                PopulateCompleteMaterializationCoverage(moduleSet, floorPrefab, wallPrefab);
+                styleSet.ModuleSet = moduleSet;
+                profile.ProfileId = "overwrite_policy_profile";
+                profile.StyleSet = styleSet;
+                draft.Profile = profile;
+                draft.Seed = 111;
+                draft.GridSize = Vector2Int.one;
+                draft.EnsureCellArray();
+                draft.Cells[0] = new MapGenMockupCell
+                {
+                    State = MapGenCellState.Room,
+                    RegionId = 9,
+                    RoomCategory = MapGenRoomCategory.Start
+                };
+                draft.Accept();
+
+                Assert.That(MapGenMockupMaterializer.Materialize(draft, MapGenV2SceneOutputMode.UpdateSelectedRoot), Is.Null);
+
+                selectedRoot = new GameObject("SelectedRoot");
+                var materialized = MapGenMockupMaterializer.Materialize(
+                    draft,
+                    MapGenV2SceneOutputMode.UpdateSelectedRoot,
+                    selectedRoot);
+
+                Assert.That(materialized, Is.SameAs(selectedRoot));
+                Assert.That(selectedRoot.name, Is.EqualTo("MapGenV2_overwrite_policy_profile_111"));
+                Assert.That(selectedRoot.GetComponent<MapGenV2GeneratedMapMarker>(), Is.Not.Null);
+                Assert.That(selectedRoot.transform.Find("Floors"), Is.Not.Null);
+            }
+            finally
+            {
+                if (selectedRoot != null)
+                {
+                    Object.DestroyImmediate(selectedRoot);
+                }
+
+                AssetDatabase.DeleteAsset(tempFolder);
+                Object.DestroyImmediate(draft);
+                Object.DestroyImmediate(profile);
+                Object.DestroyImmediate(styleSet);
+                Object.DestroyImmediate(moduleSet);
+            }
+        }
+
+        [Test]
         public void MaterializerAppliesCellSizeOffsetAndRotationPolicy()
         {
             const string tempFolder = "Assets/Conn/Tests/TempMapGenV2Materializer";

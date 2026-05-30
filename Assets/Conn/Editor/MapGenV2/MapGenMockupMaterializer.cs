@@ -46,6 +46,11 @@ namespace Conn.MapGenV2.Editor
                 return null;
             }
 
+            if (outputMode == MapGenV2SceneOutputMode.UpdateSelectedRoot && !IsSceneRoot(selectedRoot))
+            {
+                return null;
+            }
+
             var targetRoot = ResolveTargetRoot(draft, outputMode, selectedRoot);
             if (targetRoot != null)
             {

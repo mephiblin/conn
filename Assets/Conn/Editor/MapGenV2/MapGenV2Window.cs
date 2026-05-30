@@ -347,12 +347,14 @@ namespace Conn.MapGenV2.Editor
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
                 EditorGUI.BeginChangeCheck();
-                outputMode = (MapGenV2SceneOutputMode)EditorGUILayout.EnumPopup("출력 모드 / Output Mode", outputMode);
+                DrawOverwritePolicyField();
                 selectedMaterializedRoot = (GameObject)EditorGUILayout.ObjectField("Materialized Root", selectedMaterializedRoot, typeof(GameObject), true);
                 if (EditorGUI.EndChangeCheck())
                 {
                     SaveWindowState();
                 }
+
+                EditorGUILayout.HelpBox(BuildOverwritePolicyHelp(GetOverwriteMode()), MessageType.Info);
 
                 DrawMaterializedPrefabFolderField();
 
@@ -578,7 +580,7 @@ namespace Conn.MapGenV2.Editor
                         : "Materialize To Scene / 씬 생성";
                     if (GUILayout.Button(materializeLabel))
                     {
-                        var root = MapGenMockupMaterializer.Materialize(draft, outputMode, selectedMaterializedRoot);
+                        var root = MapGenMockupMaterializer.Materialize(draft, GetSceneOutputMode(), selectedMaterializedRoot);
                         selectedMaterializedRoot = root;
                         lastOperationResult = root != null
                             ? $"Materialized scene root: {root.name}."
@@ -706,6 +708,68 @@ namespace Conn.MapGenV2.Editor
 
             var marker = MapGenMockupMaterializer.FindExistingMarker(draft);
             return marker != null ? marker.gameObject : null;
+        }
+
+        private void DrawOverwritePolicyField()
+        {
+            if (profile == null)
+            {
+                outputMode = (MapGenV2SceneOutputMode)EditorGUILayout.EnumPopup("출력 모드 / Output Mode", outputMode);
+                return;
+            }
+
+            var overwriteMode = profile.OutputSettings.OverwriteMode;
+            overwriteMode = (MapGenV2OutputOverwriteMode)EditorGUILayout.EnumPopup("덮어쓰기 정책 / Overwrite Policy", overwriteMode);
+            if (overwriteMode != profile.OutputSettings.OverwriteMode)
+            {
+                Undo.RecordObject(profile, "Change MapGen Overwrite Policy");
+                profile.OutputSettings.OverwriteMode = overwriteMode;
+                outputMode = ToSceneOutputMode(overwriteMode);
+                EditorUtility.SetDirty(profile);
+            }
+        }
+
+        private MapGenV2OutputOverwriteMode GetOverwriteMode()
+        {
+            if (profile != null)
+            {
+                return profile.OutputSettings.OverwriteMode;
+            }
+
+            return outputMode switch
+            {
+                MapGenV2SceneOutputMode.CreateNewRoot => MapGenV2OutputOverwriteMode.CreateUnique,
+                MapGenV2SceneOutputMode.UpdateSelectedRoot => MapGenV2OutputOverwriteMode.UpdateSelected,
+                _ => MapGenV2OutputOverwriteMode.ReplacePrevious
+            };
+        }
+
+        private MapGenV2SceneOutputMode GetSceneOutputMode()
+        {
+            return profile != null ? ToSceneOutputMode(profile.OutputSettings.OverwriteMode) : outputMode;
+        }
+
+        private static MapGenV2SceneOutputMode ToSceneOutputMode(MapGenV2OutputOverwriteMode overwriteMode)
+        {
+            return overwriteMode switch
+            {
+                MapGenV2OutputOverwriteMode.CreateUnique => MapGenV2SceneOutputMode.CreateNewRoot,
+                MapGenV2OutputOverwriteMode.UpdateSelected => MapGenV2SceneOutputMode.UpdateSelectedRoot,
+                _ => MapGenV2SceneOutputMode.ReplacePreviousRoot
+            };
+        }
+
+        private static string BuildOverwritePolicyHelp(MapGenV2OutputOverwriteMode overwriteMode)
+        {
+            return overwriteMode switch
+            {
+                MapGenV2OutputOverwriteMode.CreateUnique =>
+                    "CreateUnique: 기존 씬 출력을 보존하고 새 root를 생성합니다.",
+                MapGenV2OutputOverwriteMode.UpdateSelected =>
+                    "UpdateSelected: 선택한 Materialized Root의 children/marker만 교체합니다. 선택 root가 없으면 materialize를 실행하지 않습니다.",
+                _ =>
+                    "ReplacePrevious: 같은 draft/profile/seed/signature의 이전 MapGenV2 root를 삭제한 뒤 새 root를 생성합니다."
+            };
         }
 
         private static int CreateRandomSeed()
