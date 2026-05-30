@@ -124,8 +124,9 @@ namespace Conn.Editor.Maps
 
             var chunkLookup = BuildChunkLookup(runtimeChunks);
             var roomBounds = CalculateRoomBounds(generatedDraft.Graph);
-            var mapWidth = roomBounds.width * Mathf.Max(1, profile.RoomWidth);
-            var mapHeight = roomBounds.height * Mathf.Max(1, profile.RoomHeight);
+            var slotSize = ResolveSlotSize(profile, generatedDraft.Graph, chunkLookup);
+            var mapWidth = roomBounds.width * slotSize.x;
+            var mapHeight = roomBounds.height * slotSize.y;
 
             target.Id = $"{generatedDraft.ProfileId}_{generatedDraft.Seed}_draft";
             target.SourceProfileId = generatedDraft.ProfileId ?? string.Empty;
@@ -144,17 +145,21 @@ namespace Conn.Editor.Maps
 
             foreach (var node in generatedDraft.Graph.Nodes)
             {
-                var roomOriginX = (node.GridX - roomBounds.xMin) * profile.RoomWidth;
-                var roomOriginY = (node.GridY - roomBounds.yMin) * profile.RoomHeight;
+                var roomOriginX = (node.GridX - roomBounds.xMin) * slotSize.x;
+                var roomOriginY = (node.GridY - roomBounds.yMin) * slotSize.y;
                 var layoutKind = node.LayoutKind;
+                var roomWidth = slotSize.x;
+                var roomHeight = slotSize.y;
                 if (chunkLookup.TryGetValue(node.ChunkId ?? string.Empty, out var chunk))
                 {
                     layoutKind = chunk.LayoutKind;
+                    roomWidth = chunk.Width;
+                    roomHeight = chunk.Height;
                     StampChunk(target, chunk, roomOriginX, roomOriginY, node.Id, zoneId, objects);
                 }
                 else
                 {
-                    FillRoomFallback(target, roomOriginX, roomOriginY, profile.RoomWidth, profile.RoomHeight, node.Id, zoneId);
+                    FillRoomFallback(target, roomOriginX, roomOriginY, roomWidth, roomHeight, node.Id, zoneId);
                 }
 
                 rooms.Add(new EditableMapRoom
@@ -164,15 +169,15 @@ namespace Conn.Editor.Maps
                     LayoutKind = layoutKind,
                     X = roomOriginX,
                     Y = roomOriginY,
-                    Width = profile.RoomWidth,
-                    Height = profile.RoomHeight,
+                    Width = roomWidth,
+                    Height = roomHeight,
                     SocketMask = node.SocketMask,
                     HeightLevel = 0,
                     ZoneId = zoneId,
                     ChunkId = node.ChunkId ?? string.Empty
                 });
 
-                CreateSocketsForNode(target, node, roomOriginX, roomOriginY, profile, edges, nodes, sockets);
+                CreateSocketsForNode(target, node, chunkLookup, roomOriginX, roomOriginY, roomWidth, roomHeight, edges, nodes, sockets);
             }
 
             CarveSocketConnections(target, sockets);
@@ -355,6 +360,7 @@ namespace Conn.Editor.Maps
         {
             foreach (var sourceCell in chunk.Cells)
             {
+                EnsureStampTarget(target, originX + sourceCell.X, originY + sourceCell.Y, roomId);
                 var cell = EditableMapCell.CreateDefault(originX + sourceCell.X, originY + sourceCell.Y);
                 cell.RoomId = roomId ?? string.Empty;
                 cell.ZoneId = zoneId ?? string.Empty;
@@ -385,17 +391,58 @@ namespace Conn.Editor.Maps
             }
         }
 
+        private static void EnsureStampTarget(EditableMapDraftAsset target, int x, int y, string roomId)
+        {
+            if (!target.TryGetCell(x, y, out var existing))
+            {
+                throw new InvalidOperationException($"Chunk stamp exceeds draft bounds at ({x}, {y}) for room {roomId}.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(existing.RoomId)
+                && !string.Equals(existing.RoomId, roomId, StringComparison.Ordinal)
+                && existing.Terrain != RoomChunkCellType.Gap)
+            {
+                throw new InvalidOperationException(
+                    $"Chunk stamp overlap at ({x}, {y}) between room {existing.RoomId} and room {roomId}.");
+            }
+        }
+
+        private static Vector2Int ResolveSlotSize(
+            MapProfile profile,
+            RoomGraph graph,
+            Dictionary<string, RoomChunkSource> chunkLookup)
+        {
+            var width = Mathf.Max(1, profile.RoomWidth);
+            var height = Mathf.Max(1, profile.RoomHeight);
+            foreach (var node in graph?.Nodes ?? Array.Empty<RoomGraphNode>())
+            {
+                if (node == null)
+                {
+                    continue;
+                }
+
+                if (chunkLookup.TryGetValue(node.ChunkId ?? string.Empty, out var chunk))
+                {
+                    width = Mathf.Max(width, chunk.Width);
+                    height = Mathf.Max(height, chunk.Height);
+                }
+            }
+
+            return new Vector2Int(width, height);
+        }
+
         private static string BuildZoneId(MapProfile profile, int floor, int difficulty)
         {
             return $"{profile.ProfileId}_zone_f{Mathf.Max(1, floor)}_d{Mathf.Max(0, difficulty)}";
         }
 
         private static void CreateSocketsForNode(
-            EditableMapDraftAsset target,
             RoomGraphNode node,
+            Dictionary<string, RoomChunkSource> chunkLookup,
             int roomOriginX,
             int roomOriginY,
-            MapProfile profile,
+            int roomWidth,
+            int roomHeight,
             Dictionary<string, List<RoomGraphEdge>> edgeLookup,
             Dictionary<string, RoomGraphNode> nodeLookup,
             List<EditableMapSocket> sockets)
@@ -410,7 +457,13 @@ namespace Conn.Editor.Maps
                 var isFrom = string.Equals(edge.FromNodeId, node.Id, StringComparison.Ordinal);
                 var otherId = isFrom ? edge.ToNodeId : edge.FromNodeId;
                 var direction = ResolveSocketDirection(node, otherId, nodeLookup);
-                var socketPosition = FindSocketPosition(target, roomOriginX, roomOriginY, profile.RoomWidth, profile.RoomHeight, direction);
+                var socketPosition = FindSocketPosition(
+                    chunkLookup.TryGetValue(node.ChunkId ?? string.Empty, out var chunk) ? chunk : default,
+                    roomOriginX,
+                    roomOriginY,
+                    roomWidth,
+                    roomHeight,
+                    direction);
                 sockets.Add(new EditableMapSocket
                 {
                     Id = $"{node.Id}_{direction}_{otherId}",
@@ -446,13 +499,34 @@ namespace Conn.Editor.Maps
         }
 
         private static Vector2Int FindSocketPosition(
-            EditableMapDraftAsset target,
+            RoomChunkSource chunk,
             int originX,
             int originY,
             int roomWidth,
             int roomHeight,
             MapDirection direction)
         {
+            var boundaryCells = new List<Vector2Int>();
+            foreach (var cell in chunk.Cells ?? Array.Empty<RoomChunkCell>())
+            {
+                if (!IsBoundaryCell(cell, roomWidth, roomHeight, direction))
+                {
+                    continue;
+                }
+
+                if (cell.Type == RoomChunkCellType.Wall || cell.Type == RoomChunkCellType.Gap)
+                {
+                    continue;
+                }
+
+                boundaryCells.Add(new Vector2Int(originX + cell.X, originY + cell.Y));
+            }
+
+            if (boundaryCells.Count > 0)
+            {
+                return boundaryCells[boundaryCells.Count / 2];
+            }
+
             var centerX = originX + Mathf.Max(0, roomWidth / 2);
             var centerY = originY + Mathf.Max(0, roomHeight / 2);
 
@@ -466,6 +540,21 @@ namespace Conn.Editor.Maps
                     return new Vector2Int(originX, centerY);
                 default:
                     return new Vector2Int(centerX, originY + Mathf.Max(0, roomHeight - 1));
+            }
+        }
+
+        private static bool IsBoundaryCell(RoomChunkCell cell, int roomWidth, int roomHeight, MapDirection direction)
+        {
+            switch (direction)
+            {
+                case MapDirection.East:
+                    return cell.X == Mathf.Max(0, roomWidth - 1);
+                case MapDirection.South:
+                    return cell.Y == 0;
+                case MapDirection.West:
+                    return cell.X == 0;
+                default:
+                    return cell.Y == Mathf.Max(0, roomHeight - 1);
             }
         }
 
@@ -718,24 +807,33 @@ namespace Conn.Editor.Maps
         private readonly struct RoomChunkSource
         {
             public readonly RoomChunkLayoutKind LayoutKind;
+            public readonly int Width;
+            public readonly int Height;
             public readonly IReadOnlyList<RoomChunkCell> Cells;
             public readonly IReadOnlyList<RoomChunkObjectPlacement> Objects;
 
-            private RoomChunkSource(RoomChunkLayoutKind layoutKind, IReadOnlyList<RoomChunkCell> cells, IReadOnlyList<RoomChunkObjectPlacement> objects)
+            private RoomChunkSource(
+                RoomChunkLayoutKind layoutKind,
+                int width,
+                int height,
+                IReadOnlyList<RoomChunkCell> cells,
+                IReadOnlyList<RoomChunkObjectPlacement> objects)
             {
                 LayoutKind = layoutKind;
+                Width = Mathf.Max(1, width);
+                Height = Mathf.Max(1, height);
                 Cells = cells ?? Array.Empty<RoomChunkCell>();
                 Objects = objects ?? Array.Empty<RoomChunkObjectPlacement>();
             }
 
             public static RoomChunkSource FromRuntime(ChunkPreset chunk)
             {
-                return new RoomChunkSource(chunk.LayoutKind, chunk.Cells, chunk.Objects);
+                return new RoomChunkSource(chunk.LayoutKind, chunk.Width, chunk.Height, chunk.Cells, chunk.Objects);
             }
 
             public static RoomChunkSource FromAuthoring(RoomChunkAsset chunk)
             {
-                return new RoomChunkSource(chunk.LayoutKind, chunk.Cells, chunk.Objects);
+                return new RoomChunkSource(chunk.LayoutKind, chunk.Size.x, chunk.Size.y, chunk.Cells, chunk.Objects);
             }
         }
     }

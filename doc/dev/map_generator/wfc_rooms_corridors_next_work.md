@@ -107,11 +107,11 @@ graph preview.
 
 ### Tasks
 
-- [ ] Treat corridors as first-class chunks/pools.
-- [ ] Stamp selected room/corridor chunks into the draft grid.
-- [ ] Prevent overlap between stamped chunks.
-- [ ] Carve/merge door sockets between adjacent chunks.
-- [ ] Support variable chunk footprints after fixed-size flow is stable.
+- [x] Treat corridors as first-class chunks/pools.
+- [x] Stamp selected room/corridor chunks into the draft grid.
+- [x] Prevent overlap between stamped chunks.
+- [x] Carve/merge door sockets between adjacent chunks.
+- [x] Support variable chunk footprints after fixed-size flow is stable.
 
 ### Acceptance
 
