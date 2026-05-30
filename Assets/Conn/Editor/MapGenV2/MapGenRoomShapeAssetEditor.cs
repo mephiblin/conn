@@ -1,5 +1,6 @@
 using Conn.MapGenV2.Authoring;
 using Conn.MapGenV2.Core;
+using System;
 using UnityEditor;
 using UnityEngine;
 
@@ -26,6 +27,7 @@ namespace Conn.MapGenV2.Editor
             DrawIdentityFields();
             serializedObject.ApplyModifiedProperties();
             DrawDimensionField(shape);
+            DrawTransformActions(shape);
             DrawBrushFields();
             DrawGrid(shape);
             DrawValidation(shape);
@@ -51,6 +53,79 @@ namespace Conn.MapGenV2.Editor
             Undo.RecordObject(shape, "Resize Room Shape");
             shape.Resize(dimensions);
             EditorUtility.SetDirty(shape);
+        }
+
+        private static void DrawTransformActions(MapGenRoomShapeAsset shape)
+        {
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Shape Variants", EditorStyles.boldLabel);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("Rotate 90 CW"))
+                {
+                    Undo.RecordObject(shape, "Rotate Room Shape");
+                    shape.RotateClockwise();
+                    EditorUtility.SetDirty(shape);
+                }
+
+                if (GUILayout.Button("Flip Horizontal"))
+                {
+                    Undo.RecordObject(shape, "Flip Room Shape Horizontal");
+                    shape.FlipHorizontal();
+                    EditorUtility.SetDirty(shape);
+                }
+
+                if (GUILayout.Button("Flip Vertical"))
+                {
+                    Undo.RecordObject(shape, "Flip Room Shape Vertical");
+                    shape.FlipVertical();
+                    EditorUtility.SetDirty(shape);
+                }
+            }
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("Create Rotated Variant"))
+                {
+                    CreateVariant(shape, "_rot90", variant => variant.RotateClockwise());
+                }
+
+                if (GUILayout.Button("Create Flipped H Variant"))
+                {
+                    CreateVariant(shape, "_flip_h", variant => variant.FlipHorizontal());
+                }
+
+                if (GUILayout.Button("Create Flipped V Variant"))
+                {
+                    CreateVariant(shape, "_flip_v", variant => variant.FlipVertical());
+                }
+            }
+        }
+
+        private static void CreateVariant(
+            MapGenRoomShapeAsset shape,
+            string suffix,
+            Action<MapGenRoomShapeAsset> transform)
+        {
+            var sourcePath = AssetDatabase.GetAssetPath(shape);
+            var folder = string.IsNullOrEmpty(sourcePath)
+                ? "Assets/Conn/Authoring/MapGenV2/RoomShapes"
+                : System.IO.Path.GetDirectoryName(sourcePath)?.Replace("\\", "/");
+            if (string.IsNullOrEmpty(folder))
+            {
+                folder = "Assets/Conn/Authoring/MapGenV2/RoomShapes";
+            }
+
+            MapGenV2AssetFolderUtility.EnsureAssetFolder(folder);
+            var variant = CreateInstance<MapGenRoomShapeAsset>();
+            variant.CopyFrom(shape);
+            variant.ShapeId = $"{shape.ShapeId}{suffix}";
+            transform?.Invoke(variant);
+
+            var assetPath = AssetDatabase.GenerateUniqueAssetPath($"{folder}/{shape.name}{suffix}.asset");
+            AssetDatabase.CreateAsset(variant, assetPath);
+            AssetDatabase.SaveAssets();
+            Selection.activeObject = variant;
         }
 
         private void DrawBrushFields()

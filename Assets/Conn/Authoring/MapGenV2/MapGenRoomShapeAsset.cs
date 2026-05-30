@@ -74,6 +74,86 @@ namespace Conn.MapGenV2.Authoring
             Cells = newCells;
         }
 
+        public void RotateClockwise()
+        {
+            EnsureCellArray();
+            var oldWidth = Width;
+            var oldHeight = Height;
+            var oldCells = Cells ?? Array.Empty<MapGenShapeCell>();
+            var newWidth = oldHeight;
+            var newHeight = oldWidth;
+            var newCells = CreateEmptyCells(newWidth, newHeight);
+
+            for (var y = 0; y < oldHeight; y++)
+            {
+                for (var x = 0; x < oldWidth; x++)
+                {
+                    var oldIndex = (y * oldWidth) + x;
+                    var newX = oldHeight - 1 - y;
+                    var newY = x;
+                    newCells[(newY * newWidth) + newX] = oldCells[oldIndex];
+                }
+            }
+
+            Dimensions = new Vector2Int(newWidth, newHeight);
+            Cells = newCells;
+        }
+
+        public void FlipHorizontal()
+        {
+            EnsureCellArray();
+            var width = Width;
+            var height = Height;
+            var oldCells = Cells ?? Array.Empty<MapGenShapeCell>();
+            var newCells = CreateEmptyCells(width, height);
+
+            for (var y = 0; y < height; y++)
+            {
+                for (var x = 0; x < width; x++)
+                {
+                    newCells[(y * width) + (width - 1 - x)] = oldCells[(y * width) + x];
+                }
+            }
+
+            Cells = newCells;
+        }
+
+        public void FlipVertical()
+        {
+            EnsureCellArray();
+            var width = Width;
+            var height = Height;
+            var oldCells = Cells ?? Array.Empty<MapGenShapeCell>();
+            var newCells = CreateEmptyCells(width, height);
+
+            for (var y = 0; y < height; y++)
+            {
+                for (var x = 0; x < width; x++)
+                {
+                    newCells[((height - 1 - y) * width) + x] = oldCells[(y * width) + x];
+                }
+            }
+
+            Cells = newCells;
+        }
+
+        public void CopyFrom(MapGenRoomShapeAsset source)
+        {
+            if (source == null)
+            {
+                return;
+            }
+
+            source.EnsureCellArray();
+            ShapeId = source.ShapeId;
+            Dimensions = source.Dimensions;
+            Category = source.Category;
+            Weight = source.Weight;
+            PreviewSprite = source.PreviewSprite;
+            Cells = new MapGenShapeCell[source.Cells.Length];
+            Array.Copy(source.Cells, Cells, source.Cells.Length);
+        }
+
         public void EnsureCellArray()
         {
             var width = Width;

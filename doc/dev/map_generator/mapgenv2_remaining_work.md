@@ -471,18 +471,27 @@ Verification:
 
 ## Phase 6: Room Shape And Template Authoring UX
 
+Progress note 2026-05-31:
+
+- `MapGenRoomShapeAsset` now supports resize preservation, 90-degree clockwise
+  rotation, horizontal flip, vertical flip, and deep copy for variant creation.
+- `MapGenRoomShapeAssetEditor` exposes rotate/flip actions and create-approved
+  variant buttons for rotated/flipped shape assets.
+- Existing paint room/connector/blocked/erase-style behavior and drag painting
+  remain available in the grid editor.
+
 Goal: make room/chunk shapes editable as real grid assets.
 
 Tasks:
 
-- [ ] Improve `MapGenRoomShapeAssetEditor` with tools:
+- [x] Improve `MapGenRoomShapeAssetEditor` with tools:
   paint room, paint connector, paint blocked, erase.
-- [ ] Add drag painting.
-- [ ] Add dimension resize with data preservation preview.
+- [x] Add drag painting.
+- [x] Add dimension resize with data preservation preview.
 - [ ] Add connector side warnings next to the grid.
 - [ ] Add generated thumbnail/preview cache.
-- [ ] Add rotate/flip preview.
-- [ ] Add “create approved variant” actions for rotated/flipped variants.
+- [x] Add rotate/flip preview.
+- [x] Add “create approved variant” actions for rotated/flipped variants.
 - [ ] Add template editor that references one or more room shapes.
 - [ ] Add corridor template editor for straight, turn, T, cross, and variable
   length templates.

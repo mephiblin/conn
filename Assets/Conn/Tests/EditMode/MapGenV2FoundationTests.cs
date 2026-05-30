@@ -45,6 +45,67 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void RoomShapeResizePreservesExistingCells()
+        {
+            var roomShape = ScriptableObject.CreateInstance<MapGenRoomShapeAsset>();
+
+            try
+            {
+                roomShape.Resize(new Vector2Int(2, 2));
+                roomShape.SetCell(1, 1, new MapGenShapeCell
+                {
+                    State = MapGenCellState.Room,
+                    SocketKind = MapGenSocketKind.None,
+                    SocketId = string.Empty
+                });
+
+                roomShape.Resize(new Vector2Int(3, 3));
+
+                Assert.That(roomShape.GetCell(1, 1).State, Is.EqualTo(MapGenCellState.Room));
+                Assert.That(roomShape.GetCell(2, 2).State, Is.EqualTo(MapGenCellState.Empty));
+            }
+            finally
+            {
+                Object.DestroyImmediate(roomShape);
+            }
+        }
+
+        [Test]
+        public void RoomShapeRotateAndFlipPreserveCellPayloads()
+        {
+            var roomShape = ScriptableObject.CreateInstance<MapGenRoomShapeAsset>();
+
+            try
+            {
+                roomShape.Resize(new Vector2Int(2, 3));
+                roomShape.SetCell(0, 2, new MapGenShapeCell
+                {
+                    State = MapGenCellState.Connector,
+                    SocketKind = MapGenSocketKind.Door,
+                    SocketId = "north_door"
+                });
+
+                roomShape.RotateClockwise();
+
+                Assert.That(roomShape.Dimensions, Is.EqualTo(new Vector2Int(3, 2)));
+                Assert.That(roomShape.GetCell(0, 0).State, Is.EqualTo(MapGenCellState.Connector));
+                Assert.That(roomShape.GetCell(0, 0).SocketId, Is.EqualTo("north_door"));
+
+                roomShape.FlipHorizontal();
+
+                Assert.That(roomShape.GetCell(2, 0).State, Is.EqualTo(MapGenCellState.Connector));
+
+                roomShape.FlipVertical();
+
+                Assert.That(roomShape.GetCell(2, 1).State, Is.EqualTo(MapGenCellState.Connector));
+            }
+            finally
+            {
+                Object.DestroyImmediate(roomShape);
+            }
+        }
+
+        [Test]
         public void ModuleSetValidatorRequiresBasicFloorAndWallModules()
         {
             var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
