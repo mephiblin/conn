@@ -519,6 +519,9 @@ Progress note 2026-05-31:
   required room categories, preserves connector cells in the draft, carves
   deterministic corridors between placed rooms, and reports missing required
   category templates.
+- Corridor template pools are now consulted when present; generation requires
+  compatible room/corridor connector sides, socket ids, socket kinds, and
+  widths before carving a corridor.
 - `MapGenMockupDraftAsset.GenerateFromProfile()` now uses the template solver
   when template pools exist and keeps the legacy single-cell solver as fallback.
 
@@ -530,8 +533,8 @@ Tasks:
 - [ ] Build a grid candidate domain from profile size, blocked regions,
   room/corridor templates, quantity rules, density targets, and required rooms.
 - [x] Place multi-cell room shapes, not only single-cell room landmarks.
-- [ ] Place first-class corridor templates.
-- [ ] Enforce connector/socket compatibility between rooms and corridors.
+- [x] Place first-class corridor templates.
+- [x] Enforce connector/socket compatibility between rooms and corridors.
 - [ ] Reserve required landmarks:
   start, exit, quest, boss, transition, custom required categories.
 - [ ] Add distance constraints:

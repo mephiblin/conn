@@ -734,6 +734,100 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void TemplateMockupSolverUsesCompatibleCorridorTemplate()
+        {
+            var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
+            var styleSet = ScriptableObject.CreateInstance<MapGenStyleSetAsset>();
+            var ruleSet = ScriptableObject.CreateInstance<MapGenRuleSetAsset>();
+            var roomShape = ScriptableObject.CreateInstance<MapGenRoomShapeAsset>();
+            var startTemplate = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();
+            var exitTemplate = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();
+            var corridorTemplate = ScriptableObject.CreateInstance<MapGenCorridorTemplateAsset>();
+            var profile = ScriptableObject.CreateInstance<MapGenProfileAsset>();
+            GameObject floor = null;
+            GameObject wall = null;
+
+            try
+            {
+                PopulateValidWorkflowProfile(profile, styleSet, moduleSet, ruleSet, roomShape, out floor, out wall);
+                profile.MapSize = new Vector2Int(10, 6);
+                ruleSet.RequiredRoomCategories = new[] { MapGenRoomCategory.Start, MapGenRoomCategory.Exit };
+                ruleSet.QuantityRules.RequiredCategories = ruleSet.RequiredRoomCategories;
+                PopulateRoomTemplate(startTemplate, "start_template", MapGenRoomCategory.Start);
+                PopulateRoomTemplate(exitTemplate, "exit_template", MapGenRoomCategory.Exit);
+                PopulateCorridorTemplate(corridorTemplate, "main");
+                styleSet.RoomTemplates = new[] { startTemplate, exitTemplate };
+                styleSet.CorridorTemplates = new[] { corridorTemplate };
+
+                var result = MapGenTemplateMockupSolver.Generate(profile, 7001);
+
+                Assert.That(result.Success, Is.True);
+                Assert.That(result.Cells, Has.Some.Matches<MapGenMockupCell>(
+                    cell => cell.State == MapGenCellState.Corridor));
+            }
+            finally
+            {
+                Object.DestroyImmediate(profile);
+                Object.DestroyImmediate(corridorTemplate);
+                Object.DestroyImmediate(exitTemplate);
+                Object.DestroyImmediate(startTemplate);
+                Object.DestroyImmediate(roomShape);
+                Object.DestroyImmediate(ruleSet);
+                Object.DestroyImmediate(styleSet);
+                Object.DestroyImmediate(moduleSet);
+                Object.DestroyImmediate(floor);
+                Object.DestroyImmediate(wall);
+            }
+        }
+
+        [Test]
+        public void TemplateMockupSolverReportsIncompatibleCorridorTemplate()
+        {
+            var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
+            var styleSet = ScriptableObject.CreateInstance<MapGenStyleSetAsset>();
+            var ruleSet = ScriptableObject.CreateInstance<MapGenRuleSetAsset>();
+            var roomShape = ScriptableObject.CreateInstance<MapGenRoomShapeAsset>();
+            var startTemplate = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();
+            var exitTemplate = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();
+            var corridorTemplate = ScriptableObject.CreateInstance<MapGenCorridorTemplateAsset>();
+            var profile = ScriptableObject.CreateInstance<MapGenProfileAsset>();
+            GameObject floor = null;
+            GameObject wall = null;
+
+            try
+            {
+                PopulateValidWorkflowProfile(profile, styleSet, moduleSet, ruleSet, roomShape, out floor, out wall);
+                profile.MapSize = new Vector2Int(10, 6);
+                ruleSet.RequiredRoomCategories = new[] { MapGenRoomCategory.Start, MapGenRoomCategory.Exit };
+                ruleSet.QuantityRules.RequiredCategories = ruleSet.RequiredRoomCategories;
+                PopulateRoomTemplate(startTemplate, "start_template", MapGenRoomCategory.Start);
+                PopulateRoomTemplate(exitTemplate, "exit_template", MapGenRoomCategory.Exit);
+                PopulateCorridorTemplate(corridorTemplate, "side");
+                styleSet.RoomTemplates = new[] { startTemplate, exitTemplate };
+                styleSet.CorridorTemplates = new[] { corridorTemplate };
+
+                var result = MapGenTemplateMockupSolver.Generate(profile, 7001);
+
+                Assert.That(result.Success, Is.False);
+                Assert.That(result.Report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "production_solver_missing_compatible_corridor_template"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(profile);
+                Object.DestroyImmediate(corridorTemplate);
+                Object.DestroyImmediate(exitTemplate);
+                Object.DestroyImmediate(startTemplate);
+                Object.DestroyImmediate(roomShape);
+                Object.DestroyImmediate(ruleSet);
+                Object.DestroyImmediate(styleSet);
+                Object.DestroyImmediate(moduleSet);
+                Object.DestroyImmediate(floor);
+                Object.DestroyImmediate(wall);
+            }
+        }
+
+        [Test]
         public void PostProcessorCanAddDirectRoute()
         {
             var cells = new MapGenMockupCell[25];
@@ -875,6 +969,20 @@ namespace Conn.Tests.EditMode
             {
                 MapGenConnector.Door(MapGenGridDirection.East, new Vector2Int(1, 0), "main"),
                 MapGenConnector.Door(MapGenGridDirection.West, new Vector2Int(0, 0), "main")
+            };
+        }
+
+        private static void PopulateCorridorTemplate(MapGenCorridorTemplateAsset template, string socketId)
+        {
+            template.TemplateId = $"corridor_{socketId}";
+            template.CorridorKind = MapGenCorridorKind.Straight;
+            template.Width = 1;
+            template.LengthRange = new Vector2Int(2, 6);
+            template.Weight = 1;
+            template.Connectors = new[]
+            {
+                MapGenConnector.Door(MapGenGridDirection.West, Vector2Int.zero, socketId),
+                MapGenConnector.Door(MapGenGridDirection.East, new Vector2Int(5, 0), socketId)
             };
         }
 

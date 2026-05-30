@@ -57,6 +57,9 @@ namespace Conn.MapGenV2.Authoring
             }
 
             var categories = GetRequiredCategories(profile);
+            var corridorTemplates = profile.StyleSet != null
+                ? profile.StyleSet.CorridorTemplates
+                : Array.Empty<MapGenCorridorTemplateAsset>();
             var cells = CreateEmptyCells(width, height);
             var placements = new RoomPlacement[categories.Length];
             var rng = new MapGenRandom(seed).Fork("template_solver");
@@ -87,7 +90,10 @@ namespace Conn.MapGenV2.Authoring
                 placements[i] = placement;
                 if (i > 0)
                 {
-                    CarveCorridor(cells, width, height, placements[i - 1].Center, placement.Center);
+                    if (!TryConnectRooms(cells, width, height, placements[i - 1], placement, corridorTemplates, report))
+                    {
+                        return Failed(width, height, seed, report);
+                    }
                 }
             }
 
@@ -220,7 +226,7 @@ namespace Conn.MapGenV2.Authoring
                 }
 
                 ApplyTemplate(cells, width, template, origin, category, regionId);
-                placement = new RoomPlacement(origin, new MapGenGridCoord(
+                placement = new RoomPlacement(template, origin, new MapGenGridCoord(
                     origin.X + template.Footprint.x / 2,
                     origin.Y + template.Footprint.y / 2));
                 return true;
@@ -305,6 +311,136 @@ namespace Conn.MapGenV2.Authoring
             }
         }
 
+        private static bool TryConnectRooms(
+            MapGenMockupCell[] cells,
+            int width,
+            int height,
+            RoomPlacement from,
+            RoomPlacement to,
+            MapGenCorridorTemplateAsset[] corridorTemplates,
+            MapGenValidationReport report)
+        {
+            if (corridorTemplates == null || corridorTemplates.Length == 0)
+            {
+                CarveCorridor(cells, width, height, from.Center, to.Center, 1);
+                return true;
+            }
+
+            var fromSide = PickExitSide(from.Center, to.Center);
+            var toSide = Opposite(fromSide);
+            if (!TryGetConnector(from, fromSide, out var fromConnector, out var fromCoord)
+                || !TryGetConnector(to, toSide, out var toConnector, out var toCoord))
+            {
+                report.Add(new MapGenIssue(
+                    MapGenGenerationPhase.SolveMockup,
+                    "production_solver_missing_room_connector",
+                    "Placed rooms do not expose connectors on the required corridor sides.",
+                    "Add room template connectors on the sides needed by the layout."));
+                return false;
+            }
+
+            var corridor = PickCompatibleCorridor(corridorTemplates, fromConnector, toConnector);
+            if (corridor == null)
+            {
+                report.Add(new MapGenIssue(
+                    MapGenGenerationPhase.SolveMockup,
+                    "production_solver_missing_compatible_corridor_template",
+                    "No corridor template can connect the selected room connectors.",
+                    "Add a corridor template with connector sides, socket ids, socket kinds, and width compatible with the room connectors."));
+                return false;
+            }
+
+            CarveCorridor(cells, width, height, fromCoord, toCoord, Mathf.Max(1, corridor.Width));
+            return true;
+        }
+
+        private static MapGenCorridorTemplateAsset PickCompatibleCorridor(
+            MapGenCorridorTemplateAsset[] corridorTemplates,
+            MapGenConnector fromConnector,
+            MapGenConnector toConnector)
+        {
+            foreach (var corridor in corridorTemplates ?? Array.Empty<MapGenCorridorTemplateAsset>())
+            {
+                if (corridor == null || corridor.Connectors == null || corridor.Connectors.Length < 2)
+                {
+                    continue;
+                }
+
+                for (var a = 0; a < corridor.Connectors.Length; a++)
+                {
+                    for (var b = 0; b < corridor.Connectors.Length; b++)
+                    {
+                        if (a == b)
+                        {
+                            continue;
+                        }
+
+                        if (MapGenTemplateValidationUtility.AreCompatible(fromConnector, corridor.Connectors[a])
+                            && MapGenTemplateValidationUtility.AreCompatible(toConnector, corridor.Connectors[b]))
+                        {
+                            return corridor;
+                        }
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private static bool TryGetConnector(
+            RoomPlacement placement,
+            MapGenGridDirection side,
+            out MapGenConnector connector,
+            out MapGenGridCoord coord)
+        {
+            foreach (var candidate in placement.Template.Connectors ?? Array.Empty<MapGenConnector>())
+            {
+                if (candidate.Side != side)
+                {
+                    continue;
+                }
+
+                connector = candidate;
+                coord = new MapGenGridCoord(
+                    placement.Origin.X + candidate.LocalCell.x,
+                    placement.Origin.Y + candidate.LocalCell.y);
+                return true;
+            }
+
+            connector = default;
+            coord = default;
+            return false;
+        }
+
+        private static MapGenGridDirection PickExitSide(MapGenGridCoord from, MapGenGridCoord to)
+        {
+            var dx = to.X - from.X;
+            var dy = to.Y - from.Y;
+            if (Mathf.Abs(dx) >= Mathf.Abs(dy))
+            {
+                return dx >= 0 ? MapGenGridDirection.East : MapGenGridDirection.West;
+            }
+
+            return dy >= 0 ? MapGenGridDirection.North : MapGenGridDirection.South;
+        }
+
+        private static MapGenGridDirection Opposite(MapGenGridDirection direction)
+        {
+            switch (direction)
+            {
+                case MapGenGridDirection.North:
+                    return MapGenGridDirection.South;
+                case MapGenGridDirection.East:
+                    return MapGenGridDirection.West;
+                case MapGenGridDirection.South:
+                    return MapGenGridDirection.North;
+                case MapGenGridDirection.West:
+                    return MapGenGridDirection.East;
+                default:
+                    return MapGenGridDirection.North;
+            }
+        }
+
         private static string FindPropChannel(MapGenRoomTemplateAsset template, Vector2Int local)
         {
             foreach (var prop in template.PropChannels ?? Array.Empty<MapGenTemplatePropChannel>())
@@ -329,24 +465,42 @@ namespace Conn.MapGenV2.Authoring
             cells[coord.ToIndex(width)] = cell;
         }
 
-        private static void CarveCorridor(MapGenMockupCell[] cells, int width, int height, MapGenGridCoord from, MapGenGridCoord to)
+        private static void CarveCorridor(
+            MapGenMockupCell[] cells,
+            int width,
+            int height,
+            MapGenGridCoord from,
+            MapGenGridCoord to,
+            int corridorWidth)
         {
             var x = from.X;
             var y = from.Y;
             while (x != to.X)
             {
                 x += x < to.X ? 1 : -1;
-                SetCorridor(cells, width, height, x, y);
+                SetCorridor(cells, width, height, x, y, corridorWidth);
             }
 
             while (y != to.Y)
             {
                 y += y < to.Y ? 1 : -1;
-                SetCorridor(cells, width, height, x, y);
+                SetCorridor(cells, width, height, x, y, corridorWidth);
             }
         }
 
-        private static void SetCorridor(MapGenMockupCell[] cells, int width, int height, int x, int y)
+        private static void SetCorridor(MapGenMockupCell[] cells, int width, int height, int x, int y, int corridorWidth)
+        {
+            var radius = Mathf.Max(0, corridorWidth - 1);
+            for (var offsetY = -radius; offsetY <= radius; offsetY++)
+            {
+                for (var offsetX = -radius; offsetX <= radius; offsetX++)
+                {
+                    SetCorridorCell(cells, width, height, x + offsetX, y + offsetY);
+                }
+            }
+        }
+
+        private static void SetCorridorCell(MapGenMockupCell[] cells, int width, int height, int x, int y)
         {
             var coord = new MapGenGridCoord(x, y);
             if (!coord.IsInBounds(width, height))
@@ -375,11 +529,13 @@ namespace Conn.MapGenV2.Authoring
 
         private readonly struct RoomPlacement
         {
+            public readonly MapGenRoomTemplateAsset Template;
             public readonly MapGenGridCoord Origin;
             public readonly MapGenGridCoord Center;
 
-            public RoomPlacement(MapGenGridCoord origin, MapGenGridCoord center)
+            public RoomPlacement(MapGenRoomTemplateAsset template, MapGenGridCoord origin, MapGenGridCoord center)
             {
+                Template = template;
                 Origin = origin;
                 Center = center;
             }

@@ -204,7 +204,9 @@ namespace Conn.MapGenV2.Editor
             template.Connectors = new[]
             {
                 MapGenConnector.Door(MapGenGridDirection.North, new Vector2Int(1, 2), "main"),
-                MapGenConnector.Door(MapGenGridDirection.South, new Vector2Int(1, 0), "main")
+                MapGenConnector.Door(MapGenGridDirection.East, new Vector2Int(2, 1), "main"),
+                MapGenConnector.Door(MapGenGridDirection.South, new Vector2Int(1, 0), "main"),
+                MapGenConnector.Door(MapGenGridDirection.West, new Vector2Int(0, 1), "main")
             };
         }
 
