@@ -12,14 +12,6 @@ namespace Conn.Editor.Maps
         public const string Folder = "Assets/Conn/Authoring/Maps/Profiles/ChapterTwoFirstSlice";
         public const string ProfilePath = Folder + "/ch2_first_slice_ruins_Profile.asset";
 
-        [MenuItem("Conn/Map/Create Chapter 2 Sample Map Profile Assets")]
-        public static void CreateChapterTwoSampleProfileAssetsMenu()
-        {
-            var profile = CreateChapterTwoSampleProfileAssets();
-            Selection.activeObject = profile;
-            EditorGUIUtility.PingObject(profile);
-        }
-
         public static MapProfileAsset CreateChapterTwoSampleProfileAssets()
         {
             EnsureFolder(Folder);

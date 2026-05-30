@@ -44,14 +44,20 @@ namespace Conn.Editor.Maps
                 MessageType.Info);
             if (workspace.MapProfile == null)
             {
-                EditorGUILayout.HelpBox("Map Profile is required. Assign a MapProfileAsset before generating a preview.", MessageType.Error);
-                if (GUILayout.Button("Create Chapter 2 Sample Profile Assets"))
+                EditorGUILayout.HelpBox("Map Profile is required. Select an existing profile asset, create a new empty profile, or create an example profile.", MessageType.Warning);
+                using (new EditorGUILayout.HorizontalScope())
                 {
-                    serializedObject.ApplyModifiedProperties();
-                    Undo.RecordObject(workspace, "Create Sample Map Profile");
-                    workspace.MapProfile = MapProfileAuthoringSampleBuilder.CreateChapterTwoSampleProfileAssets();
-                    EditorUtility.SetDirty(workspace);
-                    MarkSceneDirty(workspace);
+                    if (GUILayout.Button("Create New Profile"))
+                    {
+                        serializedObject.ApplyModifiedProperties();
+                        AssignProfileAsset(workspace, MapProfileAuthoringAssetFactory.CreateEmptyProfileAsset(), "Create Empty Map Profile");
+                    }
+
+                    if (GUILayout.Button("Create Example Profile"))
+                    {
+                        serializedObject.ApplyModifiedProperties();
+                        AssignProfileAsset(workspace, MapProfileAuthoringSampleBuilder.CreateChapterTwoSampleProfileAssets(), "Create Example Map Profile");
+                    }
                 }
             }
             else if (!ProfileValidationPassed(workspace.MapProfile, workspace))
@@ -499,6 +505,21 @@ namespace Conn.Editor.Maps
                 CountEffectivePools(profile),
                 CountSocketCoverage(profile));
             EditorUtility.SetDirty(workspace);
+            MarkSceneDirty(workspace);
+        }
+
+        private static void AssignProfileAsset(MapGeneratorWorkspace workspace, MapProfileAsset profile, string undoLabel)
+        {
+            if (workspace == null || profile == null)
+            {
+                return;
+            }
+
+            Undo.RecordObject(workspace, undoLabel);
+            workspace.MapProfile = profile;
+            EditorUtility.SetDirty(workspace);
+            Selection.activeObject = profile;
+            EditorGUIUtility.PingObject(profile);
             MarkSceneDirty(workspace);
         }
 
