@@ -277,6 +277,68 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void BakedMapInspectorSummaryReportsRuntimeSafeData()
+        {
+            var baked = ScriptableObject.CreateInstance<MapGenBakedMapAsset>();
+
+            try
+            {
+                baked.Width = 4;
+                baked.Height = 3;
+                baked.Cells = new[]
+                {
+                    new MapGenBakedCell { Coord = new MapGenGridCoord(0, 0), State = MapGenCellState.Room, RegionId = 1 }
+                };
+                baked.Regions = new[]
+                {
+                    new MapGenBakedRegion { RegionId = 1, RoomCategory = MapGenRoomCategory.Start, CellCount = 1 }
+                };
+                baked.Connectors = new[]
+                {
+                    new MapGenBakedConnector { Coord = new MapGenGridCoord(1, 0), RegionId = 1, SocketKind = MapGenSocketKind.Door }
+                };
+                baked.TraversalEdges = new[]
+                {
+                    new MapGenTraversalEdge { From = new MapGenGridCoord(0, 0), To = new MapGenGridCoord(1, 0) },
+                    new MapGenTraversalEdge { From = new MapGenGridCoord(1, 0), To = new MapGenGridCoord(2, 0) }
+                };
+                baked.SpawnMarkers = new[]
+                {
+                    new MapGenBakedMarker { MarkerId = "spawn", Coord = new MapGenGridCoord(0, 0), RegionId = 1 }
+                };
+                baked.ObjectiveMarkers = new[]
+                {
+                    new MapGenBakedMarker { MarkerId = "goal", Coord = new MapGenGridCoord(2, 0), RegionId = 1 }
+                };
+                baked.ProfileId = "profile_a";
+                baked.RuleSetId = "rules_a";
+                baked.StyleId = "style_a";
+                baked.Seed = 2001;
+                baked.SourceSignature = "signature_a";
+
+                var summary = MapGenBakedMapAssetEditor.BuildRuntimeSummary(baked);
+
+                Assert.That(summary, Does.Contain("Grid 4x3"));
+                Assert.That(summary, Does.Contain("Cells 1"));
+                Assert.That(summary, Does.Contain("Regions 1"));
+                Assert.That(summary, Does.Contain("Connectors 1"));
+                Assert.That(summary, Does.Contain("Traversal graph 2 edges"));
+                Assert.That(summary, Does.Contain("Nav data Traversal graph + markers"));
+                Assert.That(summary, Does.Contain("Spawn markers 1"));
+                Assert.That(summary, Does.Contain("Objective markers 1"));
+                Assert.That(summary, Does.Contain("Profile profile_a"));
+                Assert.That(summary, Does.Contain("Rule rules_a"));
+                Assert.That(summary, Does.Contain("Style style_a"));
+                Assert.That(summary, Does.Contain("Seed 2001"));
+                Assert.That(summary, Does.Contain("Signature signature_a"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(baked);
+            }
+        }
+
+        [Test]
         public void RoomShapeValidatorRejectsConnectorAwayFromEdge()
         {
             var cells = new MapGenShapeCell[9];

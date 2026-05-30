@@ -166,7 +166,7 @@ tool, and generated output workflow.
   required categories, post-process pass list.
 - [ ] Draft inspector must show the mockup preview, selected region details,
   manual overrides, accept/stale status, and materialization readiness.
-- [ ] Baked map inspector must show runtime-safe summary only:
+- [x] Baked map inspector must show runtime-safe summary only:
   grid bounds, regions, connectors, traversal graph, nav data availability,
   and source signatures.
 
