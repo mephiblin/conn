@@ -1,6 +1,8 @@
 using Conn.MapGenV2.Authoring;
 using Conn.MapGenV2.Core;
+using Conn.MapGenV2.Editor;
 using NUnit.Framework;
+using UnityEditor;
 using UnityEngine;
 
 namespace Conn.Tests.EditMode
@@ -259,6 +261,76 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void MaterializerCanFindReplaceAndClearGeneratedRoot()
+        {
+            const string tempFolder = "Assets/Conn/Tests/TempMapGenV2Materializer";
+            var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
+            var styleSet = ScriptableObject.CreateInstance<MapGenStyleSetAsset>();
+            var profile = ScriptableObject.CreateInstance<MapGenProfileAsset>();
+            var draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();
+            GameObject firstRoot = null;
+            GameObject secondRoot = null;
+
+            try
+            {
+                EnsureTempFolder(tempFolder);
+                var floorPrefab = CreateTempPrefab($"{tempFolder}/Floor.prefab", "Floor");
+                var wallPrefab = CreateTempPrefab($"{tempFolder}/Wall.prefab", "Wall");
+                moduleSet.FloorsA = new[] { new MapGenModuleEntry { Prefab = floorPrefab, Weight = 1, Footprint = Vector2Int.one } };
+                moduleSet.WallsStraight = new[] { new MapGenModuleEntry { Prefab = wallPrefab, Weight = 1, Footprint = Vector2Int.one } };
+                styleSet.StyleId = "scene_controls_style";
+                styleSet.ModuleSet = moduleSet;
+                profile.ProfileId = "scene_controls_profile";
+                profile.StyleSet = styleSet;
+                draft.Profile = profile;
+                draft.Seed = 55;
+                draft.GridSize = Vector2Int.one;
+                draft.EnsureCellArray();
+                draft.Cells[0] = new MapGenMockupCell
+                {
+                    State = MapGenCellState.Room,
+                    RegionId = 3,
+                    RoomCategory = MapGenRoomCategory.Start
+                };
+                draft.Accept();
+
+                firstRoot = MapGenMockupMaterializer.Materialize(draft, MapGenV2SceneOutputMode.ReplacePreviousRoot);
+                Assert.That(firstRoot, Is.Not.Null);
+                Assert.That(firstRoot.name, Is.EqualTo("MapGenV2_scene_controls_profile_55"));
+                Assert.That(firstRoot.GetComponent<MapGenV2GeneratedMapMarker>(), Is.Not.Null);
+                Assert.That(firstRoot.transform.Find("Floors"), Is.Not.Null);
+                Assert.That(MapGenMockupMaterializer.FindExistingMarker(draft).gameObject, Is.SameAs(firstRoot));
+
+                secondRoot = MapGenMockupMaterializer.Materialize(draft, MapGenV2SceneOutputMode.ReplacePreviousRoot);
+                Assert.That(secondRoot, Is.Not.Null);
+                Assert.That(secondRoot, Is.Not.SameAs(firstRoot));
+                Assert.That(MapGenMockupMaterializer.FindExistingMarker(draft).gameObject, Is.SameAs(secondRoot));
+
+                MapGenMockupMaterializer.ClearRoot(secondRoot);
+                secondRoot = null;
+                Assert.That(MapGenMockupMaterializer.FindExistingMarker(draft), Is.Null);
+            }
+            finally
+            {
+                if (firstRoot != null)
+                {
+                    Object.DestroyImmediate(firstRoot);
+                }
+
+                if (secondRoot != null)
+                {
+                    Object.DestroyImmediate(secondRoot);
+                }
+
+                AssetDatabase.DeleteAsset(tempFolder);
+                Object.DestroyImmediate(draft);
+                Object.DestroyImmediate(profile);
+                Object.DestroyImmediate(styleSet);
+                Object.DestroyImmediate(moduleSet);
+            }
+        }
+
+        [Test]
         public void MockupSolverIsDeterministicForSameSeed()
         {
             var required = new[] { MapGenRoomCategory.Start, MapGenRoomCategory.Quest, MapGenRoomCategory.Exit };
@@ -397,6 +469,28 @@ namespace Conn.Tests.EditMode
             profile.StyleSet = styleSet;
             profile.LayoutRules = ruleSet;
             profile.RoomShapes = new[] { roomShape };
+        }
+
+        private static void EnsureTempFolder(string folder)
+        {
+            if (!AssetDatabase.IsValidFolder("Assets/Conn/Tests"))
+            {
+                AssetDatabase.CreateFolder("Assets/Conn", "Tests");
+            }
+
+            if (!AssetDatabase.IsValidFolder(folder))
+            {
+                AssetDatabase.CreateFolder("Assets/Conn/Tests", "TempMapGenV2Materializer");
+            }
+        }
+
+        private static GameObject CreateTempPrefab(string path, string name)
+        {
+            var instance = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            instance.name = name;
+            var prefab = PrefabUtility.SaveAsPrefabAsset(instance, path);
+            Object.DestroyImmediate(instance);
+            return prefab;
         }
     }
 }

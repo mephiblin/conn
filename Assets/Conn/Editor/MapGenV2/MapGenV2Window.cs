@@ -10,6 +10,7 @@ namespace Conn.MapGenV2.Editor
         private const string ProfilePathKey = "Conn.MapGenV2.Window.ProfilePath";
         private const string DraftPathKey = "Conn.MapGenV2.Window.DraftPath";
         private const string PreviewCellSizeKey = "Conn.MapGenV2.Window.PreviewCellSize";
+        private const string OutputModeKey = "Conn.MapGenV2.Window.OutputMode";
         private const string DraftFolder = "Assets/Conn/Authoring/MapGenV2/Drafts";
         private const string MaterializedPrefabFolder = "Assets/Conn/Authoring/MapGenV2/MaterializedPrefabs";
         private const string BakedMapFolder = "Assets/Conn/Core/MapGenV2/BakedMaps";
@@ -32,6 +33,8 @@ namespace Conn.MapGenV2.Editor
         private bool hasSelectedCell;
         private int selectedRegionId = -1;
         private float previewCellSize = 18f;
+        private GameObject selectedMaterializedRoot;
+        private MapGenV2SceneOutputMode outputMode = MapGenV2SceneOutputMode.ReplacePreviousRoot;
         private string lastOperationResult = "아직 실행한 작업이 없습니다. / No operation has run yet.";
 
         [MenuItem("Conn/MapGenV2/Map Generator")]
@@ -51,6 +54,7 @@ namespace Conn.MapGenV2.Editor
         private void OnEnable()
         {
             previewCellSize = EditorPrefs.GetFloat(PreviewCellSizeKey, previewCellSize);
+            outputMode = (MapGenV2SceneOutputMode)EditorPrefs.GetInt(OutputModeKey, (int)outputMode);
             profile = LoadAssetFromEditorPrefs<MapGenProfileAsset>(ProfilePathKey);
             draft = LoadAssetFromEditorPrefs<MapGenMockupDraftAsset>(DraftPathKey);
         }
@@ -99,6 +103,7 @@ namespace Conn.MapGenV2.Editor
             DrawDraftActions(workflow);
             DrawOutputPaths();
             DrawLinkedAssetShortcuts();
+            DrawSceneOutputControls(workflow);
             DrawDraftSummaryAndPreview();
             EditorGUILayout.EndScrollView();
         }
@@ -227,6 +232,100 @@ namespace Conn.MapGenV2.Editor
             }
         }
 
+        private void DrawSceneOutputControls(MapGenV2WorkflowStatus workflow)
+        {
+            EditorGUILayout.Space(4f);
+            EditorGUILayout.LabelField("씬 출력 / Scene Output", EditorStyles.boldLabel);
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                EditorGUI.BeginChangeCheck();
+                outputMode = (MapGenV2SceneOutputMode)EditorGUILayout.EnumPopup("출력 모드 / Output Mode", outputMode);
+                selectedMaterializedRoot = (GameObject)EditorGUILayout.ObjectField("Materialized Root", selectedMaterializedRoot, typeof(GameObject), true);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    SaveWindowState();
+                }
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (GUILayout.Button("Find Previous Root"))
+                    {
+                        var marker = MapGenMockupMaterializer.FindExistingMarker(draft);
+                        selectedMaterializedRoot = marker != null ? marker.gameObject : null;
+                        lastOperationResult = selectedMaterializedRoot != null
+                            ? $"Found materialized root: {selectedMaterializedRoot.name}."
+                            : "No previous materialized root found for the selected draft.";
+                    }
+
+                    using (new EditorGUI.DisabledScope(selectedMaterializedRoot == null))
+                    {
+                        if (GUILayout.Button("Select Materialized Root"))
+                        {
+                            Selection.activeGameObject = selectedMaterializedRoot;
+                            EditorGUIUtility.PingObject(selectedMaterializedRoot);
+                        }
+
+                        if (GUILayout.Button("Frame Materialized Root"))
+                        {
+                            FrameSelectedRoot();
+                        }
+                    }
+                }
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    using (new EditorGUI.DisabledScope(selectedMaterializedRoot == null))
+                    {
+                        if (GUILayout.Button("Clear Previous Materialization"))
+                        {
+                            MapGenMockupMaterializer.ClearRoot(selectedMaterializedRoot);
+                            selectedMaterializedRoot = null;
+                            lastOperationResult = "Cleared selected materialized root.";
+                        }
+
+                        if (GUILayout.Button("Save Materialized As Prefab"))
+                        {
+                            SaveSelectedRootAsPrefab();
+                        }
+                    }
+                }
+
+                if (!workflow.CanMaterialize)
+                {
+                    EditorGUILayout.HelpBox($"Materialize To Scene is unavailable: {workflow.MaterializeReason}", MessageType.Info);
+                }
+            }
+        }
+
+        private void FrameSelectedRoot()
+        {
+            if (selectedMaterializedRoot == null)
+            {
+                return;
+            }
+
+            Selection.activeGameObject = selectedMaterializedRoot;
+            if (SceneView.lastActiveSceneView != null)
+            {
+                SceneView.lastActiveSceneView.FrameSelected();
+            }
+        }
+
+        private void SaveSelectedRootAsPrefab()
+        {
+            if (selectedMaterializedRoot == null)
+            {
+                return;
+            }
+
+            MapGenV2AssetFolderUtility.CreateDefaultFolders();
+            var path = AssetDatabase.GenerateUniqueAssetPath($"{MaterializedPrefabFolder}/{selectedMaterializedRoot.name}.prefab");
+            var prefab = PrefabUtility.SaveAsPrefabAsset(selectedMaterializedRoot, path);
+            lastOperationResult = prefab != null
+                ? $"Saved materialized prefab: {path}."
+                : "Save Materialized As Prefab failed.";
+        }
+
         private void DrawDraftActions(MapGenV2WorkflowStatus workflow)
         {
             if (draft == null)
@@ -293,7 +392,8 @@ namespace Conn.MapGenV2.Editor
                 {
                     if (GUILayout.Button("Materialize To Scene"))
                     {
-                        var root = MapGenMockupMaterializer.Materialize(draft);
+                        var root = MapGenMockupMaterializer.Materialize(draft, outputMode, selectedMaterializedRoot);
+                        selectedMaterializedRoot = root;
                         lastOperationResult = root != null
                             ? $"Materialized scene root: {root.name}."
                             : "Materialize To Scene failed. Check accepted state and module coverage.";
@@ -355,6 +455,7 @@ namespace Conn.MapGenV2.Editor
             SaveAssetToEditorPrefs(ProfilePathKey, profile);
             SaveAssetToEditorPrefs(DraftPathKey, draft);
             EditorPrefs.SetFloat(PreviewCellSizeKey, previewCellSize);
+            EditorPrefs.SetInt(OutputModeKey, (int)outputMode);
         }
 
         private static void SaveAssetToEditorPrefs(string key, Object asset)

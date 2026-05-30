@@ -362,6 +362,9 @@ Progress note 2026-05-31:
   draft reference.
 - Materialization now creates standard child groups for Floors, Corridors,
   Walls, Ceilings, Doors, Props, Navigation, and Debug.
+- `MapGenV2Window` now exposes scene output controls to find/select/frame/clear
+  the previous root, choose create/replace/update output mode, and save the
+  selected materialized root as a prefab.
 
 Goal: make scene materialization manageable instead of dumping duplicate roots.
 
@@ -371,15 +374,15 @@ Tasks:
   `MapGenV2GeneratedMapMarker`.
 - [x] Store profile id, seed, draft signature, style id, generated time, and
   source draft reference on the root marker.
-- [ ] Add `Select Materialized Root`.
-- [ ] Add `Frame Materialized Root`.
-- [ ] Add `Clear Previous Materialization`.
-- [ ] Add output mode:
+- [x] Add `Select Materialized Root`.
+- [x] Add `Frame Materialized Root`.
+- [x] Add `Clear Previous Materialization`.
+- [x] Add output mode:
   create new root, replace previous root, or update selected root.
-- [ ] Add `Save Materialized As Prefab`.
+- [x] Add `Save Materialized As Prefab`.
 - [ ] Add configurable materialized prefab folder.
-- [ ] Avoid duplicate roots unless explicitly requested.
-- [ ] Add undo support for materialization and clear operations.
+- [x] Avoid duplicate roots unless explicitly requested.
+- [x] Add undo support for materialization and clear operations.
 
 Acceptance:
 

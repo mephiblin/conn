@@ -4,12 +4,23 @@ using System;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace Conn.MapGenV2.Editor
 {
+    public enum MapGenV2SceneOutputMode
+    {
+        CreateNewRoot,
+        ReplacePreviousRoot,
+        UpdateSelectedRoot
+    }
+
     public static class MapGenMockupMaterializer
     {
-        public static GameObject Materialize(MapGenMockupDraftAsset draft)
+        public static GameObject Materialize(
+            MapGenMockupDraftAsset draft,
+            MapGenV2SceneOutputMode outputMode = MapGenV2SceneOutputMode.CreateNewRoot,
+            GameObject selectedRoot = null)
         {
             if (draft == null || draft.Profile == null || draft.Profile.StyleSet == null || draft.Profile.StyleSet.ModuleSet == null)
             {
@@ -28,8 +39,23 @@ namespace Conn.MapGenV2.Editor
 
             var moduleSet = draft.Profile.StyleSet.ModuleSet;
             var requests = MapGenMaterializationClassifier.Classify(draft.Width, draft.Height, draft.Cells);
+            var targetRoot = ResolveTargetRoot(draft, outputMode, selectedRoot);
+            if (targetRoot != null)
+            {
+                ClearChildren(targetRoot);
+            }
+
             var root = new GameObject($"MapGenV2_{draft.Profile.ProfileId}_{draft.Seed}");
-            Undo.RegisterCreatedObjectUndo(root, "Materialize MapGen Mockup");
+            if (targetRoot != null)
+            {
+                root = targetRoot;
+                root.name = $"MapGenV2_{draft.Profile.ProfileId}_{draft.Seed}";
+            }
+            else
+            {
+                Undo.RegisterCreatedObjectUndo(root, "Materialize MapGen Mockup");
+            }
+
             var marker = Undo.AddComponent<MapGenV2GeneratedMapMarker>(root);
             marker.PopulateFromDraft(draft, DateTime.UtcNow.ToString("O"));
 
@@ -63,6 +89,88 @@ namespace Conn.MapGenV2.Editor
 
             EditorUtility.SetDirty(marker);
             return root;
+        }
+
+        public static MapGenV2GeneratedMapMarker FindExistingMarker(MapGenMockupDraftAsset draft)
+        {
+            foreach (var marker in Resources.FindObjectsOfTypeAll<MapGenV2GeneratedMapMarker>())
+            {
+                if (marker == null || marker.gameObject == null)
+                {
+                    continue;
+                }
+
+                if (EditorUtility.IsPersistent(marker) || !marker.gameObject.scene.IsValid())
+                {
+                    continue;
+                }
+
+                if (draft != null && marker.SourceDraft == draft)
+                {
+                    return marker;
+                }
+
+                if (draft != null
+                    && draft.Profile != null
+                    && marker.ProfileId == draft.Profile.ProfileId
+                    && marker.Seed == draft.Seed
+                    && marker.DraftSignature == draft.AcceptedSignature)
+                {
+                    return marker;
+                }
+            }
+
+            return null;
+        }
+
+        public static void ClearRoot(GameObject root)
+        {
+            if (root == null)
+            {
+                return;
+            }
+
+            Undo.DestroyObjectImmediate(root);
+        }
+
+        private static GameObject ResolveTargetRoot(
+            MapGenMockupDraftAsset draft,
+            MapGenV2SceneOutputMode outputMode,
+            GameObject selectedRoot)
+        {
+            switch (outputMode)
+            {
+                case MapGenV2SceneOutputMode.ReplacePreviousRoot:
+                    var previous = FindExistingMarker(draft);
+                    if (previous != null)
+                    {
+                        ClearRoot(previous.gameObject);
+                    }
+
+                    return null;
+                case MapGenV2SceneOutputMode.UpdateSelectedRoot:
+                    return IsSceneRoot(selectedRoot) ? selectedRoot : null;
+                default:
+                    return null;
+            }
+        }
+
+        private static bool IsSceneRoot(GameObject root)
+        {
+            return root != null && root.scene.IsValid() && !EditorUtility.IsPersistent(root);
+        }
+
+        private static void ClearChildren(GameObject root)
+        {
+            for (var i = root.transform.childCount - 1; i >= 0; i--)
+            {
+                Undo.DestroyObjectImmediate(root.transform.GetChild(i).gameObject);
+            }
+
+            foreach (var marker in root.GetComponents<MapGenV2GeneratedMapMarker>())
+            {
+                Undo.DestroyObjectImmediate(marker);
+            }
         }
 
         private static void CreateStandardGroups(GameObject root, Dictionary<MapGenModuleCategory, Transform> groups)

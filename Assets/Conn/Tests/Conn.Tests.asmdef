@@ -8,7 +8,8 @@
     "Conn.Editor",
     "Conn.EditorWorkspaces",
     "Conn.MapGenV2.Core",
-    "Conn.MapGenV2.Authoring"
+    "Conn.MapGenV2.Authoring",
+    "Conn.MapGenV2.Editor"
   ],
   "includePlatforms": [
     "Editor"
