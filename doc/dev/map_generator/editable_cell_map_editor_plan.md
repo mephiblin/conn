@@ -1094,6 +1094,10 @@ is partially complete.
 - [x] Update `doc/dev/map_generator/README.md` when workflow changes.
 - [x] Document any intentional incompatibility with `MapGeneratorWorkspace`.
 - [x] Add manual Unity test steps for new editor tools.
+  - 2026-05-30: `MapGeneratorWorkspace` now exposes a production scene workflow
+    for generating a connected draft asset, rebuilding preview from that draft,
+    validating it, and baking/saving the compiled map without forcing users to
+    reason about separate asset-first steps.
 - [x] Add screenshots or saved sample assets when the first usable version
   exists.
   - 2026-05-30: Chapter 2 saved `CompiledMapAsset` samples are regenerated

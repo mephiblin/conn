@@ -108,21 +108,27 @@ the legacy graph snapshot.
 Use these steps after pulling the branch:
 
 1. Open Unity and let the project recompile.
-2. Open the existing `MapGenerator` editor scene if you want a legacy debug
-   generation context, or stay in any scene for asset-first checks.
-3. In a `MapGeneratorWorkspace` inspector, generate or capture a layout, then
-   click `Create Editable Draft Asset`.
-4. Select the new draft asset in `Assets/Conn/Authoring/Maps/Drafts`.
-5. Paint directly on the inspector `Map Preview` grid. Choose a brush mode and
-   terrain/material first, then left-click or drag on the preview.
-6. Use `Build Playable From Drawing` to rebuild minimal room, zone, socket, and
+2. Open the existing `MapGenerator` editor scene and select the
+   `MapGeneratorWorkspace`.
+3. In the `Production Scene Workflow` section, click `Generate Draft Asset`.
+   This creates and connects an `EditableMapDraftAsset` without leaving the
+   scene workflow.
+4. Use `Build Scene Map From Draft`, `Validate Draft`, and
+   `Bake + Save Compiled Map` from the same workspace inspector. The connected
+   draft and compiled map asset fields stay on the workspace.
+5. Use `Select Draft Asset` only when you need the detailed draft inspector
+   brush controls.
+6. In the draft inspector, paint directly on the `Map Preview` grid. Choose a
+   brush mode and terrain/material first, then left-click or drag on the
+   preview.
+7. Use `Build Playable From Drawing` to rebuild minimal room, zone, socket, and
    required-route metadata from the painted walkable cells.
-7. Use `Build Scene Map` in the draft inspector and confirm that an
+8. Use `Build Scene Map` in the draft inspector and confirm that an
    `Editable Map Preview Root (...)` scene object appears with terrain, wall,
    slope, stair, object, and overlay children.
-8. Use `Validate` and confirm the draft either passes or reports precise
+9. Use `Validate` and confirm the draft either passes or reports precise
    cell/object/socket errors in the inspector.
-9. Use `Bake Runtime Map` or `Save Compiled Map Asset` and confirm the bake only
+10. Use `Bake Runtime Map` or `Save Compiled Map Asset` and confirm the bake only
    succeeds when validation passes.
 10. Use `Clear Preview` and confirm the preview root is deleted while the draft
    asset data remains unchanged.

@@ -546,6 +546,55 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void MapGeneratorWorkspaceSceneFlowCanLoadDraftPreviewValidateAndBake()
+        {
+            const string draftPath = "Assets/Conn/Authoring/Maps/Drafts/workspace_flow_probe.asset";
+            const string compiledPath = "Assets/Conn/Core/Maps/workspace_flow_probe_CompiledMap.asset";
+            AssetDatabase.DeleteAsset(draftPath);
+            AssetDatabase.DeleteAsset(compiledPath);
+
+            var workspaceObject = new GameObject("Workspace Flow Probe");
+            var workspace = workspaceObject.AddComponent<MapGeneratorWorkspace>();
+            var previewRoot = new GameObject("Workspace Flow Preview Root").transform;
+            previewRoot.SetParent(workspaceObject.transform, false);
+            workspace.PreviewRoot = previewRoot;
+            var profile = MapGenerationCatalog.ChapterTwoFirstSliceProfile();
+            var chunks = MapGenerationCatalog.ChapterTwoFirstSliceChunks();
+            var draft = EditableMapDraftBuilder.BuildGeneratedDraft(profile, chunks, 2001, 1, 0, 0.5f, 0.25f);
+
+            try
+            {
+                AssetDatabase.CreateAsset(draft, draftPath);
+                AssetDatabase.SaveAssets();
+                var loadedDraft = AssetDatabase.LoadAssetAtPath<EditableMapDraftAsset>(draftPath);
+                workspace.CurrentEditableDraft = loadedDraft;
+
+                var preview = EditableMapPreviewMeshBuilder.RebuildPreview(workspace.CurrentEditableDraft);
+                var report = EditableMapValidationService.Validate(workspace.CurrentEditableDraft);
+                var compiled = EditableMapBakeService.Bake(workspace.CurrentEditableDraft);
+                var compiledAsset = EditableMapBakeService.SaveCompiledMapAsset(workspace.CurrentEditableDraft, compiledPath);
+                workspace.CurrentCompiledMapAsset = compiledAsset;
+                workspace.SetGeneratedResult(workspace.CurrentEditableDraft, compiled, report);
+
+                Assert.That(preview, Is.Not.Null);
+                Assert.That(preview.transform.childCount, Is.GreaterThan(0));
+                Assert.That(report.Passed, Is.True, string.Join("\n", report.Errors.ToArray()));
+                Assert.That(compiled.Cells.Count, Is.EqualTo(workspace.CurrentEditableDraft.Width * workspace.CurrentEditableDraft.Height));
+                Assert.That(workspace.CurrentCompiledMapAsset, Is.Not.Null);
+                Assert.That(AssetDatabase.LoadAssetAtPath<CompiledMapAsset>(compiledPath), Is.Not.Null);
+
+                EditableMapPreviewMeshBuilder.ClearPreview(workspace.CurrentEditableDraft);
+                Assert.That(workspace.CurrentEditableDraft.Cells.Length, Is.EqualTo(loadedDraft.Width * loadedDraft.Height));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(workspaceObject);
+                AssetDatabase.DeleteAsset(draftPath);
+                AssetDatabase.DeleteAsset(compiledPath);
+            }
+        }
+
+        [Test]
         public void EditableMapPreviewRectMapsMouseToDraftCell()
         {
             var rect = new Rect(10f, 20f, 80f, 40f);

@@ -33,9 +33,73 @@ namespace Conn.Editor.Maps
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.ClearBeforePreview)));
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.DrawSceneGizmos)));
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.PreviewRoot)));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.CurrentEditableDraft)));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.CurrentCompiledMapAsset)));
 
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Visualization-First Workflow", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Production Scene Workflow", EditorStyles.boldLabel);
+            EditorGUILayout.HelpBox(
+                "Use this section as the main MapGenerator scene flow: generate or load a draft, build the scene preview from that draft, validate, then bake/save the runtime CompiledMap asset.",
+                MessageType.Info);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("Generate Draft Asset"))
+                {
+                    serializedObject.ApplyModifiedProperties();
+                    GenerateDraftAsset(workspace);
+                }
+
+                using (new EditorGUI.DisabledScope(workspace.CurrentEditableDraft == null))
+                {
+                    if (GUILayout.Button("Select Draft Asset"))
+                    {
+                        Selection.activeObject = workspace.CurrentEditableDraft;
+                        EditorGUIUtility.PingObject(workspace.CurrentEditableDraft);
+                    }
+                }
+            }
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                using (new EditorGUI.DisabledScope(workspace.CurrentEditableDraft == null))
+                {
+                    if (GUILayout.Button("Build Scene Map From Draft"))
+                    {
+                        serializedObject.ApplyModifiedProperties();
+                        BuildSceneMapFromCurrentDraft(workspace);
+                    }
+
+                    if (GUILayout.Button("Validate Draft"))
+                    {
+                        serializedObject.ApplyModifiedProperties();
+                        ValidateCurrentDraft(workspace);
+                    }
+                }
+            }
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                using (new EditorGUI.DisabledScope(workspace.CurrentEditableDraft == null))
+                {
+                    if (GUILayout.Button("Bake + Save Compiled Map"))
+                    {
+                        serializedObject.ApplyModifiedProperties();
+                        BakeAndSaveCurrentDraft(workspace);
+                    }
+                }
+
+                using (new EditorGUI.DisabledScope(workspace.CurrentCompiledMapAsset == null))
+                {
+                    if (GUILayout.Button("Select Compiled Map"))
+                    {
+                        Selection.activeObject = workspace.CurrentCompiledMapAsset;
+                        EditorGUIUtility.PingObject(workspace.CurrentCompiledMapAsset);
+                    }
+                }
+            }
+
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Legacy Snapshot Workflow", EditorStyles.boldLabel);
             EditorGUILayout.HelpBox(
                 "Capture Layout Snapshot generates once from the current seed and serializes PreviewRooms, PreviewEdges, and PreviewPlacements for gizmos. Build Scene Preview From Captured Snapshot uses only those serialized arrays.",
                 MessageType.Info);
@@ -208,12 +272,117 @@ namespace Conn.Editor.Maps
                 var assetPath = EditableMapDraftBuilder.BuildDefaultAssetPath($"{generated.Draft.SourceProfileId}_{generated.Draft.Seed}_draft");
                 var draftAsset = EditableMapDraftBuilder.CreateDraftAssetFromSource(assetPath, generated.Draft);
 
+                Undo.RecordObject(workspace, "Connect Editable Draft Asset");
+                workspace.CurrentEditableDraft = draftAsset;
+                workspace.SetGeneratedResult(draftAsset, generated.Compiled, generated.Report);
+                EditorUtility.SetDirty(workspace);
+                MarkSceneDirty(workspace);
                 Selection.activeObject = draftAsset;
                 EditorGUIUtility.PingObject(draftAsset);
             }
             catch (Exception exception)
             {
                 Debug.LogException(exception);
+            }
+        }
+
+        private static void GenerateDraftAsset(MapGeneratorWorkspace workspace)
+        {
+            try
+            {
+                var generated = Generate(workspace);
+                var assetPath = EditableMapDraftBuilder.BuildDefaultAssetPath($"{generated.Draft.SourceProfileId}_{generated.Draft.Seed}_draft");
+                var draftAsset = EditableMapDraftBuilder.CreateDraftAssetFromSource(assetPath, generated.Draft);
+                var report = EditableMapValidationService.Validate(draftAsset);
+                var compiled = report.Passed ? EditableMapBakeService.Bake(draftAsset) : null;
+
+                Undo.RecordObject(workspace, "Generate Connected Editable Draft");
+                workspace.CurrentEditableDraft = draftAsset;
+                workspace.SetGeneratedResult(draftAsset, compiled, report);
+                EditorUtility.SetDirty(workspace);
+                MarkSceneDirty(workspace);
+                Selection.activeObject = draftAsset;
+                EditorGUIUtility.PingObject(draftAsset);
+
+                if (workspace.ClearBeforePreview)
+                {
+                    ClearPreviewWithUndo(workspace, "Generate Connected Editable Draft");
+                    EditableMapPreviewMeshBuilder.ClearPreview(draftAsset);
+                }
+
+                EditableMapPreviewMeshBuilder.RebuildPreview(draftAsset);
+            }
+            catch (Exception exception)
+            {
+                RecordGenerationException(workspace, "Generate Connected Editable Draft", exception);
+            }
+        }
+
+        private static void BuildSceneMapFromCurrentDraft(MapGeneratorWorkspace workspace)
+        {
+            if (workspace.CurrentEditableDraft == null)
+            {
+                return;
+            }
+
+            if (workspace.ClearBeforePreview)
+            {
+                ClearPreviewWithUndo(workspace, "Build Scene Map From Draft");
+                EditableMapPreviewMeshBuilder.ClearPreview(workspace.CurrentEditableDraft);
+            }
+
+            EditableMapPreviewMeshBuilder.RebuildPreview(workspace.CurrentEditableDraft);
+            var report = EditableMapValidationService.Validate(workspace.CurrentEditableDraft);
+            CompiledMap compiled = null;
+            if (report.Passed)
+            {
+                compiled = EditableMapBakeService.Bake(workspace.CurrentEditableDraft);
+            }
+
+            Undo.RecordObject(workspace, "Build Scene Map From Draft");
+            workspace.SetGeneratedResult(workspace.CurrentEditableDraft, compiled, report);
+            EditorUtility.SetDirty(workspace);
+            MarkSceneDirty(workspace);
+        }
+
+        private static void ValidateCurrentDraft(MapGeneratorWorkspace workspace)
+        {
+            if (workspace.CurrentEditableDraft == null)
+            {
+                return;
+            }
+
+            var report = EditableMapValidationService.Validate(workspace.CurrentEditableDraft);
+            Undo.RecordObject(workspace, "Validate Connected Draft");
+            workspace.SetGeneratedResult(workspace.CurrentEditableDraft, null, report);
+            EditorUtility.SetDirty(workspace);
+            MarkSceneDirty(workspace);
+        }
+
+        private static void BakeAndSaveCurrentDraft(MapGeneratorWorkspace workspace)
+        {
+            if (workspace.CurrentEditableDraft == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var compiled = EditableMapBakeService.Bake(workspace.CurrentEditableDraft);
+                var report = EditableMapValidationService.Validate(workspace.CurrentEditableDraft);
+                var asset = EditableMapBakeService.SaveCompiledMapAsset(workspace.CurrentEditableDraft);
+
+                Undo.RecordObject(workspace, "Bake Connected Draft");
+                workspace.CurrentCompiledMapAsset = asset;
+                workspace.SetGeneratedResult(workspace.CurrentEditableDraft, compiled, report);
+                EditorUtility.SetDirty(workspace);
+                MarkSceneDirty(workspace);
+                Selection.activeObject = asset;
+                EditorGUIUtility.PingObject(asset);
+            }
+            catch (Exception exception)
+            {
+                RecordGenerationException(workspace, "Bake Connected Draft", exception);
             }
         }
 

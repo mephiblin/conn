@@ -5,7 +5,8 @@
     "Conn.Core",
     "Conn.Runtime",
     "Conn.Authoring",
-    "Conn.Editor"
+    "Conn.Editor",
+    "Conn.EditorWorkspaces"
   ],
   "includePlatforms": [
     "Editor"

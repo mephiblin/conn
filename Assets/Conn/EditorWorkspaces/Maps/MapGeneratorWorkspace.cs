@@ -22,6 +22,8 @@ namespace Conn.Editor.Maps
         public float PreviewCellSize = 0.28f;
         public float PreviewWallHeight = 0.75f;
         public bool ClearBeforePreview = true;
+        public EditableMapDraftAsset CurrentEditableDraft;
+        public CompiledMapAsset CurrentCompiledMapAsset;
         public string LastGeneratedMapId = string.Empty;
         public string LastGeneratedProfileId = string.Empty;
         public int LastGeneratedSeed;
@@ -76,6 +78,10 @@ namespace Conn.Editor.Maps
             LastEditableDraft = draft;
             LastCompiled = compiled;
             LastReport = report;
+            if (draft != null && (draft.hideFlags & HideFlags.DontSave) == 0)
+            {
+                CurrentEditableDraft = draft;
+            }
             LastGeneratedMapId = compiled != null ? compiled.MapId : string.Empty;
             LastGeneratedProfileId = compiled != null ? compiled.ProfileId : draft?.SourceProfileId ?? string.Empty;
             LastGeneratedSeed = compiled?.Seed ?? draft?.Seed ?? 0;
