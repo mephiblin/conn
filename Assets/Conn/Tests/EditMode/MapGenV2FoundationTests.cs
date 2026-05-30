@@ -2474,6 +2474,37 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void PostProcessorReportsConfiguredPassOrderAndSignatures()
+        {
+            var cells = new MapGenMockupCell[25];
+            for (var i = 0; i < cells.Length; i++)
+            {
+                cells[i] = MapGenMockupCell.Empty;
+            }
+
+            cells[0] = new MapGenMockupCell { State = MapGenCellState.Room, RoomCategory = MapGenRoomCategory.Start };
+            cells[24] = new MapGenMockupCell { State = MapGenCellState.Room, RoomCategory = MapGenRoomCategory.Exit };
+
+            var report = MapGenMockupPostProcessor.Apply(5, 5, cells, new MapGenPostProcessOptions
+            {
+                UseDirectRoutes = true,
+                FillEnclosedEmptySpace = true,
+                MaxPasses = 1,
+                PassOrder = new[]
+                {
+                    MapGenPostProcessPassKind.FillEnclosedEmptySpace,
+                    MapGenPostProcessPassKind.AddDirectRoutes
+                }
+            });
+
+            Assert.That(report.PassReports, Has.Length.EqualTo(2));
+            Assert.That(report.PassReports[0].PassKind, Is.EqualTo(MapGenPostProcessPassKind.FillEnclosedEmptySpace));
+            Assert.That(report.PassReports[1].PassKind, Is.EqualTo(MapGenPostProcessPassKind.AddDirectRoutes));
+            Assert.That(report.PassReports[1].ChangedCells, Is.EqualTo(report.DirectRouteCellsAdded));
+            Assert.That(report.PassReports[1].BeforeSignature, Is.Not.EqualTo(report.PassReports[1].AfterSignature));
+        }
+
+        [Test]
         public void MockupDraftPostProcessingUsesStructuredRuleSettings()
         {
             var draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();

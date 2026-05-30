@@ -1,5 +1,13 @@
 namespace Conn.MapGenV2.Core
 {
+    public enum MapGenPostProcessPassKind
+    {
+        AddDirectRoutes,
+        FillEnclosedEmptySpace,
+        ReduceDeadEnds,
+        RemoveSmallRooms
+    }
+
     public struct MapGenPostProcessOptions
     {
         public bool UseDirectRoutes;
@@ -7,5 +15,6 @@ namespace Conn.MapGenV2.Core
         public bool RemoveSmallRooms;
         public bool FillEnclosedEmptySpace;
         public int MaxPasses;
+        public MapGenPostProcessPassKind[] PassOrder;
     }
 }

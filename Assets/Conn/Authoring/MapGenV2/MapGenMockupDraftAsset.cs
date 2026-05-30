@@ -201,6 +201,7 @@ namespace Conn.MapGenV2.Authoring
                 options.RemoveSmallRooms = rules.RemoveSmallRooms;
                 options.FillEnclosedEmptySpace = rules.FillEnclosedEmptySpace;
                 options.MaxPasses = rules.MaxPasses;
+                options.PassOrder = rules.PassOrder;
             }
 
             var report = MapGenMockupPostProcessor.Apply(Width, Height, Cells, options, shouldCancel);
@@ -707,6 +708,11 @@ namespace Conn.MapGenV2.Authoring
             Add(ref hash, ruleSet.PostProcessRules.RemoveSmallRooms ? 1 : 0);
             Add(ref hash, ruleSet.PostProcessRules.FillEnclosedEmptySpace ? 1 : 0);
             Add(ref hash, ruleSet.PostProcessRules.MaxPasses);
+            foreach (var pass in ruleSet.PostProcessRules.PassOrder ?? Array.Empty<MapGenPostProcessPassKind>())
+            {
+                Add(ref hash, (int)pass);
+            }
+
             AddPropRules(ref hash, ruleSet.PropPlacementRules);
         }
 

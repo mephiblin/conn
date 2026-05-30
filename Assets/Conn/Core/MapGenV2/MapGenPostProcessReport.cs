@@ -1,7 +1,28 @@
 namespace Conn.MapGenV2.Core
 {
+    public sealed class MapGenPostProcessPassReport
+    {
+        public MapGenPostProcessPassKind PassKind { get; set; }
+
+        public int PassIndex { get; set; }
+
+        public int ChangedCells { get; set; }
+
+        public bool RolledBack { get; set; }
+
+        public bool ConnectivityValid { get; set; } = true;
+
+        public string BeforeSignature { get; set; } = string.Empty;
+
+        public string AfterSignature { get; set; } = string.Empty;
+    }
+
     public sealed class MapGenPostProcessReport
     {
+        private MapGenPostProcessPassReport[] passReports = System.Array.Empty<MapGenPostProcessPassReport>();
+
+        public MapGenPostProcessPassReport[] PassReports => passReports;
+
         public int DirectRouteCellsAdded { get; set; }
 
         public int DeadEndCorridorsRemoved { get; set; }
@@ -22,5 +43,16 @@ namespace Conn.MapGenV2.Core
             || DeadEndCorridorsRemoved > 0
             || IsolatedRoomsRemoved > 0
             || EnclosedEmptyCellsFilled > 0;
+
+        public void AddPassReport(MapGenPostProcessPassReport passReport)
+        {
+            if (passReport == null)
+            {
+                return;
+            }
+
+            System.Array.Resize(ref passReports, passReports.Length + 1);
+            passReports[passReports.Length - 1] = passReport;
+        }
     }
 }

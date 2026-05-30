@@ -18,6 +18,7 @@ namespace Conn.MapGenV2.Core
             }
 
             var maxPasses = Math.Max(1, options.MaxPasses);
+            var passOrder = ResolvePassOrder(options);
             for (var pass = 0; pass < maxPasses; pass++)
             {
                 if (shouldCancel != null && shouldCancel())
@@ -29,55 +30,127 @@ namespace Conn.MapGenV2.Core
                 var snapshot = CopyCells(cells);
                 var requiresConnectivity = HasRequiredRooms(width, snapshot);
                 var changed = false;
-                var directRouteCellsAdded = 0;
-                var deadEndCorridorsRemoved = 0;
-                var isolatedRoomsRemoved = 0;
-                var enclosedEmptyCellsFilled = 0;
-                if (options.UseDirectRoutes)
+                for (var passOrderIndex = 0; passOrderIndex < passOrder.Length; passOrderIndex++)
                 {
-                    directRouteCellsAdded = AddDirectRoute(width, height, cells);
-                    changed |= directRouteCellsAdded > 0;
+                    var passKind = passOrder[passOrderIndex];
+                    if (!IsPassEnabled(options, passKind))
+                    {
+                        continue;
+                    }
+
+                    var beforePass = CopyCells(cells);
+                    var beforeSignature = BuildCellStateSignature(beforePass);
+                    var changedCells = ApplyPass(passKind, width, height, cells);
+                    changed |= changedCells > 0;
+
+                    report.PassesRun++;
+                    var connectivityValid = HasRequiredTraversal(width, height, cells, requiresConnectivity);
+                    var rolledBack = changedCells > 0 && !connectivityValid;
+                    if (rolledBack)
+                    {
+                        Array.Copy(beforePass, cells, beforePass.Length);
+                        connectivityValid = HasRequiredTraversal(width, height, cells, requiresConnectivity);
+                        report.Rollbacks++;
+                    }
+
+                    AddPassCount(report, passKind, rolledBack ? 0 : changedCells);
+                    report.RequiredConnectivityValid = connectivityValid;
+                    report.AddPassReport(new MapGenPostProcessPassReport
+                    {
+                        PassKind = passKind,
+                        PassIndex = pass,
+                        ChangedCells = rolledBack ? 0 : changedCells,
+                        RolledBack = rolledBack,
+                        ConnectivityValid = connectivityValid,
+                        BeforeSignature = beforeSignature,
+                        AfterSignature = BuildCellStateSignature(cells)
+                    });
+
+                    if (rolledBack)
+                    {
+                        break;
+                    }
                 }
 
-                if (options.FillEnclosedEmptySpace)
+                if (!changed || report.Rollbacks > 0)
                 {
-                    enclosedEmptyCellsFilled = FillEnclosedEmptySpace(width, height, cells);
-                    changed |= enclosedEmptyCellsFilled > 0;
-                }
+                    if (report.Rollbacks > 0)
+                    {
+                        Array.Copy(snapshot, cells, snapshot.Length);
+                        report.RequiredConnectivityValid = HasRequiredTraversal(width, height, cells, requiresConnectivity);
+                    }
 
-                if (options.ReduceDeadEnds)
-                {
-                    deadEndCorridorsRemoved = RemoveDeadEndCorridors(width, height, cells);
-                    changed |= deadEndCorridorsRemoved > 0;
-                }
-
-                if (options.RemoveSmallRooms)
-                {
-                    isolatedRoomsRemoved = RemoveIsolatedRooms(width, height, cells);
-                    changed |= isolatedRoomsRemoved > 0;
-                }
-
-                report.PassesRun++;
-                report.RequiredConnectivityValid = HasRequiredTraversal(width, height, cells, requiresConnectivity);
-                if (changed && !report.RequiredConnectivityValid)
-                {
-                    Array.Copy(snapshot, cells, snapshot.Length);
-                    report.RequiredConnectivityValid = HasRequiredTraversal(width, height, cells, requiresConnectivity);
-                    report.Rollbacks++;
-                    break;
-                }
-
-                report.DirectRouteCellsAdded += directRouteCellsAdded;
-                report.DeadEndCorridorsRemoved += deadEndCorridorsRemoved;
-                report.IsolatedRoomsRemoved += isolatedRoomsRemoved;
-                report.EnclosedEmptyCellsFilled += enclosedEmptyCellsFilled;
-                if (!changed)
-                {
                     break;
                 }
             }
 
             return report;
+        }
+
+        private static MapGenPostProcessPassKind[] ResolvePassOrder(MapGenPostProcessOptions options)
+        {
+            return options.PassOrder != null && options.PassOrder.Length > 0
+                ? options.PassOrder
+                : new[]
+                {
+                    MapGenPostProcessPassKind.AddDirectRoutes,
+                    MapGenPostProcessPassKind.FillEnclosedEmptySpace,
+                    MapGenPostProcessPassKind.ReduceDeadEnds,
+                    MapGenPostProcessPassKind.RemoveSmallRooms
+                };
+        }
+
+        private static bool IsPassEnabled(MapGenPostProcessOptions options, MapGenPostProcessPassKind passKind)
+        {
+            switch (passKind)
+            {
+                case MapGenPostProcessPassKind.AddDirectRoutes:
+                    return options.UseDirectRoutes;
+                case MapGenPostProcessPassKind.FillEnclosedEmptySpace:
+                    return options.FillEnclosedEmptySpace;
+                case MapGenPostProcessPassKind.ReduceDeadEnds:
+                    return options.ReduceDeadEnds;
+                case MapGenPostProcessPassKind.RemoveSmallRooms:
+                    return options.RemoveSmallRooms;
+                default:
+                    return false;
+            }
+        }
+
+        private static int ApplyPass(MapGenPostProcessPassKind passKind, int width, int height, MapGenMockupCell[] cells)
+        {
+            switch (passKind)
+            {
+                case MapGenPostProcessPassKind.AddDirectRoutes:
+                    return AddDirectRoute(width, height, cells);
+                case MapGenPostProcessPassKind.FillEnclosedEmptySpace:
+                    return FillEnclosedEmptySpace(width, height, cells);
+                case MapGenPostProcessPassKind.ReduceDeadEnds:
+                    return RemoveDeadEndCorridors(width, height, cells);
+                case MapGenPostProcessPassKind.RemoveSmallRooms:
+                    return RemoveIsolatedRooms(width, height, cells);
+                default:
+                    return 0;
+            }
+        }
+
+        private static void AddPassCount(MapGenPostProcessReport report, MapGenPostProcessPassKind passKind, int changedCells)
+        {
+            switch (passKind)
+            {
+                case MapGenPostProcessPassKind.AddDirectRoutes:
+                    report.DirectRouteCellsAdded += changedCells;
+                    break;
+                case MapGenPostProcessPassKind.FillEnclosedEmptySpace:
+                    report.EnclosedEmptyCellsFilled += changedCells;
+                    break;
+                case MapGenPostProcessPassKind.ReduceDeadEnds:
+                    report.DeadEndCorridorsRemoved += changedCells;
+                    break;
+                case MapGenPostProcessPassKind.RemoveSmallRooms:
+                    report.IsolatedRoomsRemoved += changedCells;
+                    break;
+            }
         }
 
         public static MapGenValidationReport ValidateSafety(
@@ -166,6 +239,25 @@ namespace Conn.MapGenV2.Core
             var copy = new MapGenMockupCell[cells.Length];
             Array.Copy(cells, copy, cells.Length);
             return copy;
+        }
+
+        private static string BuildCellStateSignature(MapGenMockupCell[] cells)
+        {
+            unchecked
+            {
+                var hash = 1469598103934665603UL;
+                foreach (var cell in cells ?? Array.Empty<MapGenMockupCell>())
+                {
+                    hash ^= (ulong)(int)cell.State;
+                    hash *= 1099511628211UL;
+                    hash ^= (ulong)Math.Max(0, cell.RegionId + 1);
+                    hash *= 1099511628211UL;
+                    hash ^= (ulong)(int)cell.RoomCategory;
+                    hash *= 1099511628211UL;
+                }
+
+                return hash.ToString("X16");
+            }
         }
 
         private static int AddDirectRoute(int width, int height, MapGenMockupCell[] cells)

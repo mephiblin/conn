@@ -677,6 +677,10 @@ Progress note 2026-05-31:
   pass attempt and rollback changes that would break that traversal.
 - Added an enclosed-empty-space fill pass that converts empty cells surrounded
   by navigable neighbors into corridor cells and reports filled cell counts.
+- Post-process execution now has configurable pass order via
+  `MapGenPostProcessRules.PassOrder` and records per-pass reports with pass
+  kind, changed cell count, rollback state, connectivity state, and before/after
+  signatures for preview overlays.
 
 Goal: make post-processing explicit, configurable, visible, and safe.
 
@@ -689,9 +693,9 @@ Tasks:
   merge compatible adjacent rooms.
 - [x] Implement enclosed-empty-space fill pass.
 - [ ] Extend fill pass to designer-selected empty-space masks.
-- [ ] Each pass must report what changed.
+- [x] Each pass must report what changed.
 - [ ] Add per-pass before/after overlay in preview.
-- [ ] Add pass order configuration.
+- [x] Add pass order configuration.
 - [x] Add connectivity validation after every pass.
 - [x] Add rollback if a pass breaks required traversal.
 
