@@ -19,29 +19,43 @@ namespace Conn.MapGenV2.Core
             var maxPasses = Math.Max(1, options.MaxPasses);
             for (var pass = 0; pass < maxPasses; pass++)
             {
+                var snapshot = CopyCells(cells);
+                var requiresConnectivity = HasRequiredRooms(width, snapshot);
                 var changed = false;
+                var directRouteCellsAdded = 0;
+                var deadEndCorridorsRemoved = 0;
+                var isolatedRoomsRemoved = 0;
                 if (options.UseDirectRoutes)
                 {
-                    var added = AddDirectRoute(width, height, cells);
-                    report.DirectRouteCellsAdded += added;
-                    changed |= added > 0;
+                    directRouteCellsAdded = AddDirectRoute(width, height, cells);
+                    changed |= directRouteCellsAdded > 0;
                 }
 
                 if (options.ReduceDeadEnds)
                 {
-                    var removed = RemoveDeadEndCorridors(width, height, cells);
-                    report.DeadEndCorridorsRemoved += removed;
-                    changed |= removed > 0;
+                    deadEndCorridorsRemoved = RemoveDeadEndCorridors(width, height, cells);
+                    changed |= deadEndCorridorsRemoved > 0;
                 }
 
                 if (options.RemoveSmallRooms)
                 {
-                    var removed = RemoveIsolatedRooms(width, height, cells);
-                    report.IsolatedRoomsRemoved += removed;
-                    changed |= removed > 0;
+                    isolatedRoomsRemoved = RemoveIsolatedRooms(width, height, cells);
+                    changed |= isolatedRoomsRemoved > 0;
                 }
 
                 report.PassesRun++;
+                report.RequiredConnectivityValid = HasRequiredTraversal(width, height, cells, requiresConnectivity);
+                if (changed && !report.RequiredConnectivityValid)
+                {
+                    Array.Copy(snapshot, cells, snapshot.Length);
+                    report.RequiredConnectivityValid = HasRequiredTraversal(width, height, cells, requiresConnectivity);
+                    report.Rollbacks++;
+                    break;
+                }
+
+                report.DirectRouteCellsAdded += directRouteCellsAdded;
+                report.DeadEndCorridorsRemoved += deadEndCorridorsRemoved;
+                report.IsolatedRoomsRemoved += isolatedRoomsRemoved;
                 if (!changed)
                 {
                     break;
@@ -49,6 +63,13 @@ namespace Conn.MapGenV2.Core
             }
 
             return report;
+        }
+
+        private static MapGenMockupCell[] CopyCells(MapGenMockupCell[] cells)
+        {
+            var copy = new MapGenMockupCell[cells.Length];
+            Array.Copy(cells, copy, cells.Length);
+            return copy;
         }
 
         private static int AddDirectRoute(int width, int height, MapGenMockupCell[] cells)
@@ -157,6 +178,57 @@ namespace Conn.MapGenV2.Core
             return false;
         }
 
+        private static bool HasRequiredRooms(int width, MapGenMockupCell[] cells)
+        {
+            return TryFindRoom(cells, width, MapGenRoomCategory.Start, out _)
+                && TryFindRoom(cells, width, MapGenRoomCategory.Exit, out _);
+        }
+
+        private static bool HasRequiredTraversal(int width, int height, MapGenMockupCell[] cells, bool requireRequiredRooms)
+        {
+            if (!TryFindRoom(cells, width, MapGenRoomCategory.Start, out var start)
+                || !TryFindRoom(cells, width, MapGenRoomCategory.Exit, out var exit))
+            {
+                return !requireRequiredRooms;
+            }
+
+            var visited = new bool[cells.Length];
+            var queue = new MapGenGridCoord[cells.Length];
+            var head = 0;
+            var tail = 0;
+            queue[tail++] = start;
+            visited[start.ToIndex(width)] = true;
+
+            while (head < tail)
+            {
+                var coord = queue[head++];
+                if (coord == exit)
+                {
+                    return true;
+                }
+
+                foreach (MapGenGridDirection direction in Enum.GetValues(typeof(MapGenGridDirection)))
+                {
+                    var neighbor = coord.Offset(direction);
+                    if (!neighbor.IsInBounds(width, height))
+                    {
+                        continue;
+                    }
+
+                    var index = neighbor.ToIndex(width);
+                    if (visited[index] || !IsNavigable(cells[index].State))
+                    {
+                        continue;
+                    }
+
+                    visited[index] = true;
+                    queue[tail++] = neighbor;
+                }
+            }
+
+            return false;
+        }
+
         private static int CountNavigableNeighbors(int width, int height, MapGenMockupCell[] cells, MapGenGridCoord coord)
         {
             var count = 0;
@@ -169,13 +241,20 @@ namespace Conn.MapGenV2.Core
                 }
 
                 var state = cells[neighbor.ToIndex(width)].State;
-                if (state == MapGenCellState.Room || state == MapGenCellState.Corridor || state == MapGenCellState.Connector)
+                if (IsNavigable(state))
                 {
                     count++;
                 }
             }
 
             return count;
+        }
+
+        private static bool IsNavigable(MapGenCellState state)
+        {
+            return state == MapGenCellState.Room
+                || state == MapGenCellState.Corridor
+                || state == MapGenCellState.Connector;
         }
     }
 }

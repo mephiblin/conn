@@ -10,6 +10,10 @@ namespace Conn.MapGenV2.Core
 
         public int PassesRun { get; set; }
 
+        public int Rollbacks { get; set; }
+
+        public bool RequiredConnectivityValid { get; set; } = true;
+
         public bool Changed => DirectRouteCellsAdded > 0
             || DeadEndCorridorsRemoved > 0
             || IsolatedRoomsRemoved > 0;

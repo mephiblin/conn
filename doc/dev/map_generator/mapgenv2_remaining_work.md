@@ -662,6 +662,8 @@ Progress note 2026-05-31:
   of the legacy top-level booleans as the execution source.
 - Core post-process options include `MaxPasses`, and reports expose
   `PassesRun` alongside per-pass change counts.
+- Post-process passes now validate required Start-to-Exit traversal after each
+  pass attempt and rollback changes that would break that traversal.
 
 Goal: make post-processing explicit, configurable, visible, and safe.
 
@@ -675,8 +677,8 @@ Tasks:
 - [ ] Each pass must report what changed.
 - [ ] Add per-pass before/after overlay in preview.
 - [ ] Add pass order configuration.
-- [ ] Add connectivity validation after every pass.
-- [ ] Add rollback if a pass breaks required traversal.
+- [x] Add connectivity validation after every pass.
+- [x] Add rollback if a pass breaks required traversal.
 
 Acceptance:
 
@@ -687,8 +689,8 @@ Acceptance:
 Verification:
 
 - EditMode test that draft post-processing reads structured rule settings.
+- EditMode test for rollback on invalid pass result.
 - Tests for every pass.
-- Tests for rollback on invalid pass result.
 - Manual Unity check: toggle each pass and inspect diff overlay.
 
 ## Phase 9: Real Module Stamping And Materialization

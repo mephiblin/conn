@@ -1584,6 +1584,31 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void PostProcessorRollsBackPassThatBreaksRequiredTraversal()
+        {
+            var cells = new MapGenMockupCell[9];
+            for (var i = 0; i < cells.Length; i++)
+            {
+                cells[i] = MapGenMockupCell.Empty;
+            }
+
+            cells[0] = new MapGenMockupCell { State = MapGenCellState.Room, RoomCategory = MapGenRoomCategory.Start };
+            cells[8] = new MapGenMockupCell { State = MapGenCellState.Room, RoomCategory = MapGenRoomCategory.Exit };
+
+            var report = MapGenMockupPostProcessor.Apply(3, 3, cells, new MapGenPostProcessOptions
+            {
+                RemoveSmallRooms = true,
+                MaxPasses = 1
+            });
+
+            Assert.That(report.Rollbacks, Is.EqualTo(1));
+            Assert.That(report.RequiredConnectivityValid, Is.False);
+            Assert.That(report.IsolatedRoomsRemoved, Is.Zero);
+            Assert.That(cells[0].State, Is.EqualTo(MapGenCellState.Room));
+            Assert.That(cells[8].State, Is.EqualTo(MapGenCellState.Room));
+        }
+
+        [Test]
         public void MaterializationClassifierCreatesFloorAndWallRequests()
         {
             var cells = new[]
