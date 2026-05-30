@@ -11,3 +11,4 @@ Current replacement planning:
 - [New Map Generator Plan](new_map_generator_plan.md)
 - [MapGenV2 Remaining Work](mapgenv2_remaining_work.md)
 - [MapGenV2 External Reference Review](mapgenv2_external_reference_review.md)
+- [MapGenV2 Goal Execution Guide](mapgenv2_goal_execution_guide.md)

@@ -8,6 +8,11 @@ Status: handoff document for continuing MapGenV2 beyond the current MVP.
 This document is for a new session that needs to continue MapGenV2 toward an
 actual production-ready map generator, not just the current verified MVP.
 
+For `/goal`-based execution, use
+`doc/dev/map_generator/mapgenv2_goal_execution_guide.md` together with this
+roadmap. That guide defines goal format, scope control, per-goal Definition of
+Done, verification levels, inspection checklists, and commit/push rules.
+
 The current implementation proves that the basic data path works:
 
 ```text

@@ -43,6 +43,30 @@ checks.
   `https://docs.unity3d.com/ScriptReference/Handles.html`
 - Unity Localization package documentation:
   `https://docs.unity.cn/Manual/com.unity.localization.html`
+- Scrum.org Definition of Done reference:
+  `https://www.scrum.org/resources/definition-done`
+- Unity Test Framework Edit Mode and Play Mode documentation:
+  `https://docs.unity.cn/Packages/com.unity.test-framework%402.0/manual/edit-mode-vs-play-mode-tests.html`
+- Unity Build Automation unit test documentation:
+  `https://docs.unity.com/en-us/build-automation/reference/unit-tests`
+- Unity Code Coverage package documentation:
+  `https://docs.unity.cn/2023.3/Documentation/Manual/com.unity.testtools.codecoverage.html`
+
+## Goal Execution Documentation Implications
+
+The external references imply that MapGenV2 planning documents should separate
+four kinds of criteria:
+
+- Definition of Done:
+  cross-cutting quality bar for whether a goal can be considered complete.
+- Acceptance criteria:
+  user-visible behavior and data outcomes specific to one goal.
+- Verification criteria:
+  the minimal automated/manual checks required to inspect that goal.
+- Out-of-scope criteria:
+  explicit boundaries that prevent a goal from expanding into unrelated work.
+
+These are captured in `mapgenv2_goal_execution_guide.md`.
 
 ## Already Covered In Current Documents
 
