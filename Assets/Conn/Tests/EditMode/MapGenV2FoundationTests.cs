@@ -181,6 +181,42 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void ModuleSetInspectorSummaryReportsCategoryCoverage()
+        {
+            var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
+            GameObject floor = null;
+            GameObject wall = null;
+
+            try
+            {
+                PopulateMinimumModuleSet(moduleSet, out floor, out wall);
+                moduleSet.WallsCornerInside = moduleSet.WallsStraight;
+                moduleSet.WallsCornerOutside = moduleSet.WallsStraight;
+                moduleSet.InteriorCeilings = moduleSet.FloorsA;
+                moduleSet.ExteriorCeilings = moduleSet.FloorsA;
+                moduleSet.WholeDoors = moduleSet.WallsStraight;
+                moduleSet.PropCategories = moduleSet.FloorsA;
+
+                var summary = MapGenModuleSetAssetEditor.BuildCoverageSummary(moduleSet);
+
+                Assert.That(summary, Does.Contain("Floors 1"));
+                Assert.That(summary, Does.Contain("Walls 1"));
+                Assert.That(summary, Does.Contain("Corners 2"));
+                Assert.That(summary, Does.Contain("Ceilings 2"));
+                Assert.That(summary, Does.Contain("Doors 1"));
+                Assert.That(summary, Does.Contain("Props 1"));
+                Assert.That(summary, Does.Contain("Missing required 0"));
+                Assert.That(summary, Does.Contain("Validation Valid"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(moduleSet);
+                Object.DestroyImmediate(floor);
+                Object.DestroyImmediate(wall);
+            }
+        }
+
+        [Test]
         public void RoomShapeValidatorRejectsConnectorAwayFromEdge()
         {
             var cells = new MapGenShapeCell[9];

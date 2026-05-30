@@ -158,7 +158,7 @@ tool, and generated output workflow.
   categories, validation result.
 - [x] Room shape inspector must show the editable grid first, with dimensions,
   paint tools, connector tools, rotate/flip, and validation next to the grid.
-- [ ] Module set inspector must show category coverage:
+- [x] Module set inspector must show category coverage:
   floors, walls, corners, ceilings, doors, blockers, props, missing categories,
   and weights.
 - [ ] Rule set inspector must show designer-language controls before raw values:
