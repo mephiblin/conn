@@ -156,7 +156,7 @@ tool, and generated output workflow.
 - [x] Profile inspector must show a high-level summary first:
   map size, seed policy, style, rule set, template pools, required room
   categories, validation result.
-- [ ] Room shape inspector must show the editable grid first, with dimensions,
+- [x] Room shape inspector must show the editable grid first, with dimensions,
   paint tools, connector tools, rotate/flip, and validation next to the grid.
 - [ ] Module set inspector must show category coverage:
   floors, walls, corners, ceilings, doors, blockers, props, missing categories,

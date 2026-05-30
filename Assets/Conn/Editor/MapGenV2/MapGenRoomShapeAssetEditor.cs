@@ -1,6 +1,7 @@
 using Conn.MapGenV2.Authoring;
 using Conn.MapGenV2.Core;
 using System;
+using System.Text;
 using UnityEditor;
 using UnityEngine;
 
@@ -25,14 +26,15 @@ namespace Conn.MapGenV2.Editor
             serializedObject.Update();
             var shape = (MapGenRoomShapeAsset)target;
 
-            DrawIdentityFields();
-            serializedObject.ApplyModifiedProperties();
+            DrawAuthoringSummary(shape);
             DrawDimensionField(shape);
-            DrawTransformActions(shape);
             DrawBrushFields(shape);
             DrawCachedPreview(shape);
             DrawGrid(shape);
+            DrawTransformActions(shape);
             DrawValidation(shape);
+            DrawIdentityFields();
+            serializedObject.ApplyModifiedProperties();
         }
 
         private void OnDisable()
@@ -40,8 +42,62 @@ namespace Conn.MapGenV2.Editor
             previewCache.Dispose();
         }
 
+        public static string BuildAuthoringSummary(MapGenRoomShapeAsset shape)
+        {
+            if (shape == null)
+            {
+                return "Room Shape: (none)";
+            }
+
+            var floorCount = 0;
+            var connectorCount = 0;
+            var blockedCount = 0;
+            for (var y = 0; y < shape.Height; y++)
+            {
+                for (var x = 0; x < shape.Width; x++)
+                {
+                    var cell = shape.GetCell(x, y);
+                    switch (cell.State)
+                    {
+                        case MapGenCellState.Room:
+                            floorCount++;
+                            break;
+                        case MapGenCellState.Connector:
+                            connectorCount++;
+                            break;
+                        case MapGenCellState.Blocked:
+                            blockedCount++;
+                            break;
+                    }
+                }
+            }
+
+            var report = shape.Validate();
+            var builder = new StringBuilder();
+            builder.Append($"Grid {shape.Width}x{shape.Height}");
+            builder.Append($", Paint tools Room/Connector/Blocked");
+            builder.Append($", Connectors {connectorCount}");
+            builder.Append($", Floors {floorCount}");
+            builder.Append($", Blocked {blockedCount}");
+            builder.Append($", Rotate/Flip available");
+            builder.Append($", Validation {(report.IsValid ? "Valid" : $"Issues {report.Issues.Count}")}");
+            return builder.ToString();
+        }
+
+        private static void DrawAuthoringSummary(MapGenRoomShapeAsset shape)
+        {
+            EditorGUILayout.LabelField("방 형태 편집 / Room Shape Authoring", EditorStyles.boldLabel);
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                var style = new GUIStyle(EditorStyles.label) { wordWrap = true };
+                EditorGUILayout.LabelField(BuildAuthoringSummary(shape), style);
+            }
+        }
+
         private void DrawIdentityFields()
         {
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("고급 식별 정보 / Advanced Identity", EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGenRoomShapeAsset.ShapeId)));
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGenRoomShapeAsset.Category)));
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGenRoomShapeAsset.Weight)));

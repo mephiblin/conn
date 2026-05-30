@@ -147,6 +147,40 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void RoomShapeInspectorSummaryPrioritizesGridAuthoring()
+        {
+            var roomShape = ScriptableObject.CreateInstance<MapGenRoomShapeAsset>();
+
+            try
+            {
+                roomShape.ShapeId = "authoring_shape";
+                roomShape.Resize(new Vector2Int(3, 2));
+                roomShape.SetCell(0, 0, new MapGenShapeCell { State = MapGenCellState.Room });
+                roomShape.SetCell(1, 0, new MapGenShapeCell { State = MapGenCellState.Blocked });
+                roomShape.SetCell(2, 0, new MapGenShapeCell
+                {
+                    State = MapGenCellState.Connector,
+                    SocketKind = MapGenSocketKind.Door,
+                    SocketId = "main"
+                });
+
+                var summary = MapGenRoomShapeAssetEditor.BuildAuthoringSummary(roomShape);
+
+                Assert.That(summary, Does.Contain("Grid 3x2"));
+                Assert.That(summary, Does.Contain("Paint tools Room/Connector/Blocked"));
+                Assert.That(summary, Does.Contain("Connectors 1"));
+                Assert.That(summary, Does.Contain("Floors 1"));
+                Assert.That(summary, Does.Contain("Blocked 1"));
+                Assert.That(summary, Does.Contain("Rotate/Flip available"));
+                Assert.That(summary, Does.Contain("Validation Valid"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(roomShape);
+            }
+        }
+
+        [Test]
         public void RoomShapeValidatorRejectsConnectorAwayFromEdge()
         {
             var cells = new MapGenShapeCell[9];
