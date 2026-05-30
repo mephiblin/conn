@@ -220,19 +220,7 @@ namespace Conn.MapGenV2.Editor
             var bakedAsset = LoadExpectedBakedAsset();
             if (bakedAsset != null)
             {
-                var migration = MapGenBakedMapMigration.MigrateInMemory(bakedAsset);
-                if (!migration.IsValid)
-                {
-                    var bakedReport = new MapGenValidationReport();
-                    bakedReport.Add(new MapGenIssue(
-                        MapGenGenerationPhase.BakeRuntime,
-                        "baked_map_version_incompatible",
-                        migration.Message,
-                        "Rebake the runtime asset with the current MapGenV2 runtime.",
-                        severity: MapGenIssueSeverity.Fatal,
-                        contextPath: AssetDatabase.GetAssetPath(bakedAsset)));
-                    report.AddRange(bakedReport, bakedAsset);
-                }
+                report.AddRange(MapGenRuntimeBakeUtility.ValidateConsistency(draft, bakedAsset), bakedAsset);
             }
 
             return report;

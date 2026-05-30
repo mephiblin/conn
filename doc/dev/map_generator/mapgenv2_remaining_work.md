@@ -909,6 +909,8 @@ Progress note 2026-05-31:
   categories now block scene output before creating a partial root, while
   current footprint overlap/bounds checks are reported as warnings until module
   layer semantics are explicit.
+- Added runtime bake consistency validation for stale accepted signatures,
+  dimension mismatches, and baked payload count mismatches.
 
 Goal: make failures actionable.
 
@@ -925,7 +927,7 @@ Tasks:
 - [ ] Validate blocked-region feasibility.
 - [ ] Validate post-process pass safety.
 - [x] Validate materialization coverage before instantiation.
-- [ ] Validate runtime bake consistency after materialization.
+- [x] Validate runtime bake consistency after materialization.
 - [x] Add diagnostics panel in `MapGenV2Window`.
 
 Acceptance:

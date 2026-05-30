@@ -2647,6 +2647,7 @@ namespace Conn.Tests.EditMode
                     marker => marker.Channel == "objective" && marker.RegionId == 7));
                 Assert.That(baked.Regions, Has.Exactly(1).Matches<MapGenBakedRegion>(
                     region => region.RegionId == 7 && region.SourceTemplateId == "quest_template"));
+                Assert.That(MapGenRuntimeBakeUtility.ValidateConsistency(draft, baked).IsValid, Is.True);
             }
             finally
             {
@@ -2655,6 +2656,49 @@ namespace Conn.Tests.EditMode
                 Object.DestroyImmediate(draft);
                 Object.DestroyImmediate(profile);
                 Object.DestroyImmediate(ruleSet);
+            }
+        }
+
+        [Test]
+        public void RuntimeBakeConsistencyReportsStalePayload()
+        {
+            var draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();
+            var baked = ScriptableObject.CreateInstance<MapGenBakedMapAsset>();
+
+            try
+            {
+                draft.Seed = 505;
+                draft.GridSize = new Vector2Int(2, 1);
+                draft.EnsureCellArray();
+                draft.Cells[0] = new MapGenMockupCell { State = MapGenCellState.Room, RegionId = 1 };
+                draft.Cells[1] = new MapGenMockupCell { State = MapGenCellState.Corridor, RegionId = 2 };
+                draft.Accept();
+
+                baked.Version = MapGenBakedMapMigration.CurrentVersion;
+                baked.SourceSignature = "stale_signature";
+                baked.Width = 1;
+                baked.Height = 1;
+                baked.Cells = System.Array.Empty<MapGenBakedCell>();
+                baked.Regions = System.Array.Empty<MapGenBakedRegion>();
+                baked.Connectors = System.Array.Empty<MapGenBakedConnector>();
+                baked.TraversalEdges = System.Array.Empty<MapGenTraversalEdge>();
+
+                var report = MapGenRuntimeBakeUtility.ValidateConsistency(draft, baked);
+
+                Assert.That(report.IsValid, Is.False);
+                Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "runtime_bake_stale_signature"
+                        && issue.ContextPath == nameof(MapGenBakedMapAsset.SourceSignature)));
+                Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "runtime_bake_dimension_mismatch"));
+                Assert.That(report.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "runtime_bake_payload_count_mismatch"
+                        && issue.ContextPath == nameof(MapGenBakedMapAsset.Cells)));
+            }
+            finally
+            {
+                Object.DestroyImmediate(baked);
+                Object.DestroyImmediate(draft);
             }
         }
 

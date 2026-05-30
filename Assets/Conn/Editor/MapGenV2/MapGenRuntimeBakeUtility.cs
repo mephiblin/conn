@@ -39,6 +39,89 @@ namespace Conn.MapGenV2.Editor
             return asset;
         }
 
+        public static MapGenValidationReport ValidateConsistency(MapGenMockupDraftAsset draft, MapGenBakedMapAsset baked)
+        {
+            var report = new MapGenValidationReport();
+            if (draft == null)
+            {
+                report.Add(new MapGenIssue(
+                    MapGenGenerationPhase.BakeRuntime,
+                    "runtime_bake_missing_draft",
+                    "Cannot validate runtime bake consistency without a draft.",
+                    "Select the draft that produced the baked map.",
+                    severity: MapGenIssueSeverity.Fatal));
+                return report;
+            }
+
+            if (baked == null)
+            {
+                report.Add(new MapGenIssue(
+                    MapGenGenerationPhase.BakeRuntime,
+                    "runtime_bake_missing_asset",
+                    "Expected baked runtime asset is missing.",
+                    "Run Bake Runtime Asset after accepting the current mockup.",
+                    severity: MapGenIssueSeverity.Error));
+                return report;
+            }
+
+            var migration = MapGenBakedMapMigration.MigrateInMemory(baked);
+            if (!migration.IsValid)
+            {
+                report.Add(new MapGenIssue(
+                    MapGenGenerationPhase.BakeRuntime,
+                    "runtime_bake_incompatible_version",
+                    migration.Message,
+                    "Rebake the runtime asset with the current MapGenV2 runtime.",
+                    severity: MapGenIssueSeverity.Fatal));
+                return report;
+            }
+
+            if (baked.SourceSignature != (draft.AcceptedSignature ?? string.Empty))
+            {
+                report.Add(new MapGenIssue(
+                    MapGenGenerationPhase.BakeRuntime,
+                    "runtime_bake_stale_signature",
+                    "Baked runtime asset source signature does not match the accepted draft.",
+                    "Rebake the runtime asset from the current accepted draft.",
+                    severity: MapGenIssueSeverity.Error,
+                    contextPath: nameof(MapGenBakedMapAsset.SourceSignature)));
+            }
+
+            if (baked.Width != draft.Width || baked.Height != draft.Height)
+            {
+                report.Add(new MapGenIssue(
+                    MapGenGenerationPhase.BakeRuntime,
+                    "runtime_bake_dimension_mismatch",
+                    "Baked runtime asset dimensions do not match the draft.",
+                    "Rebake the runtime asset from the current accepted draft.",
+                    severity: MapGenIssueSeverity.Error,
+                    contextPath: $"{nameof(MapGenBakedMapAsset.Width)}/{nameof(MapGenBakedMapAsset.Height)}"));
+            }
+
+            ExpectCount(
+                report,
+                nameof(MapGenBakedMapAsset.Cells),
+                baked.Cells.Length,
+                MapGenRuntimeBakeDataBuilder.BuildCells(draft.Width, draft.Height, draft.Cells).Length);
+            ExpectCount(
+                report,
+                nameof(MapGenBakedMapAsset.Regions),
+                baked.Regions.Length,
+                MapGenRuntimeBakeDataBuilder.BuildRegions(draft.Width, draft.Height, draft.Cells).Length);
+            ExpectCount(
+                report,
+                nameof(MapGenBakedMapAsset.Connectors),
+                baked.Connectors.Length,
+                MapGenRuntimeBakeDataBuilder.BuildConnectors(draft.Width, draft.Height, draft.Cells).Length);
+            ExpectCount(
+                report,
+                nameof(MapGenBakedMapAsset.TraversalEdges),
+                baked.TraversalEdges.Length,
+                MapGenRuntimeBakeDataBuilder.BuildTraversalEdges(draft.Width, draft.Height, draft.Cells).Length);
+
+            return report;
+        }
+
         private static MapGenBakedPropInstance[] BuildProps(MapGenPropPlacementResult propPlacement)
         {
             var props = new MapGenBakedPropInstance[propPlacement?.PlacedProps?.Length ?? 0];
@@ -81,6 +164,26 @@ namespace Conn.MapGenV2.Editor
             }
 
             return markers.ToArray();
+        }
+
+        private static void ExpectCount(
+            MapGenValidationReport report,
+            string fieldName,
+            int actual,
+            int expected)
+        {
+            if (actual == expected)
+            {
+                return;
+            }
+
+            report.Add(new MapGenIssue(
+                MapGenGenerationPhase.BakeRuntime,
+                "runtime_bake_payload_count_mismatch",
+                $"{fieldName} count is {actual}, expected {expected}.",
+                "Rebake the runtime asset from the current accepted draft.",
+                severity: MapGenIssueSeverity.Error,
+                contextPath: fieldName));
         }
     }
 }
