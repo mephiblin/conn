@@ -1218,6 +1218,7 @@ namespace Conn.Tests.EditMode
                 var wallPrefab = CreateTempPrefab($"{tempFolder}/Wall.prefab", "Wall");
                 moduleSet.FloorsA = new[] { new MapGenModuleEntry { Prefab = floorPrefab, Weight = 1, Footprint = Vector2Int.one } };
                 moduleSet.WallsStraight = new[] { new MapGenModuleEntry { Prefab = wallPrefab, Weight = 1, Footprint = Vector2Int.one } };
+                PopulateCompleteMaterializationCoverage(moduleSet, floorPrefab, wallPrefab);
                 styleSet.StyleId = "scene_controls_style";
                 styleSet.ModuleSet = moduleSet;
                 profile.ProfileId = "scene_controls_profile";
@@ -1322,6 +1323,7 @@ namespace Conn.Tests.EditMode
                         RotationPolicy = MapGenModuleRotationPolicy.AnyOrthogonal
                     }
                 };
+                PopulateCompleteMaterializationCoverage(moduleSet, floorPrefab, wallPrefab);
                 styleSet.ModuleSet = moduleSet;
                 profile.ProfileId = "rotation_profile";
                 profile.CellSize = 2f;
@@ -2081,6 +2083,50 @@ namespace Conn.Tests.EditMode
                 Assert.That(report.InstantiableRequests, Is.EqualTo(2));
                 Assert.That(report.MissingModuleRequests, Is.GreaterThan(0));
                 Assert.That(report.MissingModuleCategories, Contains.Item(nameof(MapGenModuleCategory.WallStraight)));
+            }
+            finally
+            {
+                Object.DestroyImmediate(floor);
+                Object.DestroyImmediate(moduleSet);
+            }
+        }
+
+        [Test]
+        public void MaterializationCoverageValidationBlocksMissingModulesBeforeInstantiation()
+        {
+            var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
+            var floor = new GameObject("FloorModule");
+
+            try
+            {
+                moduleSet.FloorsA = new[]
+                {
+                    new MapGenModuleEntry
+                    {
+                        Prefab = floor,
+                        Weight = 1,
+                        Footprint = Vector2Int.one
+                    }
+                };
+                var cells = new[]
+                {
+                    new MapGenMockupCell
+                    {
+                        State = MapGenCellState.Room,
+                        RegionId = 3,
+                        RoomCategory = MapGenRoomCategory.Start
+                    }
+                };
+                var plan = MapGenMaterializationPlanner.Build(1, 1, 1f, "signature", cells);
+                var report = MapGenMockupMaterializer.BuildReport(moduleSet, plan);
+
+                var validation = MapGenMockupMaterializer.ValidateCoverage(report);
+
+                Assert.That(validation.IsValid, Is.False);
+                Assert.That(validation.Issues, Has.Exactly(1).Matches<MapGenIssue>(
+                    issue => issue.Code == "materialization_missing_module_category"
+                        && issue.ContextPath == $"ModuleSet.{nameof(MapGenModuleCategory.WallStraight)}"
+                        && issue.BlocksGeneration));
             }
             finally
             {
@@ -2873,6 +2919,48 @@ namespace Conn.Tests.EditMode
                     Footprint = Vector2Int.one
                 }
             };
+        }
+
+        private static void PopulateCompleteMaterializationCoverage(
+            MapGenModuleSetAsset moduleSet,
+            GameObject floor,
+            GameObject wall)
+        {
+            if (moduleSet.FloorsA == null || moduleSet.FloorsA.Length == 0)
+            {
+                moduleSet.FloorsA = new[]
+                {
+                    new MapGenModuleEntry
+                    {
+                        Prefab = floor,
+                        Weight = 1,
+                        Footprint = Vector2Int.one
+                    }
+                };
+            }
+
+            if (moduleSet.WallsStraight == null || moduleSet.WallsStraight.Length == 0)
+            {
+                moduleSet.WallsStraight = new[]
+                {
+                    new MapGenModuleEntry
+                    {
+                        Prefab = wall,
+                        Weight = 1,
+                        Footprint = Vector2Int.one,
+                        RotationPolicy = MapGenModuleRotationPolicy.AnyOrthogonal
+                    }
+                };
+            }
+
+            moduleSet.WallsCornerInside = moduleSet.WallsStraight;
+            moduleSet.WallsCornerOutside = moduleSet.WallsStraight;
+            moduleSet.ExteriorCeilings = moduleSet.FloorsA;
+            moduleSet.InteriorCeilings = moduleSet.FloorsA;
+            moduleSet.WholeDoors = moduleSet.WallsStraight;
+            moduleSet.HalfDoorFrames = moduleSet.WallsStraight;
+            moduleSet.HalfDoorPanels = moduleSet.WallsStraight;
+            moduleSet.PropCategories = moduleSet.FloorsA;
         }
 
         private static void PopulateRoomTemplate(

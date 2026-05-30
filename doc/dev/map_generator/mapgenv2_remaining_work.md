@@ -905,6 +905,10 @@ Progress note 2026-05-31:
 - Added a diagnostics section in `MapGenV2Window` that aggregates profile,
   generated draft prop validation, and baked asset compatibility diagnostics
   with severity counts.
+- Added pre-instantiation materialization coverage validation: missing module
+  categories now block scene output before creating a partial root, while
+  current footprint overlap/bounds checks are reported as warnings until module
+  layer semantics are explicit.
 
 Goal: make failures actionable.
 
@@ -920,7 +924,7 @@ Tasks:
 - [ ] Validate impossible quantity/range constraints.
 - [ ] Validate blocked-region feasibility.
 - [ ] Validate post-process pass safety.
-- [ ] Validate materialization coverage before instantiation.
+- [x] Validate materialization coverage before instantiation.
 - [ ] Validate runtime bake consistency after materialization.
 - [x] Add diagnostics panel in `MapGenV2Window`.
 

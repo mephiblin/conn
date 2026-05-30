@@ -202,6 +202,21 @@ namespace Conn.MapGenV2.Editor
                 report.AddRange(MapGenPropPlacementValidator.Validate(draft.Width, draft.Height, draft.Cells), draft);
             }
 
+            if (draft != null
+                && draft.Accepted
+                && draft.IsAcceptedSignatureCurrent
+                && draft.Profile != null
+                && draft.Profile.StyleSet != null
+                && draft.Profile.StyleSet.ModuleSet != null)
+            {
+                var materializationPlan = MapGenMockupMaterializer.BuildPlan(draft);
+                var materializationReport = MapGenMockupMaterializer.BuildReport(
+                    draft.Profile.StyleSet.ModuleSet,
+                    materializationPlan,
+                    draft.Seed);
+                report.AddRange(MapGenMockupMaterializer.ValidateCoverage(materializationReport), draft.Profile.StyleSet.ModuleSet);
+            }
+
             var bakedAsset = LoadExpectedBakedAsset();
             if (bakedAsset != null)
             {

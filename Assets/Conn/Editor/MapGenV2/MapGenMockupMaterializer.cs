@@ -40,6 +40,11 @@ namespace Conn.MapGenV2.Editor
             var moduleSet = draft.Profile.StyleSet.ModuleSet;
             var plan = BuildPlan(draft);
             var report = BuildReport(moduleSet, plan, draft.Seed);
+            if (!ValidateCoverage(report).IsValid)
+            {
+                return null;
+            }
+
             var targetRoot = ResolveTargetRoot(draft, outputMode, selectedRoot);
             if (targetRoot != null)
             {
@@ -176,6 +181,53 @@ namespace Conn.MapGenV2.Editor
             report.MissingModuleCategories = missingCategories.ToArray();
             report.SelectedPrefabNames = selectedPrefabNames.ToArray();
             return report;
+        }
+
+        public static MapGenValidationReport ValidateCoverage(MapGenMaterializationReport report)
+        {
+            var validation = new MapGenValidationReport();
+            if (report == null)
+            {
+                validation.Add(new MapGenIssue(
+                    MapGenGenerationPhase.Materialize,
+                    "materialization_report_missing",
+                    "Materialization coverage report is missing.",
+                    "Rebuild the materialization plan before instantiating modules.",
+                    severity: MapGenIssueSeverity.Fatal));
+                return validation;
+            }
+
+            foreach (var category in report.MissingModuleCategories ?? Array.Empty<string>())
+            {
+                validation.Add(new MapGenIssue(
+                    MapGenGenerationPhase.Materialize,
+                    "materialization_missing_module_category",
+                    $"Materialization has no prefab coverage for {category}.",
+                    $"Add at least one valid prefab to module category {category}.",
+                    contextPath: $"ModuleSet.{category}"));
+            }
+
+            if (report.FootprintOutOfBoundsRequests > 0)
+            {
+                validation.Add(new MapGenIssue(
+                    MapGenGenerationPhase.Materialize,
+                    "materialization_footprint_out_of_bounds",
+                    $"{report.FootprintOutOfBoundsRequests} materialization requests have prefab footprints outside the map bounds.",
+                    "Use one-cell modules for edge-sensitive categories or adjust prefab footprints.",
+                    severity: MapGenIssueSeverity.Warning));
+            }
+
+            if (report.FootprintOverlapRequests > 0)
+            {
+                validation.Add(new MapGenIssue(
+                    MapGenGenerationPhase.Materialize,
+                    "materialization_footprint_overlap",
+                    $"{report.FootprintOverlapRequests} materialization requests overlap existing prefab footprints.",
+                    "Reduce prefab footprints or split large modules into category-specific one-cell pieces.",
+                    severity: MapGenIssueSeverity.Warning));
+            }
+
+            return validation;
         }
 
         public static MapGenV2GeneratedMapMarker FindExistingMarker(MapGenMockupDraftAsset draft)
