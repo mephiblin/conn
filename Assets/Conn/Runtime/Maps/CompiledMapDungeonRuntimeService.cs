@@ -148,6 +148,20 @@ namespace Conn.Runtime.Maps
             return count;
         }
 
+        public static int CountBlockingObjects(CompiledMap compiledMap)
+        {
+            var count = 0;
+            foreach (var placement in BlockingObjects(compiledMap))
+            {
+                if (placement != null)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
         public static IEnumerable<CompiledMapObjectPlacement> InteractiveObjects(CompiledMap compiledMap)
         {
             for (var i = 0; i < (compiledMap?.Objects?.Count ?? 0); i++)
@@ -161,6 +175,23 @@ namespace Conn.Runtime.Maps
                 if (placement.Kind == RoomChunkObjectKind.Chest
                     || placement.Kind == RoomChunkObjectKind.Barrel
                     || placement.Kind == RoomChunkObjectKind.Torch)
+                {
+                    yield return placement;
+                }
+            }
+        }
+
+        public static IEnumerable<CompiledMapObjectPlacement> BlockingObjects(CompiledMap compiledMap)
+        {
+            for (var i = 0; i < (compiledMap?.Objects?.Count ?? 0); i++)
+            {
+                var placement = compiledMap.Objects[i];
+                if (placement == null)
+                {
+                    continue;
+                }
+
+                if (placement.BlocksMovement || placement.Kind == RoomChunkObjectKind.Blocker)
                 {
                     yield return placement;
                 }

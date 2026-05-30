@@ -584,6 +584,7 @@ namespace Conn.Tests.EditMode
                 Assert.That(result.Compiled.Cells.Count(cell => cell.WallVariantId == "wall_corner"), Is.EqualTo(wallCornerCount));
                 Assert.That(result.Compiled.Objects.Count(placement => placement.RuntimeReferenceId == "door"), Is.GreaterThanOrEqualTo(4));
                 Assert.That(result.Compiled.Objects.Any(placement => placement.Kind == RoomChunkObjectKind.Blocker && placement.BlocksMovement), Is.True);
+                Assert.That(CompiledMapDungeonRuntimeService.CountBlockingObjects(result.Compiled), Is.GreaterThanOrEqualTo(1));
             }
             finally
             {
@@ -1006,6 +1007,7 @@ namespace Conn.Tests.EditMode
             Assert.That(CompiledMapDungeonRuntimeService.CountBakedCells(loaded), Is.EqualTo(compiled.Cells.Count));
             Assert.That(CompiledMapDungeonRuntimeService.CountBakedObjects(loaded), Is.EqualTo(compiled.Objects.Count));
             Assert.That(CompiledMapDungeonRuntimeService.CountInteractiveObjects(loaded), Is.EqualTo(1));
+            Assert.That(CompiledMapDungeonRuntimeService.CountBlockingObjects(loaded), Is.EqualTo(0));
 
             CompiledMapDungeonRuntimeService.SetCompiledMapAssets(null);
             Object.DestroyImmediate(asset);
