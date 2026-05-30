@@ -13,6 +13,50 @@ namespace Conn.MapGenV2.Editor
         English
     }
 
+    public readonly struct MapGenV2WindowStateSnapshot
+    {
+        public readonly string ProfilePath;
+        public readonly string DraftPath;
+        public readonly float PreviewCellSize;
+        public readonly Vector2 PreviewScroll;
+        public readonly bool HasSelectedCell;
+        public readonly Vector2Int SelectedCell;
+        public readonly int SelectedRegionId;
+        public readonly bool ShowPropOverlay;
+        public readonly bool ShowPostProcessOverlay;
+        public readonly MapGenV2SceneOutputMode OutputMode;
+        public readonly bool DiagnosticsFoldout;
+        public readonly MapGenV2EditorLanguage Language;
+
+        public MapGenV2WindowStateSnapshot(
+            string profilePath,
+            string draftPath,
+            float previewCellSize,
+            Vector2 previewScroll,
+            bool hasSelectedCell,
+            Vector2Int selectedCell,
+            int selectedRegionId,
+            bool showPropOverlay,
+            bool showPostProcessOverlay,
+            MapGenV2SceneOutputMode outputMode,
+            bool diagnosticsFoldout,
+            MapGenV2EditorLanguage language)
+        {
+            ProfilePath = profilePath ?? string.Empty;
+            DraftPath = draftPath ?? string.Empty;
+            PreviewCellSize = previewCellSize;
+            PreviewScroll = previewScroll;
+            HasSelectedCell = hasSelectedCell;
+            SelectedCell = selectedCell;
+            SelectedRegionId = selectedRegionId;
+            ShowPropOverlay = showPropOverlay;
+            ShowPostProcessOverlay = showPostProcessOverlay;
+            OutputMode = outputMode;
+            DiagnosticsFoldout = diagnosticsFoldout;
+            Language = language;
+        }
+    }
+
     public static class MapGenV2EditorText
     {
         private const string LanguagePreferenceKey = "Conn.MapGenV2.Editor.Language";
@@ -107,6 +151,13 @@ namespace Conn.MapGenV2.Editor
         private const string OutputModeKey = "Conn.MapGenV2.Window.OutputMode";
         private const string ShowPropOverlayKey = "Conn.MapGenV2.Window.ShowPropOverlay";
         private const string ShowPostProcessOverlayKey = "Conn.MapGenV2.Window.ShowPostProcessOverlay";
+        private const string PreviewScrollXKey = "Conn.MapGenV2.Window.PreviewScrollX";
+        private const string PreviewScrollYKey = "Conn.MapGenV2.Window.PreviewScrollY";
+        private const string HasSelectedCellKey = "Conn.MapGenV2.Window.HasSelectedCell";
+        private const string SelectedCellXKey = "Conn.MapGenV2.Window.SelectedCellX";
+        private const string SelectedCellYKey = "Conn.MapGenV2.Window.SelectedCellY";
+        private const string SelectedRegionIdKey = "Conn.MapGenV2.Window.SelectedRegionId";
+        private const string DiagnosticsFoldoutKey = "Conn.MapGenV2.Window.DiagnosticsFoldout";
         private static readonly string[] LanguageOptions = { "Auto", "한국어", "English" };
         private static readonly Color EmptyColor = new Color(0.04f, 0.08f, 0.9f, 1f);
         private static readonly Color RoomColor = new Color(0.9f, 0f, 0f, 1f);
@@ -136,6 +187,7 @@ namespace Conn.MapGenV2.Editor
         private MapGenV2SceneOutputMode outputMode = MapGenV2SceneOutputMode.ReplacePreviousRoot;
         private bool showPropPlacementOverlay = true;
         private bool showPostProcessOverlay = true;
+        private bool showDiagnosticsFoldout = true;
         private int selectedPostProcessPassIndex;
         private MapGenPostProcessReport lastPostProcessReport;
         private string lastOperationResult = "아직 실행한 작업이 없습니다. / No operation has run yet.";
@@ -162,6 +214,15 @@ namespace Conn.MapGenV2.Editor
             outputMode = (MapGenV2SceneOutputMode)EditorPrefs.GetInt(OutputModeKey, (int)outputMode);
             showPropPlacementOverlay = EditorPrefs.GetBool(ShowPropOverlayKey, showPropPlacementOverlay);
             showPostProcessOverlay = EditorPrefs.GetBool(ShowPostProcessOverlayKey, showPostProcessOverlay);
+            previewScroll = new Vector2(
+                EditorPrefs.GetFloat(PreviewScrollXKey, previewScroll.x),
+                EditorPrefs.GetFloat(PreviewScrollYKey, previewScroll.y));
+            hasSelectedCell = EditorPrefs.GetBool(HasSelectedCellKey, hasSelectedCell);
+            selectedCell = new Vector2Int(
+                EditorPrefs.GetInt(SelectedCellXKey, selectedCell.x),
+                EditorPrefs.GetInt(SelectedCellYKey, selectedCell.y));
+            selectedRegionId = EditorPrefs.GetInt(SelectedRegionIdKey, selectedRegionId);
+            showDiagnosticsFoldout = EditorPrefs.GetBool(DiagnosticsFoldoutKey, showDiagnosticsFoldout);
             profile = LoadAssetFromEditorPrefs<MapGenProfileAsset>(ProfilePathKey);
             draft = LoadAssetFromEditorPrefs<MapGenMockupDraftAsset>(DraftPathKey);
         }
@@ -297,6 +358,15 @@ namespace Conn.MapGenV2.Editor
                 + "Scene View remains a secondary inspection/materialization surface.";
         }
 
+        public static string BuildPersistedWindowStateSummary(MapGenV2WindowStateSnapshot state)
+        {
+            return $"Persisted state: profile {NullLabel(state.ProfilePath)}, draft {NullLabel(state.DraftPath)}, "
+                + $"preview zoom {state.PreviewCellSize:0.##}, pan {state.PreviewScroll.x:0.##},{state.PreviewScroll.y:0.##}, "
+                + $"selected cell {(state.HasSelectedCell ? $"{state.SelectedCell.x},{state.SelectedCell.y}" : "(none)")}, "
+                + $"selected region {state.SelectedRegionId}, prop overlay {state.ShowPropOverlay}, post overlay {state.ShowPostProcessOverlay}, "
+                + $"output mode {state.OutputMode}, diagnostics foldout {state.DiagnosticsFoldout}, language {state.Language}";
+        }
+
         private static string NullLabel(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? "(none)" : value;
@@ -380,7 +450,18 @@ namespace Conn.MapGenV2.Editor
         private void DrawDiagnosticsPanel()
         {
             EditorGUILayout.Space(4f);
-            EditorGUILayout.LabelField("진단 / Diagnostics", EditorStyles.boldLabel);
+            EditorGUI.BeginChangeCheck();
+            showDiagnosticsFoldout = EditorGUILayout.Foldout(showDiagnosticsFoldout, "진단 / Diagnostics", true);
+            if (EditorGUI.EndChangeCheck())
+            {
+                SaveWindowState();
+            }
+
+            if (!showDiagnosticsFoldout)
+            {
+                return;
+            }
+
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
                 var report = BuildDiagnosticsReport();
@@ -1177,6 +1258,13 @@ namespace Conn.MapGenV2.Editor
             EditorPrefs.SetInt(OutputModeKey, (int)outputMode);
             EditorPrefs.SetBool(ShowPropOverlayKey, showPropPlacementOverlay);
             EditorPrefs.SetBool(ShowPostProcessOverlayKey, showPostProcessOverlay);
+            EditorPrefs.SetFloat(PreviewScrollXKey, previewScroll.x);
+            EditorPrefs.SetFloat(PreviewScrollYKey, previewScroll.y);
+            EditorPrefs.SetBool(HasSelectedCellKey, hasSelectedCell);
+            EditorPrefs.SetInt(SelectedCellXKey, selectedCell.x);
+            EditorPrefs.SetInt(SelectedCellYKey, selectedCell.y);
+            EditorPrefs.SetInt(SelectedRegionIdKey, selectedRegionId);
+            EditorPrefs.SetBool(DiagnosticsFoldoutKey, showDiagnosticsFoldout);
         }
 
         private static void SaveAssetToEditorPrefs(string key, Object asset)
@@ -1511,6 +1599,7 @@ namespace Conn.MapGenV2.Editor
                 selectedCell = coord;
                 hasSelectedCell = true;
                 selectedRegionId = cell.RegionId;
+                SaveWindowState();
                 current.Use();
                 Repaint();
             }

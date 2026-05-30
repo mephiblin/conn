@@ -125,7 +125,7 @@ tool, and generated output workflow.
 - [ ] Support Undo/Redo for all editor mutations:
   asset edits, room-shape painting, selected-region edits, materialization, and
   clear/replace operations.
-- [ ] Persist editor window state:
+- [x] Persist editor window state:
   last selected assets, preview zoom/pan, visible overlays, language, and
   advanced/debug foldout state.
 - [x] Use stable icons/colors for:

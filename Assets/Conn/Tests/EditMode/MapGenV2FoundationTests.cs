@@ -113,6 +113,38 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void MapGenV2WindowStateSummaryCoversPersistedPreviewAndFoldouts()
+        {
+            var state = new MapGenV2WindowStateSnapshot(
+                "Assets/Profile.asset",
+                "Assets/Draft.asset",
+                18f,
+                new Vector2(24f, 36f),
+                true,
+                new Vector2Int(3, 4),
+                7,
+                true,
+                false,
+                MapGenV2SceneOutputMode.UpdateSelectedRoot,
+                false,
+                MapGenV2EditorLanguage.Korean);
+
+            var summary = MapGenV2Window.BuildPersistedWindowStateSummary(state);
+
+            Assert.That(summary, Does.Contain("profile Assets/Profile.asset"));
+            Assert.That(summary, Does.Contain("draft Assets/Draft.asset"));
+            Assert.That(summary, Does.Contain("preview zoom 18"));
+            Assert.That(summary, Does.Contain("pan 24,36"));
+            Assert.That(summary, Does.Contain("selected cell 3,4"));
+            Assert.That(summary, Does.Contain("selected region 7"));
+            Assert.That(summary, Does.Contain("prop overlay True"));
+            Assert.That(summary, Does.Contain("post overlay False"));
+            Assert.That(summary, Does.Contain("output mode UpdateSelectedRoot"));
+            Assert.That(summary, Does.Contain("diagnostics foldout False"));
+            Assert.That(summary, Does.Contain("language Korean"));
+        }
+
+        [Test]
         public void ProfileInspectorSummaryIncludesAuthoringReadiness()
         {
             var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
