@@ -1106,6 +1106,9 @@ is partially complete.
     candidate-first flow: generate preview, random-seed preview regeneration,
     then accept the chosen preview to create the editable draft and baked
     compiled map.
+  - 2026-05-30: Candidate preview generation now creates selectable scene
+    objects under the workspace preview root instead of immediately building
+    the accepted draft mesh preview.
 - [x] Add screenshots or saved sample assets when the first usable version
   exists.
   - 2026-05-30: Chapter 2 saved `CompiledMapAsset` samples are regenerated

@@ -152,10 +152,9 @@ namespace Conn.Editor.Maps
                 if (workspace.ClearBeforePreview)
                 {
                     ClearPreviewWithUndo(workspace, "Generate Map Preview");
-                    EditableMapPreviewMeshBuilder.ClearPreview(generated.Draft, workspace.ResolvePreviewRoot());
                 }
 
-                EditableMapPreviewMeshBuilder.RebuildPreview(generated.Draft, workspace.ResolvePreviewRoot());
+                DrawPreview(workspace, "Generate Map Preview");
                 MarkSceneDirty(workspace);
             }
             catch (Exception exception)
