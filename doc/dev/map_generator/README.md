@@ -1,7 +1,8 @@
 # Map Generator and Monster Editor Cooperation Plan
 
 Date: 2026-05-25
-Status: first-pass authoring, validation, workspace flow, and runtime bundle bridge implemented.
+Status: legacy generator reference. The current implementation is frozen for
+reference/migration while a replacement generator is prepared.
 
 ## Current Planning Update
 
@@ -10,8 +11,9 @@ next target is a new editable cell-map workflow rather than further expansion
 of temporary preview objects. See `editable_cell_map_editor_plan.md` for the
 plan to introduce an `EditableMapDraftAsset`, tileable cell layers, object
 palettes, paint/stamp tools, mesh preview, validation, and runtime bake.
-`MapGeneratorWorkspace` is the current profile-driven editor entry point, while
-`EditableMapDraftAsset` becomes the source of truth after a preview is accepted.
+`MapGeneratorWorkspace` is now a legacy editor entry point kept only for
+reference and migration. `EditableMapDraftAsset` remains the source of truth
+after a preview is accepted.
 
 As of 2026-05-30, the first draft-backed path is now in the project:
 
@@ -74,9 +76,8 @@ gameplay integration are still pending.
 
 ## Workspace Boundary
 
-`MapGeneratorWorkspace` owns profile validation, preview generation, and draft
-acceptance. Once a draft exists, `EditableMapDraftAsset` becomes the source of
-truth.
+`MapGeneratorWorkspace` is retained as a legacy preview/export tool. Once a
+draft exists, `EditableMapDraftAsset` remains the source of truth.
 
 Intentional boundaries today:
 
@@ -107,7 +108,7 @@ the legacy graph snapshot.
 Use these steps after pulling the branch:
 
 1. Open Unity and let the project recompile.
-2. Run `Conn/Map/Create Map Generator Workspace Scene` and select the
+2. Run `Conn/Legacy/Maps/Create Legacy Map Generator Workspace Scene` and select the
    `Map Generator Workspace`.
 3. Prepare `Map Profile`.
    - Assign an existing `MapProfileAsset`, or

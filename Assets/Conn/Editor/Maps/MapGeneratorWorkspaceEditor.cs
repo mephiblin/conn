@@ -18,6 +18,10 @@ namespace Conn.Editor.Maps
             var workspace = (MapGeneratorWorkspace)target;
             serializedObject.Update();
 
+            EditorGUILayout.HelpBox(
+                "Legacy map generator workspace. Keep this path only for reference, sample data inspection, and migration while the replacement generator is built.",
+                MessageType.Warning);
+
             EditorGUILayout.LabelField("Layout Snapshot Source", EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.MapProfile)));
             DrawProfileSummary(workspace.MapProfile);
@@ -38,9 +42,9 @@ namespace Conn.Editor.Maps
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGeneratorWorkspace.CurrentCompiledMapAsset)));
 
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Production Scene Workflow", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Legacy Workspace Workflow", EditorStyles.boldLabel);
             EditorGUILayout.HelpBox(
-                "Generate a visual cell-map preview first. When it is acceptable, save it as an editable draft, then validate and bake the runtime CompiledMap asset.",
+                "Legacy preview-to-draft flow. Do not extend this workflow for new production map generation work.",
                 MessageType.Info);
             if (workspace.MapProfile == null)
             {
@@ -1032,7 +1036,7 @@ namespace Conn.Editor.Maps
     {
         private const string ScenePath = "Assets/Conn/Scenes/Editor/MapGenerator.unity";
 
-        [MenuItem("Conn/Map/Create Map Generator Workspace Scene")]
+        [MenuItem("Conn/Legacy/Maps/Create Legacy Map Generator Workspace Scene")]
         public static void CreateWorkspaceScene()
         {
             CreateWorkspaceSceneAsset(promptToSaveOpenScenes: true);
