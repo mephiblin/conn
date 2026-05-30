@@ -162,6 +162,19 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void MapGenV2WindowUndoCoverageSummaryListsEditorMutations()
+        {
+            var summary = MapGenV2Window.BuildUndoCoverageSummary();
+
+            Assert.That(summary, Does.Contain("serialized inspector asset edits"));
+            Assert.That(summary, Does.Contain("room-shape paint"));
+            Assert.That(summary, Does.Contain("draft generate"));
+            Assert.That(summary, Does.Contain("selected-region"));
+            Assert.That(summary, Does.Contain("scene materialization"));
+            Assert.That(summary, Does.Contain("Undo object creation/destruction"));
+        }
+
+        [Test]
         public void MapGenV2WindowPrimaryActionExplanationIncludesChangeReasonAndOutput()
         {
             var explanation = MapGenV2Window.BuildPrimaryActionExplanation(

@@ -617,6 +617,13 @@ namespace Conn.MapGenV2.Editor
                 + "중요 참조 옆에서 즉시 찾기, 열기, 복제, 검증, 누락 생성 흐름을 실행합니다.";
         }
 
+        public static string BuildUndoCoverageSummary()
+        {
+            return "Undo/Redo coverage: serialized inspector asset edits, room-shape paint/resize/rotate/flip, "
+                + "draft generate/post-process/accept/clear, selected-region category/lock/regenerate/state edits, "
+                + "profile output settings, and scene materialization create/update/clear via Undo object creation/destruction.";
+        }
+
         private void DrawObjectShortcutRow(string label, Object target, System.Action createAction = null)
         {
             using (new EditorGUILayout.HorizontalScope())

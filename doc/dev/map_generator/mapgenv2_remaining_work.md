@@ -122,7 +122,7 @@ tool, and generated output workflow.
   debug/advanced foldouts only.
 - [x] Add `Ping`, `Select`, `Open`, `Create`, `Duplicate`, `Validate`, and
   `Fix/Create Missing` buttons beside important asset references.
-- [ ] Support Undo/Redo for all editor mutations:
+- [x] Support Undo/Redo for all editor mutations:
   asset edits, room-shape painting, selected-region edits, materialization, and
   clear/replace operations.
 - [x] Persist editor window state:
