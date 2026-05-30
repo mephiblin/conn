@@ -489,7 +489,7 @@ namespace Conn.Editor.Maps
                 return;
             }
 
-            var snapshot = MapAuthoringValidationService.FindAuthoringAssets();
+            var snapshot = MapAuthoringValidationService.BuildScopedSnapshot(profile);
             var report = MapAuthoringValidationService.Validate(snapshot);
             Undo.RecordObject(workspace, "Validate Map Profile");
             workspace.SetProfileValidationResult(
@@ -758,7 +758,7 @@ namespace Conn.Editor.Maps
                 throw new InvalidOperationException("Map Profile is required before generating a map preview.");
             }
 
-            var snapshot = MapAuthoringValidationService.FindAuthoringAssets();
+            var snapshot = MapAuthoringValidationService.BuildScopedSnapshot(workspace.MapProfile);
             var authoringReport = MapAuthoringValidationService.Validate(snapshot);
             MapValidationService.ThrowIfFailed(authoringReport);
             var bundle = RuntimeMapGenerationBundleBuilder.Build(

@@ -58,7 +58,7 @@ namespace Conn.Core.Maps
 
         private static ChunkPreset StartRoom()
         {
-            var chunk = CreateBaseChunk("ruins_start", MapRoomRole.Start, RoomChunkLayoutKind.Room, MapDirection.East);
+            var chunk = CreateBaseChunk("ruins_start", MapRoomRole.Start, RoomChunkLayoutKind.Room, MapDirection.North | MapDirection.East | MapDirection.South | MapDirection.West);
             chunk.Anchors.Add(new ChunkAnchor { Id = "start", Kind = MapAnchorKind.Start, X = 2, Y = 5 });
             chunk.Cells = FilledRoomCells(12, 10, "start_floor");
             return chunk;
@@ -126,7 +126,7 @@ namespace Conn.Core.Maps
 
         private static ChunkPreset QuestRoom()
         {
-            var chunk = CreateBaseChunk("ruins_quest_target", MapRoomRole.QuestTarget, RoomChunkLayoutKind.Room, MapDirection.East | MapDirection.West);
+            var chunk = CreateBaseChunk("ruins_quest_target", MapRoomRole.QuestTarget, RoomChunkLayoutKind.Room, MapDirection.North | MapDirection.East | MapDirection.South | MapDirection.West);
             chunk.Anchors.Add(new ChunkAnchor { Id = "questtarget", Kind = MapAnchorKind.QuestTarget, X = 6, Y = 5 });
             chunk.Cells = FilledRoomCells(12, 10, "quest_floor");
             return chunk;
@@ -134,7 +134,7 @@ namespace Conn.Core.Maps
 
         private static ChunkPreset BossRoom()
         {
-            var chunk = CreateBaseChunk("ruins_boss", MapRoomRole.Boss, RoomChunkLayoutKind.Room, MapDirection.East | MapDirection.West);
+            var chunk = CreateBaseChunk("ruins_boss", MapRoomRole.Boss, RoomChunkLayoutKind.Room, MapDirection.North | MapDirection.East | MapDirection.South | MapDirection.West);
             chunk.Anchors.Add(new ChunkAnchor { Id = "boss", Kind = MapAnchorKind.Boss, X = 6, Y = 5 });
             chunk.Cells = FilledRoomCells(12, 10, "boss_floor");
             return chunk;
@@ -142,7 +142,7 @@ namespace Conn.Core.Maps
 
         private static ChunkPreset ExitRoom()
         {
-            var chunk = CreateBaseChunk("ruins_exit", MapRoomRole.Exit, RoomChunkLayoutKind.Room, MapDirection.West);
+            var chunk = CreateBaseChunk("ruins_exit", MapRoomRole.Exit, RoomChunkLayoutKind.Room, MapDirection.North | MapDirection.East | MapDirection.South | MapDirection.West);
             chunk.Anchors.Add(new ChunkAnchor { Id = "exit", Kind = MapAnchorKind.Exit, X = 9, Y = 5 });
             chunk.Cells = FilledRoomCells(12, 10, "exit_floor");
             return chunk;
@@ -150,7 +150,7 @@ namespace Conn.Core.Maps
 
         private static ChunkPreset SideDeadEnd()
         {
-            var chunk = CreateBaseChunk("ruins_side_deadend", MapRoomRole.SideBranch, RoomChunkLayoutKind.DeadEnd, MapDirection.North | MapDirection.East | MapDirection.South | MapDirection.West);
+            var chunk = CreateBaseChunk("ruins_side_deadend", MapRoomRole.SideBranch, RoomChunkLayoutKind.DeadEnd, MapDirection.West);
             chunk.DeadEndDepth = 2;
             chunk.Anchors.Add(new ChunkAnchor { Id = "loot", Kind = MapAnchorKind.Loot, X = 8, Y = 5 });
             chunk.Cells = DeadEndCells(12, 10, "side_floor");
@@ -268,7 +268,7 @@ namespace Conn.Core.Maps
             {
                 for (var x = 2; x < width - 2; x++)
                 {
-                    cells.Add(new RoomChunkCell
+                    SetCell(cells, new RoomChunkCell
                     {
                         X = x,
                         Y = y,
@@ -290,7 +290,7 @@ namespace Conn.Core.Maps
             {
                 for (var x = 1; x < width - 1; x++)
                 {
-                    cells.Add(new RoomChunkCell
+                    SetCell(cells, new RoomChunkCell
                     {
                         X = x,
                         Y = y,
@@ -312,7 +312,7 @@ namespace Conn.Core.Maps
             {
                 for (var x = 2; x < width - 2; x++)
                 {
-                    cells.Add(new RoomChunkCell
+                    SetCell(cells, new RoomChunkCell
                     {
                         X = x,
                         Y = y,
@@ -326,12 +326,12 @@ namespace Conn.Core.Maps
 
             for (var x = 0; x < width; x++)
             {
-                cells.Add(new RoomChunkCell { X = x, Y = 5, Type = RoomChunkCellType.Floor, Height = 0, Direction = MapDirection.East, MaterialId = materialId });
+                SetCell(cells, new RoomChunkCell { X = x, Y = 5, Type = RoomChunkCellType.Floor, Height = 0, Direction = MapDirection.East, MaterialId = materialId });
             }
 
             for (var y = 0; y < height; y++)
             {
-                cells.Add(new RoomChunkCell { X = 6, Y = y, Type = RoomChunkCellType.Floor, Height = 0, Direction = MapDirection.North, MaterialId = materialId });
+                SetCell(cells, new RoomChunkCell { X = 6, Y = y, Type = RoomChunkCellType.Floor, Height = 0, Direction = MapDirection.North, MaterialId = materialId });
             }
 
             return cells;
@@ -342,21 +342,21 @@ namespace Conn.Core.Maps
             var cells = GapFilledGrid(width, height, materialId);
             for (var x = 1; x <= 3; x++)
             {
-                cells.Add(new RoomChunkCell { X = x, Y = 5, Type = RoomChunkCellType.Floor, Height = 0, Direction = MapDirection.East, MaterialId = materialId });
+                SetCell(cells, new RoomChunkCell { X = x, Y = 5, Type = RoomChunkCellType.Floor, Height = 0, Direction = MapDirection.East, MaterialId = materialId });
             }
 
-            cells.Add(new RoomChunkCell { X = 4, Y = 5, Type = RoomChunkCellType.Slope, Height = 0, Direction = MapDirection.East, MaterialId = materialId });
-            cells.Add(new RoomChunkCell { X = 5, Y = 5, Type = RoomChunkCellType.Floor, Height = 1, Direction = MapDirection.East, MaterialId = materialId });
-            cells.Add(new RoomChunkCell { X = 6, Y = 5, Type = RoomChunkCellType.Stair, Height = 1, Direction = MapDirection.East, MaterialId = materialId });
+            SetCell(cells, new RoomChunkCell { X = 4, Y = 5, Type = RoomChunkCellType.Slope, Height = 0, Direction = MapDirection.East, MaterialId = materialId });
+            SetCell(cells, new RoomChunkCell { X = 5, Y = 5, Type = RoomChunkCellType.Floor, Height = 1, Direction = MapDirection.East, MaterialId = materialId });
+            SetCell(cells, new RoomChunkCell { X = 6, Y = 5, Type = RoomChunkCellType.Stair, Height = 1, Direction = MapDirection.East, MaterialId = materialId });
             for (var x = 7; x < width - 1; x++)
             {
-                cells.Add(new RoomChunkCell { X = x, Y = 5, Type = RoomChunkCellType.Floor, Height = 2, Direction = MapDirection.East, MaterialId = materialId });
+                SetCell(cells, new RoomChunkCell { X = x, Y = 5, Type = RoomChunkCellType.Floor, Height = 2, Direction = MapDirection.East, MaterialId = materialId });
             }
 
             for (var y = 4; y <= 6; y++)
             {
-                cells.Add(new RoomChunkCell { X = 5, Y = y, Type = RoomChunkCellType.Floor, Height = 1, Direction = MapDirection.North, MaterialId = materialId });
-                cells.Add(new RoomChunkCell { X = 7, Y = y, Type = RoomChunkCellType.Floor, Height = 2, Direction = MapDirection.North, MaterialId = materialId });
+                SetCell(cells, new RoomChunkCell { X = 5, Y = y, Type = RoomChunkCellType.Floor, Height = 1, Direction = MapDirection.North, MaterialId = materialId });
+                SetCell(cells, new RoomChunkCell { X = 7, Y = y, Type = RoomChunkCellType.Floor, Height = 2, Direction = MapDirection.North, MaterialId = materialId });
             }
 
             return cells;
@@ -367,7 +367,7 @@ namespace Conn.Core.Maps
             var cells = GapFilledGrid(width, height, materialId);
             for (var x = 1; x < width - 1; x++)
             {
-                cells.Add(new RoomChunkCell
+                SetCell(cells, new RoomChunkCell
                 {
                     X = x,
                     Y = 5,
@@ -380,7 +380,7 @@ namespace Conn.Core.Maps
 
             for (var x = 6; x < width - 1; x++)
             {
-                cells.Add(new RoomChunkCell
+                SetCell(cells, new RoomChunkCell
                 {
                     X = x,
                     Y = 4,
@@ -389,7 +389,7 @@ namespace Conn.Core.Maps
                     Direction = MapDirection.East,
                     MaterialId = materialId
                 });
-                cells.Add(new RoomChunkCell
+                SetCell(cells, new RoomChunkCell
                 {
                     X = x,
                     Y = 6,
@@ -423,6 +423,20 @@ namespace Conn.Core.Maps
             }
 
             return cells;
+        }
+
+        private static void SetCell(List<RoomChunkCell> cells, RoomChunkCell cell)
+        {
+            for (var i = 0; i < cells.Count; i++)
+            {
+                if (cells[i].X == cell.X && cells[i].Y == cell.Y)
+                {
+                    cells[i] = cell;
+                    return;
+                }
+            }
+
+            cells.Add(cell);
         }
     }
 }

@@ -84,13 +84,28 @@ namespace Conn.Core.Maps
             int pathMax,
             Random random)
         {
-            var targetRoomCount = random.Next(roomCountMin, roomCountMax + 1);
+            var minimumFeasibleRoomCount = Math.Max(roomCountMin, pathMin + Math.Max(0, profile.SideBranchCount));
+            if (minimumFeasibleRoomCount > roomCountMax)
+            {
+                throw new InvalidOperationException(
+                    $"Map profile {profile.ProfileId} cannot fit critical path {pathMin}-{pathMax} and {profile.SideBranchCount} side-branch rooms inside room count max {roomCountMax}.");
+            }
+
+            var targetRoomCount = random.Next(minimumFeasibleRoomCount, roomCountMax + 1);
             var targetLoops = Math.Min(
                 Math.Max(0, random.Next(profile.LoopMin, profile.LoopMax + 1)),
                 Math.Max(0, targetRoomCount / 3));
+            var targetPathLength = random.Next(pathMin, Math.Min(pathMax, targetRoomCount) + 1);
             var gridWidth = Math.Max(1, profile.Width / Math.Max(1, profile.RoomWidth));
             var gridHeight = Math.Max(1, profile.Height / Math.Max(1, profile.RoomHeight));
-            var occupiedCells = BuildOccupiedCells(gridWidth, gridHeight, targetRoomCount, targetLoops, random);
+            var occupiedCells = BuildOccupiedCells(
+                gridWidth,
+                gridHeight,
+                targetRoomCount,
+                targetLoops,
+                targetPathLength,
+                profile.SideBranchCount >= 2,
+                random);
             var neighborLookup = BuildNeighborLookup(occupiedCells);
             var criticalPath = FindCriticalPath(occupiedCells, neighborLookup, pathMin, pathMax, attemptSeed);
             var plan = BuildNodePlan(profile, occupiedCells, neighborLookup, criticalPath, roomPools, attemptSeed);
@@ -102,12 +117,28 @@ namespace Conn.Core.Maps
             return draft;
         }
 
-        private static List<CellCoordinate> BuildOccupiedCells(int width, int height, int targetRoomCount, int targetLoops, Random random)
+        private static List<CellCoordinate> BuildOccupiedCells(
+            int width,
+            int height,
+            int targetRoomCount,
+            int targetLoops,
+            int targetPathLength,
+            bool requireNorthSouthCoverage,
+            Random random)
         {
-            var start = new CellCoordinate(width / 2, height / 2);
-            var occupied = new List<CellCoordinate> { start };
-            var occupiedSet = new HashSet<string>(StringComparer.Ordinal) { CellKey(start.X, start.Y) };
-            var center = start;
+            var occupied = BuildBackboneCells(width, height, targetPathLength);
+            var occupiedSet = new HashSet<string>(StringComparer.Ordinal);
+            for (var i = 0; i < occupied.Count; i++)
+            {
+                occupiedSet.Add(CellKey(occupied[i].X, occupied[i].Y));
+            }
+
+            var center = occupied[occupied.Count / 2];
+            if (requireNorthSouthCoverage)
+            {
+                TryAddSeedBranchCell(center.X, center.Y + 1, width, height, targetRoomCount, occupied, occupiedSet);
+                TryAddSeedBranchCell(center.X, center.Y - 1, width, height, targetRoomCount, occupied, occupiedSet);
+            }
 
             while (occupied.Count < targetRoomCount)
             {
@@ -124,6 +155,89 @@ namespace Conn.Core.Maps
                 {
                     targetLoops--;
                 }
+            }
+
+            return occupied;
+        }
+
+        private static void TryAddSeedBranchCell(
+            int x,
+            int y,
+            int width,
+            int height,
+            int targetRoomCount,
+            List<CellCoordinate> occupied,
+            HashSet<string> occupiedSet)
+        {
+            if (occupied.Count >= targetRoomCount)
+            {
+                return;
+            }
+
+            if (x < 0 || y < 0 || x >= width || y >= height)
+            {
+                return;
+            }
+
+            var key = CellKey(x, y);
+            if (!occupiedSet.Add(key))
+            {
+                return;
+            }
+
+            occupied.Add(new CellCoordinate(x, y));
+        }
+
+        private static List<CellCoordinate> BuildBackboneCells(int width, int height, int targetPathLength)
+        {
+            if (targetPathLength <= 0)
+            {
+                throw new InvalidOperationException("Grid candidate solver requires a positive backbone path length.");
+            }
+
+            if (targetPathLength > width * height)
+            {
+                throw new InvalidOperationException(
+                    $"Grid candidate solver cannot fit backbone path length {targetPathLength} inside {width}x{height}.");
+            }
+
+            var occupied = new List<CellCoordinate>(targetPathLength);
+            var minY = Math.Max(0, (height / 2) - 1);
+            var maxY = Math.Min(height - 1, minY + 2);
+            var y = Math.Max(0, Math.Min(height - 1, height / 2));
+            var x = 0;
+            var direction = 1;
+
+            while (occupied.Count < targetPathLength)
+            {
+                occupied.Add(new CellCoordinate(x, y));
+                if (occupied.Count >= targetPathLength)
+                {
+                    break;
+                }
+
+                var nextX = x + direction;
+                if (nextX >= 0 && nextX < width)
+                {
+                    x = nextX;
+                    continue;
+                }
+
+                if (y < maxY)
+                {
+                    y++;
+                }
+                else if (y > minY)
+                {
+                    y--;
+                }
+                else
+                {
+                    throw new InvalidOperationException(
+                        $"Grid candidate solver could not extend backbone path length {targetPathLength} inside {width}x{height}.");
+                }
+
+                direction *= -1;
             }
 
             return occupied;
@@ -374,7 +488,7 @@ namespace Conn.Core.Maps
             var sideBranchCount = 0;
             var northBranchRooms = 0;
             var southBranchRooms = 0;
-            var criticalPathY = criticalPath[0].Y;
+            var criticalPathY = ResolveCriticalPathY(criticalPath);
 
             for (var i = 0; i < occupiedCells.Count; i++)
             {
@@ -411,7 +525,7 @@ namespace Conn.Core.Maps
                 });
             }
 
-            var expectedBranchRooms = Math.Max(0, profile.SideBranchCount) * 2;
+            var expectedBranchRooms = Math.Max(0, profile.SideBranchCount);
             if (sideBranchCount < expectedBranchRooms)
             {
                 throw new InvalidOperationException(
@@ -420,7 +534,10 @@ namespace Conn.Core.Maps
 
             if (profile.SideBranchCount >= 2 && (northBranchRooms == 0 || southBranchRooms == 0))
             {
-                throw new InvalidOperationException("Grid candidate solver did not cover both north and south branch space.");
+                throw new InvalidOperationException(
+                    $"Grid candidate solver did not cover both north and south branch space. " +
+                    $"criticalPathY={criticalPathY}, north={northBranchRooms}, south={southBranchRooms}, " +
+                    $"branches={DescribeBranchCells(plan.Nodes, criticalPathY)}");
             }
 
             ApplyForcedPoolRoles(plan, roomPools, seed);
@@ -496,73 +613,9 @@ namespace Conn.Core.Maps
 
         private static void ApplyForcedPoolRoles(NodePlan plan, IReadOnlyList<RuntimeMapRoomPoolRule> roomPools, int seed)
         {
-            var hasHub = HasPool(roomPools, MapRoomPoolRole.Hub);
-            var hasCorridor = HasPool(roomPools, MapRoomPoolRole.Corridor);
-            var hasHeightTransition = HasPool(roomPools, MapRoomPoolRole.HeightTransition);
-            var hasDeadEnd = HasPool(roomPools, MapRoomPoolRole.DeadEnd);
-
-            if (hasHub)
-            {
-                var hubIndex = FindNodeIndex(plan.Nodes, node => node.PathIndex > 0 && node.PathIndex < plan.CriticalPathLength - 1 && node.NeighborCells.Count >= 3);
-                if (hubIndex < 0)
-                {
-                    throw new InvalidOperationException("Grid candidate solver could not reserve a hub cell on the critical path.");
-                }
-
-                plan.Nodes[hubIndex].ForcedPoolRole = MapRoomPoolRole.Hub;
-            }
-
-            if (hasCorridor)
-            {
-                var corridorIndex = FindNodeIndex(plan.Nodes, node =>
-                    node.PathIndex > 0
-                    && node.PathIndex < plan.CriticalPathLength - 1
-                    && node.ForcedPoolRole == null
-                    && node.NeighborCells.Count == 2
-                    && IsOpposingSockets(node.RequiredSockets));
-                if (corridorIndex < 0)
-                {
-                    throw new InvalidOperationException("Grid candidate solver could not reserve a corridor cell with opposing sockets.");
-                }
-
-                plan.Nodes[corridorIndex].ForcedPoolRole = MapRoomPoolRole.Corridor;
-            }
-
-            if (hasHeightTransition)
-            {
-                var candidates = new List<int>();
-                for (var i = 0; i < plan.Nodes.Count; i++)
-                {
-                    var node = plan.Nodes[i];
-                    if (node.PathIndex > 1
-                        && node.PathIndex < plan.CriticalPathLength - 2
-                        && node.ForcedPoolRole == null)
-                    {
-                        candidates.Add(i);
-                    }
-                }
-
-                if (candidates.Count == 0)
-                {
-                    throw new InvalidOperationException("Grid candidate solver could not reserve a height-transition cell on the interior critical path.");
-                }
-
-                var selected = candidates[PositiveHash(seed, "height_transition", candidates.Count.ToString()) % candidates.Count];
-                plan.Nodes[selected].ForcedPoolRole = MapRoomPoolRole.HeightTransition;
-            }
-
-            if (hasDeadEnd)
-            {
-                var deadEndIndex = FindNodeIndex(plan.Nodes, node =>
-                    node.Role == MapRoomRole.SideBranch
-                    && node.NeighborCells.Count == 1);
-                if (deadEndIndex < 0)
-                {
-                    throw new InvalidOperationException("Grid candidate solver could not reserve a side-branch dead-end cell.");
-                }
-
-                plan.Nodes[deadEndIndex].ForcedPoolRole = MapRoomPoolRole.DeadEnd;
-            }
+            _ = plan;
+            _ = roomPools;
+            _ = seed;
         }
 
         private static bool HasPool(IReadOnlyList<RuntimeMapRoomPoolRule> roomPools, MapRoomPoolRole role)
@@ -636,6 +689,43 @@ namespace Conn.Core.Maps
             }
 
             return count;
+        }
+
+        private static int ResolveCriticalPathY(List<CellCoordinate> criticalPath)
+        {
+            if (criticalPath == null || criticalPath.Count == 0)
+            {
+                return 0;
+            }
+
+            var totalY = 0f;
+            for (var i = 0; i < criticalPath.Count; i++)
+            {
+                totalY += criticalPath[i].Y;
+            }
+
+            return (int)Math.Round(totalY / criticalPath.Count, MidpointRounding.AwayFromZero);
+        }
+
+        private static string DescribeBranchCells(List<PlannedNode> nodes, int criticalPathY)
+        {
+            var cells = new List<string>();
+            for (var i = 0; i < nodes.Count; i++)
+            {
+                if (nodes[i].PathIndex >= 0)
+                {
+                    continue;
+                }
+
+                var label = nodes[i].Cell.Y > criticalPathY
+                    ? "north"
+                    : nodes[i].Cell.Y < criticalPathY
+                        ? "south"
+                        : "flat";
+                cells.Add($"{nodes[i].Cell.X},{nodes[i].Cell.Y}:{label}");
+            }
+
+            return string.Join(";", cells);
         }
 
         private static List<SolverTemplate> BuildTemplates(IReadOnlyList<RuntimeMapRoomPoolRule> roomPools, IReadOnlyList<ChunkPreset> chunks)

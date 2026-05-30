@@ -150,15 +150,15 @@ graph preview.
 
 ### Manual Unity Checks
 
-- [ ] Create sample profile assets.
-- [ ] Assign profile to `MapGeneratorWorkspace`.
-- [ ] Validate profile.
-- [ ] Generate preview.
-- [ ] Randomize seed and confirm visible layout changes.
-- [ ] Accept preview as draft.
-- [ ] Edit draft.
-- [ ] Validate draft.
-- [ ] Bake compiled map.
+- [x] Create sample profile assets.
+- [x] Assign profile to `MapGeneratorWorkspace`.
+- [x] Validate profile.
+- [x] Generate preview.
+- [x] Randomize seed and confirm visible layout changes.
+- [x] Accept preview as draft.
+- [x] Edit draft.
+- [x] Validate draft.
+- [x] Bake compiled map.
 
 ## Cleanup Candidates
 

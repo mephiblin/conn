@@ -42,6 +42,20 @@ namespace Conn.Core.Combat
             }
         }
 
+        public void Heal(int amount)
+        {
+            if (amount <= 0)
+            {
+                return;
+            }
+
+            Hp += amount;
+            if (Hp > MaxHp)
+            {
+                Hp = MaxHp;
+            }
+        }
+
         public void AddOrRefreshStatus(CombatStatusEffectKind kind, int duration, int tickDamage)
         {
             EnsureStatusEffects();

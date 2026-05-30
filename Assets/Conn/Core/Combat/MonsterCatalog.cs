@@ -6,7 +6,7 @@ namespace Conn.Core.Combat
 
         private static readonly MonsterDefinition[] Monsters =
         {
-            new MonsterDefinition(TestGuardId, "Test Gate Guard", 12, 4, 5, "Halberd thrust", 4)
+            new MonsterDefinition(TestGuardId, "Test Gate Guard", 12, 4, 5, "Halberd thrust", 4, string.Empty)
         };
 
         public static MonsterDefinition[] All => Monsters;

@@ -28,6 +28,100 @@ namespace Conn.Editor.Maps
             };
         }
 
+        public static MapAuthoringSnapshot BuildScopedSnapshot(MapProfileAsset profile)
+        {
+            var snapshot = new MapAuthoringSnapshot();
+            if (profile == null)
+            {
+                return snapshot;
+            }
+
+            var profiles = new List<MapProfileAsset> { profile };
+            var resourceSets = new List<MapResourceSetAsset>();
+            var roomChunks = new List<RoomChunkAsset>();
+            var landmarkRooms = new List<LandmarkRoomAsset>();
+            var weightProfiles = new List<GenerationWeightProfileAsset>();
+            var spawnTables = new List<SpawnTableAsset>();
+            var encounters = new List<EncounterDefinitionAsset>();
+            var monsters = new List<MonsterDefinitionAsset>();
+
+            AddIfPresent(resourceSets, profile.ResourceSet);
+            AddIfPresent(weightProfiles, profile.GenerationWeightProfile);
+
+            foreach (var pool in profile.RoomPools ?? Array.Empty<MapRoomPoolRule>())
+            {
+                if (pool == null)
+                {
+                    continue;
+                }
+
+                foreach (var chunk in pool.AllowedChunks ?? Array.Empty<RoomChunkAsset>())
+                {
+                    AddIfPresent(roomChunks, chunk);
+                }
+            }
+
+            foreach (var chunk in profile.OptionalChunks ?? Array.Empty<RoomChunkAsset>())
+            {
+                AddIfPresent(roomChunks, chunk);
+            }
+
+            foreach (var landmark in profile.RequiredLandmarkRooms ?? Array.Empty<LandmarkRoomAsset>())
+            {
+                AddIfPresent(landmarkRooms, landmark);
+            }
+
+            foreach (var landmark in profile.OptionalLandmarks ?? Array.Empty<LandmarkRoomAsset>())
+            {
+                AddIfPresent(landmarkRooms, landmark);
+            }
+
+            foreach (var spawnTable in profile.AllowedSpawnTables ?? Array.Empty<SpawnTableAsset>())
+            {
+                if (!AddIfPresent(spawnTables, spawnTable))
+                {
+                    continue;
+                }
+
+                foreach (var entry in spawnTable.EncounterEntries ?? Array.Empty<SpawnEncounterEntry>())
+                {
+                    var encounter = entry?.Encounter;
+                    if (!AddIfPresent(encounters, encounter))
+                    {
+                        continue;
+                    }
+
+                    if (encounter?.PrimaryMonster != null)
+                    {
+                        AddIfPresent(monsters, encounter.PrimaryMonster);
+                    }
+
+                    foreach (var slot in encounter?.EnemySlots ?? Array.Empty<EncounterEnemySlotAsset>())
+                    {
+                        if (slot?.Monster != null)
+                        {
+                            AddIfPresent(monsters, slot.Monster);
+                        }
+                    }
+                }
+
+                foreach (var entry in spawnTable.DirectMonsterEntries ?? Array.Empty<SpawnMonsterEntry>())
+                {
+                    AddIfPresent(monsters, entry?.Monster);
+                }
+            }
+
+            snapshot.Profiles = profiles.ToArray();
+            snapshot.ResourceSets = resourceSets.ToArray();
+            snapshot.RoomChunks = roomChunks.ToArray();
+            snapshot.LandmarkRooms = landmarkRooms.ToArray();
+            snapshot.WeightProfiles = weightProfiles.ToArray();
+            snapshot.SpawnTables = spawnTables.ToArray();
+            snapshot.Encounters = encounters.ToArray();
+            snapshot.Monsters = monsters.ToArray();
+            return snapshot;
+        }
+
         public static MapValidationReport Validate(MapAuthoringSnapshot snapshot)
         {
             var report = new MapValidationReport();
@@ -267,6 +361,17 @@ namespace Conn.Editor.Maps
             ExpectUniqueIds(snapshot.LandmarkRooms, "Landmark room", report);
             ExpectUniqueIds(snapshot.WeightProfiles, "Generation weight profile", report);
             ExpectUniqueIds(snapshot.SpawnTables, "Spawn table", report);
+        }
+
+        private static bool AddIfPresent<T>(List<T> values, T value) where T : UnityEngine.Object
+        {
+            if (value == null || values.Contains(value))
+            {
+                return false;
+            }
+
+            values.Add(value);
+            return true;
         }
 
         private static void ValidateResourceSets(MapResourceSetAsset[] resourceSets, MapValidationReport report)
