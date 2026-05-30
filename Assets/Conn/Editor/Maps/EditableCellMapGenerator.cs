@@ -456,22 +456,22 @@ namespace Conn.Editor.Maps
             ApplyRoomIdsToCells(draft, draft.Rooms, zoneId);
             draft.Sockets = new[]
             {
-                BuildSocket("start_to_main_1", "start", RoomCenter(rooms[0]), MapDirection.East, "main_1"),
-                BuildSocket("main_1_to_start", "main_1", RoomCenter(rooms[1]), MapDirection.West, "start"),
-                BuildSocket("main_1_to_hub", "main_1", RoomCenter(rooms[1]), MapDirection.East, "hub"),
-                BuildSocket("hub_to_main_1", "hub", RoomCenter(rooms[2]), MapDirection.West, "main_1"),
-                BuildSocket("hub_to_quest", "hub", RoomCenter(rooms[2]), MapDirection.East, "quest"),
-                BuildSocket("quest_to_hub", "quest", RoomCenter(rooms[3]), MapDirection.West, "hub"),
-                BuildSocket("quest_to_boss", "quest", RoomCenter(rooms[3]), MapDirection.East, "boss"),
-                BuildSocket("boss_to_quest", "boss", RoomCenter(rooms[4]), MapDirection.West, "quest"),
-                BuildSocket("boss_to_exit", "boss", RoomCenter(rooms[4]), MapDirection.East, "exit"),
-                BuildSocket("exit_to_boss", "exit", RoomCenter(rooms[5]), MapDirection.West, "boss"),
-                BuildSocket("hub_to_treasure_branch", "hub", RoomCenter(rooms[2]), MapDirection.North, "treasure_branch"),
-                BuildSocket("treasure_branch_to_hub", "treasure_branch", RoomCenter(rooms[6]), MapDirection.South, "hub"),
-                BuildSocket("treasure_branch_to_quest", "treasure_branch", RoomCenter(rooms[6]), MapDirection.East, "quest"),
-                BuildSocket("quest_to_treasure_branch", "quest", RoomCenter(rooms[3]), MapDirection.West, "treasure_branch"),
-                BuildSocket("hub_to_side_branch", "hub", RoomCenter(rooms[2]), MapDirection.South, "side_branch"),
-                BuildSocket("side_branch_to_hub", "side_branch", RoomCenter(rooms[7]), MapDirection.North, "hub")
+                BuildSocket(draft, "start_to_main_1", "start", rooms[0], MapDirection.East, "main_1", rooms[1]),
+                BuildSocket(draft, "main_1_to_start", "main_1", rooms[1], MapDirection.West, "start", rooms[0]),
+                BuildSocket(draft, "main_1_to_hub", "main_1", rooms[1], MapDirection.East, "hub", rooms[2]),
+                BuildSocket(draft, "hub_to_main_1", "hub", rooms[2], MapDirection.West, "main_1", rooms[1]),
+                BuildSocket(draft, "hub_to_quest", "hub", rooms[2], MapDirection.East, "quest", rooms[3]),
+                BuildSocket(draft, "quest_to_hub", "quest", rooms[3], MapDirection.West, "hub", rooms[2]),
+                BuildSocket(draft, "quest_to_boss", "quest", rooms[3], MapDirection.East, "boss", rooms[4]),
+                BuildSocket(draft, "boss_to_quest", "boss", rooms[4], MapDirection.West, "quest", rooms[3]),
+                BuildSocket(draft, "boss_to_exit", "boss", rooms[4], MapDirection.East, "exit", rooms[5]),
+                BuildSocket(draft, "exit_to_boss", "exit", rooms[5], MapDirection.West, "boss", rooms[4]),
+                BuildSocket(draft, "hub_to_treasure_branch", "hub", rooms[2], MapDirection.North, "treasure_branch", rooms[6]),
+                BuildSocket(draft, "treasure_branch_to_hub", "treasure_branch", rooms[6], MapDirection.South, "hub", rooms[2]),
+                BuildSocket(draft, "treasure_branch_to_quest", "treasure_branch", rooms[6], MapDirection.East, "quest", rooms[3]),
+                BuildSocket(draft, "quest_to_treasure_branch", "quest", rooms[3], MapDirection.West, "treasure_branch", rooms[6]),
+                BuildSocket(draft, "hub_to_side_branch", "hub", rooms[2], MapDirection.South, "side_branch", rooms[7]),
+                BuildSocket(draft, "side_branch_to_hub", "side_branch", rooms[7], MapDirection.North, "hub", rooms[2])
             };
         }
 
@@ -520,12 +520,15 @@ namespace Conn.Editor.Maps
         }
 
         private static EditableMapSocket BuildSocket(
+            EditableMapDraftAsset draft,
             string id,
             string roomId,
-            Vector2Int position,
+            RectInt room,
             MapDirection direction,
-            string targetRoomId)
+            string targetRoomId,
+            RectInt targetRoom)
         {
+            var position = FindBoundarySocketPosition(draft, room, direction, RoomCenter(targetRoom));
             return new EditableMapSocket
             {
                 Id = id,
@@ -537,6 +540,67 @@ namespace Conn.Editor.Maps
                 TargetRoomId = targetRoomId,
                 LockedDoorKeyId = string.Empty
             };
+        }
+
+        private static Vector2Int FindBoundarySocketPosition(EditableMapDraftAsset draft, RectInt room, MapDirection direction, Vector2Int target)
+        {
+            var preferred = BoundaryProjection(room, direction, target);
+            if (IsWalkable(draft, preferred.x, preferred.y))
+            {
+                return preferred;
+            }
+
+            var best = preferred;
+            var bestDistance = int.MaxValue;
+            for (var y = room.yMin; y < room.yMax; y++)
+            {
+                for (var x = room.xMin; x < room.xMax; x++)
+                {
+                    if (!IsOnBoundary(x, y, room, direction) || !IsWalkable(draft, x, y))
+                    {
+                        continue;
+                    }
+
+                    var distance = Mathf.Abs(preferred.x - x) + Mathf.Abs(preferred.y - y);
+                    if (distance < bestDistance)
+                    {
+                        bestDistance = distance;
+                        best = new Vector2Int(x, y);
+                    }
+                }
+            }
+
+            return best;
+        }
+
+        private static Vector2Int BoundaryProjection(RectInt room, MapDirection direction, Vector2Int target)
+        {
+            switch (direction)
+            {
+                case MapDirection.East:
+                    return new Vector2Int(room.xMax - 1, Mathf.Clamp(target.y, room.yMin, room.yMax - 1));
+                case MapDirection.South:
+                    return new Vector2Int(Mathf.Clamp(target.x, room.xMin, room.xMax - 1), room.yMin);
+                case MapDirection.West:
+                    return new Vector2Int(room.xMin, Mathf.Clamp(target.y, room.yMin, room.yMax - 1));
+                default:
+                    return new Vector2Int(Mathf.Clamp(target.x, room.xMin, room.xMax - 1), room.yMax - 1);
+            }
+        }
+
+        private static bool IsOnBoundary(int x, int y, RectInt room, MapDirection direction)
+        {
+            switch (direction)
+            {
+                case MapDirection.East:
+                    return x == room.xMax - 1;
+                case MapDirection.South:
+                    return y == room.yMin;
+                case MapDirection.West:
+                    return x == room.xMin;
+                default:
+                    return y == room.yMax - 1;
+            }
         }
 
         private static Vector2Int RoomCenter(RectInt room)

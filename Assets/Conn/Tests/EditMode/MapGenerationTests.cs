@@ -609,6 +609,7 @@ namespace Conn.Tests.EditMode
                 Assert.That(result.Draft.Rooms.Count(room => room.LayoutKind == RoomChunkLayoutKind.DeadEnd), Is.GreaterThanOrEqualTo(1));
                 Assert.That(result.Draft.Sockets.Any(socket => socket.RoomId == "hub" && socket.TargetRoomId == "treasure_branch"), Is.True);
                 Assert.That(result.Draft.Sockets.Any(socket => socket.RoomId == "treasure_branch" && socket.TargetRoomId == "quest"), Is.True);
+                Assert.That(result.Draft.Sockets.All(socket => IsSocketOnRoomBoundary(result.Draft, socket)), Is.True);
                 Assert.That(result.Compiled.Doors.Any(edge => edge.FromNodeId == "treasure_branch" && edge.ToNodeId == "quest"), Is.True);
                 Assert.That(result.Compiled.Cells.Count, Is.EqualTo(result.Draft.Cells.Length));
                 Assert.That(result.Compiled.Cells.Count(cell => cell.WallVariantId == "wall_corner"), Is.EqualTo(wallCornerCount));
@@ -1551,6 +1552,31 @@ namespace Conn.Tests.EditMode
                 Assert.That((fieldType.Namespace ?? string.Empty).StartsWith("Conn.Editor"), Is.False, $"{type.Name}.{field.Name} must not store editor type.");
                 Assert.That((fieldType.Namespace ?? string.Empty).StartsWith("Conn.Authoring"), Is.False, $"{type.Name}.{field.Name} must not store authoring type.");
             }
+        }
+
+        private static bool IsSocketOnRoomBoundary(EditableMapDraftAsset draft, EditableMapSocket socket)
+        {
+            foreach (var room in draft.Rooms ?? System.Array.Empty<EditableMapRoom>())
+            {
+                if (room.Id != socket.RoomId)
+                {
+                    continue;
+                }
+
+                switch (socket.Direction)
+                {
+                    case MapDirection.East:
+                        return socket.X == room.X + room.Width - 1;
+                    case MapDirection.South:
+                        return socket.Y == room.Y;
+                    case MapDirection.West:
+                        return socket.X == room.X;
+                    default:
+                        return socket.Y == room.Y + room.Height - 1;
+                }
+            }
+
+            return false;
         }
     }
 }
