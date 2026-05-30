@@ -7,6 +7,9 @@ namespace Conn.MapGenV2.Authoring
     [CreateAssetMenu(menuName = "Conn/MapGenV2/Module Set", fileName = "MapGenModuleSet")]
     public sealed class MapGenModuleSetAsset : ScriptableObject
     {
+        public const int CurrentVersion = 1;
+
+        public int Version = CurrentVersion;
         public string ModuleSetId = string.Empty;
         public MapGenModuleBoundsContract BoundsContract = new MapGenModuleBoundsContract();
         public MapGenModuleEntry[] FloorsA = Array.Empty<MapGenModuleEntry>();

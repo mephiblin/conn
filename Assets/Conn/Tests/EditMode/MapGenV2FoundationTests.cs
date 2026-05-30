@@ -1259,6 +1259,120 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void AuthoringAssetMigrationAddsVersionAndNormalizesDefaults()
+        {
+            var profile = ScriptableObject.CreateInstance<MapGenProfileAsset>();
+            var styleSet = ScriptableObject.CreateInstance<MapGenStyleSetAsset>();
+            var ruleSet = ScriptableObject.CreateInstance<MapGenRuleSetAsset>();
+            var roomShape = ScriptableObject.CreateInstance<MapGenRoomShapeAsset>();
+            var roomTemplate = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();
+            var corridorTemplate = ScriptableObject.CreateInstance<MapGenCorridorTemplateAsset>();
+            var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
+            var draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();
+
+            try
+            {
+                profile.Version = 0;
+                profile.OutputSettings = default;
+                profile.RoomShapes = null;
+                styleSet.Version = 0;
+                styleSet.RoomShapePool = null;
+                styleSet.RoomTemplates = null;
+                styleSet.CorridorTemplates = null;
+                ruleSet.Version = 0;
+                ruleSet.RequiredRoomCategories = null;
+                ruleSet.OptionalRoomCategories = null;
+                ruleSet.PropPlacementRules = null;
+                roomShape.Version = 0;
+                roomShape.Dimensions = Vector2Int.zero;
+                roomShape.Cells = null;
+                roomShape.Weight = 0;
+                roomTemplate.Version = 0;
+                roomTemplate.Footprint = Vector2Int.zero;
+                roomTemplate.SourceRoomShapes = null;
+                roomTemplate.Connectors = null;
+                roomTemplate.FloorCells = null;
+                roomTemplate.WallCells = null;
+                roomTemplate.BlockedCells = null;
+                roomTemplate.DoorHintCells = null;
+                roomTemplate.PropChannels = null;
+                roomTemplate.Weight = 0;
+                corridorTemplate.Version = 0;
+                corridorTemplate.Width = 0;
+                corridorTemplate.LengthRange = Vector2Int.zero;
+                corridorTemplate.Connectors = null;
+                corridorTemplate.PropChannels = null;
+                corridorTemplate.Weight = 0;
+                moduleSet.Version = 0;
+                moduleSet.BoundsContract = null;
+                moduleSet.FloorsA = null;
+                moduleSet.WallsStraight = null;
+                moduleSet.RequiredUniqueProps = null;
+                draft.Version = 0;
+                draft.GridSize = Vector2Int.zero;
+                draft.Cells = null;
+                draft.RegionOverrides = null;
+
+                var profileReport = MapGenV2AuthoringAssetMigration.MigrateInMemory(profile);
+                MapGenV2AuthoringAssetMigration.MigrateInMemory(styleSet);
+                MapGenV2AuthoringAssetMigration.MigrateInMemory(ruleSet);
+                MapGenV2AuthoringAssetMigration.MigrateInMemory(roomShape);
+                MapGenV2AuthoringAssetMigration.MigrateInMemory(roomTemplate);
+                MapGenV2AuthoringAssetMigration.MigrateInMemory(corridorTemplate);
+                MapGenV2AuthoringAssetMigration.MigrateInMemory(moduleSet);
+                MapGenV2AuthoringAssetMigration.MigrateInMemory(draft);
+
+                Assert.That(profileReport.IsValid, Is.True);
+                Assert.That(profileReport.WasMigrated, Is.True);
+                Assert.That(profile.Version, Is.EqualTo(MapGenProfileAsset.CurrentVersion));
+                Assert.That(profile.OutputSettings.DraftFolder, Is.Not.Empty);
+                Assert.That(profile.RoomShapes, Is.Not.Null);
+                Assert.That(styleSet.RoomTemplates, Is.Not.Null);
+                Assert.That(ruleSet.RequiredRoomCategories, Is.Not.Null);
+                Assert.That(roomShape.Width, Is.EqualTo(1));
+                Assert.That(roomShape.Weight, Is.EqualTo(1));
+                Assert.That(roomTemplate.Footprint, Is.EqualTo(Vector2Int.one));
+                Assert.That(corridorTemplate.Width, Is.EqualTo(1));
+                Assert.That(moduleSet.BoundsContract, Is.Not.Null);
+                Assert.That(moduleSet.FloorsA, Is.Not.Null);
+                Assert.That(draft.GridSize, Is.EqualTo(Vector2Int.one));
+                Assert.That(draft.Cells, Is.Not.Null);
+            }
+            finally
+            {
+                Object.DestroyImmediate(draft);
+                Object.DestroyImmediate(moduleSet);
+                Object.DestroyImmediate(corridorTemplate);
+                Object.DestroyImmediate(roomTemplate);
+                Object.DestroyImmediate(roomShape);
+                Object.DestroyImmediate(ruleSet);
+                Object.DestroyImmediate(styleSet);
+                Object.DestroyImmediate(profile);
+            }
+        }
+
+        [Test]
+        public void AuthoringAssetMigrationRejectsFutureVersion()
+        {
+            var profile = ScriptableObject.CreateInstance<MapGenProfileAsset>();
+
+            try
+            {
+                profile.Version = MapGenProfileAsset.CurrentVersion + 1;
+
+                var report = MapGenV2AuthoringAssetMigration.MigrateInMemory(profile);
+
+                Assert.That(report.IsValid, Is.False);
+                Assert.That(report.WasMigrated, Is.False);
+                Assert.That(report.Message, Does.Contain("newer than supported"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(profile);
+            }
+        }
+
+        [Test]
         public void GeneratedMapMarkerStoresDraftSourceData()
         {
             var styleSet = ScriptableObject.CreateInstance<MapGenStyleSetAsset>();

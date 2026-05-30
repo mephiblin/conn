@@ -968,6 +968,10 @@ Progress note 2026-05-31:
 - Profile overwrite policy is now exposed in the Scene Output panel:
   CreateUnique creates a new root, ReplacePrevious deletes the previous tracked
   root, and UpdateSelected only updates an explicitly selected scene root.
+- Core authoring assets now expose version fields, and
+  `MapGenV2AuthoringAssetMigration` normalizes legacy/null arrays, output
+  defaults, dimensions, weights, bounds contracts, and draft grid defaults while
+  rejecting unsupported future versions.
 
 Goal: make generated assets safe to keep in a real project.
 
@@ -980,7 +984,7 @@ Tasks:
 - [x] Add `Regenerate`, `Repostprocess`, `Reaccept`, `Rematerialize`,
   `Rebake` workflows.
 - [x] Add explicit overwrite policy.
-- [ ] Add asset version fields and migration helpers.
+- [x] Add asset version fields and migration helpers.
 - [ ] Add safe cleanup for generated assets created by starter setup or tests.
 - [x] Add changelog/notes field for generated drafts.
 

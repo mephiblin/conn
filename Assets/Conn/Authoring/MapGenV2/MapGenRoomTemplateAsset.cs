@@ -7,6 +7,9 @@ namespace Conn.MapGenV2.Authoring
     [CreateAssetMenu(menuName = "Conn/MapGenV2/Room Template", fileName = "MapGenRoomTemplate")]
     public sealed class MapGenRoomTemplateAsset : ScriptableObject
     {
+        public const int CurrentVersion = 1;
+
+        public int Version = CurrentVersion;
         public string TemplateId = string.Empty;
         public Vector2Int Footprint = new Vector2Int(3, 3);
         public MapGenRoomCategory RoomCategory = MapGenRoomCategory.Main;

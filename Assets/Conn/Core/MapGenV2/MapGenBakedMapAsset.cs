@@ -6,7 +6,9 @@ namespace Conn.MapGenV2.Core
     [CreateAssetMenu(menuName = "Conn/MapGenV2/Baked Map", fileName = "MapGenBakedMap")]
     public sealed class MapGenBakedMapAsset : ScriptableObject
     {
-        public int Version = 1;
+        public const int CurrentVersion = 1;
+
+        public int Version = CurrentVersion;
         public string ProfileId = string.Empty;
         public string StyleId = string.Empty;
         public string RuleSetId = string.Empty;

@@ -7,6 +7,9 @@ namespace Conn.MapGenV2.Authoring
     [CreateAssetMenu(menuName = "Conn/MapGenV2/Corridor Template", fileName = "MapGenCorridorTemplate")]
     public sealed class MapGenCorridorTemplateAsset : ScriptableObject
     {
+        public const int CurrentVersion = 1;
+
+        public int Version = CurrentVersion;
         public string TemplateId = string.Empty;
         public MapGenCorridorKind CorridorKind = MapGenCorridorKind.Straight;
         public int Width = 1;

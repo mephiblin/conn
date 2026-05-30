@@ -7,6 +7,9 @@ namespace Conn.MapGenV2.Authoring
     [CreateAssetMenu(menuName = "Conn/MapGenV2/Room Shape", fileName = "MapGenRoomShape")]
     public sealed class MapGenRoomShapeAsset : ScriptableObject
     {
+        public const int CurrentVersion = 1;
+
+        public int Version = CurrentVersion;
         public string ShapeId = string.Empty;
         public Vector2Int Dimensions = new Vector2Int(3, 3);
         public MapGenShapeCell[] Cells = Array.Empty<MapGenShapeCell>();

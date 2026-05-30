@@ -7,6 +7,9 @@ namespace Conn.MapGenV2.Authoring
     [CreateAssetMenu(menuName = "Conn/MapGenV2/Profile", fileName = "MapGenProfile")]
     public sealed class MapGenProfileAsset : ScriptableObject
     {
+        public const int CurrentVersion = 1;
+
+        public int Version = CurrentVersion;
         public string ProfileId = string.Empty;
         public string DisplayName = string.Empty;
         [TextArea(3, 8)]

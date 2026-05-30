@@ -4,7 +4,7 @@ namespace Conn.MapGenV2.Core
 {
     public static class MapGenBakedMapMigration
     {
-        public const int CurrentVersion = 1;
+        public const int CurrentVersion = MapGenBakedMapAsset.CurrentVersion;
 
         public static bool IsCompatible(MapGenBakedMapAsset map)
         {

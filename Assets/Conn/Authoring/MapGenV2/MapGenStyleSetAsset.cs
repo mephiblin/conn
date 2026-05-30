@@ -7,6 +7,9 @@ namespace Conn.MapGenV2.Authoring
     [CreateAssetMenu(menuName = "Conn/MapGenV2/Style Set", fileName = "MapGenStyleSet")]
     public sealed class MapGenStyleSetAsset : ScriptableObject
     {
+        public const int CurrentVersion = 1;
+
+        public int Version = CurrentVersion;
         public string StyleId = string.Empty;
         public MapGenModuleSetAsset ModuleSet;
         public MapGenRoomShapeAsset[] RoomShapePool = Array.Empty<MapGenRoomShapeAsset>();

@@ -7,6 +7,9 @@ namespace Conn.MapGenV2.Authoring
     [CreateAssetMenu(menuName = "Conn/MapGenV2/Rule Set", fileName = "MapGenRuleSet")]
     public sealed class MapGenRuleSetAsset : ScriptableObject
     {
+        public const int CurrentVersion = 1;
+
+        public int Version = CurrentVersion;
         public MapGenRoomCategory[] RequiredRoomCategories =
         {
             MapGenRoomCategory.Start,

@@ -7,7 +7,9 @@ namespace Conn.MapGenV2.Authoring
     [CreateAssetMenu(menuName = "Conn/MapGenV2/Mockup Draft", fileName = "MapGenMockupDraft")]
     public sealed class MapGenMockupDraftAsset : ScriptableObject
     {
-        public int Version = 1;
+        public const int CurrentVersion = 1;
+
+        public int Version = CurrentVersion;
         public MapGenProfileAsset Profile;
         public int Seed;
         public Vector2Int GridSize = new Vector2Int(32, 32);
