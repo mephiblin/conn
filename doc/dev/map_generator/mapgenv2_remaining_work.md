@@ -1040,25 +1040,33 @@ Verification:
 
 ## Phase 15: Test Strategy
 
+Progress note 2026-05-31:
+
+- Focused `Conn.Tests.EditMode.MapGenV2` coverage now includes starter setup
+  asset creation in a temp root, starter generate/accept/materialize/bake,
+  deterministic same-seed output, different-seed variation, authoring
+  validation, post-process safety, materialization coverage, prop placement,
+  runtime bake/query adapters, migration, and cleanup behavior.
+
 Goal: separate MapGenV2 quality gates from quarantined legacy failures.
 
 Required automated tests:
 
-- [ ] starter setup creates valid linked assets.
-- [ ] starter setup generate/accept/materialize/bake works.
-- [ ] room shape resize/paint/connector validation.
-- [ ] room template and corridor template validation.
-- [ ] profile validation for missing style/module/rules/templates/connectors.
-- [ ] same seed/profile deterministic signature.
-- [ ] different seeds meaningful layout variation.
-- [ ] required rooms present and reachable.
-- [ ] impossible profile fails with actionable issue.
-- [ ] post-process passes preserve connectivity.
-- [ ] materialization deterministic weighted prefab selection.
-- [ ] materialization reports missing module categories.
-- [ ] prop placement deterministic and traversal-safe.
-- [ ] runtime baked data contains no editor-only references.
-- [ ] save/reload retains profile, draft, accepted state, materialized marker,
+- [x] starter setup creates valid linked assets.
+- [x] starter setup generate/accept/materialize/bake works.
+- [x] room shape resize/paint/connector validation.
+- [x] room template and corridor template validation.
+- [x] profile validation for missing style/module/rules/templates/connectors.
+- [x] same seed/profile deterministic signature.
+- [x] different seeds meaningful layout variation.
+- [x] required rooms present and reachable.
+- [x] impossible profile fails with actionable issue.
+- [x] post-process passes preserve connectivity.
+- [x] materialization deterministic weighted prefab selection.
+- [x] materialization reports missing module categories.
+- [x] prop placement deterministic and traversal-safe.
+- [x] runtime baked data contains no editor-only references.
+- [x] save/reload retains profile, draft, accepted state, materialized marker,
   and baked data.
 
 Manual checks:

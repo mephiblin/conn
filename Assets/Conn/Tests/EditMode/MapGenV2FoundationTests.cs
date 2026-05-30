@@ -1439,6 +1439,51 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void StarterSetupCreatesValidLinkedAssetsAndWorkflow()
+        {
+            const string tempRoot = "Assets/Conn/Tests/TempMapGenV2StarterSetup";
+            GameObject root = null;
+
+            try
+            {
+                var setup = MapGenV2StarterSetupBuilder.CreateStarterProfileSetup(tempRoot);
+
+                Assert.That(setup.Profile, Is.Not.Null);
+                Assert.That(setup.Draft, Is.Not.Null);
+                Assert.That(setup.Draft.Profile, Is.SameAs(setup.Profile));
+                Assert.That(setup.Profile.StyleSet, Is.Not.Null);
+                Assert.That(setup.Profile.StyleSet.ModuleSet, Is.Not.Null);
+                Assert.That(setup.Profile.LayoutRules, Is.Not.Null);
+                Assert.That(setup.Profile.RoomShapes, Is.Not.Empty);
+                Assert.That(setup.Profile.Validate().IsValid, Is.True);
+
+                var generationReport = setup.Draft.GenerateFromProfile();
+                Assert.That(generationReport.IsValid, Is.True, BuildIssueSummary(generationReport));
+                setup.Draft.ApplyPostProcessingFromProfile();
+                setup.Draft.Accept();
+
+                root = MapGenMockupMaterializer.Materialize(setup.Draft);
+                var baked = MapGenRuntimeBakeUtility.Bake(setup.Draft);
+
+                Assert.That(root, Is.Not.Null);
+                Assert.That(root.GetComponent<MapGenV2GeneratedMapMarker>(), Is.Not.Null);
+                Assert.That(baked, Is.Not.Null);
+                Assert.That(baked.Cells, Is.Not.Empty);
+                Assert.That(baked.TraversalEdges, Is.Not.Empty);
+                Assert.That(AssetDatabase.GetAssetPath(baked), Does.StartWith(tempRoot));
+            }
+            finally
+            {
+                if (root != null)
+                {
+                    Object.DestroyImmediate(root);
+                }
+
+                AssetDatabase.DeleteAsset(tempRoot);
+            }
+        }
+
+        [Test]
         public void GeneratedMapMarkerStoresDraftSourceData()
         {
             var styleSet = ScriptableObject.CreateInstance<MapGenStyleSetAsset>();
@@ -1783,6 +1828,19 @@ namespace Conn.Tests.EditMode
 
             Assert.That(first.Success, Is.True);
             Assert.That(second.Signature, Is.EqualTo(first.Signature));
+        }
+
+        [Test]
+        public void MockupSolverVariesAcrossDifferentSeeds()
+        {
+            var required = new[] { MapGenRoomCategory.Start, MapGenRoomCategory.Quest, MapGenRoomCategory.Exit };
+
+            var first = MapGenMockupSolver.Generate(12, 10, 42, required);
+            var second = MapGenMockupSolver.Generate(12, 10, 43, required);
+
+            Assert.That(first.Success, Is.True);
+            Assert.That(second.Success, Is.True);
+            Assert.That(second.Signature, Is.Not.EqualTo(first.Signature));
         }
 
         [Test]
@@ -3536,6 +3594,17 @@ namespace Conn.Tests.EditMode
             var prefab = PrefabUtility.SaveAsPrefabAsset(instance, path);
             Object.DestroyImmediate(instance);
             return prefab;
+        }
+
+        private static string BuildIssueSummary(MapGenValidationReport report)
+        {
+            var summary = string.Empty;
+            foreach (var issue in report?.Issues ?? System.Array.Empty<MapGenIssue>())
+            {
+                summary += $"{issue.Code}: {issue.Message} Fix: {issue.SuggestedFix}\n";
+            }
+
+            return summary;
         }
     }
 }
