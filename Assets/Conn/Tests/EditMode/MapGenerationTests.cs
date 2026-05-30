@@ -261,5 +261,77 @@ namespace Conn.Tests.EditMode
 
             Object.DestroyImmediate(root);
         }
+
+        [Test]
+        public void EditableValidationReportsBlockedRequiredRoute()
+        {
+            var draft = BuildLinearValidationDraft();
+            draft.Objects = new[]
+            {
+                new EditableMapObjectPlacement
+                {
+                    Id = "blocker",
+                    Kind = RoomChunkObjectKind.Blocker,
+                    X = 1,
+                    Y = 0,
+                    Width = 1,
+                    Depth = 1,
+                    BlocksMovement = true
+                }
+            };
+
+            var report = EditableMapValidationService.Validate(draft);
+
+            Assert.That(report.Passed, Is.False);
+            Assert.That(report.Errors.Exists(error => error.Contains("start-to-quest")), Is.True);
+        }
+
+        [Test]
+        public void EditableValidationReportsInvalidSlopeHeightConnection()
+        {
+            var draft = ScriptableObject.CreateInstance<EditableMapDraftAsset>();
+            draft.InitializeBlank(2, 2, 1f, 1f);
+            draft.TrySetCell(new EditableMapCell { X = 0, Y = 0, Terrain = RoomChunkCellType.Floor, Height = 0, Direction = MapDirection.North });
+            draft.TrySetCell(new EditableMapCell { X = 1, Y = 0, Terrain = RoomChunkCellType.Floor, Height = 0, Direction = MapDirection.North });
+            draft.TrySetCell(new EditableMapCell { X = 0, Y = 1, Terrain = RoomChunkCellType.Slope, Height = 0, Direction = MapDirection.East });
+            draft.TrySetCell(new EditableMapCell { X = 1, Y = 1, Terrain = RoomChunkCellType.Floor, Height = 0, Direction = MapDirection.North });
+            draft.Rooms = new[]
+            {
+                new EditableMapRoom { Id = "start", Role = MapRoomRole.Start, X = 0, Y = 0, Width = 1, Height = 1 },
+                new EditableMapRoom { Id = "quest", Role = MapRoomRole.QuestTarget, X = 1, Y = 0, Width = 1, Height = 1 },
+                new EditableMapRoom { Id = "boss", Role = MapRoomRole.Boss, X = 0, Y = 1, Width = 1, Height = 1 },
+                new EditableMapRoom { Id = "exit", Role = MapRoomRole.Exit, X = 1, Y = 1, Width = 1, Height = 1 }
+            };
+
+            var report = EditableMapValidationService.Validate(draft);
+
+            Assert.That(report.Errors.Exists(error => error.Contains("requires a +1 height step")), Is.True);
+        }
+
+        private static EditableMapDraftAsset BuildLinearValidationDraft()
+        {
+            var draft = ScriptableObject.CreateInstance<EditableMapDraftAsset>();
+            draft.InitializeBlank(4, 1, 1f, 1f);
+            for (var x = 0; x < 4; x++)
+            {
+                draft.TrySetCell(new EditableMapCell
+                {
+                    X = x,
+                    Y = 0,
+                    Terrain = RoomChunkCellType.Floor,
+                    Height = 0,
+                    Direction = MapDirection.North
+                });
+            }
+
+            draft.Rooms = new[]
+            {
+                new EditableMapRoom { Id = "start", Role = MapRoomRole.Start, X = 0, Y = 0, Width = 1, Height = 1 },
+                new EditableMapRoom { Id = "quest", Role = MapRoomRole.QuestTarget, X = 1, Y = 0, Width = 1, Height = 1 },
+                new EditableMapRoom { Id = "boss", Role = MapRoomRole.Boss, X = 2, Y = 0, Width = 1, Height = 1 },
+                new EditableMapRoom { Id = "exit", Role = MapRoomRole.Exit, X = 3, Y = 0, Width = 1, Height = 1 }
+            };
+            return draft;
+        }
     }
 }

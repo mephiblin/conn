@@ -30,6 +30,7 @@ namespace Conn.Editor.Maps
         private bool eraseMode;
         private int cellX;
         private int cellY;
+        private MapValidationReport lastValidationReport;
 
         public override void OnInspectorGUI()
         {
@@ -80,6 +81,11 @@ namespace Conn.Editor.Maps
                 {
                     EditableMapPreviewMeshBuilder.RebuildPreview(draft);
                 }
+
+                if (GUILayout.Button("Validate"))
+                {
+                    lastValidationReport = EditableMapValidationService.Validate(draft);
+                }
             }
 
             using (new EditorGUILayout.HorizontalScope())
@@ -101,6 +107,26 @@ namespace Conn.Editor.Maps
                     {
                         EditorGUIUtility.PingObject(folder);
                     }
+                }
+            }
+
+            if (lastValidationReport != null)
+            {
+                EditorGUILayout.Space();
+                EditorGUILayout.LabelField("Validation", EditorStyles.boldLabel);
+                if (lastValidationReport.Passed)
+                {
+                    EditorGUILayout.HelpBox("Validation passed.", MessageType.Info);
+                }
+
+                foreach (var error in lastValidationReport.Errors)
+                {
+                    EditorGUILayout.HelpBox(error, MessageType.Error);
+                }
+
+                foreach (var warning in lastValidationReport.Warnings)
+                {
+                    EditorGUILayout.HelpBox(warning, MessageType.Warning);
                 }
             }
 

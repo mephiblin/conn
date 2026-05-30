@@ -23,7 +23,11 @@ As of 2026-05-30, the first draft-backed path is now in the project:
 - `EditableMapPreviewMeshBuilder` rebuilds a disposable scene preview directly
   from the draft asset instead of relying on `MapGeneratorWorkspace` room cubes.
 - `EditableMapDraftEditor` adds first-pass draft actions for blank grid reset,
-  preview rebuild, and preview clear.
+  preview rebuild, preview clear, coordinate brush edits, fill/clear, and
+  draft validation.
+- `EditableMapValidationService` now validates walkability, blocking object
+  footprints, socket legality, required room-to-room routes, and slope/stair
+  height transitions for editable drafts.
 - `MapGeneratorWorkspaceEditor` now has a bridge button that saves the current
   generated result as an `EditableMapDraftAsset` without making the workspace a
   required dependency of the new pipeline.

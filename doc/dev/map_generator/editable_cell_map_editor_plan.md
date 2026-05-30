@@ -993,24 +993,24 @@ is partially complete.
 
 ### Phase 6: Connectivity And Height Validation
 
-- [ ] Create `EditableMapValidationService`.
-- [ ] Build a walkability map from terrain, height, blockers, and sockets.
-- [ ] Treat wall/gap cells as non-walkable.
-- [ ] Treat blocking objects as non-walkable across their footprint.
-- [ ] Validate all sockets touch walkable cells.
+- [x] Create `EditableMapValidationService`.
+- [x] Build a walkability map from terrain, height, blockers, and sockets.
+- [x] Treat wall/gap cells as non-walkable.
+- [x] Treat blocking objects as non-walkable across their footprint.
+- [x] Validate all sockets touch walkable cells.
 - [ ] Validate room entry sockets can reach required anchors.
-- [ ] Validate start-to-quest route.
-- [ ] Validate quest-to-boss route.
-- [ ] Validate boss-to-exit route.
+- [x] Validate start-to-quest route.
+- [x] Validate quest-to-boss route.
+- [x] Validate boss-to-exit route.
 - [ ] Validate optional treasure/dead-end routes do not break required routes.
-- [ ] Validate slope direction and height delta.
-- [ ] Validate stair direction and height delta.
+- [x] Validate slope direction and height delta.
+- [x] Validate stair direction and height delta.
 - [ ] Report validation failures by cell, object id, room id, socket id, or
   palette id.
 - [ ] Block bake when required validation errors exist.
-- [ ] Add tests for disconnected routes.
-- [ ] Add tests for blocking object route cuts.
-- [ ] Add tests for invalid slope/stair height connections.
+- [x] Add tests for disconnected routes.
+- [x] Add tests for blocking object route cuts.
+- [x] Add tests for invalid slope/stair height connections.
 
 ### Phase 7: Runtime Bake
 
