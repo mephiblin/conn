@@ -10,12 +10,20 @@ namespace Conn.MapGenV2.Editor
     [CustomEditor(typeof(MapGenRuleSetAsset))]
     public sealed class MapGenRuleSetAssetEditor : UnityEditor.Editor
     {
+        private static bool showAdvancedRuleData;
+
         public override void OnInspectorGUI()
         {
             var ruleSet = (MapGenRuleSetAsset)target;
             DrawDesignerSummary(ruleSet);
-            DrawDefaultInspector();
+            DrawAdvancedRuleData();
             MapGenValidationReportEditorGUI.Draw(ruleSet.Validate(), ruleSet, "Rule set is valid.");
+        }
+
+        public static string BuildInspectorUxSummary()
+        {
+            return "Rule set primary UX shows quantity, density, distance, topology, post-process, prop-placement counts, and validation first; "
+                + "advanced/debug foldout contains raw serialized rule arrays and legacy compatibility fields.";
         }
 
         public static string BuildDesignerSummary(MapGenRuleSetAsset ruleSet)
@@ -54,7 +62,23 @@ namespace Conn.MapGenV2.Editor
                 EditorGUILayout.HelpBox(
                     "방 개수, 복도 밀도, 루프, 막힌 영역 처리, 필수 방, 후처리 순서를 먼저 확인한 뒤 아래 raw 값을 조정하세요.",
                     MessageType.Info);
+                EditorGUILayout.HelpBox(BuildInspectorUxSummary(), MessageType.Info);
             }
+        }
+
+        private void DrawAdvancedRuleData()
+        {
+            EditorGUILayout.Space();
+            showAdvancedRuleData = EditorGUILayout.Foldout(
+                showAdvancedRuleData,
+                "고급/디버그 규칙 데이터 / Advanced Debug Rule Data",
+                true);
+            if (!showAdvancedRuleData)
+            {
+                return;
+            }
+
+            DrawDefaultInspector();
         }
 
         private static string FormatCategories(MapGenRoomCategory[] categories)

@@ -116,9 +116,9 @@ tool, and generated output workflow.
 - [ ] Add inline help text and tooltips for profile, rule set, style set,
   module set, room shape, connector, post-process, prop placement, and bake
   settings.
-- [ ] Group advanced settings under foldouts so a first-time user is not forced
+- [x] Group advanced settings under foldouts so a first-time user is not forced
   to understand every low-level field before generating a map.
-- [ ] Avoid raw serialized arrays in the primary UX. Arrays may remain visible in
+- [x] Avoid raw serialized arrays in the primary UX. Arrays may remain visible in
   debug/advanced foldouts only.
 - [x] Add `Ping`, `Select`, `Open`, `Create`, `Duplicate`, `Validate`, and
   `Fix/Create Missing` buttons beside important asset references.

@@ -175,6 +175,33 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void MapGenV2InspectorsKeepRawArraysInAdvancedFoldouts()
+        {
+            var profile = MapGenProfileAssetEditor.BuildInspectorUxSummary();
+            var ruleSet = MapGenRuleSetAssetEditor.BuildInspectorUxSummary();
+            var moduleSet = MapGenModuleSetAssetEditor.BuildInspectorUxSummary();
+            var roomTemplate = MapGenRoomTemplateAssetEditor.BuildInspectorUxSummary();
+            var corridorTemplate = MapGenCorridorTemplateAssetEditor.BuildInspectorUxSummary();
+            var draft = MapGenMockupDraftAssetEditor.BuildInspectorUxSummary();
+
+            Assert.That(profile, Does.Contain("primary UX"));
+            Assert.That(profile, Does.Contain("advanced/debug foldout"));
+            Assert.That(profile, Does.Contain("room-shape arrays"));
+            Assert.That(ruleSet, Does.Contain("advanced/debug foldout"));
+            Assert.That(ruleSet, Does.Contain("raw serialized rule arrays"));
+            Assert.That(moduleSet, Does.Contain("advanced/debug foldout"));
+            Assert.That(moduleSet, Does.Contain("raw serialized module entry arrays"));
+            Assert.That(roomTemplate, Does.Contain("primary UX"));
+            Assert.That(roomTemplate, Does.Contain("advanced/debug foldout"));
+            Assert.That(roomTemplate, Does.Contain("raw arrays"));
+            Assert.That(corridorTemplate, Does.Contain("advanced/debug foldout"));
+            Assert.That(corridorTemplate, Does.Contain("raw arrays"));
+            Assert.That(draft, Does.Contain("primary UX"));
+            Assert.That(draft, Does.Contain("raw serialized draft data"));
+            Assert.That(draft, Does.Contain("advanced/debug foldout"));
+        }
+
+        [Test]
         public void MapGenV2WindowPrimaryActionExplanationIncludesChangeReasonAndOutput()
         {
             var explanation = MapGenV2Window.BuildPrimaryActionExplanation(

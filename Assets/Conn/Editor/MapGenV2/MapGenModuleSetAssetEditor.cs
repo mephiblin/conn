@@ -8,12 +8,20 @@ namespace Conn.MapGenV2.Editor
     [CustomEditor(typeof(MapGenModuleSetAsset))]
     public sealed class MapGenModuleSetAssetEditor : UnityEditor.Editor
     {
+        private static bool showAdvancedModuleData;
+
         public override void OnInspectorGUI()
         {
             var moduleSet = (MapGenModuleSetAsset)target;
             DrawCoverageSummary(moduleSet);
-            DrawDefaultInspector();
+            DrawAdvancedModuleData();
             MapGenValidationReportEditorGUI.Draw(moduleSet.Validate(), moduleSet, "Module set is valid.");
+        }
+
+        public static string BuildInspectorUxSummary()
+        {
+            return "Module set primary UX shows category coverage, missing required categories, and validation first; "
+                + "advanced/debug foldout contains raw serialized module entry arrays and bounds contract settings.";
         }
 
         public static string BuildCoverageSummary(MapGenModuleSetAsset moduleSet)
@@ -44,7 +52,23 @@ namespace Conn.MapGenV2.Editor
             {
                 var style = new GUIStyle(EditorStyles.label) { wordWrap = true };
                 EditorGUILayout.LabelField(BuildCoverageSummary(moduleSet), style);
+                EditorGUILayout.HelpBox(BuildInspectorUxSummary(), MessageType.Info);
             }
+        }
+
+        private void DrawAdvancedModuleData()
+        {
+            EditorGUILayout.Space();
+            showAdvancedModuleData = EditorGUILayout.Foldout(
+                showAdvancedModuleData,
+                "고급/디버그 모듈 데이터 / Advanced Debug Module Data",
+                true);
+            if (!showAdvancedModuleData)
+            {
+                return;
+            }
+
+            DrawDefaultInspector();
         }
 
         private static int Count(MapGenModuleEntry[] entries)

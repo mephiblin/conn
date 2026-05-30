@@ -17,6 +17,7 @@ namespace Conn.MapGenV2.Editor
         private static readonly Color ConnectorColor = CorridorColor;
         private static readonly Color ReservedColor = BlockedColor;
         private static readonly Color GridLineColor = new Color(0f, 0f, 0f, 0.28f);
+        private static bool showRawDraftData;
         private MapGenValidationReport lastGenerationReport;
         private int selectedRegionId = -1;
 
@@ -86,9 +87,13 @@ namespace Conn.MapGenV2.Editor
                 draft,
                 "Prop channels are valid.");
 
-            EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Raw Draft Data", EditorStyles.boldLabel);
-            DrawDefaultInspector();
+            DrawRawDraftDataFoldout();
+        }
+
+        public static string BuildInspectorUxSummary()
+        {
+            return "Draft primary UX shows preview, status, actions, selected-region summary, and validation first; "
+                + "raw serialized draft data remains in an advanced/debug foldout.";
         }
 
         public static string BuildInspectorSummary(MapGenMockupDraftAsset draft, int selectedRegionId)
@@ -110,6 +115,19 @@ namespace Conn.MapGenV2.Editor
             builder.Append($", Materialization {FormatMaterializationReadiness(draft)}");
             builder.Append($", Signature {FormatValue(draft.ComputeSignature())}");
             return builder.ToString();
+        }
+
+        private void DrawRawDraftDataFoldout()
+        {
+            EditorGUILayout.Space();
+            showRawDraftData = EditorGUILayout.Foldout(showRawDraftData, "고급/디버그 Raw Draft Data", true);
+            if (!showRawDraftData)
+            {
+                EditorGUILayout.HelpBox(BuildInspectorUxSummary(), MessageType.Info);
+                return;
+            }
+
+            DrawDefaultInspector();
         }
 
         public static string BuildSelectedRegionSummary(MapGenMockupDraftAsset draft, int selectedRegionId)

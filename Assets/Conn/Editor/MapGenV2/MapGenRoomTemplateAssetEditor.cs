@@ -8,6 +8,7 @@ namespace Conn.MapGenV2.Editor
     [CustomEditor(typeof(MapGenRoomTemplateAsset))]
     public sealed class MapGenRoomTemplateAssetEditor : UnityEditor.Editor
     {
+        private static bool showAdvancedTemplateData;
         private readonly MapGenV2AuthoringPreviewTextureCache previewCache = new MapGenV2AuthoringPreviewTextureCache();
 
         public override void OnInspectorGUI()
@@ -37,29 +38,46 @@ namespace Conn.MapGenV2.Editor
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGenRoomTemplateAsset.SizeClass)));
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGenRoomTemplateAsset.Weight)));
 
+            DrawAdvancedTemplateData();
+
+            serializedObject.ApplyModifiedProperties();
+            MapGenValidationReportEditorGUI.Draw(template.Validate(), template, "Room template is valid.");
+        }
+
+        public static string BuildInspectorUxSummary()
+        {
+            return "Room template primary UX shows identity, validation, and footprint preview first; "
+                + "advanced/debug foldout contains source shape, connector, cell, door hint, and prop-channel raw arrays.";
+        }
+
+        private void OnDisable()
+        {
+            previewCache.Dispose();
+        }
+
+        private void DrawAdvancedTemplateData()
+        {
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField("소스 룸 셰이프 / Source Room Shapes", EditorStyles.boldLabel);
+            showAdvancedTemplateData = EditorGUILayout.Foldout(
+                showAdvancedTemplateData,
+                "고급/디버그 템플릿 데이터 / Advanced Debug Template Data",
+                true);
+            if (!showAdvancedTemplateData)
+            {
+                EditorGUILayout.HelpBox(BuildInspectorUxSummary(), MessageType.Info);
+                return;
+            }
+
             EditorGUILayout.HelpBox(
-                "템플릿이 어떤 룸 셰이프에서 만들어졌는지 추적합니다. / Reference the room shape assets used to author this template.",
+                "아래 배열은 템플릿 컴파일/검증용 원본 데이터입니다. 일반 제작은 위 요약과 풋프린트 미리보기를 먼저 사용하세요.",
                 MessageType.Info);
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGenRoomTemplateAsset.SourceRoomShapes)), true);
-
-            EditorGUILayout.Space();
-            EditorGUILayout.LabelField("셀/커넥터 데이터 / Cells And Connectors", EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGenRoomTemplateAsset.Connectors)), true);
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGenRoomTemplateAsset.FloorCells)), true);
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGenRoomTemplateAsset.WallCells)), true);
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGenRoomTemplateAsset.BlockedCells)), true);
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGenRoomTemplateAsset.DoorHintCells)), true);
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGenRoomTemplateAsset.PropChannels)), true);
-
-            serializedObject.ApplyModifiedProperties();
-            MapGenValidationReportEditorGUI.Draw(template.Validate(), template, "Room template is valid.");
-        }
-
-        private void OnDisable()
-        {
-            previewCache.Dispose();
         }
 
         private static void DrawValidationSummary(MapGenRoomTemplateAsset template)

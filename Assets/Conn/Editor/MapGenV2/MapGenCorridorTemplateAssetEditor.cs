@@ -7,6 +7,8 @@ namespace Conn.MapGenV2.Editor
     [CustomEditor(typeof(MapGenCorridorTemplateAsset))]
     public sealed class MapGenCorridorTemplateAssetEditor : UnityEditor.Editor
     {
+        private static bool showAdvancedTemplateData;
+
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
@@ -33,16 +35,36 @@ namespace Conn.MapGenV2.Editor
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGenCorridorTemplateAsset.LengthRange)));
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGenCorridorTemplateAsset.Weight)));
 
+            DrawAdvancedTemplateData();
+
+            serializedObject.ApplyModifiedProperties();
+            MapGenValidationReportEditorGUI.Draw(template.Validate(), template, "Corridor template is valid.");
+        }
+
+        public static string BuildInspectorUxSummary()
+        {
+            return "Corridor template primary UX shows kind, width, length range, and validation summary first; "
+                + "advanced/debug foldout contains connector and prop-channel raw arrays.";
+        }
+
+        private void DrawAdvancedTemplateData()
+        {
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField("커넥터/프롭 / Connectors And Props", EditorStyles.boldLabel);
+            showAdvancedTemplateData = EditorGUILayout.Foldout(
+                showAdvancedTemplateData,
+                "고급/디버그 복도 데이터 / Advanced Debug Corridor Data",
+                true);
+            if (!showAdvancedTemplateData)
+            {
+                EditorGUILayout.HelpBox(BuildInspectorUxSummary(), MessageType.Info);
+                return;
+            }
+
             EditorGUILayout.HelpBox(
                 "Straight/turn/T/cross/variable-length corridor behavior is represented by kind, turn kind, width, length range, and connector placement.",
                 MessageType.Info);
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGenCorridorTemplateAsset.Connectors)), true);
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MapGenCorridorTemplateAsset.PropChannels)), true);
-
-            serializedObject.ApplyModifiedProperties();
-            MapGenValidationReportEditorGUI.Draw(template.Validate(), template, "Corridor template is valid.");
         }
     }
 }

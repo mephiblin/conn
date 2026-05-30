@@ -9,12 +9,20 @@ namespace Conn.MapGenV2.Editor
     [CustomEditor(typeof(MapGenProfileAsset))]
     public sealed class MapGenProfileAssetEditor : UnityEditor.Editor
     {
+        private static bool showAdvancedProfileData;
+
         public override void OnInspectorGUI()
         {
             var profile = (MapGenProfileAsset)target;
             DrawSummary(profile);
-            DrawDefaultInspector();
+            DrawAdvancedProfileData();
             MapGenValidationReportEditorGUI.Draw(profile.Validate(), profile, "Profile is valid.");
+        }
+
+        public static string BuildInspectorUxSummary()
+        {
+            return "Profile primary UX shows map size, seed, style/rule links, template counts, required categories, and validation first; "
+                + "advanced/debug foldout contains raw serialized fields including room-shape arrays and output/navigation settings.";
         }
 
         public static string BuildSummary(MapGenProfileAsset profile)
@@ -49,7 +57,23 @@ namespace Conn.MapGenV2.Editor
             {
                 var style = new GUIStyle(EditorStyles.label) { wordWrap = true };
                 EditorGUILayout.LabelField(BuildSummary(profile), style);
+                EditorGUILayout.HelpBox(BuildInspectorUxSummary(), MessageType.Info);
             }
+        }
+
+        private void DrawAdvancedProfileData()
+        {
+            EditorGUILayout.Space();
+            showAdvancedProfileData = EditorGUILayout.Foldout(
+                showAdvancedProfileData,
+                "고급/디버그 프로필 데이터 / Advanced Debug Profile Data",
+                true);
+            if (!showAdvancedProfileData)
+            {
+                return;
+            }
+
+            DrawDefaultInspector();
         }
 
         private static string FormatCategories(MapGenRoomCategory[] categories)
