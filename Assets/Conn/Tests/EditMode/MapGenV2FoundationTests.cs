@@ -2196,6 +2196,47 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void PropPlacementPlannerAppliesRoomAndCorridorFilters()
+        {
+            var cells = new[]
+            {
+                new MapGenMockupCell { State = MapGenCellState.Room, RegionId = 1, RoomCategory = MapGenRoomCategory.Start },
+                new MapGenMockupCell { State = MapGenCellState.Room, RegionId = 2, RoomCategory = MapGenRoomCategory.Exit },
+                new MapGenMockupCell { State = MapGenCellState.Corridor, RegionId = 3, SourceTemplateId = "main_corridor" },
+                new MapGenMockupCell { State = MapGenCellState.Corridor, RegionId = 4, SourceTemplateId = "side_corridor" }
+            };
+            var rules = new[]
+            {
+                new MapGenPropPlacementRules
+                {
+                    Channel = "start_reward",
+                    ChannelKind = MapGenPropPlacementChannelKind.Floor,
+                    DistributionMode = MapGenPropDistributionMode.MarkerBased,
+                    RoomCategoryFilters = new[] { nameof(MapGenRoomCategory.Start) },
+                    DensityPercent = 100,
+                    MinSpacingCells = 0
+                },
+                new MapGenPropPlacementRules
+                {
+                    Channel = "corridor_decor",
+                    ChannelKind = MapGenPropPlacementChannelKind.Floor,
+                    DistributionMode = MapGenPropDistributionMode.MarkerBased,
+                    CorridorKindFilters = new[] { "side_corridor" },
+                    DensityPercent = 100,
+                    MinSpacingCells = 0
+                }
+            };
+
+            var result = MapGenPropPlacementPlanner.Build(4, 1, cells, rules, 5);
+
+            Assert.That(result.Report.IsValid, Is.True);
+            Assert.That(result.PlacedProps, Has.Exactly(1).Matches<MapGenPlacedProp>(
+                prop => prop.Channel == "start_reward" && prop.Coord == new MapGenGridCoord(0, 0)));
+            Assert.That(result.PlacedProps, Has.Exactly(1).Matches<MapGenPlacedProp>(
+                prop => prop.Channel == "corridor_decor" && prop.Coord == new MapGenGridCoord(3, 0)));
+        }
+
+        [Test]
         public void PropPlacementPlannerReportsBlockerTraversalBreaks()
         {
             var cells = new[]

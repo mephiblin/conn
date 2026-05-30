@@ -111,7 +111,7 @@ namespace Conn.MapGenV2.Authoring
             {
                 var coord = MapGenGridCoord.FromIndex(index, width);
                 var cell = cells[index];
-                if (!IsNavigable(cell.State) || !MatchesRoomFilter(cell, rule))
+                if (!IsNavigable(cell.State) || !MatchesFilters(cell, rule))
                 {
                     continue;
                 }
@@ -229,6 +229,11 @@ namespace Conn.MapGenV2.Authoring
             }
         }
 
+        private static bool MatchesFilters(MapGenMockupCell cell, MapGenPropPlacementRules rule)
+        {
+            return MatchesRoomFilter(cell, rule) && MatchesCorridorFilter(cell, rule);
+        }
+
         private static bool MatchesRoomFilter(MapGenMockupCell cell, MapGenPropPlacementRules rule)
         {
             var filters = rule.RoomCategoryFilters ?? Array.Empty<string>();
@@ -237,10 +242,39 @@ namespace Conn.MapGenV2.Authoring
                 return true;
             }
 
+            if (cell.State != MapGenCellState.Room)
+            {
+                return false;
+            }
+
             var category = cell.RoomCategory.ToString();
             foreach (var filter in filters)
             {
                 if (string.Equals(filter, category, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool MatchesCorridorFilter(MapGenMockupCell cell, MapGenPropPlacementRules rule)
+        {
+            var filters = rule.CorridorKindFilters ?? Array.Empty<string>();
+            if (filters.Length == 0)
+            {
+                return true;
+            }
+
+            if (cell.State != MapGenCellState.Corridor)
+            {
+                return false;
+            }
+
+            foreach (var filter in filters)
+            {
+                if (string.Equals(filter, cell.SourceTemplateId ?? string.Empty, StringComparison.OrdinalIgnoreCase))
                 {
                     return true;
                 }

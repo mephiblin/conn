@@ -792,6 +792,8 @@ Progress note 2026-05-31:
 - Blocker prop rules now validate planned placements against the traversable
   mockup graph and report traversal-breaking blocker positions unless traversal
   blocking is explicitly allowed.
+- Prop placement rules now apply room category filters and corridor template
+  filters before deterministic placement selection.
 
 Goal: support procedural props without breaking traversal.
 
@@ -805,7 +807,7 @@ Tasks:
   random, weighted random, grid, perimeter, marker-based, one-per-region,
   required unique.
 - [x] Add min spacing and density limits.
-- [ ] Add category filters for rooms/corridors.
+- [x] Add category filters for rooms/corridors.
 - [x] Add deterministic RNG stream for prop placement.
 - [x] Validate blocker props against traversal graph.
 - [ ] Add prop placement preview overlay.
@@ -823,6 +825,7 @@ Verification:
 - EditMode tests for deterministic prop placement.
 - EditMode tests for blocker traversal validation.
 - EditMode test for one-per-region prop distribution.
+- EditMode test for room/corridor prop placement filters.
 - EditMode test for materialization prop requests using placement rules.
 - Manual Unity check with floor, wall, and blocker props.
 
