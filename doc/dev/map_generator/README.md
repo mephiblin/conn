@@ -55,15 +55,19 @@ As of 2026-05-30, the first draft-backed path is now in the project:
   intentionally, selects matching chunk presets deterministically from role +
   layout + sockets, and rasterizes those chunk cells/objects directly into the
   generated editable draft.
+- `MapGenerationQualityService` adds a production-shape gate for generated
+  graphs: the current ruins slice must include non-overlapping rooms, branches
+  on both sides of the main path, at least one loop, and the required hub,
+  corridor, dead-end, and height-transition room kinds.
 - The high-level editor flow now treats `EditableMapDraftAsset` and
   `CompiledMap` as the primary outputs. The old `GeneratedMapDraft` graph
   remains only as an internal adapter stage inside the draft builder and core
   generator validation code, not as a saved/user-facing result type.
 
 This is no longer only a Phase 1/2 slice. Draft authoring, palettes, preview,
-validation, first-pass bake/runtime consumption, and initial layout-aware draft
-generation now exist, but richer route validation, deeper generator authoring,
-and full dungeon gameplay integration are still pending.
+validation, first-pass bake/runtime consumption, and initial production-shape
+generation gates now exist, but deeper generator authoring and full dungeon
+gameplay integration are still pending.
 
 ## Workspace Boundary
 

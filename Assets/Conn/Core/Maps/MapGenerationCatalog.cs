@@ -13,16 +13,16 @@ namespace Conn.Core.Maps
                 ProfileId = ChapterTwoFirstSliceProfileId,
                 MapKind = "Ruins",
                 Theme = "ruins",
-                Width = 96,
+                Width = 120,
                 Height = 64,
                 RoomWidth = 12,
                 RoomHeight = 10,
                 TargetModuleCount = 8,
-                CriticalPathMin = 7,
-                CriticalPathMax = 7,
-                SideBranchCount = 2,
-                LoopMin = 0,
-                LoopMax = 0,
+                CriticalPathMin = 9,
+                CriticalPathMax = 9,
+                SideBranchCount = 4,
+                LoopMin = 1,
+                LoopMax = 1,
                 MergeChancePer1000 = 250,
                 RequiredAnchors = new List<MapAnchorKind>
                 {
@@ -147,7 +147,7 @@ namespace Conn.Core.Maps
 
         private static ChunkPreset SideDeadEnd()
         {
-            var chunk = CreateBaseChunk("ruins_side_deadend", MapRoomRole.SideBranch, RoomChunkLayoutKind.DeadEnd, MapDirection.West);
+            var chunk = CreateBaseChunk("ruins_side_deadend", MapRoomRole.SideBranch, RoomChunkLayoutKind.DeadEnd, MapDirection.North | MapDirection.East | MapDirection.South | MapDirection.West);
             chunk.DeadEndDepth = 2;
             chunk.Anchors.Add(new ChunkAnchor { Id = "loot", Kind = MapAnchorKind.Loot, X = 8, Y = 5 });
             chunk.Cells = DeadEndCells(12, 10, "side_floor");

@@ -45,9 +45,11 @@ namespace Conn.Tests.EditMode
             var chunks = MapGenerationCatalog.ChapterTwoFirstSliceChunks();
             var draft = MapGenerationService.Generate(profile, chunks, 2001);
             var report = MapValidationService.Validate(profile, draft);
+            var qualityReport = MapGenerationQualityService.ValidateProductionShape(profile, draft);
             var compiled = MapGenerationService.Compile(profile, draft);
 
             Assert.That(report.Passed, Is.True, string.Join("\n", report.Errors.ToArray()));
+            Assert.That(qualityReport.Passed, Is.True, string.Join("\n", qualityReport.Errors.ToArray()));
             Assert.That(compiled.Placements.Exists(p => p.Kind == MapPlacementKind.Start), Is.True);
             Assert.That(compiled.Placements.Exists(p => p.Kind == MapPlacementKind.QuestTarget), Is.True);
             Assert.That(compiled.Placements.Exists(p => p.Kind == MapPlacementKind.Boss), Is.True);
@@ -56,6 +58,23 @@ namespace Conn.Tests.EditMode
             Assert.That(compiled.Placements.Exists(p => p.Kind == MapPlacementKind.Loot), Is.True);
             Assert.That(compiled.Rooms.Count, Is.EqualTo(draft.Graph.Nodes.Count));
             Assert.That(compiled.Doors.Count, Is.EqualTo(draft.Graph.Edges.Count));
+        }
+
+        [Test]
+        public void FirstSliceProductionShapeIncludesBranchesLoopsAndSpecialRooms()
+        {
+            var profile = MapGenerationCatalog.ChapterTwoFirstSliceProfile();
+            var chunks = MapGenerationCatalog.ChapterTwoFirstSliceChunks();
+            var draft = MapGenerationService.Generate(profile, chunks, 2001);
+
+            var report = MapGenerationQualityService.ValidateProductionShape(profile, draft);
+
+            Assert.That(report.Passed, Is.True, string.Join("\n", report.Errors.ToArray()));
+            Assert.That(draft.Graph.Nodes.Count(node => node.Role == MapRoomRole.SideBranch), Is.GreaterThanOrEqualTo(8));
+            Assert.That(draft.Graph.Edges.Count(edge => edge.Kind == "merge"), Is.GreaterThanOrEqualTo(1));
+            Assert.That(draft.Graph.Nodes.Count(node => node.LayoutKind == RoomChunkLayoutKind.Hub), Is.GreaterThanOrEqualTo(1));
+            Assert.That(draft.Graph.Nodes.Count(node => node.LayoutKind == RoomChunkLayoutKind.DeadEnd), Is.GreaterThanOrEqualTo(1));
+            Assert.That(draft.Graph.Nodes.Count(node => node.LayoutKind == RoomChunkLayoutKind.HeightTransition), Is.GreaterThanOrEqualTo(1));
         }
 
         [Test]

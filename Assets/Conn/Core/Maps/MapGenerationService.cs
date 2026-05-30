@@ -26,29 +26,43 @@ namespace Conn.Core.Maps
                 }
             }
 
+            var maxAttachIndex = Math.Max(1, pathLength - 4);
+            var northBranchCount = 0;
+            var southBranchCount = 0;
             for (var i = 0; i < profile.SideBranchCount; i++)
             {
-                var attachIndex = hubAttachIndex;
-                var branchY = y + (i % 2 == 0 ? 1 : -1);
+                var direction = i % 2 == 0 ? 1 : -1;
+                var attachIndex = direction > 0
+                    ? Math.Max(1, hubAttachIndex - northBranchCount++)
+                    : Math.Min(maxAttachIndex, hubAttachIndex + 1 - southBranchCount++);
+                var branchY = y + direction;
+                var branchEndY = branchY + direction;
                 var branchId = $"side_{i}_a";
                 var branchEndId = $"side_{i}_b";
                 AddNode(draft.Graph, branchId, attachIndex, branchY, MapRoomRole.SideBranch, 1, -1);
-                AddNode(draft.Graph, branchEndId, attachIndex + 1, branchY, MapRoomRole.SideBranch, 2, -1);
+                AddNode(draft.Graph, branchEndId, attachIndex, branchEndY, MapRoomRole.SideBranch, 2, -1);
                 AddEdge(draft.Graph, $"main_{attachIndex}", branchId, "branch");
                 AddEdge(draft.Graph, branchId, branchEndId, "branch");
                 draft.Graph.SideBranches.Add(branchEndId);
             }
 
             var loopBudget = Math.Min(Math.Max(0, random.Next(profile.LoopMin, profile.LoopMax + 1)), Math.Max(0, draft.Graph.SideBranches.Count - 1));
-            for (var i = 0; i < loopBudget && i < draft.Graph.SideBranches.Count - 1; i++)
+            var loopsAdded = 0;
+            for (var i = 0; loopsAdded < loopBudget && i < draft.Graph.SideBranches.Count; i++)
             {
-                var sideId = draft.Graph.SideBranches[i];
-                var side = FindNode(draft.Graph, sideId);
-                var targetIndex = Math.Max(1, Math.Min(side.GridX, pathLength - 4));
-                var target = $"main_{targetIndex}";
-                if (!HasEdge(draft.Graph, sideId, target))
+                for (var j = i + 1; loopsAdded < loopBudget && j < draft.Graph.SideBranches.Count; j++)
                 {
-                    AddEdge(draft.Graph, sideId, target, "merge");
+                    var fromId = draft.Graph.SideBranches[i];
+                    var toId = draft.Graph.SideBranches[j];
+                    var from = FindNode(draft.Graph, fromId);
+                    var to = FindNode(draft.Graph, toId);
+                    if (ManhattanDistance(from, to) != 1 || HasEdge(draft.Graph, fromId, toId))
+                    {
+                        continue;
+                    }
+
+                    AddEdge(draft.Graph, fromId, toId, "merge");
+                    loopsAdded++;
                 }
             }
 
@@ -381,7 +395,7 @@ namespace Conn.Core.Maps
             for (var i = 0; i < graph.Nodes.Count; i++)
             {
                 var node = graph.Nodes[i];
-                if (node.Role == MapRoomRole.MainPath && node.PathIndex > 0 && node.PathIndex < graph.CriticalPath.Count - 2)
+                if (node.Role == MapRoomRole.MainPath && node.PathIndex > 1 && node.PathIndex < graph.CriticalPath.Count - 2)
                 {
                     fallbackCandidates.Add(node);
                     if (CountConnections(graph, node.Id) < 3)
@@ -417,6 +431,11 @@ namespace Conn.Core.Maps
             }
 
             return count;
+        }
+
+        private static int ManhattanDistance(RoomGraphNode first, RoomGraphNode second)
+        {
+            return Math.Abs(first.GridX - second.GridX) + Math.Abs(first.GridY - second.GridY);
         }
 
         private static bool IsOpposingSockets(MapDirection sockets)

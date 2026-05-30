@@ -991,6 +991,10 @@ is partially complete.
   - 2026-05-30: generated dead-end stubs are registered as room metadata with
     bidirectional sockets and validated cell ownership.
 - [x] Generate height-transition nodes intentionally.
+- [x] Gate generated graph shape for production minimums.
+  - 2026-05-30: `MapGenerationQualityService` now rejects generated graphs
+    without non-overlapping rooms, both-side branches, loop edges, and required
+    hub/corridor/dead-end/height-transition room kinds.
 - [x] Choose chunks by role, layout kind, sockets, theme, and size.
 - [x] Rasterize selected chunk cells into the draft grid.
 - [x] Stamp selected chunk object placements into the draft.
