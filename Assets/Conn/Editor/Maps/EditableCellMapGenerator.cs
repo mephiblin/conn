@@ -37,7 +37,7 @@ namespace Conn.Editor.Maps
             var rooms = BuildRoomPlan(profile, random, width, height, mainY);
             for (var i = 0; i < rooms.Count; i++)
             {
-                CarveRoom(draft, rooms[i]);
+                CarveRoom(draft, random, rooms[i], i);
             }
 
             ConnectRooms(draft, random, rooms[0], rooms[1]);
@@ -47,6 +47,7 @@ namespace Conn.Editor.Maps
             ConnectRooms(draft, random, rooms[4], rooms[5]);
             ConnectRooms(draft, random, rooms[2], rooms[6]);
             ConnectRooms(draft, random, rooms[2], rooms[7]);
+            AddHeightTransitionFeature(draft, rooms[4]);
             CarveWallsAroundFloors(draft);
             AddGeneratedObjects(draft, rooms);
             EditableMapDraftMetadataBuilder.BuildPlayableMetadataFromDrawing(draft);
@@ -85,15 +86,50 @@ namespace Conn.Editor.Maps
             return rooms;
         }
 
-        private static void CarveRoom(EditableMapDraftAsset draft, RectInt room)
+        private static void CarveRoom(EditableMapDraftAsset draft, System.Random random, RectInt room, int roomIndex)
         {
             for (var y = room.yMin; y < room.yMax; y++)
             {
                 for (var x = room.xMin; x < room.xMax; x++)
                 {
+                    if (ShouldTrimRoomCorner(random, room, roomIndex, x, y))
+                    {
+                        continue;
+                    }
+
                     SetCell(draft, x, y, RoomChunkCellType.Floor, "generated_floor", MapDirection.North);
                 }
             }
+        }
+
+        private static bool ShouldTrimRoomCorner(System.Random random, RectInt room, int roomIndex, int x, int y)
+        {
+            if (room.width < 8 || room.height < 7)
+            {
+                return false;
+            }
+
+            var trim = 1 + ((roomIndex + room.width + room.height + random.Next(0, 3)) % 2);
+            var west = x < room.xMin + trim;
+            var east = x >= room.xMax - trim;
+            var south = y < room.yMin + trim;
+            var north = y >= room.yMax - trim;
+            if (roomIndex % 4 == 0)
+            {
+                return west && north;
+            }
+
+            if (roomIndex % 4 == 1)
+            {
+                return east && north;
+            }
+
+            if (roomIndex % 4 == 2)
+            {
+                return west && south;
+            }
+
+            return east && south;
         }
 
         private static void ConnectRooms(EditableMapDraftAsset draft, System.Random random, RectInt from, RectInt to)
@@ -105,11 +141,15 @@ namespace Conn.Editor.Maps
             {
                 CarveHorizontal(draft, start.x, end.x, start.y);
                 CarveVertical(draft, start.y, end.y, end.x);
+                MarkDoor(draft, start);
+                MarkDoor(draft, end);
                 return;
             }
 
             CarveVertical(draft, start.y, end.y, start.x);
             CarveHorizontal(draft, start.x, end.x, end.y);
+            MarkDoor(draft, start);
+            MarkDoor(draft, end);
         }
 
         private static void CarveHorizontal(EditableMapDraftAsset draft, int fromX, int toX, int y)
@@ -131,6 +171,47 @@ namespace Conn.Editor.Maps
             {
                 SetCell(draft, x, y, RoomChunkCellType.Floor, "generated_corridor", fromY <= toY ? MapDirection.North : MapDirection.South);
                 SetCell(draft, x + 1, y, RoomChunkCellType.Floor, "generated_corridor", fromY <= toY ? MapDirection.North : MapDirection.South);
+            }
+        }
+
+        private static void MarkDoor(EditableMapDraftAsset draft, Vector2Int position)
+        {
+            if (!draft.TryGetCell(position.x, position.y, out var cell) || cell.Terrain == RoomChunkCellType.Gap)
+            {
+                return;
+            }
+
+            cell.MaterialId = "generated_door";
+            draft.TrySetCell(cell);
+        }
+
+        private static void AddHeightTransitionFeature(EditableMapDraftAsset draft, RectInt room)
+        {
+            if (room.width < 6 || room.height < 5)
+            {
+                return;
+            }
+
+            var y = room.yMin + room.height / 2;
+            var slopeX = room.xMin + 2;
+            var highX = slopeX + 1;
+            SetCell(draft, slopeX - 1, y, RoomChunkCellType.Floor, "generated_floor", MapDirection.East, 0);
+            SetCell(draft, slopeX, y, RoomChunkCellType.Slope, "generated_slope", MapDirection.East, 0);
+            SetCell(draft, highX, y, RoomChunkCellType.Floor, "generated_upper_floor", MapDirection.East, 1);
+            SetCell(draft, highX + 1, y, RoomChunkCellType.Stair, "generated_stair", MapDirection.East, 1);
+            SetCell(draft, highX + 2, y, RoomChunkCellType.Floor, "generated_upper_floor", MapDirection.East, 2);
+
+            for (var x = highX; x < room.xMax - 1; x++)
+            {
+                for (var dy = -1; dy <= 1; dy++)
+                {
+                    if (draft.TryGetCell(x, y + dy, out var cell) && cell.Terrain == RoomChunkCellType.Floor)
+                    {
+                        cell.Height = Mathf.Max(cell.Height, x <= highX + 1 ? 1 : 2);
+                        cell.MaterialId = "generated_upper_floor";
+                        draft.TrySetCell(cell);
+                    }
+                }
             }
         }
 
@@ -209,6 +290,40 @@ namespace Conn.Editor.Maps
                 RuntimeReferenceId = "spawn_hint",
                 MaterialId = "spawn_hint"
             });
+
+            var startRoom = rooms[0];
+            var startCenter = RoomCenter(startRoom);
+            objects.Add(new EditableMapObjectPlacement
+            {
+                Id = "generated_start_torch",
+                PaletteObjectId = "torch_wall",
+                Kind = RoomChunkObjectKind.Torch,
+                X = Mathf.Clamp(startCenter.x + 2, startRoom.xMin, startRoom.xMax - 1),
+                Y = Mathf.Clamp(startCenter.y + 1, startRoom.yMin, startRoom.yMax - 1),
+                Width = 1,
+                Depth = 1,
+                Direction = MapDirection.West,
+                BlocksMovement = false,
+                RuntimeReferenceId = "torch_wall",
+                MaterialId = "torch"
+            });
+
+            var bossRoom = rooms[4];
+            var bossCenter = RoomCenter(bossRoom);
+            objects.Add(new EditableMapObjectPlacement
+            {
+                Id = "generated_barrel_blocker",
+                PaletteObjectId = "barrel",
+                Kind = RoomChunkObjectKind.Barrel,
+                X = Mathf.Clamp(bossCenter.x - 2, bossRoom.xMin, bossRoom.xMax - 1),
+                Y = Mathf.Clamp(bossCenter.y - 1, bossRoom.yMin, bossRoom.yMax - 1),
+                Width = 1,
+                Depth = 1,
+                Direction = MapDirection.North,
+                BlocksMovement = false,
+                RuntimeReferenceId = "barrel",
+                MaterialId = "barrel"
+            });
             draft.Objects = objects.ToArray();
         }
 
@@ -223,7 +338,8 @@ namespace Conn.Editor.Maps
             int y,
             RoomChunkCellType terrain,
             string materialId,
-            MapDirection direction)
+            MapDirection direction,
+            int height = 0)
         {
             if (!draft.TryGetCell(x, y, out var cell))
             {
@@ -233,7 +349,7 @@ namespace Conn.Editor.Maps
             cell.X = x;
             cell.Y = y;
             cell.Terrain = terrain;
-            cell.Height = 0;
+            cell.Height = height;
             cell.Direction = direction;
             cell.MaterialId = materialId;
             draft.TrySetCell(cell);

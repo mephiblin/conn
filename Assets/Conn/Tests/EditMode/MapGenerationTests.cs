@@ -521,14 +521,22 @@ namespace Conn.Tests.EditMode
                 var floorCount = result.Draft.Cells.Count(cell => cell.Terrain == RoomChunkCellType.Floor);
                 var wallCount = result.Draft.Cells.Count(cell => cell.Terrain == RoomChunkCellType.Wall);
                 var gapCount = result.Draft.Cells.Count(cell => cell.Terrain == RoomChunkCellType.Gap);
+                var slopeCount = result.Draft.Cells.Count(cell => cell.Terrain == RoomChunkCellType.Slope);
+                var stairCount = result.Draft.Cells.Count(cell => cell.Terrain == RoomChunkCellType.Stair);
+                var doorCount = result.Draft.Cells.Count(cell => cell.MaterialId == "generated_door");
 
                 Assert.That(result.Report.Passed, Is.True, string.Join("\n", result.Report.Errors));
                 Assert.That(result.Compiled, Is.Not.Null);
                 Assert.That(floorCount, Is.GreaterThan(80));
                 Assert.That(wallCount, Is.GreaterThan(40));
                 Assert.That(gapCount, Is.GreaterThan(40));
+                Assert.That(slopeCount, Is.GreaterThanOrEqualTo(1));
+                Assert.That(stairCount, Is.GreaterThanOrEqualTo(1));
+                Assert.That(doorCount, Is.GreaterThanOrEqualTo(4));
                 Assert.That(result.Draft.Objects.Any(placement => placement.Kind == RoomChunkObjectKind.Chest), Is.True);
                 Assert.That(result.Draft.Objects.Any(placement => placement.Kind == RoomChunkObjectKind.SpawnHint), Is.True);
+                Assert.That(result.Draft.Objects.Any(placement => placement.Kind == RoomChunkObjectKind.Torch), Is.True);
+                Assert.That(result.Draft.Objects.Any(placement => placement.Kind == RoomChunkObjectKind.Barrel), Is.True);
                 Assert.That(result.Compiled.Cells.Count, Is.EqualTo(result.Draft.Cells.Length));
             }
             finally
