@@ -13,6 +13,7 @@ namespace Conn.MapGenV2.Core
         DoorFrameHalf,
         DoorPanelHalf,
         NavigationHelper,
-        Prop
+        Prop,
+        Blocker
     }
 }

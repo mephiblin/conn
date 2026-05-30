@@ -423,6 +423,7 @@ namespace Conn.MapGenV2.Editor
                     AddEntryPrefabIdentities(ref hash, nameof(MapGenModuleSetAsset.HalfDoorPanels), moduleSet.HalfDoorPanels);
                     AddEntryPrefabIdentities(ref hash, nameof(MapGenModuleSetAsset.PropCategories), moduleSet.PropCategories);
                     AddEntryPrefabIdentities(ref hash, nameof(MapGenModuleSetAsset.RequiredUniqueProps), moduleSet.RequiredUniqueProps);
+                    AddEntryPrefabIdentities(ref hash, nameof(MapGenModuleSetAsset.Blockers), moduleSet.Blockers);
                 }
 
                 return hash.ToString("x16");
@@ -486,7 +487,7 @@ namespace Conn.MapGenV2.Editor
             var walls = CreateGroup(root.transform, "Walls");
             var ceilings = CreateGroup(root.transform, "Ceilings");
             var doors = CreateGroup(root.transform, "Doors");
-            CreateGroup(root.transform, "Blockers");
+            var blockers = CreateGroup(root.transform, "Blockers");
             var props = CreateGroup(root.transform, "Props");
             var navigation = CreateGroup(root.transform, "Navigation");
             CreateGroup(root.transform, "Debug");
@@ -503,6 +504,7 @@ namespace Conn.MapGenV2.Editor
             groups[MapGenModuleCategory.DoorPanelHalf] = doors;
             groups[MapGenModuleCategory.NavigationHelper] = navigation;
             groups[MapGenModuleCategory.Prop] = props;
+            groups[MapGenModuleCategory.Blocker] = blockers;
         }
 
         private static Transform GetOrCreateGroup(
@@ -574,6 +576,8 @@ namespace Conn.MapGenV2.Editor
                     return new Vector3(0.42f, 0.82f, 0.12f);
                 case MapGenModuleCategory.Prop:
                     return new Vector3(0.32f, 0.32f, 0.32f);
+                case MapGenModuleCategory.Blocker:
+                    return new Vector3(0.72f, 0.24f, 0.72f);
                 default:
                     return new Vector3(0.4f, 0.4f, 0.4f);
             }
@@ -637,6 +641,8 @@ namespace Conn.MapGenV2.Editor
                     return new Color(0.95f, 0.62f, 0.15f, 1f);
                 case MapGenModuleCategory.Prop:
                     return new Color(0.2f, 0.72f, 0.42f, 1f);
+                case MapGenModuleCategory.Blocker:
+                    return new Color(0.45f, 0.45f, 0.45f, 1f);
                 default:
                     return new Color(0.7f, 0.7f, 0.7f, 1f);
             }

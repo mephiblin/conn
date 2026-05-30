@@ -196,7 +196,7 @@ tool, and generated output workflow.
   practical.
 - [x] Materialized output should use real prefabs when available and readable
   placeholder meshes/materials when not.
-- [ ] Materialized output must visually match the accepted mockup:
+- [x] Materialized output must visually match the accepted mockup:
   red room masses become floors/walls/ceilings/doors/props, black corridors
   become corridor floors/walls/doors, gray blocked cells become reserved or
   blocker output, and blue background remains empty/non-instantiated space.

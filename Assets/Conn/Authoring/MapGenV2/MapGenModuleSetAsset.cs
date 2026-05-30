@@ -24,6 +24,7 @@ namespace Conn.MapGenV2.Authoring
         public MapGenModuleEntry[] HalfDoorPanels = Array.Empty<MapGenModuleEntry>();
         public MapGenModuleEntry[] PropCategories = Array.Empty<MapGenModuleEntry>();
         public MapGenModuleEntry[] RequiredUniqueProps = Array.Empty<MapGenModuleEntry>();
+        public MapGenModuleEntry[] Blockers = Array.Empty<MapGenModuleEntry>();
 
         public MapGenValidationReport Validate()
         {
@@ -41,6 +42,7 @@ namespace Conn.MapGenV2.Authoring
             ValidateCategory(report, nameof(HalfDoorPanels), HalfDoorPanels, false, BoundsContract);
             ValidateCategory(report, nameof(PropCategories), PropCategories, false, BoundsContract);
             ValidateCategory(report, nameof(RequiredUniqueProps), RequiredUniqueProps, false, BoundsContract);
+            ValidateCategory(report, nameof(Blockers), Blockers, false, BoundsContract);
             return report;
         }
 
@@ -72,6 +74,8 @@ namespace Conn.MapGenV2.Authoring
                     return Array.Empty<MapGenModuleEntry>();
                 case MapGenModuleCategory.Prop:
                     return PropCategories;
+                case MapGenModuleCategory.Blocker:
+                    return Blockers;
                 default:
                     return Array.Empty<MapGenModuleEntry>();
             }
@@ -92,6 +96,7 @@ namespace Conn.MapGenV2.Authoring
             ClampEntries(HalfDoorPanels);
             ClampEntries(PropCategories);
             ClampEntries(RequiredUniqueProps);
+            ClampEntries(Blockers);
         }
 
         private static void ValidateCategory(
@@ -310,6 +315,7 @@ namespace Conn.MapGenV2.Authoring
                 AddEntries(ref hash, nameof(MapGenModuleSetAsset.HalfDoorPanels), moduleSet.HalfDoorPanels);
                 AddEntries(ref hash, nameof(MapGenModuleSetAsset.PropCategories), moduleSet.PropCategories);
                 AddEntries(ref hash, nameof(MapGenModuleSetAsset.RequiredUniqueProps), moduleSet.RequiredUniqueProps);
+                AddEntries(ref hash, nameof(MapGenModuleSetAsset.Blockers), moduleSet.Blockers);
                 return hash.ToString("x16");
             }
         }

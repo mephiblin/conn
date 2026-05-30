@@ -353,6 +353,7 @@ namespace Conn.Tests.EditMode
                 moduleSet.ExteriorCeilings = moduleSet.FloorsA;
                 moduleSet.WholeDoors = moduleSet.WallsStraight;
                 moduleSet.PropCategories = moduleSet.FloorsA;
+                moduleSet.Blockers = moduleSet.WallsStraight;
 
                 var summary = MapGenModuleSetAssetEditor.BuildCoverageSummary(moduleSet);
 
@@ -361,6 +362,7 @@ namespace Conn.Tests.EditMode
                 Assert.That(summary, Does.Contain("Corners 2"));
                 Assert.That(summary, Does.Contain("Ceilings 2"));
                 Assert.That(summary, Does.Contain("Doors 1"));
+                Assert.That(summary, Does.Contain("Blockers 1"));
                 Assert.That(summary, Does.Contain("Props 1"));
                 Assert.That(summary, Does.Contain("Missing required 0"));
                 Assert.That(summary, Does.Contain("Validation Valid"));
@@ -2341,7 +2343,7 @@ namespace Conn.Tests.EditMode
                 profile.StyleSet = styleSet;
                 draft.Profile = profile;
                 draft.Seed = 55;
-                draft.GridSize = Vector2Int.one;
+                draft.GridSize = new Vector2Int(2, 1);
                 draft.EnsureCellArray();
                 draft.Cells[0] = new MapGenMockupCell
                 {
@@ -2349,6 +2351,12 @@ namespace Conn.Tests.EditMode
                     RegionId = 3,
                     RoomCategory = MapGenRoomCategory.Start,
                     SourceTemplateId = "start_template"
+                };
+                draft.Cells[1] = new MapGenMockupCell
+                {
+                    State = MapGenCellState.Blocked,
+                    RegionId = 4,
+                    SourceTemplateId = "blocked_template"
                 };
                 draft.Accept();
 
@@ -2372,6 +2380,7 @@ namespace Conn.Tests.EditMode
                 Assert.That(MapGenMockupMaterializer.FindExistingMarker(draft).gameObject, Is.SameAs(firstRoot));
                 var moduleMarkers = firstRoot.GetComponentsInChildren<MapGenV2MaterializedModuleMarker>();
                 var floorMarker = System.Array.Find(moduleMarkers, marker => marker.ModuleCategory == MapGenModuleCategory.FloorA);
+                var blockerMarker = System.Array.Find(moduleMarkers, marker => marker.ModuleCategory == MapGenModuleCategory.Blocker);
                 var navigationMarker = System.Array.Find(moduleMarkers, marker => marker.ModuleCategory == MapGenModuleCategory.NavigationHelper);
                 Assert.That(floorMarker, Is.Not.Null);
                 Assert.That(floorMarker.name, Does.Contain("FloorA_0_0_R3_Tstart_template"));
@@ -2380,6 +2389,13 @@ namespace Conn.Tests.EditMode
                 Assert.That(floorMarker.SourceTemplateId, Is.EqualTo("start_template"));
                 Assert.That(floorMarker.DraftSignature, Is.EqualTo(draft.AcceptedSignature));
                 Assert.That(floorMarker.ModuleSetSignature, Is.EqualTo(moduleSetSignature));
+                Assert.That(blockerMarker, Is.Not.Null);
+                Assert.That(blockerMarker.name, Does.Contain("Blocker_1_0_R4_Tblocked_template"));
+                Assert.That(blockerMarker.transform.parent.name, Is.EqualTo("Blockers"));
+                Assert.That(blockerMarker.RegionId, Is.EqualTo(4));
+                Assert.That(blockerMarker.SourceTemplateId, Is.EqualTo("blocked_template"));
+                Assert.That(blockerMarker.DraftSignature, Is.EqualTo(draft.AcceptedSignature));
+                Assert.That(blockerMarker.ModuleSetSignature, Is.EqualTo(moduleSetSignature));
                 Assert.That(navigationMarker, Is.Not.Null);
                 Assert.That(navigationMarker.name, Does.Contain("NavigationHelper_0_0_R3_Tstart_template_NavigationHelper"));
                 Assert.That(navigationMarker.transform.parent.name, Is.EqualTo("Navigation"));
@@ -3727,6 +3743,43 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void MaterializationClassifierCreatesBlockerRequestsForBlockedAndReservedCells()
+        {
+            var cells = new[]
+            {
+                new MapGenMockupCell { State = MapGenCellState.Room, RegionId = 1 },
+                new MapGenMockupCell { State = MapGenCellState.Corridor, RegionId = 2 },
+                new MapGenMockupCell { State = MapGenCellState.Blocked, RegionId = 3, SourceTemplateId = "blocked_template" },
+                new MapGenMockupCell { State = MapGenCellState.Reserved, RegionId = 4, SourceTemplateId = "reserved_template" },
+                new MapGenMockupCell { State = MapGenCellState.Empty, RegionId = 5 }
+            };
+
+            var requests = MapGenMaterializationClassifier.Classify(5, 1, cells);
+
+            Assert.That(requests, Has.Exactly(1).Matches<MapGenModuleRequest>(
+                request => request.Category == MapGenModuleCategory.FloorA
+                    && request.Coord == new MapGenGridCoord(0, 0)));
+            Assert.That(requests, Has.Exactly(1).Matches<MapGenModuleRequest>(
+                request => request.Category == MapGenModuleCategory.FloorB
+                    && request.Coord == new MapGenGridCoord(1, 0)));
+            Assert.That(requests, Has.Exactly(1).Matches<MapGenModuleRequest>(
+                request => request.Category == MapGenModuleCategory.Blocker
+                    && request.Coord == new MapGenGridCoord(2, 0)
+                    && request.RegionId == 3
+                    && request.SourceTemplateId == "blocked_template"));
+            Assert.That(requests, Has.Exactly(1).Matches<MapGenModuleRequest>(
+                request => request.Category == MapGenModuleCategory.Blocker
+                    && request.Coord == new MapGenGridCoord(3, 0)
+                    && request.RegionId == 4
+                    && request.SourceTemplateId == "reserved_template"));
+            Assert.That(requests, Has.None.Matches<MapGenModuleRequest>(
+                request => request.Coord == new MapGenGridCoord(4, 0)));
+            Assert.That(requests, Has.None.Matches<MapGenModuleRequest>(
+                request => (request.Coord == new MapGenGridCoord(2, 0) || request.Coord == new MapGenGridCoord(3, 0))
+                    && request.Category != MapGenModuleCategory.Blocker));
+        }
+
+        [Test]
         public void MaterializationReportNamesMissingModuleCategories()
         {
             var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
@@ -4863,6 +4916,7 @@ namespace Conn.Tests.EditMode
             moduleSet.HalfDoorFrames = moduleSet.WallsStraight;
             moduleSet.HalfDoorPanels = moduleSet.WallsStraight;
             moduleSet.PropCategories = moduleSet.FloorsA;
+            moduleSet.Blockers = moduleSet.WallsStraight;
         }
 
         private static void PopulateRoomTemplate(

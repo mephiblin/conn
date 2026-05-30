@@ -61,6 +61,7 @@ namespace Conn.MapGenV2.Editor
             moduleSet.HalfDoorFrames = Entries(doorPrefab);
             moduleSet.HalfDoorPanels = Entries(doorPrefab);
             moduleSet.PropCategories = Entries(propPrefab);
+            moduleSet.Blockers = Entries(wallPrefab);
 
             var styleSet = ScriptableObjectUtility.CreateAsset<MapGenStyleSetAsset>(
                 AssetDatabase.GenerateUniqueAssetPath($"{root}/StyleSets/StarterStyleSet.asset"));

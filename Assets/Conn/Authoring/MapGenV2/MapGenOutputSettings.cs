@@ -224,6 +224,7 @@ namespace Conn.MapGenV2.Authoring
                     moduleSet.HalfDoorPanels ??= Array.Empty<MapGenModuleEntry>();
                     moduleSet.PropCategories ??= Array.Empty<MapGenModuleEntry>();
                     moduleSet.RequiredUniqueProps ??= Array.Empty<MapGenModuleEntry>();
+                    moduleSet.Blockers ??= Array.Empty<MapGenModuleEntry>();
                     break;
                 case MapGenMockupDraftAsset draft:
                     draft.GridSize = new Vector2Int(Mathf.Max(1, draft.GridSize.x), Mathf.Max(1, draft.GridSize.y));

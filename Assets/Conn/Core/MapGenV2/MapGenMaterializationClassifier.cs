@@ -25,6 +25,12 @@ namespace Conn.MapGenV2.Core
             {
                 var coord = MapGenGridCoord.FromIndex(index, width);
                 var cell = cells[index];
+                if (cell.State == MapGenCellState.Blocked || cell.State == MapGenCellState.Reserved)
+                {
+                    AddRequest(requests, MapGenModuleCategory.Blocker, cell, coord, MapGenGridDirection.North);
+                    continue;
+                }
+
                 if (!IsNavigable(cell.State))
                 {
                     continue;

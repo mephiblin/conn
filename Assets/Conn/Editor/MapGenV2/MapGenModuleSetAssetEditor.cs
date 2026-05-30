@@ -30,6 +30,7 @@ namespace Conn.MapGenV2.Editor
             builder.Append($", Corners {Count(moduleSet.WallsCornerInside) + Count(moduleSet.WallsCornerOutside)}");
             builder.Append($", Ceilings {Count(moduleSet.InteriorCeilings) + Count(moduleSet.ExteriorCeilings)}");
             builder.Append($", Doors {Count(moduleSet.WholeDoors) + Count(moduleSet.HalfDoorFrames) + Count(moduleSet.HalfDoorPanels)}");
+            builder.Append($", Blockers {Count(moduleSet.Blockers)}");
             builder.Append($", Props {Count(moduleSet.PropCategories) + Count(moduleSet.RequiredUniqueProps)}");
             builder.Append($", Missing required {CountMissingRequired(moduleSet)}");
             builder.Append($", Validation {(report.IsValid ? "Valid" : $"Issues {report.Issues.Count}")}");
