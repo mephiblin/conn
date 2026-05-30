@@ -17,6 +17,8 @@ namespace Conn.MapGenV2.Editor
 
     public static class MapGenMockupMaterializer
     {
+        private static readonly Dictionary<MapGenModuleCategory, Material> PlaceholderMaterials = new Dictionary<MapGenModuleCategory, Material>();
+
         public static GameObject Materialize(
             MapGenMockupDraftAsset draft,
             MapGenV2SceneOutputMode outputMode = MapGenV2SceneOutputMode.CreateNewRoot,
@@ -104,12 +106,16 @@ namespace Conn.MapGenV2.Editor
                 }
 
                 var entry = PickEntry(moduleSet.GetEntries(request.Category), ref rng);
+                var group = GetOrCreateGroup(root, groups, request.Category);
                 if (entry == null || entry.Prefab == null)
                 {
+                    var placeholder = CreatePlaceholderInstance(draft, request);
+                    placeholder.transform.SetParent(group, false);
+                    placeholder.transform.position = ToWorld(draft, request.Coord);
+                    placeholder.transform.rotation = RotationFor(request.Direction, MapGenModuleRotationPolicy.AnyOrthogonal);
+                    AttachSourceMarker(placeholder, draft, request, "Placeholder", moduleSetSignature);
                     continue;
                 }
-
-                var group = GetOrCreateGroup(root, groups, request.Category);
 
                 var instance = PrefabUtility.InstantiatePrefab(entry.Prefab) as GameObject;
                 if (instance == null)
@@ -190,7 +196,9 @@ namespace Conn.MapGenV2.Editor
                 }
 
                 report.MissingModuleRequests++;
+                report.InstantiableRequests++;
                 var category = request.Category.ToString();
+                selectedPrefabNames.Add($"Placeholder({category})");
                 if (!missingCategories.Contains(category))
                 {
                     missingCategories.Add(category);
@@ -222,7 +230,8 @@ namespace Conn.MapGenV2.Editor
                     MapGenGenerationPhase.Materialize,
                     "materialization_missing_module_category",
                     $"Materialization has no prefab coverage for {category}.",
-                    $"Add at least one valid prefab to module category {category}.",
+                    $"Add at least one valid prefab to module category {category}. A readable placeholder will be used until then.",
+                    severity: MapGenIssueSeverity.Warning,
                     contextPath: $"ModuleSet.{category}"));
             }
 
@@ -528,6 +537,109 @@ namespace Conn.MapGenV2.Editor
                 ? "NoTemplate"
                 : SanitizeNameToken(request.SourceTemplateId);
             return $"{request.Category}_{request.Coord.X}_{request.Coord.Y}_R{request.RegionId}_T{template}_{SanitizeNameToken(moduleId)}";
+        }
+
+        private static GameObject CreatePlaceholderInstance(MapGenMockupDraftAsset draft, MapGenModuleRequest request)
+        {
+            var placeholder = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            Undo.RegisterCreatedObjectUndo(placeholder, "Materialize MapGen Placeholder");
+            placeholder.name = BuildInstanceName(draft, request, "Placeholder");
+            placeholder.transform.localScale = PlaceholderScaleFor(request.Category);
+            var renderer = placeholder.GetComponent<Renderer>();
+            if (renderer != null)
+            {
+                renderer.sharedMaterial = PlaceholderMaterialFor(request.Category);
+            }
+
+            return placeholder;
+        }
+
+        private static Vector3 PlaceholderScaleFor(MapGenModuleCategory category)
+        {
+            switch (category)
+            {
+                case MapGenModuleCategory.FloorA:
+                case MapGenModuleCategory.FloorB:
+                    return new Vector3(0.88f, 0.08f, 0.88f);
+                case MapGenModuleCategory.CeilingInterior:
+                case MapGenModuleCategory.CeilingExterior:
+                    return new Vector3(0.82f, 0.05f, 0.82f);
+                case MapGenModuleCategory.WallStraight:
+                case MapGenModuleCategory.WallCornerInside:
+                case MapGenModuleCategory.WallCornerOutside:
+                    return new Vector3(0.18f, 0.9f, 0.82f);
+                case MapGenModuleCategory.DoorWhole:
+                case MapGenModuleCategory.DoorFrameHalf:
+                case MapGenModuleCategory.DoorPanelHalf:
+                    return new Vector3(0.42f, 0.82f, 0.12f);
+                case MapGenModuleCategory.Prop:
+                    return new Vector3(0.32f, 0.32f, 0.32f);
+                default:
+                    return new Vector3(0.4f, 0.4f, 0.4f);
+            }
+        }
+
+        private static Material PlaceholderMaterialFor(MapGenModuleCategory category)
+        {
+            if (PlaceholderMaterials.TryGetValue(category, out var material) && material != null)
+            {
+                return material;
+            }
+
+            var shader = Shader.Find("Universal Render Pipeline/Lit");
+            if (shader == null)
+            {
+                shader = Shader.Find("Standard");
+            }
+
+            if (shader == null)
+            {
+                shader = Shader.Find("Sprites/Default");
+            }
+
+            material = new Material(shader)
+            {
+                name = $"MapGenV2 Placeholder {category}",
+                hideFlags = HideFlags.HideAndDontSave
+            };
+            var color = PlaceholderColorFor(category);
+            if (material.HasProperty("_BaseColor"))
+            {
+                material.SetColor("_BaseColor", color);
+            }
+            else if (material.HasProperty("_Color"))
+            {
+                material.SetColor("_Color", color);
+            }
+
+            PlaceholderMaterials[category] = material;
+            return material;
+        }
+
+        private static Color PlaceholderColorFor(MapGenModuleCategory category)
+        {
+            switch (category)
+            {
+                case MapGenModuleCategory.FloorA:
+                    return new Color(0.9f, 0.12f, 0.08f, 1f);
+                case MapGenModuleCategory.FloorB:
+                    return new Color(0.02f, 0.02f, 0.02f, 1f);
+                case MapGenModuleCategory.WallStraight:
+                case MapGenModuleCategory.WallCornerInside:
+                case MapGenModuleCategory.WallCornerOutside:
+                    return new Color(0.2f, 0.32f, 0.85f, 1f);
+                case MapGenModuleCategory.CeilingInterior:
+                case MapGenModuleCategory.CeilingExterior:
+                    return new Color(0.82f, 0.84f, 0.78f, 1f);
+                case MapGenModuleCategory.DoorWhole:
+                case MapGenModuleCategory.DoorFrameHalf:
+                case MapGenModuleCategory.DoorPanelHalf:
+                    return new Color(0.95f, 0.62f, 0.15f, 1f);
+                case MapGenModuleCategory.Prop:
+                    return new Color(0.2f, 0.72f, 0.42f, 1f);
+                default:
+                    return new Color(0.7f, 0.7f, 0.7f, 1f);
+            }
         }
 
         private static string SanitizeNameToken(string value)

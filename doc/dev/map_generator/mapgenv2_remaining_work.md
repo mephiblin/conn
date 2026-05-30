@@ -194,7 +194,7 @@ tool, and generated output workflow.
 - [x] Generated scene objects should have clear names:
   category, grid coordinate, region id, template id, and module id where
   practical.
-- [ ] Materialized output should use real prefabs when available and readable
+- [x] Materialized output should use real prefabs when available and readable
   placeholder meshes/materials when not.
 - [ ] Materialized output must visually match the accepted mockup:
   red room masses become floors/walls/ceilings/doors/props, black corridors

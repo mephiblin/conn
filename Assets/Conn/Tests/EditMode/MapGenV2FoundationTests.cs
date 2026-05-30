@@ -3564,9 +3564,10 @@ namespace Conn.Tests.EditMode
                 var report = MapGenMockupMaterializer.BuildReport(moduleSet, plan);
 
                 Assert.That(report.TotalRequests, Is.EqualTo(plan.RequestCount));
-                Assert.That(report.InstantiableRequests, Is.EqualTo(2));
+                Assert.That(report.InstantiableRequests, Is.EqualTo(plan.RequestCount));
                 Assert.That(report.MissingModuleRequests, Is.GreaterThan(0));
                 Assert.That(report.MissingModuleCategories, Contains.Item(nameof(MapGenModuleCategory.WallStraight)));
+                Assert.That(report.SelectedPrefabNames, Contains.Item($"Placeholder({nameof(MapGenModuleCategory.WallStraight)})"));
             }
             finally
             {
@@ -3576,7 +3577,7 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
-        public void MaterializationCoverageValidationBlocksMissingModulesBeforeInstantiation()
+        public void MaterializationCoverageValidationWarnsForMissingModules()
         {
             var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
             var floor = new GameObject("FloorModule");
@@ -3606,15 +3607,84 @@ namespace Conn.Tests.EditMode
 
                 var validation = MapGenMockupMaterializer.ValidateCoverage(report);
 
-                Assert.That(validation.IsValid, Is.False);
+                Assert.That(validation.IsValid, Is.True);
                 Assert.That(validation.Issues, Has.Exactly(1).Matches<MapGenIssue>(
                     issue => issue.Code == "materialization_missing_module_category"
                         && issue.ContextPath == $"ModuleSet.{nameof(MapGenModuleCategory.WallStraight)}"
-                        && issue.BlocksGeneration));
+                        && issue.Severity == MapGenIssueSeverity.Warning
+                        && !issue.BlocksGeneration));
             }
             finally
             {
                 Object.DestroyImmediate(floor);
+                Object.DestroyImmediate(moduleSet);
+            }
+        }
+
+        [Test]
+        public void MaterializerCreatesReadablePlaceholdersForMissingPrefabs()
+        {
+            const string tempFolder = "Assets/Conn/Tests/TempMapGenV2MaterializerPlaceholders";
+            var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
+            var styleSet = ScriptableObject.CreateInstance<MapGenStyleSetAsset>();
+            var profile = ScriptableObject.CreateInstance<MapGenProfileAsset>();
+            var draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();
+            GameObject root = null;
+
+            try
+            {
+                EnsureTempFolder(tempFolder);
+                var floorPrefab = CreateTempPrefab($"{tempFolder}/Floor.prefab", "Floor");
+                moduleSet.FloorsA = new[]
+                {
+                    new MapGenModuleEntry
+                    {
+                        Prefab = floorPrefab,
+                        Weight = 1,
+                        Footprint = Vector2Int.one
+                    }
+                };
+                styleSet.StyleId = "placeholder_style";
+                styleSet.ModuleSet = moduleSet;
+                profile.ProfileId = "placeholder_profile";
+                profile.StyleSet = styleSet;
+                draft.Profile = profile;
+                draft.Seed = 77;
+                draft.GridSize = Vector2Int.one;
+                draft.Cells = new[]
+                {
+                    new MapGenMockupCell
+                    {
+                        State = MapGenCellState.Room,
+                        RegionId = 5,
+                        RoomCategory = MapGenRoomCategory.Start,
+                        SourceTemplateId = "missing_wall_template"
+                    }
+                };
+                draft.Accept();
+
+                root = MapGenMockupMaterializer.Materialize(draft, MapGenV2SceneOutputMode.CreateNewRoot);
+
+                Assert.That(root, Is.Not.Null);
+                var marker = root.GetComponent<MapGenV2GeneratedMapMarker>();
+                Assert.That(marker.MaterializationMissingModuleCount, Is.GreaterThan(0));
+                var moduleMarkers = root.GetComponentsInChildren<MapGenV2MaterializedModuleMarker>();
+                Assert.That(moduleMarkers, Has.Some.Matches<MapGenV2MaterializedModuleMarker>(
+                    moduleMarker => moduleMarker.PrefabName == "Placeholder"
+                        && moduleMarker.ModuleCategory == MapGenModuleCategory.WallStraight
+                        && moduleMarker.name.Contains("Tmissing_wall_template")));
+            }
+            finally
+            {
+                if (root != null)
+                {
+                    Object.DestroyImmediate(root);
+                }
+
+                AssetDatabase.DeleteAsset(tempFolder);
+                Object.DestroyImmediate(draft);
+                Object.DestroyImmediate(profile);
+                Object.DestroyImmediate(styleSet);
                 Object.DestroyImmediate(moduleSet);
             }
         }
@@ -3664,7 +3734,7 @@ namespace Conn.Tests.EditMode
                 var second = MapGenMockupMaterializer.BuildReport(moduleSet, plan, 1234);
 
                 Assert.That(second.SelectedPrefabNames, Is.EqualTo(first.SelectedPrefabNames));
-                Assert.That(first.InstantiableRequests, Is.EqualTo(4));
+                Assert.That(first.InstantiableRequests, Is.EqualTo(plan.RequestCount));
                 Assert.That(first.FootprintOutOfBoundsRequests, Is.GreaterThan(0));
                 Assert.That(first.FootprintOverlapRequests, Is.GreaterThan(0));
                 Assert.That(first.HasFootprintIssues, Is.True);
