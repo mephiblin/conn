@@ -1150,21 +1150,35 @@ Verification:
 Goal: keep generated assets, sample assets, and production assets clearly
 separated so the repository remains maintainable.
 
+Progress note 2026-05-31:
+
+- Starter setup output is now documented as local throwaway data rather than
+  committed sample content.
+- Shared sample and production folder conventions are documented in
+  `doc/dev/map_generator/README.md`.
+- Default generated draft, materialized prefab, baked map, and verification
+  temp folders are ignored in `.gitignore`.
+- Verification-created assets already use the deferred verification temp root
+  and cleanup path; starter-generated assets can be removed from the menu or
+  MapGenV2 window cleanup button.
+- Naming, owner, and review checklist guidance is documented for shared
+  profile/style/module/template assets.
+
 Tasks:
 
-- [ ] Decide which starter assets are committed samples and which are
+- [x] Decide which starter assets are committed samples and which are
   user-generated throwaway assets.
-- [ ] Add folder conventions for:
+- [x] Add folder conventions for:
   samples, project production profiles, generated drafts, generated baked maps,
   generated prefabs, temporary verification output.
-- [ ] Ensure verification-created assets are cleaned up automatically.
-- [ ] Add `.gitignore` rules or documentation for generated local outputs if
+- [x] Ensure verification-created assets are cleaned up automatically.
+- [x] Add `.gitignore` rules or documentation for generated local outputs if
   needed.
-- [ ] Add naming convention:
+- [x] Add naming convention:
   profile id, seed, draft id, style id, bake version.
-- [ ] Add ownership guidance for designers editing shared profiles and module
+- [x] Add ownership guidance for designers editing shared profiles and module
   sets.
-- [ ] Add review checklist for new profile/style/module assets.
+- [x] Add review checklist for new profile/style/module assets.
 
 Acceptance:
 

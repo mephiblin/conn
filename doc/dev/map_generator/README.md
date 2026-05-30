@@ -64,6 +64,68 @@ Prefab module rules:
 - Use stable names and categories so materialization diagnostics can report
   missing coverage clearly.
 
+## Package Hygiene And Team Workflow
+
+Default `Create Starter Setup` output is local throwaway data. It is meant for
+learning, verification, and quick iteration, not as committed sample content.
+Use `Conn > MapGenV2 > Cleanup Starter Generated Assets` when a local starter
+setup is no longer needed.
+
+Committed MapGenV2 content should use explicit shared folders:
+
+- Samples: `Assets/Conn/Authoring/MapGenV2/Samples/`
+- Production profiles and style data:
+  `Assets/Conn/Authoring/MapGenV2/Production/`
+- Production subfolders:
+  `Profiles`, `StyleSets`, `ModuleSets`, `RuleSets`, `RoomShapes`,
+  `Templates`
+
+Generated local output uses ignored folders by default:
+
+- Drafts: `Assets/Conn/Authoring/MapGenV2/Drafts/`
+- Materialized prefabs:
+  `Assets/Conn/Authoring/MapGenV2/MaterializedPrefabs/`
+- Runtime bake output: `Assets/Conn/Core/MapGenV2/BakedMaps/`
+- Verification temp output:
+  `Assets/Conn/Editor/MapGenV2/VerificationGenerated/`
+
+If a generated draft, materialized prefab, or baked map becomes production
+content, move it under the shared `Production` or `Samples` convention and
+review it like a hand-authored asset. Do not force-add default generated
+folders unless the team has intentionally promoted those files.
+
+Naming convention:
+
+- Profile id: stable lowercase project id, for example
+  `ch2_first_slice_ruins`.
+- Style id: stable visual/template style id, for example
+  `ruins_standard`.
+- Draft id: `<profileId>_<seed>_draft`.
+- Materialized root: `MapGenV2_<profileId>_<seed>`.
+- Runtime bake version: `<profileId>_<seed>_BakedMap_vNN` when keeping
+  multiple promoted bake versions.
+
+Ownership guidance:
+
+- Each shared profile, style set, module set, and rule set should have a named
+  designer owner in the asset description or adjacent notes.
+- Module set changes require coverage validation because they affect every
+  profile that references the module set.
+- Profile/rule changes that alter accepted drafts should be treated as layout
+  changes and reviewed with before/after mockup screenshots.
+
+Review checklist for shared MapGenV2 assets:
+
+- Profile graph validates without errors or missing references.
+- Template pools cover required room/corridor categories.
+- Module set coverage includes floors, walls, doors, blockers, props, and any
+  style-specific categories used by templates.
+- Connector, blocker, and prop-channel diagnostics have no unexpected warnings.
+- Focused MapGenV2 EditMode tests pass for code changes; asset-only changes
+  include a manual generate, accept, materialize, and bake smoke check.
+- No ignored local generated output is staged unless it was intentionally moved
+  to `Samples` or `Production`.
+
 ## Troubleshooting
 
 - `Profile has no style set`: assign a `MapGenStyleSetAsset`.

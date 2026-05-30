@@ -45,6 +45,28 @@ Thumbs.db
 *.unitypackage
 *.app
 
+# MapGenV2 local generated outputs
+Assets/Conn/Authoring/MapGenV2/Drafts/
+Assets/Conn/Authoring/MapGenV2/Drafts.meta
+Assets/Conn/Authoring/MapGenV2/MaterializedPrefabs/
+Assets/Conn/Authoring/MapGenV2/MaterializedPrefabs.meta
+Assets/Conn/Authoring/MapGenV2/ModuleSets/
+Assets/Conn/Authoring/MapGenV2/ModuleSets.meta
+Assets/Conn/Authoring/MapGenV2/Profiles/
+Assets/Conn/Authoring/MapGenV2/Profiles.meta
+Assets/Conn/Authoring/MapGenV2/RoomShapes/
+Assets/Conn/Authoring/MapGenV2/RoomShapes.meta
+Assets/Conn/Authoring/MapGenV2/RuleSets/
+Assets/Conn/Authoring/MapGenV2/RuleSets.meta
+Assets/Conn/Authoring/MapGenV2/StyleSets/
+Assets/Conn/Authoring/MapGenV2/StyleSets.meta
+Assets/Conn/Authoring/MapGenV2/Templates/
+Assets/Conn/Authoring/MapGenV2/Templates.meta
+Assets/Conn/Core/MapGenV2/BakedMaps/
+Assets/Conn/Core/MapGenV2/BakedMaps.meta
+Assets/Conn/Editor/MapGenV2/VerificationGenerated/
+Assets/Conn/Editor/MapGenV2/VerificationGenerated.meta
+
 # Local/generated image scratch outside committed Unity assets
 generated_images/
 tmp/
