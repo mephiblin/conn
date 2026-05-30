@@ -1,0 +1,16 @@
+{
+  "name": "Conn.MapGenV2.Authoring",
+  "rootNamespace": "Conn.MapGenV2.Authoring",
+  "references": [
+    "Conn.MapGenV2.Core"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

@@ -1,0 +1,14 @@
+{
+  "name": "Conn.MapGenV2.Core",
+  "rootNamespace": "Conn.MapGenV2.Core",
+  "references": [],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

@@ -1126,7 +1126,7 @@ Editor-only output:
 Use this checklist as the actual development order. Each completed group should
 be committed and pushed separately.
 
-- [ ] Foundation: asmdefs, folders, core enums, grid coordinate helpers.
+- [x] Foundation: asmdefs, folders, core enums, grid coordinate helpers.
 - [ ] Room shape authoring: `MapGenRoomShapeAsset`, cell data, custom grid
   inspector, undo/redo, validation.
 - [ ] Module set authoring: `MapGenModuleSetAsset`, weighted prefab entries,
