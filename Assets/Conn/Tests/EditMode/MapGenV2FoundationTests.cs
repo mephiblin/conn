@@ -223,6 +223,42 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void GeneratedMapMarkerStoresDraftSourceData()
+        {
+            var styleSet = ScriptableObject.CreateInstance<MapGenStyleSetAsset>();
+            var profile = ScriptableObject.CreateInstance<MapGenProfileAsset>();
+            var draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();
+            var root = new GameObject("GeneratedRoot");
+
+            try
+            {
+                styleSet.StyleId = "marker_style";
+                profile.ProfileId = "marker_profile";
+                profile.StyleSet = styleSet;
+                draft.Profile = profile;
+                draft.Seed = 1234;
+                draft.AcceptedSignature = "signature_a";
+
+                var marker = root.AddComponent<MapGenV2GeneratedMapMarker>();
+                marker.PopulateFromDraft(draft, "2026-05-31T00:00:00.0000000Z");
+
+                Assert.That(marker.ProfileId, Is.EqualTo("marker_profile"));
+                Assert.That(marker.Seed, Is.EqualTo(1234));
+                Assert.That(marker.DraftSignature, Is.EqualTo("signature_a"));
+                Assert.That(marker.StyleId, Is.EqualTo("marker_style"));
+                Assert.That(marker.GeneratedUtc, Is.EqualTo("2026-05-31T00:00:00.0000000Z"));
+                Assert.That(marker.SourceDraft, Is.SameAs(draft));
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+                Object.DestroyImmediate(draft);
+                Object.DestroyImmediate(profile);
+                Object.DestroyImmediate(styleSet);
+            }
+        }
+
+        [Test]
         public void MockupSolverIsDeterministicForSameSeed()
         {
             var required = new[] { MapGenRoomCategory.Start, MapGenRoomCategory.Quest, MapGenRoomCategory.Exit };

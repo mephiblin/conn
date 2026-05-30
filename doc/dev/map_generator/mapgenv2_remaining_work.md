@@ -317,20 +317,28 @@ Verification:
 
 ## Phase 3: Starter Content That Communicates Structure
 
+Progress note 2026-05-31:
+
+- Starter setup now creates distinct placeholder prefab materials and readable
+  heights/scales for room floors, corridor floors, walls, corners, ceilings,
+  doors, and prop markers.
+- Materialized scene object names now include module category, grid coordinate,
+  region id, and prefab/module id, so placeholder output is easier to inspect.
+
 Goal: starter output should be visually understandable even before real art is
 plugged in.
 
 Tasks:
 
-- [ ] Give starter prefabs distinct materials:
+- [x] Give starter prefabs distinct materials:
   room floor, corridor floor, wall, corner, ceiling, door, prop marker.
-- [ ] Use different heights/scales so walls/doors/props are visually readable.
-- [ ] Add simple labels or object names including category and grid coordinate.
-- [ ] Ensure starter prefabs have consistent pivots and cell-size alignment.
+- [x] Use different heights/scales so walls/doors/props are visually readable.
+- [x] Add simple labels or object names including category and grid coordinate.
+- [x] Ensure starter prefabs have consistent pivots and cell-size alignment.
 - [ ] Ensure starter materialization does not produce z-fighting or overlapping
   unreadable blocks.
 - [ ] Add starter profile notes explaining placeholder content.
-- [ ] Keep generated starter assets under `Assets/Conn/Authoring/MapGenV2/`
+- [x] Keep generated starter assets under `Assets/Conn/Authoring/MapGenV2/`
   and do not commit user-generated starter outputs by default.
 
 Acceptance:
@@ -345,13 +353,23 @@ Verification:
 
 ## Phase 4: Scene Output Management
 
+Progress note 2026-05-31:
+
+- Materialization now creates a predictable root named
+  `MapGenV2_<Profile>_<Seed>`.
+- The generated root receives `MapGenV2GeneratedMapMarker` with profile id,
+  seed, accepted draft signature, style id, generated UTC timestamp, and source
+  draft reference.
+- Materialization now creates standard child groups for Floors, Corridors,
+  Walls, Ceilings, Doors, Props, Navigation, and Debug.
+
 Goal: make scene materialization manageable instead of dumping duplicate roots.
 
 Tasks:
 
-- [ ] Add generated root metadata component, e.g.
+- [x] Add generated root metadata component, e.g.
   `MapGenV2GeneratedMapMarker`.
-- [ ] Store profile id, seed, draft signature, style id, generated time, and
+- [x] Store profile id, seed, draft signature, style id, generated time, and
   source draft reference on the root marker.
 - [ ] Add `Select Materialized Root`.
 - [ ] Add `Frame Materialized Root`.
