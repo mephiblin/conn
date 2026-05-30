@@ -367,6 +367,17 @@ namespace Conn.MapGenV2.Editor
                 + $"output mode {state.OutputMode}, diagnostics foldout {state.DiagnosticsFoldout}, language {state.Language}";
         }
 
+        public static string BuildPrimaryActionExplanation(
+            string actionName,
+            bool enabled,
+            string reason,
+            string change,
+            string outputLocation)
+        {
+            return $"{actionName}: {(enabled ? "Enabled" : "Disabled")} because {NullLabel(reason)} "
+                + $"Change: {NullLabel(change)} Output: {NullLabel(outputLocation)}";
+        }
+
         private static string NullLabel(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? "(none)" : value;
@@ -769,6 +780,8 @@ namespace Conn.MapGenV2.Editor
                 }
             }
 
+            DrawPrimaryActionSummary(workflow);
+
             using (new EditorGUILayout.HorizontalScope())
             {
                 using (new EditorGUI.DisabledScope(!workflow.CanGenerate))
@@ -889,6 +902,55 @@ namespace Conn.MapGenV2.Editor
             if (!workflow.CanBakeRuntime)
             {
                 DrawWrappingHelpBox($"Bake Runtime Asset disabled: {workflow.BakeRuntimeReason}", MessageType.Info);
+            }
+        }
+
+        private void DrawPrimaryActionSummary(MapGenV2WorkflowStatus workflow)
+        {
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                EditorGUILayout.LabelField("주요 작업 설명 / Primary Action Impact", EditorStyles.boldLabel);
+                var style = new GUIStyle(EditorStyles.label) { wordWrap = true };
+                EditorGUILayout.LabelField(
+                    BuildPrimaryActionExplanation(
+                        "Generate Mockup",
+                        workflow.CanGenerate,
+                        workflow.GenerateReason,
+                        "writes a new blue/red/black/gray preview into the selected draft",
+                        draft != null ? AssetDatabase.GetAssetPath(draft) : "(draft asset)"),
+                    style);
+                EditorGUILayout.LabelField(
+                    BuildPrimaryActionExplanation(
+                        "Post-Process",
+                        workflow.CanPostProcess,
+                        workflow.PostProcessReason,
+                        "updates generated cells using the rule set pass list",
+                        draft != null ? AssetDatabase.GetAssetPath(draft) : "(draft asset)"),
+                    style);
+                EditorGUILayout.LabelField(
+                    BuildPrimaryActionExplanation(
+                        "Accept Mockup",
+                        workflow.CanAccept,
+                        workflow.AcceptReason,
+                        "records the current draft signature as the materialization source",
+                        draft != null ? AssetDatabase.GetAssetPath(draft) : "(draft asset)"),
+                    style);
+                EditorGUILayout.LabelField(
+                    BuildPrimaryActionExplanation(
+                        "Materialize To Scene",
+                        workflow.CanMaterialize,
+                        workflow.MaterializeReason,
+                        "instantiates prefab or placeholder modules from the accepted mockup",
+                        $"Scene root MapGenV2_<Profile>_<Seed>; prefab folder {GetMaterializedPrefabFolder()}"),
+                    style);
+                EditorGUILayout.LabelField(
+                    BuildPrimaryActionExplanation(
+                        "Bake Runtime Asset",
+                        workflow.CanBakeRuntime,
+                        workflow.BakeRuntimeReason,
+                        "writes runtime-safe grid, region, connector, prop, marker, and traversal data",
+                        BuildExpectedBakedAssetPath()),
+                    style);
             }
         }
 

@@ -145,6 +145,23 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void MapGenV2WindowPrimaryActionExplanationIncludesChangeReasonAndOutput()
+        {
+            var explanation = MapGenV2Window.BuildPrimaryActionExplanation(
+                "Materialize To Scene",
+                false,
+                "Accept Mockup first.",
+                "instantiates prefab or placeholder modules",
+                "Scene root MapGenV2_profile_2001");
+
+            Assert.That(explanation, Does.Contain("Materialize To Scene"));
+            Assert.That(explanation, Does.Contain("Disabled"));
+            Assert.That(explanation, Does.Contain("Accept Mockup first."));
+            Assert.That(explanation, Does.Contain("Change: instantiates prefab or placeholder modules"));
+            Assert.That(explanation, Does.Contain("Output: Scene root MapGenV2_profile_2001"));
+        }
+
+        [Test]
         public void ProfileInspectorSummaryIncludesAuthoringReadiness()
         {
             var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();

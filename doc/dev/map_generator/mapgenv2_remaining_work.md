@@ -104,7 +104,7 @@ tool, and generated output workflow.
   an existing IMGUI path is simpler to maintain.
 - [ ] Use a consistent three-pane authoring layout where possible:
   left = setup/assets, center = visual preview, right = selected item/details.
-- [ ] Every primary action must show:
+- [x] Every primary action must show:
   what it will change, why it is enabled/disabled, and where the output will be
   created.
 - [x] Add a persistent top status strip:
