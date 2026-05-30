@@ -111,15 +111,12 @@ Use these steps after pulling the branch:
 2. Open the existing `MapGenerator` editor scene and select the
    `MapGeneratorWorkspace`.
 3. In the `Production Scene Workflow` section, click `Generate Preview`.
-   This creates selectable `Preview Room - ...` box nodes, edge links, and
-   placement markers under the workspace `Preview Root` without saving a draft
-   asset. Room nodes include a `MapPreviewRoomNode` component and an enlarged
-   pick collider so they can be selected directly in Scene View.
-4. Use `Random Seed + Generate Preview` until the generated candidate shape is
+   This creates a visual cell-map preview under the workspace `Preview Root`
+   without saving a draft asset.
+4. Use `Random Seed + Generate Preview` until the generated cell-map shape is
    acceptable.
-5. Click `Accept Preview + Bake Map` to save the selected candidate as an
-   `EditableMapDraftAsset`, validate it, and save the runtime
-   `CompiledMapAsset`.
+5. Click `Accept Preview + Save Draft` to save the selected preview as an
+   `EditableMapDraftAsset`.
 6. Use `Select Draft` only when you need the detailed draft inspector
    brush controls.
 7. In the draft inspector, paint directly on the `Map Preview` grid. Choose a
@@ -132,7 +129,7 @@ Use these steps after pulling the branch:
    slope, stair, object, and overlay children.
 10. Use `Validate` and confirm the draft either passes or reports precise
    cell/object/socket errors in the inspector.
-11. Use `Bake Runtime Map` or `Save Compiled Map Asset` and confirm the bake only
+11. Use `Bake + Save Compiled Map`, `Bake Runtime Map`, or `Save Compiled Map Asset` and confirm the bake only
    succeeds when validation passes.
 12. Use `Clear Preview` and confirm the preview root is deleted while the draft
    asset data remains unchanged.

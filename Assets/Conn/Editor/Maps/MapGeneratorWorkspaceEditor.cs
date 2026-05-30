@@ -39,7 +39,7 @@ namespace Conn.Editor.Maps
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Production Scene Workflow", EditorStyles.boldLabel);
             EditorGUILayout.HelpBox(
-                "Generate preview candidates in the scene first. When a candidate is acceptable, accept it to save an editable draft and bake the runtime CompiledMap asset.",
+                "Generate a visual cell-map preview first. When it is acceptable, save it as an editable draft, then validate and bake the runtime CompiledMap asset.",
                 MessageType.Info);
             using (new EditorGUILayout.HorizontalScope())
             {
@@ -62,10 +62,10 @@ namespace Conn.Editor.Maps
             {
                 using (new EditorGUI.DisabledScope(workspace.LastEditableDraft == null))
                 {
-                    if (GUILayout.Button("Accept Preview + Bake Map"))
+                    if (GUILayout.Button("Accept Preview + Save Draft"))
                     {
                         serializedObject.ApplyModifiedProperties();
-                        AcceptPreviewAndBakeMap(workspace);
+                        AcceptPreviewAndSaveDraft(workspace);
                     }
                 }
 
@@ -98,6 +98,12 @@ namespace Conn.Editor.Maps
                     {
                         serializedObject.ApplyModifiedProperties();
                         ValidateCurrentDraft(workspace);
+                    }
+
+                    if (GUILayout.Button("Bake + Save Compiled Map"))
+                    {
+                        serializedObject.ApplyModifiedProperties();
+                        BakeAndSaveCurrentDraft(workspace);
                     }
                 }
 
@@ -154,7 +160,7 @@ namespace Conn.Editor.Maps
                     ClearPreviewWithUndo(workspace, "Generate Map Preview");
                 }
 
-                DrawPreview(workspace, "Generate Map Preview");
+                EditableMapPreviewMeshBuilder.RebuildPreview(generated.Draft, workspace.ResolvePreviewRoot());
                 MarkSceneDirty(workspace);
             }
             catch (Exception exception)
@@ -208,7 +214,7 @@ namespace Conn.Editor.Maps
             Debug.LogException(exception);
         }
 
-        private static void AcceptPreviewAndBakeMap(MapGeneratorWorkspace workspace)
+        private static void AcceptPreviewAndSaveDraft(MapGeneratorWorkspace workspace)
         {
             try
             {
@@ -218,22 +224,18 @@ namespace Conn.Editor.Maps
                 var assetPath = EditableMapDraftBuilder.BuildDefaultAssetPath($"{generated.Draft.SourceProfileId}_{generated.Draft.Seed}_draft");
                 var draftAsset = EditableMapDraftBuilder.CreateDraftAssetFromSource(assetPath, generated.Draft);
                 var report = EditableMapValidationService.Validate(draftAsset);
-                var compiled = EditableMapBakeService.Bake(draftAsset);
-                var compiledPath = AssetDatabase.GenerateUniqueAssetPath($"Assets/Conn/Core/Maps/{compiled.MapId}_CompiledMap.asset");
-                var compiledAsset = EditableMapBakeService.SaveCompiledMapAsset(compiled, compiledPath);
 
-                Undo.RecordObject(workspace, "Accept Preview And Bake Map");
+                Undo.RecordObject(workspace, "Accept Preview And Save Draft");
                 workspace.CurrentEditableDraft = draftAsset;
-                workspace.CurrentCompiledMapAsset = compiledAsset;
-                workspace.SetGeneratedResult(draftAsset, compiled, report);
+                workspace.SetGeneratedResult(draftAsset, generated.Compiled, report);
                 EditorUtility.SetDirty(workspace);
                 MarkSceneDirty(workspace);
-                Selection.activeObject = compiledAsset;
-                EditorGUIUtility.PingObject(compiledAsset);
+                Selection.activeObject = draftAsset;
+                EditorGUIUtility.PingObject(draftAsset);
             }
             catch (Exception exception)
             {
-                RecordGenerationException(workspace, "Accept Preview And Bake Map", exception);
+                RecordGenerationException(workspace, "Accept Preview And Save Draft", exception);
             }
         }
 
@@ -433,16 +435,10 @@ namespace Conn.Editor.Maps
             {
                 var roomSnapshot = rooms[i];
                 var room = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                room.name = $"Preview Room - {roomSnapshot.Id} ({roomSnapshot.Role})";
+                room.name = $"Room {roomSnapshot.Id} ({roomSnapshot.Role})";
                 room.transform.SetParent(root, false);
                 room.transform.position = workspace.PreviewRoomPosition(roomSnapshot);
                 room.transform.localScale = new Vector3(1.8f, Mathf.Max(0.05f, workspace.RoomHeight), 1.8f);
-                var node = room.AddComponent<MapPreviewRoomNode>();
-                node.RoomId = roomSnapshot.Id ?? string.Empty;
-                node.Role = roomSnapshot.Role;
-                node.ChunkId = roomSnapshot.ChunkId ?? string.Empty;
-                node.SocketMask = roomSnapshot.SocketMask;
-                ConfigureRoomPickCollider(room, workspace.RoomHeight);
                 room.GetComponent<MeshRenderer>().sharedMaterial = materialCache.ForRole(roomSnapshot.Role);
                 Undo.RegisterCreatedObjectUndo(room, undoName);
 
@@ -466,20 +462,6 @@ namespace Conn.Editor.Maps
                 marker.GetComponent<MeshRenderer>().sharedMaterial = materialCache.ForPlacement(placement.Kind);
                 Undo.RegisterCreatedObjectUndo(marker, undoName);
             }
-        }
-
-        private static void ConfigureRoomPickCollider(GameObject room, float visualHeight)
-        {
-            var boxCollider = room.GetComponent<BoxCollider>();
-            if (boxCollider == null)
-            {
-                boxCollider = room.AddComponent<BoxCollider>();
-            }
-
-            var height = Mathf.Max(0.05f, visualHeight);
-            const float pickHeight = 1.2f;
-            boxCollider.size = new Vector3(1.15f, pickHeight / height, 1.15f);
-            boxCollider.center = new Vector3(0f, (pickHeight - height) * 0.5f / height, 0f);
         }
 
         private static GameObject CreateLabel(Transform root, string text, Vector3 position, float size)

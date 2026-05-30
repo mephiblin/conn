@@ -1112,9 +1112,9 @@ is partially complete.
   - 2026-05-30: Candidate room previews are simplified to clickable
     `Preview Room - ...` box nodes with edge links; cell-level mesh previews are
     reserved for accepted drafts.
-  - 2026-05-30: Preview room nodes now carry `MapPreviewRoomNode` metadata,
-    `[SelectionBase]`, and enlarged pick colliders for direct Scene View
-    selection.
+  - 2026-05-30: The node/wire candidate editing direction was dropped for
+    simplicity. The workspace now starts from a visual cell-map preview, then
+    saves the accepted preview as a draft before validation and bake.
 - [x] Add screenshots or saved sample assets when the first usable version
   exists.
   - 2026-05-30: Chapter 2 saved `CompiledMapAsset` samples are regenerated
