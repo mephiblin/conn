@@ -1104,6 +1104,10 @@ Progress note 2026-05-31:
   delta, and append samples to `Logs/MapGenV2Performance.log`.
 - Mockup preview now caches a 1-pixel-per-cell texture keyed by draft signature,
   while hover/selection/grid/prop overlays remain dynamic.
+- Performance log details now include validation issue counts/codes,
+  retry/contradiction counts, post-process pass/rollback/change counts,
+  materialization request/footprint counts, and baked payload counts.
+- Focused tests already assert mockup generation does not create scene objects.
 - Focused tests cover budget classification, profiler sample logging, and
   preview texture cache invalidation.
 
@@ -1121,8 +1125,8 @@ Tasks:
 - [x] Add progress reporting for solve, post-process, materialize, and bake.
 - [ ] Avoid excessive `AssetDatabase.Refresh` calls during normal generation.
 - [x] Cache preview textures and invalidate them only when draft data changes.
-- [ ] Avoid scene object creation during mockup-only iteration.
-- [ ] Add profiling hooks or logs for retries, contradictions, and pass costs.
+- [x] Avoid scene object creation during mockup-only iteration.
+- [x] Add profiling hooks or logs for retries, contradictions, and pass costs.
 
 Acceptance:
 

@@ -652,7 +652,7 @@ namespace Conn.MapGenV2.Editor
                     () => preserveLockedRegions
                         ? draft.RegenerateUnlockedFromProfile()
                         : draft.GenerateFromProfile(),
-                    $"Seed={draft.Seed}",
+                    result => MapGenV2PerformanceDetails.ForValidationReport(result, 1, $"Seed={draft.Seed}"),
                     out var sample);
                 MapGenV2EditorProgress.Report(operationName, "Building preview summary...", 0.85f);
                 ClearSelection();
@@ -693,7 +693,7 @@ namespace Conn.MapGenV2.Editor
                     draft.Height,
                     budget.GenerationBudgetMs,
                     () => draft.ApplyPostProcessingFromProfile(),
-                    $"Seed={draft.Seed}",
+                    result => MapGenV2PerformanceDetails.ForPostProcess(result, $"Seed={draft.Seed}"),
                     out var sample);
                 EditorUtility.SetDirty(draft);
                 lastOperationResult = $"Post-process complete. Direct routes +{report.DirectRouteCellsAdded}, dead ends removed {report.DeadEndCorridorsRemoved}, isolated rooms removed {report.IsolatedRoomsRemoved}. Perf {sample.ElapsedMs}ms/{sample.BudgetMs}ms {sample.Target}.";
@@ -728,7 +728,12 @@ namespace Conn.MapGenV2.Editor
                     draft.Height,
                     budget.MaterializationBudgetMs,
                     () => MapGenMockupMaterializer.Materialize(draft, GetSceneOutputMode(), selectedMaterializedRoot),
-                    $"Seed={draft.Seed}",
+                    _ => MapGenV2PerformanceDetails.ForMaterialization(
+                        MapGenMockupMaterializer.BuildReport(
+                            draft.Profile != null && draft.Profile.StyleSet != null ? draft.Profile.StyleSet.ModuleSet : null,
+                            MapGenMockupMaterializer.BuildPlan(draft),
+                            draft.Seed),
+                        $"Seed={draft.Seed}"),
                     out var sample);
                 selectedMaterializedRoot = root;
                 lastOperationResult = root != null
@@ -765,7 +770,7 @@ namespace Conn.MapGenV2.Editor
                     draft.Height,
                     budget.GenerationBudgetMs,
                     () => MapGenRuntimeBakeUtility.Bake(draft),
-                    $"Seed={draft.Seed}",
+                    result => MapGenV2PerformanceDetails.ForBakedMap(result, $"Seed={draft.Seed}"),
                     out var sample);
                 lastOperationResult = bakedAsset != null
                     ? $"Baked runtime asset: {AssetDatabase.GetAssetPath(bakedAsset)}. Perf {sample.ElapsedMs}ms/{sample.BudgetMs}ms {sample.Target}."

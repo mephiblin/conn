@@ -132,17 +132,36 @@ namespace Conn.MapGenV2.Editor
             string detail,
             out MapGenV2PerformanceSample sample)
         {
+            return Measure(operation, width, height, budgetMs, action, _ => detail, out sample);
+        }
+
+        public static T Measure<T>(
+            string operation,
+            int width,
+            int height,
+            long budgetMs,
+            Func<T> action,
+            Func<T, string> detailFactory,
+            out MapGenV2PerformanceSample sample)
+        {
             var budget = MapGenV2PerformanceProfile.SelectBudget(width, height);
             var beforeMemory = GC.GetTotalMemory(false);
             var stopwatch = Stopwatch.StartNew();
+            var result = default(T);
+            var completed = false;
             try
             {
-                return action != null ? action() : default;
+                result = action != null ? action() : default;
+                completed = true;
+                return result;
             }
             finally
             {
                 stopwatch.Stop();
                 var afterMemory = GC.GetTotalMemory(false);
+                var detail = completed && detailFactory != null
+                    ? detailFactory(result)
+                    : "Operation did not complete.";
                 sample = new MapGenV2PerformanceSample(
                     operation,
                     budget.Target,
@@ -160,6 +179,52 @@ namespace Conn.MapGenV2.Editor
         {
             Directory.CreateDirectory("Logs");
             File.AppendAllText(LogPath, sample.ToLogLine() + Environment.NewLine);
+        }
+    }
+
+    public static class MapGenV2PerformanceDetails
+    {
+        public static string ForValidationReport(MapGenValidationReport report, int attempts, string seedLabel)
+        {
+            var retryable = 0;
+            var contradictions = 0;
+            var codes = string.Empty;
+            foreach (var issue in report?.Issues ?? Array.Empty<MapGenIssue>())
+            {
+                if (issue.Code.Contains("retry") || issue.Code.Contains("exhausted"))
+                {
+                    retryable++;
+                }
+
+                if (issue.Code.Contains("contradiction")
+                    || issue.Code.Contains("incompatible")
+                    || issue.Code.Contains("missing_compatible"))
+                {
+                    contradictions++;
+                }
+
+                if (codes.Length < 240)
+                {
+                    codes += string.IsNullOrEmpty(codes) ? issue.Code : $",{issue.Code}";
+                }
+            }
+
+            return $"{seedLabel}; Attempts={attempts}; Issues={report?.Issues.Count ?? 0}; Errors={report?.ErrorCount ?? 0}; Warnings={report?.WarningCount ?? 0}; RetryIssues={retryable}; Contradictions={contradictions}; IssueCodes={codes}";
+        }
+
+        public static string ForPostProcess(MapGenPostProcessReport report, string seedLabel)
+        {
+            return $"{seedLabel}; PassesRun={report?.PassesRun ?? 0}; Rollbacks={report?.Rollbacks ?? 0}; DirectRouteCellsAdded={report?.DirectRouteCellsAdded ?? 0}; DeadEndCorridorsRemoved={report?.DeadEndCorridorsRemoved ?? 0}; IsolatedRoomsRemoved={report?.IsolatedRoomsRemoved ?? 0}; EnclosedEmptyCellsFilled={report?.EnclosedEmptyCellsFilled ?? 0}; ConnectivityValid={report == null || report.RequiredConnectivityValid}";
+        }
+
+        public static string ForMaterialization(MapGenMaterializationReport report, string seedLabel)
+        {
+            return $"{seedLabel}; Requests={report?.TotalRequests ?? 0}; Instantiable={report?.InstantiableRequests ?? 0}; Missing={report?.MissingModuleRequests ?? 0}; FootprintOutOfBounds={report?.FootprintOutOfBoundsRequests ?? 0}; FootprintOverlap={report?.FootprintOverlapRequests ?? 0}";
+        }
+
+        public static string ForBakedMap(MapGenBakedMapAsset asset, string seedLabel)
+        {
+            return $"{seedLabel}; Cells={asset?.Cells?.Length ?? 0}; Regions={asset?.Regions?.Length ?? 0}; Connectors={asset?.Connectors?.Length ?? 0}; TraversalEdges={asset?.TraversalEdges?.Length ?? 0}; Props={asset?.Props?.Length ?? 0}";
         }
     }
 

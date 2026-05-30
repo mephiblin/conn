@@ -1295,6 +1295,42 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void PerformanceDetailsSummarizeContradictionsAndPassCosts()
+        {
+            var validation = new MapGenValidationReport();
+            validation.Add(new MapGenIssue(
+                MapGenGenerationPhase.SolveMockup,
+                "production_solver_missing_compatible_corridor_template",
+                "No corridor template can connect the selected room connectors.",
+                "Add a compatible corridor template."));
+            validation.Add(new MapGenIssue(
+                MapGenGenerationPhase.SolveMockup,
+                "production_solver_retry_exhausted",
+                "Retry attempts exhausted.",
+                "Relax constraints."));
+            var validationDetail = MapGenV2PerformanceDetails.ForValidationReport(validation, 3, "Seed=7");
+
+            Assert.That(validationDetail, Does.Contain("Attempts=3"));
+            Assert.That(validationDetail, Does.Contain("RetryIssues=1"));
+            Assert.That(validationDetail, Does.Contain("Contradictions=1"));
+            Assert.That(validationDetail, Does.Contain("production_solver_retry_exhausted"));
+
+            var postProcessDetail = MapGenV2PerformanceDetails.ForPostProcess(
+                new MapGenPostProcessReport
+                {
+                    PassesRun = 2,
+                    Rollbacks = 1,
+                    DirectRouteCellsAdded = 5,
+                    DeadEndCorridorsRemoved = 3
+                },
+                "Seed=7");
+
+            Assert.That(postProcessDetail, Does.Contain("PassesRun=2"));
+            Assert.That(postProcessDetail, Does.Contain("Rollbacks=1"));
+            Assert.That(postProcessDetail, Does.Contain("DirectRouteCellsAdded=5"));
+        }
+
+        [Test]
         public void PreviewTextureCacheReusesAndInvalidatesByDraftSignature()
         {
             var draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();
