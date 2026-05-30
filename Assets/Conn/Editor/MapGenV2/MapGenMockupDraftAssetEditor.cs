@@ -41,6 +41,16 @@ namespace Conn.MapGenV2.Editor
                     draft.Accept();
                     EditorUtility.SetDirty(draft);
                 }
+            }
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayoutButton("Run Post-Process"))
+                {
+                    Undo.RecordObject(draft, "Post-Process Mockup Draft");
+                    draft.ApplyPostProcessingFromProfile();
+                    EditorUtility.SetDirty(draft);
+                }
 
                 if (GUILayoutButton("Clear Acceptance"))
                 {

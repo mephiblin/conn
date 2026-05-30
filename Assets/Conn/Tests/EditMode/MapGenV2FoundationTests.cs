@@ -138,5 +138,26 @@ namespace Conn.Tests.EditMode
                     cell => cell.State == MapGenCellState.Room && cell.RoomCategory == category));
             }
         }
+
+        [Test]
+        public void PostProcessorCanAddDirectRoute()
+        {
+            var cells = new MapGenMockupCell[25];
+            for (var i = 0; i < cells.Length; i++)
+            {
+                cells[i] = MapGenMockupCell.Empty;
+            }
+
+            cells[0] = new MapGenMockupCell { State = MapGenCellState.Room, RoomCategory = MapGenRoomCategory.Start };
+            cells[24] = new MapGenMockupCell { State = MapGenCellState.Room, RoomCategory = MapGenRoomCategory.Exit };
+
+            var report = MapGenMockupPostProcessor.Apply(5, 5, cells, new MapGenPostProcessOptions
+            {
+                UseDirectRoutes = true
+            });
+
+            Assert.That(report.DirectRouteCellsAdded, Is.GreaterThan(0));
+            Assert.That(report.Changed, Is.True);
+        }
     }
 }

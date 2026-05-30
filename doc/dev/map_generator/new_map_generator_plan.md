@@ -1140,7 +1140,7 @@ be committed and pushed separately.
 - [x] Mockup preview: blue/red/black/gray grid renderer and overlays.
 - [x] Solver MVP: deterministic connected mockup layout with required rooms and
   corridor paths.
-- [ ] Post-processing MVP: direct route, dead-end reduction, small room removal,
+- [x] Post-processing MVP: direct route, dead-end reduction, small room removal,
   per-pass report.
 - [ ] Mockup acceptance flow: accept, reject, regenerate, stale detection.
 - [ ] Materialization MVP: floor/wall/corner/ceiling/door module classification

@@ -14,6 +14,9 @@ namespace Conn.MapGenV2.Authoring
         public bool Accepted;
         public string AcceptedSignature = string.Empty;
         public string LastGeneratedSignature = string.Empty;
+        public int LastDirectRouteCellsAdded;
+        public int LastDeadEndCorridorsRemoved;
+        public int LastIsolatedRoomsRemoved;
 
         public int Width => Mathf.Max(1, GridSize.x);
 
@@ -54,7 +57,32 @@ namespace Conn.MapGenV2.Authoring
             Accepted = false;
             AcceptedSignature = string.Empty;
             LastGeneratedSignature = result.Signature;
+            ClearPostProcessReport();
             return result.Report;
+        }
+
+        public MapGenPostProcessReport ApplyPostProcessingFromProfile()
+        {
+            EnsureCellArray();
+            var options = new MapGenPostProcessOptions();
+            if (Profile != null && Profile.LayoutRules != null)
+            {
+                options.UseDirectRoutes = Profile.LayoutRules.UseDirectRoutes;
+                options.ReduceDeadEnds = Profile.LayoutRules.ReduceDeadEnds;
+                options.RemoveSmallRooms = Profile.LayoutRules.RemoveSmallRooms;
+            }
+
+            var report = MapGenMockupPostProcessor.Apply(Width, Height, Cells, options);
+            LastDirectRouteCellsAdded = report.DirectRouteCellsAdded;
+            LastDeadEndCorridorsRemoved = report.DeadEndCorridorsRemoved;
+            LastIsolatedRoomsRemoved = report.IsolatedRoomsRemoved;
+            LastGeneratedSignature = ComputeSignature();
+            if (report.Changed)
+            {
+                ClearAcceptance();
+            }
+
+            return report;
         }
 
         public void EnsureCellArray()
@@ -115,6 +143,13 @@ namespace Conn.MapGenV2.Authoring
         {
             Accepted = false;
             AcceptedSignature = string.Empty;
+        }
+
+        private void ClearPostProcessReport()
+        {
+            LastDirectRouteCellsAdded = 0;
+            LastDeadEndCorridorsRemoved = 0;
+            LastIsolatedRoomsRemoved = 0;
         }
 
         private void OnValidate()
