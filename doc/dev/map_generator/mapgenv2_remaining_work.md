@@ -240,8 +240,12 @@ Progress note 2026-05-31:
   and regeneration actions.
 - Selected room regions can now be regenerated from the current profile with a
   new seed while preserving other region cells and their override metadata.
-- Remaining Phase 1 work is fuller selected-region edit coverage:
-  corridor reroute and fuller shape/template reroll actions.
+- The selected-region inspector now explicitly displays category, template id,
+  shape id, lock state, cell/connectivity counts, post-process tag summaries,
+  and materialization hints.
+- Selected regions now expose explicit shape/template reroll and connector
+  reroute actions. These use deterministic regeneration with a new seed while
+  preserving the rest of the edited mockup.
 
 Goal: make the mockup stage obvious and usable.
 
@@ -258,10 +262,10 @@ Tasks:
   region, not only the individual grid cell.
 - [x] Highlight the selected region, its connectors, and adjacent corridor
   links in the preview.
-- [ ] Add selected-region inspector fields:
+- [x] Add selected-region inspector fields:
   region id, type, category, template/shape id, lock state, cell count,
   connectors, post-process tags, and materialization hints.
-- [ ] Add selected-region actions:
+- [x] Add selected-region actions:
   lock/unlock, change category, reroll shape, delete/regenerate region,
   reroute connectors, mark blocked/reserved cells, and clear manual override.
 - [x] Persist selected-region edits in `MapGenMockupDraftAsset`.

@@ -1344,11 +1344,13 @@ namespace Conn.MapGenV2.Editor
                 EditorGUILayout.LabelField("Connector Count", connectorCount.ToString());
                 EditorGUILayout.LabelField("Adjacent Links / 인접 링크", adjacentLinkCount.ToString());
                 EditorGUILayout.LabelField("Locked", regionOverride.Locked ? "Yes" : "No");
+                EditorGUILayout.LabelField("Category / 카테고리", category.ToString());
                 EditorGUILayout.LabelField(
                     "Override",
                     regionOverride.HasCategoryOverride ? $"Category {regionOverride.CategoryOverride}" : "(none)");
                 EditorGUILayout.LabelField("Source Template", string.IsNullOrEmpty(sourceTemplateId) ? "(none)" : sourceTemplateId);
                 EditorGUILayout.LabelField("Source Shape", string.IsNullOrEmpty(sourceShapeId) ? "(none)" : sourceShapeId);
+                EditorGUILayout.LabelField("Post-process Tags", BuildPostProcessTags(draft));
                 EditorGUILayout.LabelField(
                     "Materialization",
                     DescribeMaterializationHint(roomCount, corridorCount, connectorCount, blockedCount, reservedCount));
@@ -1384,14 +1386,25 @@ namespace Conn.MapGenV2.Editor
 
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    using (new EditorGUI.DisabledScope(regionOverride.Locked || roomCount <= 0))
+                    using (new EditorGUI.DisabledScope(regionOverride.Locked || roomCount + connectorCount <= 0))
                     {
-                        if (GUILayout.Button("Regenerate Room / 방 재생성"))
+                        if (GUILayout.Button("Reroll Shape/Template / 형태·템플릿 재선택"))
                         {
-                            RegenerateSelectedRoomRegion();
+                            RegenerateSelectedRegion("Rerolled shape/template");
                         }
                     }
 
+                    using (new EditorGUI.DisabledScope(regionOverride.Locked || corridorCount + connectorCount <= 0))
+                    {
+                        if (GUILayout.Button("Reroute Connectors / 연결 재경로"))
+                        {
+                            RegenerateSelectedRegion("Rerouted connectors");
+                        }
+                    }
+                }
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
                     if (GUILayout.Button("Delete Region / 삭제"))
                     {
                         ChangeSelectedRegionState(MapGenCellState.Empty, "Deleted");
@@ -1411,7 +1424,7 @@ namespace Conn.MapGenV2.Editor
             }
         }
 
-        private void RegenerateSelectedRoomRegion()
+        private void RegenerateSelectedRegion(string actionLabel)
         {
             if (draft == null || selectedRegionId < 0)
             {
@@ -1424,9 +1437,40 @@ namespace Conn.MapGenV2.Editor
             EditorUtility.SetDirty(draft);
             var preview = MapGenMockupPreviewData.FromDraft(draft);
             lastOperationResult = report.IsValid
-                ? $"Regenerated room region {selectedRegionId}. Seed {draft.Seed}, Rooms {preview.Summary.RoomCells}, Corridors {preview.Summary.CorridorCells}."
+                ? $"{actionLabel} for region {selectedRegionId}. Seed {draft.Seed}, Rooms {preview.Summary.RoomCells}, Corridors {preview.Summary.CorridorCells}."
                 : $"Regenerate region failed: {report.Issues[0].Message}";
             Repaint();
+        }
+
+        private static string BuildPostProcessTags(MapGenMockupDraftAsset draft)
+        {
+            if (draft == null)
+            {
+                return "(none)";
+            }
+
+            var tags = new System.Collections.Generic.List<string>();
+            if (draft.LastDirectRouteCellsAdded > 0)
+            {
+                tags.Add($"direct-route +{draft.LastDirectRouteCellsAdded}");
+            }
+
+            if (draft.LastDeadEndCorridorsRemoved > 0)
+            {
+                tags.Add($"dead-end-pruned {draft.LastDeadEndCorridorsRemoved}");
+            }
+
+            if (draft.LastIsolatedRoomsRemoved > 0)
+            {
+                tags.Add($"isolated-room-removed {draft.LastIsolatedRoomsRemoved}");
+            }
+
+            if (draft.LastEnclosedEmptyCellsFilled > 0)
+            {
+                tags.Add($"enclosed-fill {draft.LastEnclosedEmptyCellsFilled}");
+            }
+
+            return tags.Count > 0 ? string.Join(", ", tags) : "(none)";
         }
 
         private static string DescribeRegionType(
