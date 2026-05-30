@@ -116,12 +116,16 @@ namespace Conn.Tests.EditMode
         public void MapGenV2WindowDeclaresThreePaneAuthoringLayout()
         {
             var summary = MapGenV2Window.BuildThreePaneLayoutSummary();
+            var technology = MapGenV2Window.BuildEditorTechnologySummary();
             var help = MapGenV2Window.BuildInlineHelpCoverageSummary();
 
             Assert.That(summary, Does.Contain("Three-pane authoring layout"));
             Assert.That(summary, Does.Contain("left setup/assets/output"));
             Assert.That(summary, Does.Contain("center mockup actions and visual preview"));
             Assert.That(summary, Does.Contain("right next action, validation, diagnostics"));
+            Assert.That(technology, Does.Contain("new Scene View overlay uses UI Toolkit"));
+            Assert.That(technology, Does.Contain("existing MapGenV2 window and inspectors stay IMGUI"));
+            Assert.That(technology, Does.Contain("preview drawing, Undo, and serialized inspector workflows"));
             Assert.That(help, Does.Contain("profile"));
             Assert.That(help, Does.Contain("rule set"));
             Assert.That(help, Does.Contain("style set"));

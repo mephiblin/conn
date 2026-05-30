@@ -250,6 +250,11 @@ namespace Conn.MapGenV2.Editor
             return "Three-pane authoring layout: left setup/assets/output, center mockup actions and visual preview, right next action, validation, diagnostics, and scene output details.";
         }
 
+        public static string BuildEditorTechnologySummary()
+        {
+            return "Editor technology policy: new Scene View overlay uses UI Toolkit; existing MapGenV2 window and inspectors stay IMGUI because their maintained code path already owns preview drawing, Undo, and serialized inspector workflows.";
+        }
+
         public static string BuildInlineHelpCoverageSummary()
         {
             return "Inline help/tooltips cover profile, rule set, style set, module set, room shape, connectors, post-process, prop placement, bake settings, and materialization output.";

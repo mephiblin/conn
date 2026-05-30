@@ -100,7 +100,7 @@ tool, and generated output workflow.
 
 ### User-Centered Editor UX
 
-- [ ] Use UI Toolkit for new editor windows and complex custom inspectors unless
+- [x] Use UI Toolkit for new editor windows and complex custom inspectors unless
   an existing IMGUI path is simpler to maintain.
 - [x] Use a consistent three-pane authoring layout where possible:
   left = setup/assets, center = visual preview, right = selected item/details.
