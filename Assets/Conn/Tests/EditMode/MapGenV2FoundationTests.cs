@@ -151,10 +151,13 @@ namespace Conn.Tests.EditMode
             var technology = MapGenV2Window.BuildEditorTechnologySummary();
             var help = MapGenV2Window.BuildInlineHelpCoverageSummary();
             var slotHelp = MapGenV2Window.BuildMapAssetSlotHelp();
+            var layoutHelp = MapGenV2Window.BuildLayoutRulesHelp();
 
             Assert.That(summary, Does.Contain("Draft-centered authoring layout"));
             Assert.That(summary, Does.Contain("draft file create/import"));
             Assert.That(summary, Does.Contain("map prefab slots"));
+            Assert.That(summary, Does.Contain("layout rules"));
+            Assert.That(summary, Does.Contain("room count"));
             Assert.That(summary, Does.Contain("seed controls"));
             Assert.That(summary, Does.Contain("preview/drawing"));
             Assert.That(summary, Does.Contain("save current draft"));
@@ -169,6 +172,10 @@ namespace Conn.Tests.EditMode
             Assert.That(help, Does.Contain("draft file"));
             Assert.That(help, Does.Contain("map prefab slots"));
             Assert.That(help, Does.Contain("automatic wall/corner placement"));
+            Assert.That(help, Does.Contain("layout rules"));
+            Assert.That(help, Does.Contain("room count"));
+            Assert.That(help, Does.Contain("required special rooms"));
+            Assert.That(help, Does.Contain("loop chance"));
             Assert.That(help, Does.Contain("seed controls"));
             Assert.That(help, Does.Contain("preview drawing"));
             Assert.That(help, Does.Contain("connectors"));
@@ -181,6 +188,56 @@ namespace Conn.Tests.EditMode
             Assert.That(slotHelp, Does.Contain("바깥 코너"));
             Assert.That(slotHelp, Does.Contain("자동 배치"));
             Assert.That(slotHelp, Does.Contain("장식 프롭"));
+            Assert.That(layoutHelp, Does.Contain("room count"));
+            Assert.That(layoutHelp, Does.Contain("Quest/Boss"));
+            Assert.That(layoutHelp, Does.Contain("loop chance"));
+            Assert.That(layoutHelp, Does.Contain("Grid Size only changes"));
+        }
+
+        [Test]
+        public void MapGenV2WindowNormalizesLayoutRulesForDraftAuthoring()
+        {
+            var rules = MapGenQuantityRules.Defaults();
+            rules.RequiredCategories = new[]
+            {
+                MapGenRoomCategory.Boss,
+                MapGenRoomCategory.Start,
+                MapGenRoomCategory.Boss
+            };
+            rules.OptionalCategories = new[]
+            {
+                MapGenRoomCategory.Start,
+                MapGenRoomCategory.Side,
+                MapGenRoomCategory.Side,
+                MapGenRoomCategory.Exit,
+                MapGenRoomCategory.Hub
+            };
+            rules.MinRooms = 1;
+            rules.MaxRooms = 0;
+            rules.MinCorridorCells = -4;
+            rules.MaxCorridorCells = -1;
+            rules.TargetRoomDensityPercent = -10;
+            rules.TargetCorridorDensityPercent = 120;
+
+            var normalized = MapGenV2Window.NormalizeLayoutRulesForAuthoring(rules);
+
+            Assert.That(normalized.RequiredCategories, Is.EqualTo(new[]
+            {
+                MapGenRoomCategory.Start,
+                MapGenRoomCategory.Boss,
+                MapGenRoomCategory.Exit
+            }));
+            Assert.That(normalized.OptionalCategories, Is.EqualTo(new[]
+            {
+                MapGenRoomCategory.Side,
+                MapGenRoomCategory.Hub
+            }));
+            Assert.That(normalized.MinRooms, Is.EqualTo(3));
+            Assert.That(normalized.MaxRooms, Is.EqualTo(3));
+            Assert.That(normalized.MinCorridorCells, Is.EqualTo(0));
+            Assert.That(normalized.MaxCorridorCells, Is.EqualTo(0));
+            Assert.That(normalized.TargetRoomDensityPercent, Is.EqualTo(0));
+            Assert.That(normalized.TargetCorridorDensityPercent, Is.EqualTo(100));
         }
 
         [Test]
@@ -1491,14 +1548,31 @@ namespace Conn.Tests.EditMode
                 template.Weight = 2;
                 var templateSignature = draft.ComputeSignature();
                 template.Weight = 1;
+
+                var quantityRules = draft.QuantityRules;
+                quantityRules.MinRooms = 6;
+                quantityRules.MaxRooms = 8;
+                draft.QuantityRules = quantityRules;
+                var quantitySignature = draft.ComputeSignature();
+                draft.QuantityRules = MapGenQuantityRules.Defaults();
+
                 draft.LoopRate = 50;
                 var ruleSignature = draft.ComputeSignature();
                 draft.LoopRate = 0;
+
+                var postProcessRules = draft.PostProcessRules;
+                postProcessRules.AddLoops = true;
+                draft.PostProcessRules = postProcessRules;
+                var postProcessSignature = draft.ComputeSignature();
+                draft.PostProcessRules = MapGenPostProcessRules.Defaults();
+
                 draft.MapId = "workflow_draft_changed";
                 var draftIdSignature = draft.ComputeSignature();
 
                 Assert.That(templateSignature, Is.Not.EqualTo(baseSignature));
+                Assert.That(quantitySignature, Is.Not.EqualTo(baseSignature));
                 Assert.That(ruleSignature, Is.Not.EqualTo(baseSignature));
+                Assert.That(postProcessSignature, Is.Not.EqualTo(baseSignature));
                 Assert.That(draftIdSignature, Is.Not.EqualTo(baseSignature));
             }
             finally

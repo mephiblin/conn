@@ -186,6 +186,8 @@ namespace Conn.MapGenV2.Editor
         private const string MapAssetsFoldoutKey = "Conn.MapGenV2.Window.MapAssetsFoldout";
         private const string OutputPathsFoldoutKey = "Conn.MapGenV2.Window.OutputPathsFoldout";
         private const string LinkedAssetsFoldoutKey = "Conn.MapGenV2.Window.LinkedAssetsFoldout";
+        private const string LayoutRulesFoldoutKey = "Conn.MapGenV2.Window.LayoutRulesFoldout";
+        private const string LayoutRulesAdvancedFoldoutKey = "Conn.MapGenV2.Window.LayoutRulesAdvancedFoldout";
         private const string MockupActionsFoldoutKey = "Conn.MapGenV2.Window.MockupActionsFoldout";
         private const string MockupPreviewFoldoutKey = "Conn.MapGenV2.Window.MockupPreviewFoldout";
         private const string DetailsFoldoutKey = "Conn.MapGenV2.Window.DetailsFoldoutV2";
@@ -214,6 +216,16 @@ namespace Conn.MapGenV2.Editor
             "복도 / Corridor",
             "비우기 / Empty",
             "차단 / Blocked"
+        };
+
+        private static readonly MapGenRoomCategory[] OptionalRoomCategoryOptions =
+        {
+            MapGenRoomCategory.Main,
+            MapGenRoomCategory.Side,
+            MapGenRoomCategory.Hub,
+            MapGenRoomCategory.Quest,
+            MapGenRoomCategory.Boss,
+            MapGenRoomCategory.Transition
         };
 
         private static readonly Color EmptyColor = new Color(0.04f, 0.08f, 0.9f, 1f);
@@ -252,6 +264,8 @@ namespace Conn.MapGenV2.Editor
         private bool showMapAssetsFoldout = true;
         private bool showOutputPathsFoldout = false;
         private bool showLinkedAssetsFoldout = false;
+        private bool showLayoutRulesFoldout = true;
+        private bool showLayoutRulesAdvancedFoldout;
         private bool showMockupActionsFoldout = true;
         private bool showMockupPreviewFoldout = true;
         private bool showDetailsFoldout;
@@ -321,6 +335,8 @@ namespace Conn.MapGenV2.Editor
             showMapAssetsFoldout = EditorPrefs.GetBool(MapAssetsFoldoutKey, showMapAssetsFoldout);
             showOutputPathsFoldout = EditorPrefs.GetBool(OutputPathsFoldoutKey, showOutputPathsFoldout);
             showLinkedAssetsFoldout = EditorPrefs.GetBool(LinkedAssetsFoldoutKey, showLinkedAssetsFoldout);
+            showLayoutRulesFoldout = EditorPrefs.GetBool(LayoutRulesFoldoutKey, showLayoutRulesFoldout);
+            showLayoutRulesAdvancedFoldout = EditorPrefs.GetBool(LayoutRulesAdvancedFoldoutKey, showLayoutRulesAdvancedFoldout);
             showMockupActionsFoldout = EditorPrefs.GetBool(MockupActionsFoldoutKey, showMockupActionsFoldout);
             showMockupPreviewFoldout = EditorPrefs.GetBool(MockupPreviewFoldoutKey, showMockupPreviewFoldout);
             showDetailsFoldout = EditorPrefs.GetBool(DetailsFoldoutKey, showDetailsFoldout);
@@ -358,7 +374,7 @@ namespace Conn.MapGenV2.Editor
 
         public static string BuildInspectorLayoutSummary()
         {
-            return "Draft-centered authoring layout with a minimal default flow: draft file create/import, map prefab slots, grid size, cell size, seed controls, preview/drawing, save current draft, and output are stacked vertically in production order; diagnostics, post-process details, prop debug overlays, and recovery/compatibility tools stay collapsed in advanced foldouts with responsive wrapping for narrow inspector widths.";
+            return "Draft-centered authoring layout with a minimal default flow: draft file create/import, map prefab slots, layout rules for room count and loop chance, grid size, cell size, seed controls, preview/drawing, save current draft, and output are stacked vertically in production order; diagnostics, post-process details, prop debug overlays, and recovery/compatibility tools stay collapsed in advanced foldouts with responsive wrapping for narrow inspector widths.";
         }
 
         public static string BuildEditorTechnologySummary()
@@ -368,7 +384,177 @@ namespace Conn.MapGenV2.Editor
 
         public static string BuildInlineHelpCoverageSummary()
         {
-            return "Inline help/tooltips cover the draft file, grid size, cell size, map prefab slots, automatic wall/corner placement, seed controls, preview drawing, connectors, post-process, prop placement, save/output readiness, bake settings, materialization output, and recovery tools.";
+            return "Inline help/tooltips cover the draft file, grid size, cell size, map prefab slots, automatic wall/corner placement, layout rules, room count, required special rooms, loop chance, seed controls, preview drawing, connectors, post-process, prop placement, save/output readiness, bake settings, materialization output, and recovery tools.";
+        }
+
+        public static string BuildLayoutRulesHelp()
+        {
+            return "Layout rules control the generated structure, not the canvas size: room count decides how many room regions are attempted, required special rooms add Quest/Boss landmarks while Start/Exit stay present, and loop chance adds alternate corridor routes. Grid Size only changes the available drawing area.";
+        }
+
+        public static MapGenQuantityRules NormalizeLayoutRulesForAuthoring(MapGenQuantityRules rules)
+        {
+            rules.RequiredCategories = NormalizeRequiredCategoriesForAuthoring(rules.RequiredCategories);
+            rules.OptionalCategories = NormalizeOptionalCategoriesForAuthoring(rules.OptionalCategories);
+            rules.MinRooms = Mathf.Max(1, rules.MinRooms);
+            rules.MinRooms = Mathf.Max(rules.MinRooms, rules.RequiredCategories.Length);
+            rules.MaxRooms = Mathf.Max(rules.MinRooms, rules.MaxRooms);
+            rules.MinCorridorCells = Mathf.Max(0, rules.MinCorridorCells);
+            rules.MaxCorridorCells = Mathf.Max(rules.MinCorridorCells, rules.MaxCorridorCells);
+            rules.TargetRoomDensityPercent = Mathf.Clamp(rules.TargetRoomDensityPercent, 0, 100);
+            rules.TargetCorridorDensityPercent = Mathf.Clamp(rules.TargetCorridorDensityPercent, 0, 100);
+            return rules;
+        }
+
+        private static MapGenRoomCategory[] NormalizeRequiredCategoriesForAuthoring(MapGenRoomCategory[] categories)
+        {
+            var normalized = new List<MapGenRoomCategory>();
+            AddUniqueCategory(normalized, MapGenRoomCategory.Start);
+            foreach (var category in categories ?? System.Array.Empty<MapGenRoomCategory>())
+            {
+                if (category == MapGenRoomCategory.Start || category == MapGenRoomCategory.Exit)
+                {
+                    continue;
+                }
+
+                AddUniqueCategory(normalized, category);
+            }
+
+            AddUniqueCategory(normalized, MapGenRoomCategory.Exit);
+            return normalized.ToArray();
+        }
+
+        private static MapGenRoomCategory[] NormalizeOptionalCategoriesForAuthoring(MapGenRoomCategory[] categories)
+        {
+            var normalized = new List<MapGenRoomCategory>();
+            foreach (var category in categories ?? System.Array.Empty<MapGenRoomCategory>())
+            {
+                if (category == MapGenRoomCategory.Start || category == MapGenRoomCategory.Exit)
+                {
+                    continue;
+                }
+
+                AddUniqueCategory(normalized, category);
+            }
+
+            return normalized.ToArray();
+        }
+
+        private static MapGenRoomCategory[] BuildRequiredCategories(
+            MapGenRoomCategory[] existing,
+            bool includeQuest,
+            bool includeBoss)
+        {
+            var categories = new List<MapGenRoomCategory>();
+            AddUniqueCategory(categories, MapGenRoomCategory.Start);
+            foreach (var category in existing ?? System.Array.Empty<MapGenRoomCategory>())
+            {
+                if (category == MapGenRoomCategory.Start
+                    || category == MapGenRoomCategory.Exit
+                    || category == MapGenRoomCategory.Quest
+                    || category == MapGenRoomCategory.Boss)
+                {
+                    continue;
+                }
+
+                AddUniqueCategory(categories, category);
+            }
+
+            if (includeQuest)
+            {
+                AddUniqueCategory(categories, MapGenRoomCategory.Quest);
+            }
+
+            if (includeBoss)
+            {
+                AddUniqueCategory(categories, MapGenRoomCategory.Boss);
+            }
+
+            AddUniqueCategory(categories, MapGenRoomCategory.Exit);
+            return categories.ToArray();
+        }
+
+        private static MapGenRoomCategory[] BuildOptionalCategories(HashSet<MapGenRoomCategory> selected)
+        {
+            var categories = new List<MapGenRoomCategory>();
+            foreach (var category in OptionalRoomCategoryOptions)
+            {
+                if (selected.Contains(category))
+                {
+                    AddUniqueCategory(categories, category);
+                }
+            }
+
+            return categories.ToArray();
+        }
+
+        private static MapGenRoomCategory[] CloneCategoriesForEditor(MapGenRoomCategory[] categories)
+        {
+            if (categories == null || categories.Length == 0)
+            {
+                return System.Array.Empty<MapGenRoomCategory>();
+            }
+
+            var clone = new MapGenRoomCategory[categories.Length];
+            for (var i = 0; i < categories.Length; i++)
+            {
+                clone[i] = categories[i];
+            }
+
+            return clone;
+        }
+
+        private static bool ContainsCategory(MapGenRoomCategory[] categories, MapGenRoomCategory category)
+        {
+            foreach (var existing in categories ?? System.Array.Empty<MapGenRoomCategory>())
+            {
+                if (existing == category)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static void AddUniqueCategory(List<MapGenRoomCategory> categories, MapGenRoomCategory category)
+        {
+            if (!categories.Contains(category))
+            {
+                categories.Add(category);
+            }
+        }
+
+        private static string RoomCategoryLabel(MapGenRoomCategory category)
+        {
+            return category switch
+            {
+                MapGenRoomCategory.Main => "메인 / Main",
+                MapGenRoomCategory.Side => "사이드 / Side",
+                MapGenRoomCategory.Hub => "허브 / Hub",
+                MapGenRoomCategory.Quest => "퀘스트 / Quest",
+                MapGenRoomCategory.Boss => "보스 / Boss",
+                MapGenRoomCategory.Transition => "전환 / Transition",
+                MapGenRoomCategory.Start => "시작 / Start",
+                MapGenRoomCategory.Exit => "출구 / Exit",
+                _ => category.ToString()
+            };
+        }
+
+        private static string FormatCategories(MapGenRoomCategory[] categories)
+        {
+            if (categories == null || categories.Length == 0)
+            {
+                return "(none)";
+            }
+
+            var labels = new string[categories.Length];
+            for (var i = 0; i < categories.Length; i++)
+            {
+                labels[i] = categories[i].ToString();
+            }
+
+            return string.Join(", ", labels);
         }
 
         public static string BuildKoreanCoverageSummary()
@@ -380,6 +566,7 @@ namespace Conn.MapGenV2.Editor
         {
             DrawFoldoutSection("드래프트 파일 / Draft File", ref showSetupAssetsFoldout, DrawDraftFileSection);
             DrawFoldoutSection("맵 에셋 / Map Assets", ref showMapAssetsFoldout, DrawMapAssetSection);
+            DrawFoldoutSection("구조 규칙 / Layout Rules", ref showLayoutRulesFoldout, DrawLayoutRulesSection);
             DrawFoldoutSection("맵 크기와 생성 / Size & Generation", ref showMockupActionsFoldout, () => DrawSeedSection(workflow));
             DrawFoldoutSection("프리뷰 & 드로잉 / Preview & Drawing", ref showMockupPreviewFoldout, () => DrawDraftSummaryAndPreview(workflow));
             DrawFoldoutSection("출력 / Output", ref showSceneOutputFoldout, () =>
@@ -526,6 +713,217 @@ namespace Conn.MapGenV2.Editor
                     RefreshDraftAssets(moduleSet);
                 }
             }
+        }
+
+        private void DrawLayoutRulesSection()
+        {
+            if (draft == null)
+            {
+                DrawWrappingHelpBox("먼저 드래프트를 생성하거나 임포트하세요. / Create or import a draft first.", MessageType.Info);
+                return;
+            }
+
+            var quantity = draft.GetQuantityRules();
+            var postProcessRules = draft.GetPostProcessRules();
+            var loopRate = GetEffectiveLoopRate();
+            var changed = false;
+
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                DrawWrappingHelpBox(BuildLayoutRulesHelp(), MessageType.Info);
+
+                EditorGUILayout.LabelField("방 개수 / Room Count", EditorStyles.boldLabel);
+                EditorGUI.BeginChangeCheck();
+                quantity.MinRooms = EditorGUILayout.IntField("최소 방 수 / Min Rooms", Mathf.Max(1, quantity.MinRooms));
+                quantity.MaxRooms = EditorGUILayout.IntField("최대 방 수 / Max Rooms", Mathf.Max(quantity.MinRooms, quantity.MaxRooms));
+                loopRate = EditorGUILayout.IntSlider("순환 복도 확률 / Loop Chance", loopRate, 0, 100);
+                changed |= EditorGUI.EndChangeCheck();
+
+                EditorGUILayout.Space(4f);
+                EditorGUILayout.LabelField("필수 특수 방 / Required Special Rooms", EditorStyles.boldLabel);
+                using (new EditorGUI.DisabledScope(true))
+                {
+                    EditorGUILayout.ToggleLeft("시작 방 / Start Room", true);
+                    EditorGUILayout.ToggleLeft("출구 방 / Exit Room", true);
+                }
+
+                var requiredCategories = quantity.RequiredCategories;
+                if (DrawRequiredSpecialRoomToggles(ref requiredCategories))
+                {
+                    quantity.RequiredCategories = requiredCategories;
+                    changed = true;
+                }
+
+                DrawWrappingHelpBox(
+                    "시작/출구는 항상 포함됩니다. 최소/최대 방 수가 더 크면 나머지는 Main 방으로 채워지고, 고급 옵션에서 추가 방 역할을 지정할 수 있습니다.",
+                    MessageType.Info);
+
+                EditorGUILayout.Space(4f);
+                EditorGUI.BeginChangeCheck();
+                showLayoutRulesAdvancedFoldout = EditorGUILayout.Foldout(
+                    showLayoutRulesAdvancedFoldout,
+                    "고급 구조 제약 / Advanced Layout Constraints",
+                    true,
+                    EditorStyles.foldoutHeader);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    SaveWindowState();
+                }
+
+                if (showLayoutRulesAdvancedFoldout)
+                {
+                    using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+                    {
+                        DrawWrappingHelpBox(
+                            "이 값들은 구조 성향과 검증 기준입니다. 현재 생성 형태는 방 개수, 필수 방, 루프 확률, 템플릿 배치 가능성이 가장 크게 좌우합니다.",
+                            MessageType.Info);
+
+                        EditorGUILayout.LabelField("추가 방 역할 / Optional Room Types", EditorStyles.boldLabel);
+                        var optionalCategories = quantity.OptionalCategories;
+                        if (DrawOptionalRoomCategoryToggles(ref optionalCategories))
+                        {
+                            quantity.OptionalCategories = optionalCategories;
+                            changed = true;
+                        }
+
+                        EditorGUILayout.Space(4f);
+                        EditorGUI.BeginChangeCheck();
+                        quantity.MinCorridorCells = EditorGUILayout.IntField("최소 복도 칸(검증) / Min Corridor Cells", Mathf.Max(0, quantity.MinCorridorCells));
+                        quantity.MaxCorridorCells = EditorGUILayout.IntField("최대 복도 칸(검증) / Max Corridor Cells", Mathf.Max(quantity.MinCorridorCells, quantity.MaxCorridorCells));
+                        postProcessRules.ReduceDeadEnds = EditorGUILayout.Toggle("막다른 길 정리 / Reduce Dead Ends", postProcessRules.ReduceDeadEnds);
+                        postProcessRules.AddLoops = EditorGUILayout.Toggle("후처리 루프 추가 / Add Post Loops", postProcessRules.AddLoops);
+                        changed |= EditorGUI.EndChangeCheck();
+                    }
+                }
+            }
+
+            if (changed)
+            {
+                ApplyLayoutRuleEdits(quantity, loopRate, postProcessRules);
+            }
+        }
+
+        private int GetEffectiveLoopRate()
+        {
+            if (draft != null
+                && !draft.EmbeddedSourceImported
+                && draft.Profile != null
+                && draft.Profile.LayoutRules != null)
+            {
+                return Mathf.Clamp(draft.Profile.LayoutRules.LoopRate, 0, 100);
+            }
+
+            return Mathf.Clamp(draft != null ? draft.LoopRate : 0, 0, 100);
+        }
+
+        private static bool DrawRequiredSpecialRoomToggles(ref MapGenRoomCategory[] categories)
+        {
+            var includeQuest = ContainsCategory(categories, MapGenRoomCategory.Quest);
+            var includeBoss = ContainsCategory(categories, MapGenRoomCategory.Boss);
+
+            EditorGUI.BeginChangeCheck();
+            includeQuest = EditorGUILayout.ToggleLeft("퀘스트 방 포함 / Include Quest Room", includeQuest);
+            includeBoss = EditorGUILayout.ToggleLeft("보스 방 포함 / Include Boss Room", includeBoss);
+            if (!EditorGUI.EndChangeCheck())
+            {
+                return false;
+            }
+
+            categories = BuildRequiredCategories(categories, includeQuest, includeBoss);
+            return true;
+        }
+
+        private static bool DrawOptionalRoomCategoryToggles(ref MapGenRoomCategory[] categories)
+        {
+            var selected = new HashSet<MapGenRoomCategory>(categories ?? System.Array.Empty<MapGenRoomCategory>());
+            EditorGUI.BeginChangeCheck();
+            foreach (var category in OptionalRoomCategoryOptions)
+            {
+                var enabled = selected.Contains(category);
+                enabled = EditorGUILayout.ToggleLeft($"{RoomCategoryLabel(category)} 추가 / Add {category}", enabled);
+                if (enabled)
+                {
+                    selected.Add(category);
+                }
+                else
+                {
+                    selected.Remove(category);
+                }
+            }
+
+            if (!EditorGUI.EndChangeCheck())
+            {
+                return false;
+            }
+
+            categories = BuildOptionalCategories(selected);
+            return true;
+        }
+
+        private void ApplyLayoutRuleEdits(
+            MapGenQuantityRules quantity,
+            int loopRate,
+            MapGenPostProcessRules postProcessRules)
+        {
+            if (draft == null)
+            {
+                return;
+            }
+
+            quantity = NormalizeLayoutRulesForAuthoring(quantity);
+            loopRate = Mathf.Clamp(loopRate, 0, 100);
+            postProcessRules.MaxPasses = Mathf.Max(0, postProcessRules.MaxPasses);
+            postProcessRules.PassOrder ??= System.Array.Empty<MapGenPostProcessPassKind>();
+
+            Undo.RecordObject(draft, "Edit MapGen Draft Layout Rules");
+            draft.QuantityRules = quantity;
+            draft.LoopRate = loopRate;
+            draft.PostProcessRules = postProcessRules;
+
+            if (!draft.EmbeddedSourceImported
+                && draft.Profile != null
+                && draft.Profile.LayoutRules != null)
+            {
+                var ruleSet = draft.Profile.LayoutRules;
+                Undo.RecordObject(ruleSet, "Edit MapGen Rule Set Layout Rules");
+                ApplyLayoutRulesToRuleSet(ruleSet, quantity, loopRate, postProcessRules);
+                EditorUtility.SetDirty(ruleSet);
+            }
+
+            draft.ClearAcceptance();
+            draft.LastGeneratedSignature = string.Empty;
+            draft.LastGeneratedSourceSignature = string.Empty;
+            ClearSelection();
+            EditorUtility.SetDirty(draft);
+            SaveWindowState();
+            SetLastOperationResult(
+                $"Layout rules changed: rooms {quantity.MinRooms}-{quantity.MaxRooms}, required {FormatCategories(quantity.RequiredCategories)}, loop {loopRate}%. Generate From Seed to rebuild the preview.");
+        }
+
+        private static void ApplyLayoutRulesToRuleSet(
+            MapGenRuleSetAsset ruleSet,
+            MapGenQuantityRules quantity,
+            int loopRate,
+            MapGenPostProcessRules postProcessRules)
+        {
+            if (ruleSet == null)
+            {
+                return;
+            }
+
+            ruleSet.MinRooms = quantity.MinRooms;
+            ruleSet.MaxRooms = quantity.MaxRooms;
+            ruleSet.MinCorridorCells = quantity.MinCorridorCells;
+            ruleSet.MaxCorridorCells = quantity.MaxCorridorCells;
+            ruleSet.RequiredRoomCategories = CloneCategoriesForEditor(quantity.RequiredCategories);
+            ruleSet.OptionalRoomCategories = CloneCategoriesForEditor(quantity.OptionalCategories);
+            ruleSet.QuantityRules = quantity;
+            ruleSet.LoopRate = loopRate;
+            ruleSet.PostProcessRules = postProcessRules;
+            ruleSet.ReduceDeadEnds = postProcessRules.ReduceDeadEnds;
+            ruleSet.UseDirectRoutes = postProcessRules.UseDirectRoutes;
+            ruleSet.SplitLargeRooms = postProcessRules.SplitLargeRooms;
+            ruleSet.RemoveSmallRooms = postProcessRules.RemoveSmallRooms;
         }
 
         private void DrawSeedSection(MapGenV2WorkflowStatus workflow)
@@ -2222,6 +2620,8 @@ namespace Conn.MapGenV2.Editor
             EditorPrefs.SetBool(MapAssetsFoldoutKey, showMapAssetsFoldout);
             EditorPrefs.SetBool(OutputPathsFoldoutKey, showOutputPathsFoldout);
             EditorPrefs.SetBool(LinkedAssetsFoldoutKey, showLinkedAssetsFoldout);
+            EditorPrefs.SetBool(LayoutRulesFoldoutKey, showLayoutRulesFoldout);
+            EditorPrefs.SetBool(LayoutRulesAdvancedFoldoutKey, showLayoutRulesAdvancedFoldout);
             EditorPrefs.SetBool(MockupActionsFoldoutKey, showMockupActionsFoldout);
             EditorPrefs.SetBool(MockupPreviewFoldoutKey, showMockupPreviewFoldout);
             EditorPrefs.SetBool(DetailsFoldoutKey, showDetailsFoldout);
