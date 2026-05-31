@@ -1,4 +1,5 @@
 using Conn.Core.Equipment;
+using Conn.Core.Quests;
 using Conn.Core.Scenes;
 using Conn.Core.Session;
 using Conn.Runtime.Combat;
@@ -32,6 +33,7 @@ namespace Conn.UI.Runtime
         private float nextRefreshTime;
         private string lastRenderKey = string.Empty;
         private string selectedSkillId = string.Empty;
+        private int selectedQuestBoardOffset;
 
         public GameSceneId SceneId
         {
@@ -171,8 +173,10 @@ namespace Conn.UI.Runtime
                 .Append('|').Append(TownNpcInteractionState.Cost)
                 .Append('|').Append(TownNpcInteractionState.ItemId)
                 .Append('|').Append(selectedSkillId)
+                .Append('|').Append(selectedQuestBoardOffset)
                 .Append('|').Append(session.Quest.HasActiveQuest)
                 .Append('|').Append(session.Quest.ActiveQuestId)
+                .Append('|').Append(session.Quest.BoardOfferIndex)
                 .Append('|').Append(session.Quest.BoardRerollCount)
                 .Append('|').Append(session.Shop != null ? session.Shop.SkillMerchantRefreshIndex : 0);
 
@@ -291,7 +295,20 @@ namespace Conn.UI.Runtime
                 SceneFlowService.Load(GameSceneId.Title);
             });
 
-            if (TownNpcInteractionState.IsOpen)
+            if (TownNpcInteractionState.IsOpen && TownNpcInteractionState.Kind == TownNpcInteractionKind.QuestBoard)
+            {
+                HidePanel("TownHud");
+                HidePanel("TownQuickActionsPanel");
+                HidePanel("TownInteractionPrompt");
+                HidePanel("TownNoticePanel");
+                HidePanel("TownCharacterInventoryPanel");
+                DrawTownNpcBackdrop();
+                HidePanel("TownNpcInteractionPanel");
+                HidePanel("TownNpcStandingCgPanel");
+                DrawTownQuestBoard(session);
+                HidePanel("TownShopPanel");
+            }
+            else if (TownNpcInteractionState.IsOpen)
             {
                 HidePanel("TownHud");
                 HidePanel("TownQuickActionsPanel");
@@ -442,51 +459,282 @@ namespace Conn.UI.Runtime
             }
 
             var panel = Panel("TownQuestBoardPanel");
+            ApplyQuestBoardPanelRect(panel);
             BuildPanel(panel, "Quest Board", true);
             DrawTownQuestBoardContent(panel, session);
         }
 
         private void DrawTownQuestBoardContent(Transform panel, GameSessionState session)
         {
+            var body = AddHorizontalGroup(panel, 12f);
+            var listColumn = AddQuestBoardColumn(body, "QuestList", 430f, 0.72f, new Color(0.025f, 0.026f, 0.025f, 0.88f));
+            var detailColumn = AddQuestBoardColumn(body, "QuestDetail", 720f, 1.2f, new Color(0.87f, 0.82f, 0.72f, 0.96f));
+
+            AddQuestBoardHeader(listColumn, "Available Side Quests");
             if (session.Quest.HasActiveQuest)
             {
-                AddText(panel, $"Active: {session.Quest.ActiveQuestTitle}");
-                AddText(panel, $"Target: {session.Quest.TargetMonsterId}");
-                AddText(panel, $"Encounter: {session.Quest.TargetEncounterId}");
-                AddText(panel, $"Map: {session.Quest.MapProfileId}");
-                AddText(panel, $"Reward: {session.Quest.GoldReward}g");
+                AddQuestListRow(listColumn, session.Quest.ActiveQuestTitle, $"{session.Quest.GoldReward}g", true, true, () => { });
+                AddText(listColumn, "Only one quest can be active.", 13);
+                DrawActiveQuestDetail(detailColumn, session);
             }
             else
             {
-                var offer = QuestRuntimeService.CurrentBoardOffer(session);
-                if (offer == null)
+                var offers = BuildQuestBoardOffers(session);
+                if (offers.Count == 0)
                 {
-                    AddText(panel, "No quest available.");
+                    AddText(listColumn, "No quest available.");
+                    DrawEmptyQuestDetail(detailColumn);
                 }
                 else
                 {
-                    AddText(panel, $"Offer: {offer.DisplayName}");
-                    AddText(panel, $"Target: {offer.TargetMonsterId}");
-                    AddText(panel, $"Encounter: {offer.TargetEncounterId}");
-                    AddText(panel, $"Map: {offer.MapProfileId}");
-                    AddText(panel, $"Reward: {offer.GoldReward}g");
-                    AddText(panel, $"Board rolls: {session.Quest.BoardRerollCount}");
-                    var acceptedQuestId = offer.QuestId;
-                    AddButton(panel, "Accept Quest", () =>
+                    if (selectedQuestBoardOffset < 0 || selectedQuestBoardOffset >= offers.Count)
                     {
-                        QuestRuntimeService.AcceptCurrentBoardOffer(session);
-                        RuntimeNoticeService.Set(session, $"Accepted quest: {acceptedQuestId}");
-                        TownQuestBoardPanelState.Close();
-                    });
-                    AddButton(panel, "Reroll Board", () =>
+                        selectedQuestBoardOffset = 0;
+                    }
+
+                    for (var i = 0; i < offers.Count; i++)
                     {
+                        var offset = i;
+                        var offer = offers[i];
+                        AddQuestListRow(
+                            listColumn,
+                            offer.DisplayName,
+                            $"{offer.GoldReward}g",
+                            i == selectedQuestBoardOffset,
+                            false,
+                            () =>
+                            {
+                                selectedQuestBoardOffset = offset;
+                                lastRenderKey = string.Empty;
+                                Refresh();
+                            });
+                    }
+
+                    AddText(listColumn, $"Board rolls: {session.Quest.BoardRerollCount}", 13);
+                    AddButton(listColumn, "Reroll Board", () =>
+                    {
+                        selectedQuestBoardOffset = 0;
                         QuestRuntimeService.RerollBoard(session);
                         RuntimeNoticeService.Set(session, "Quest board rerolled.");
                     });
+
+                    DrawQuestOfferDetail(detailColumn, session, offers[selectedQuestBoardOffset]);
                 }
             }
 
-            AddButton(panel, "Close Board", TownQuestBoardPanelState.Close);
+            AddButton(listColumn, "Close Board", TownQuestBoardPanelState.Close);
+        }
+
+        private static void ApplyQuestBoardPanelRect(RectTransform panel)
+        {
+            if (panel == null)
+            {
+                return;
+            }
+
+            panel.anchorMin = new Vector2(0.08f, 0.12f);
+            panel.anchorMax = new Vector2(0.94f, 0.84f);
+            panel.offsetMin = Vector2.zero;
+            panel.offsetMax = Vector2.zero;
+        }
+
+        private static System.Collections.Generic.List<QuestDefinition> BuildQuestBoardOffers(GameSessionState session)
+        {
+            var offers = new System.Collections.Generic.List<QuestDefinition>();
+            var seen = new System.Collections.Generic.HashSet<string>();
+            const int desiredCount = 8;
+            const int maxProbeCount = 24;
+
+            for (var i = 0; i < maxProbeCount && offers.Count < desiredCount; i++)
+            {
+                var offer = RuntimeContentDatabase.BoardQuestAt(session.Quest.BoardOfferIndex + i);
+                if (offer == null || string.IsNullOrWhiteSpace(offer.QuestId) || !seen.Add(offer.QuestId))
+                {
+                    continue;
+                }
+
+                offers.Add(offer);
+            }
+
+            return offers;
+        }
+
+        private RectTransform AddQuestBoardColumn(Transform parent, string name, float preferredWidth, float flexibleWidth, Color color)
+        {
+            var obj = new GameObject(name);
+            obj.transform.SetParent(parent, false);
+            var rect = obj.AddComponent<RectTransform>();
+            var image = obj.AddComponent<Image>();
+            image.color = color;
+            image.raycastTarget = false;
+
+            var layout = obj.AddComponent<VerticalLayoutGroup>();
+            layout.padding = name == "QuestDetail"
+                ? new RectOffset(24, 24, 20, 20)
+                : new RectOffset(14, 14, 14, 14);
+            layout.spacing = 8f;
+            layout.childControlWidth = true;
+            layout.childControlHeight = true;
+            layout.childForceExpandWidth = true;
+            layout.childForceExpandHeight = false;
+
+            var element = obj.AddComponent<LayoutElement>();
+            element.minWidth = Mathf.Min(preferredWidth, 280f);
+            element.preferredWidth = preferredWidth;
+            element.flexibleWidth = flexibleWidth;
+            element.minHeight = 560f;
+            return rect;
+        }
+
+        private void AddQuestBoardHeader(Transform parent, string text)
+        {
+            var label = AddQuestText(parent, text, 24, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter);
+            var layout = label.GetComponent<LayoutElement>();
+            if (layout != null)
+            {
+                layout.minHeight = 44f;
+            }
+        }
+
+        private Button AddQuestListRow(Transform parent, string title, string reward, bool selected, bool completed, UnityEngine.Events.UnityAction action)
+        {
+            var obj = new GameObject("QuestListRow");
+            obj.transform.SetParent(ContentParent(parent), false);
+            var image = obj.AddComponent<Image>();
+            image.color = selected
+                ? new Color(0.58f, 0.42f, 0.18f, 0.94f)
+                : new Color(0.06f, 0.065f, 0.06f, 0.64f);
+            var button = obj.AddComponent<Button>();
+            button.onClick.AddListener(action);
+            var colors = button.colors;
+            colors.highlightedColor = new Color(0.68f, 0.48f, 0.2f, 0.96f);
+            colors.pressedColor = new Color(0.82f, 0.52f, 0.18f, 0.98f);
+            button.colors = colors;
+
+            var layout = obj.AddComponent<LayoutElement>();
+            layout.minHeight = 46f;
+            var row = obj.AddComponent<HorizontalLayoutGroup>();
+            row.padding = new RectOffset(10, 10, 4, 4);
+            row.spacing = 8f;
+            row.childControlWidth = true;
+            row.childControlHeight = true;
+            row.childForceExpandWidth = false;
+            row.childForceExpandHeight = true;
+
+            var titleText = AddQuestText(obj.transform, title, 18, FontStyle.Bold, Color.white, TextAnchor.MiddleLeft);
+            var titleLayout = titleText.GetComponent<LayoutElement>();
+            titleLayout.flexibleWidth = 1f;
+            titleLayout.minHeight = 34f;
+            var rewardText = AddQuestText(obj.transform, completed ? "Done" : reward, 16, FontStyle.Bold, new Color(1f, 0.82f, 0.38f, 1f), TextAnchor.MiddleRight);
+            var rewardLayout = rewardText.GetComponent<LayoutElement>();
+            rewardLayout.minWidth = 72f;
+            rewardLayout.preferredWidth = 86f;
+            return button;
+        }
+
+        private void DrawQuestOfferDetail(Transform parent, GameSessionState session, QuestDefinition quest)
+        {
+            AddQuestText(parent, quest.DisplayName, 31, FontStyle.Bold, Color.black, TextAnchor.MiddleCenter);
+            AddQuestSeparator(parent);
+            AddQuestDetailRow(parent, "Objective", "Required", "Owned");
+            AddQuestDetailRow(parent, quest.TargetMonsterId, "1", "-");
+            AddQuestSeparator(parent);
+            AddQuestSectionTitle(parent, "Reward");
+            AddQuestText(parent, $"{quest.GoldReward}g", 22, FontStyle.Bold, new Color(0.14f, 0.09f, 0.02f, 1f), TextAnchor.MiddleLeft);
+            AddQuestSeparator(parent);
+            AddQuestDetailRow(parent, "Client", "Quest Board", string.Empty);
+            AddQuestDetailRow(parent, "Encounter", quest.TargetEncounterId, string.Empty);
+            AddQuestDetailRow(parent, "Map", quest.MapProfileId, string.Empty);
+            AddQuestText(parent, "Complete the listed hunt objective, then return from the dungeon to claim the reward.", 19, FontStyle.Normal, new Color(0.12f, 0.1f, 0.08f, 1f), TextAnchor.UpperLeft);
+
+            var actions = AddHorizontalGroup(parent, 10f);
+            var questId = quest.QuestId;
+            AddButton(actions, "Accept", () =>
+            {
+                QuestRuntimeService.AcceptQuest(session, questId);
+                RuntimeNoticeService.Set(session, $"Accepted quest: {questId}");
+                TownQuestBoardPanelState.Close();
+            });
+            AddButton(actions, "Cancel", TownQuestBoardPanelState.Close);
+        }
+
+        private void DrawActiveQuestDetail(Transform parent, GameSessionState session)
+        {
+            AddQuestText(parent, session.Quest.ActiveQuestTitle, 31, FontStyle.Bold, Color.black, TextAnchor.MiddleCenter);
+            AddQuestSeparator(parent);
+            AddQuestDetailRow(parent, "Objective", "Required", "State");
+            AddQuestDetailRow(parent, session.Quest.TargetMonsterId, "1", session.Quest.TargetDefeated ? "Done" : "Open");
+            AddQuestSeparator(parent);
+            AddQuestSectionTitle(parent, "Reward");
+            AddQuestText(parent, $"{session.Quest.GoldReward}g", 22, FontStyle.Bold, new Color(0.14f, 0.09f, 0.02f, 1f), TextAnchor.MiddleLeft);
+            AddQuestSeparator(parent);
+            AddQuestDetailRow(parent, "Encounter", session.Quest.TargetEncounterId, string.Empty);
+            AddQuestDetailRow(parent, "Map", session.Quest.MapProfileId, string.Empty);
+            AddQuestText(parent, session.Quest.ReturnAvailable ? "The quest target is complete. Return from the dungeon to collect the reward." : "Enter the dungeon and defeat the target to unlock return.", 19, FontStyle.Normal, new Color(0.12f, 0.1f, 0.08f, 1f), TextAnchor.UpperLeft);
+            AddButton(parent, "Cancel", TownQuestBoardPanelState.Close);
+        }
+
+        private void DrawEmptyQuestDetail(Transform parent)
+        {
+            AddQuestText(parent, "No Quest Available", 31, FontStyle.Bold, Color.black, TextAnchor.MiddleCenter);
+            AddQuestSeparator(parent);
+            AddQuestText(parent, "The board has no valid hunt contracts right now.", 20, FontStyle.Normal, new Color(0.12f, 0.1f, 0.08f, 1f), TextAnchor.UpperLeft);
+            AddButton(parent, "Cancel", TownQuestBoardPanelState.Close);
+        }
+
+        private void AddQuestSectionTitle(Transform parent, string title)
+        {
+            var text = AddQuestText(parent, title, 20, FontStyle.Bold, Color.white, TextAnchor.MiddleLeft);
+            text.color = new Color(0.38f, 0.34f, 0.26f, 1f);
+        }
+
+        private void AddQuestDetailRow(Transform parent, string left, string middle, string right)
+        {
+            var row = AddHorizontalGroup(parent, 8f);
+            AddQuestCell(row, left, 1.2f, TextAnchor.MiddleLeft);
+            AddQuestCell(row, middle, 0.6f, TextAnchor.MiddleCenter);
+            if (!string.IsNullOrWhiteSpace(right))
+            {
+                AddQuestCell(row, right, 0.6f, TextAnchor.MiddleCenter);
+            }
+        }
+
+        private void AddQuestCell(Transform parent, string text, float flexibleWidth, TextAnchor alignment)
+        {
+            var cell = AddQuestText(parent, text, 18, FontStyle.Bold, new Color(0.12f, 0.1f, 0.08f, 1f), alignment);
+            var layout = cell.GetComponent<LayoutElement>();
+            layout.flexibleWidth = flexibleWidth;
+            layout.minHeight = 32f;
+        }
+
+        private void AddQuestSeparator(Transform parent)
+        {
+            var obj = new GameObject("QuestSeparator");
+            obj.transform.SetParent(ContentParent(parent), false);
+            var image = obj.AddComponent<Image>();
+            image.color = new Color(0.24f, 0.22f, 0.18f, 0.42f);
+            image.raycastTarget = false;
+            var layout = obj.AddComponent<LayoutElement>();
+            layout.minHeight = 2f;
+        }
+
+        private Text AddQuestText(Transform parent, string text, int size, FontStyle style, Color color, TextAnchor alignment)
+        {
+            var obj = new GameObject("QuestText");
+            obj.transform.SetParent(ContentParent(parent), false);
+            var textComponent = obj.AddComponent<Text>();
+            textComponent.text = text;
+            textComponent.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            textComponent.fontSize = size;
+            textComponent.fontStyle = style;
+            textComponent.color = color;
+            textComponent.alignment = alignment;
+            textComponent.horizontalOverflow = HorizontalWrapMode.Wrap;
+            textComponent.verticalOverflow = VerticalWrapMode.Overflow;
+            textComponent.raycastTarget = false;
+            var layout = obj.AddComponent<LayoutElement>();
+            layout.minHeight = Mathf.Max(26f, size + 10f);
+            return textComponent;
         }
 
         private void DrawTownShop(GameSessionState session)
