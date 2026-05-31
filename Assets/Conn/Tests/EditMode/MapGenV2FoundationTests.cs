@@ -2799,9 +2799,12 @@ namespace Conn.Tests.EditMode
                     marker.ModuleCategory == MapGenModuleCategory.WallStraight
                     && marker.Direction == MapGenGridDirection.East);
                 Assert.That(floorMarker, Is.Not.Null);
-                Assert.That(floorMarker.transform.position.x, Is.EqualTo(1.25f).Within(0.001f));
+                Assert.That(floorMarker.transform.position.x, Is.EqualTo(0.25f).Within(0.001f));
                 Assert.That(floorMarker.transform.position.y, Is.EqualTo(0.5f).Within(0.001f));
-                Assert.That(floorMarker.transform.position.z, Is.EqualTo(0.75f).Within(0.001f));
+                Assert.That(floorMarker.transform.position.z, Is.EqualTo(-0.25f).Within(0.001f));
+                Assert.That(floorMarker.transform.localScale.x, Is.EqualTo(2f).Within(0.001f));
+                Assert.That(floorMarker.transform.localScale.y, Is.EqualTo(2f).Within(0.001f));
+                Assert.That(floorMarker.transform.localScale.z, Is.EqualTo(2f).Within(0.001f));
                 Assert.That(eastWallMarker, Is.Not.Null);
                 Assert.That(Mathf.DeltaAngle(eastWallMarker.transform.eulerAngles.y, 90f), Is.EqualTo(0f).Within(0.001f));
             }
@@ -2817,6 +2820,53 @@ namespace Conn.Tests.EditMode
                 Object.DestroyImmediate(profile);
                 Object.DestroyImmediate(styleSet);
                 Object.DestroyImmediate(moduleSet);
+            }
+        }
+
+        [Test]
+        public void MaterializerPlacesGridCoordsOnSceneXZCellSizeContract()
+        {
+            var draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();
+            GameObject root = null;
+
+            try
+            {
+                draft.MapId = "grid_contract";
+                draft.Seed = 305;
+                draft.CellSize = 3f;
+                draft.GridSize = new Vector2Int(3, 2);
+                draft.EnsureCellArray();
+                draft.Cells[new MapGenGridCoord(2, 1).ToIndex(draft.Width)] = new MapGenMockupCell
+                {
+                    State = MapGenCellState.Blocked,
+                    RegionId = 14,
+                    SourceTemplateId = "blocked_contract_cell"
+                };
+                draft.Accept();
+
+                root = MapGenMockupMaterializer.Materialize(draft);
+
+                Assert.That(root, Is.Not.Null);
+                Assert.That(root.transform.position, Is.EqualTo(Vector3.zero));
+                var marker = System.Array.Find(
+                    root.GetComponentsInChildren<MapGenV2MaterializedModuleMarker>(),
+                    moduleMarker => moduleMarker.ModuleCategory == MapGenModuleCategory.Blocker
+                        && moduleMarker.CellCoord == new Vector2Int(2, 1));
+                Assert.That(marker, Is.Not.Null);
+                Assert.That(marker.transform.position.x, Is.EqualTo(6f).Within(0.001f));
+                Assert.That(marker.transform.position.y, Is.EqualTo(0f).Within(0.001f));
+                Assert.That(marker.transform.position.z, Is.EqualTo(3f).Within(0.001f));
+                Assert.That(marker.transform.localScale.x, Is.EqualTo(2.16f).Within(0.001f));
+                Assert.That(marker.transform.localScale.z, Is.EqualTo(2.16f).Within(0.001f));
+            }
+            finally
+            {
+                if (root != null)
+                {
+                    Object.DestroyImmediate(root);
+                }
+
+                Object.DestroyImmediate(draft);
             }
         }
 
@@ -3744,6 +3794,18 @@ namespace Conn.Tests.EditMode
                 request => request.Category == MapGenModuleCategory.WallCornerOutside));
             Assert.That(requests, Has.None.Matches<MapGenModuleRequest>(
                 request => request.Category == MapGenModuleCategory.WallCornerInside));
+            Assert.That(requests, Has.Exactly(1).Matches<MapGenModuleRequest>(
+                request => request.Category == MapGenModuleCategory.WallCornerOutside
+                    && request.Direction == MapGenGridDirection.North));
+            Assert.That(requests, Has.Exactly(1).Matches<MapGenModuleRequest>(
+                request => request.Category == MapGenModuleCategory.WallCornerOutside
+                    && request.Direction == MapGenGridDirection.East));
+            Assert.That(requests, Has.Exactly(1).Matches<MapGenModuleRequest>(
+                request => request.Category == MapGenModuleCategory.WallCornerOutside
+                    && request.Direction == MapGenGridDirection.South));
+            Assert.That(requests, Has.Exactly(1).Matches<MapGenModuleRequest>(
+                request => request.Category == MapGenModuleCategory.WallCornerOutside
+                    && request.Direction == MapGenGridDirection.West));
         }
 
         [Test]
@@ -3762,7 +3824,25 @@ namespace Conn.Tests.EditMode
             Assert.That(requests, Has.Some.Matches<MapGenModuleRequest>(
                 request => request.Category == MapGenModuleCategory.WallCornerInside
                     && request.Coord == new MapGenGridCoord(0, 0)
+                    && request.Direction == MapGenGridDirection.North
                     && request.RegionId == 1));
+        }
+
+        [Test]
+        public void MaterializationClassifierDoesNotCreateInsideCornersForSolidRoomInterior()
+        {
+            var cells = new[]
+            {
+                new MapGenMockupCell { State = MapGenCellState.Room, RegionId = 1 },
+                new MapGenMockupCell { State = MapGenCellState.Room, RegionId = 1 },
+                new MapGenMockupCell { State = MapGenCellState.Room, RegionId = 1 },
+                new MapGenMockupCell { State = MapGenCellState.Room, RegionId = 1 }
+            };
+
+            var requests = MapGenMaterializationClassifier.Classify(2, 2, cells);
+
+            Assert.That(requests, Has.None.Matches<MapGenModuleRequest>(
+                request => request.Category == MapGenModuleCategory.WallCornerInside));
         }
 
         [Test]

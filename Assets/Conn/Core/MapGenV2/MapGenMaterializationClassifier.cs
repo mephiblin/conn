@@ -146,14 +146,14 @@ namespace Conn.MapGenV2.Core
             AddWall(requests, cells, width, coord, MapGenGridDirection.East, east && doorOpening != MapGenGridDirection.East);
             AddWall(requests, cells, width, coord, MapGenGridDirection.South, south && doorOpening != MapGenGridDirection.South);
             AddWall(requests, cells, width, coord, MapGenGridDirection.West, west && doorOpening != MapGenGridDirection.West);
-            AddCorner(requests, cells, width, coord, north && east);
-            AddCorner(requests, cells, width, coord, east && south);
-            AddCorner(requests, cells, width, coord, south && west);
-            AddCorner(requests, cells, width, coord, west && north);
-            AddInsideCorner(requests, cells, width, height, coord, north, east, MapGenGridDirection.North);
-            AddInsideCorner(requests, cells, width, height, coord, east, south, MapGenGridDirection.East);
-            AddInsideCorner(requests, cells, width, height, coord, south, west, MapGenGridDirection.South);
-            AddInsideCorner(requests, cells, width, height, coord, west, north, MapGenGridDirection.West);
+            AddCorner(requests, cells, width, coord, MapGenGridDirection.North, north && east);
+            AddCorner(requests, cells, width, coord, MapGenGridDirection.East, east && south);
+            AddCorner(requests, cells, width, coord, MapGenGridDirection.South, south && west);
+            AddCorner(requests, cells, width, coord, MapGenGridDirection.West, west && north);
+            AddInsideCorner(requests, cells, width, height, coord, MapGenGridDirection.North, north, east);
+            AddInsideCorner(requests, cells, width, height, coord, MapGenGridDirection.East, east, south);
+            AddInsideCorner(requests, cells, width, height, coord, MapGenGridDirection.South, south, west);
+            AddInsideCorner(requests, cells, width, height, coord, MapGenGridDirection.West, west, north);
         }
 
         private static void AddWall(
@@ -184,6 +184,7 @@ namespace Conn.MapGenV2.Core
             MapGenMockupCell[] cells,
             int width,
             MapGenGridCoord coord,
+            MapGenGridDirection direction,
             bool add)
         {
             if (!add)
@@ -195,7 +196,7 @@ namespace Conn.MapGenV2.Core
             {
                 Category = MapGenModuleCategory.WallCornerOutside,
                 Coord = coord,
-                Direction = MapGenGridDirection.North,
+                Direction = direction,
                 RegionId = cells[coord.ToIndex(width)].RegionId,
                 SourceTemplateId = cells[coord.ToIndex(width)].SourceTemplateId
             });
@@ -207,11 +208,11 @@ namespace Conn.MapGenV2.Core
             int width,
             int height,
             MapGenGridCoord coord,
+            MapGenGridDirection direction,
             bool firstBoundary,
-            bool secondBoundary,
-            MapGenGridDirection direction)
+            bool secondBoundary)
         {
-            if (firstBoundary || secondBoundary || CountNavigableNeighbors(width, height, cells, coord) < 2)
+            if (firstBoundary || secondBoundary || !IsDiagonalBoundary(width, height, cells, coord, direction))
             {
                 return;
             }
@@ -224,6 +225,35 @@ namespace Conn.MapGenV2.Core
                 RegionId = cells[coord.ToIndex(width)].RegionId,
                 SourceTemplateId = cells[coord.ToIndex(width)].SourceTemplateId
             });
+        }
+
+        private static bool IsDiagonalBoundary(
+            int width,
+            int height,
+            MapGenMockupCell[] cells,
+            MapGenGridCoord coord,
+            MapGenGridDirection direction)
+        {
+            var first = coord.Offset(direction);
+            var second = coord.Offset(NextOrthogonalDirection(direction));
+            if (!first.IsInBounds(width, height) || !second.IsInBounds(width, height))
+            {
+                return false;
+            }
+
+            var diagonal = first.Offset(NextOrthogonalDirection(direction));
+            return diagonal.IsInBounds(width, height) && !IsNavigable(cells[diagonal.ToIndex(width)].State);
+        }
+
+        private static MapGenGridDirection NextOrthogonalDirection(MapGenGridDirection direction)
+        {
+            return direction switch
+            {
+                MapGenGridDirection.North => MapGenGridDirection.East,
+                MapGenGridDirection.East => MapGenGridDirection.South,
+                MapGenGridDirection.South => MapGenGridDirection.West,
+                _ => MapGenGridDirection.North
+            };
         }
 
         private static bool IsBoundary(
@@ -290,31 +320,6 @@ namespace Conn.MapGenV2.Core
             return doorDirection == MapGenGridDirection.North || doorDirection == MapGenGridDirection.South
                 ? MapGenGridDirection.West
                 : MapGenGridDirection.South;
-        }
-
-        private static int CountNavigableNeighbors(
-            int width,
-            int height,
-            MapGenMockupCell[] cells,
-            MapGenGridCoord coord)
-        {
-            var count = 0;
-            foreach (var direction in new[]
-            {
-                MapGenGridDirection.North,
-                MapGenGridDirection.East,
-                MapGenGridDirection.South,
-                MapGenGridDirection.West
-            })
-            {
-                var neighbor = coord.Offset(direction);
-                if (neighbor.IsInBounds(width, height) && IsNavigable(cells[neighbor.ToIndex(width)].State))
-                {
-                    count++;
-                }
-            }
-
-            return count;
         }
 
         private static bool IsNavigable(MapGenCellState state)

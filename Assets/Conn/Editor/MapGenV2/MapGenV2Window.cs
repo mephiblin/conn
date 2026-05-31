@@ -170,6 +170,7 @@ namespace Conn.MapGenV2.Editor
         private const string DraftPathKey = "Conn.MapGenV2.Window.DraftPath";
         private const string NewDraftGridWidthKey = "Conn.MapGenV2.Window.NewDraftGridWidth";
         private const string NewDraftGridHeightKey = "Conn.MapGenV2.Window.NewDraftGridHeight";
+        private const string NewDraftCellSizeKey = "Conn.MapGenV2.Window.NewDraftCellSize";
         private const string PreviewCellSizeKey = "Conn.MapGenV2.Window.PreviewCellSize";
         private const string OutputModeKey = "Conn.MapGenV2.Window.OutputMode";
         private const string ShowPropOverlayKey = "Conn.MapGenV2.Window.ShowPropDebugOverlay";
@@ -197,6 +198,7 @@ namespace Conn.MapGenV2.Editor
         private const string MockupTechnicalDetailsFoldoutKey = "Conn.MapGenV2.Window.MockupTechnicalDetailsFoldout";
         private const string RegionAdvancedEditFoldoutKey = "Conn.MapGenV2.Window.RegionAdvancedEditFoldout";
         private static readonly Vector2Int DefaultDraftGridSize = new Vector2Int(10, 8);
+        private const float DefaultDraftCellSize = 1f;
         private static readonly string[] LanguageOptions = { "Auto", "한국어", "English" };
         private static readonly MapGenDraftPaintTool[] PrimaryPaintTools =
         {
@@ -243,6 +245,7 @@ namespace Conn.MapGenV2.Editor
         private float previewCellSize = 18f;
         private GameObject selectedMaterializedRoot;
         private Vector2Int newDraftGridSize = DefaultDraftGridSize;
+        private float newDraftCellSize = DefaultDraftCellSize;
         private MapGenV2SceneOutputMode outputMode = MapGenV2SceneOutputMode.ReplacePreviousRoot;
         private bool showPropPlacementOverlay;
         private bool showPostProcessOverlay = true;
@@ -304,6 +307,7 @@ namespace Conn.MapGenV2.Editor
             newDraftGridSize = NormalizeGridSize(new Vector2Int(
                 EditorPrefs.GetInt(NewDraftGridWidthKey, DefaultDraftGridSize.x),
                 EditorPrefs.GetInt(NewDraftGridHeightKey, DefaultDraftGridSize.y)));
+            newDraftCellSize = NormalizeCellSize(EditorPrefs.GetFloat(NewDraftCellSizeKey, DefaultDraftCellSize));
             previewCellSize = EditorPrefs.GetFloat(PreviewCellSizeKey, previewCellSize);
             outputMode = (MapGenV2SceneOutputMode)EditorPrefs.GetInt(OutputModeKey, (int)outputMode);
             showPropPlacementOverlay = EditorPrefs.GetBool(ShowPropOverlayKey, showPropPlacementOverlay);
@@ -360,7 +364,7 @@ namespace Conn.MapGenV2.Editor
 
         public static string BuildInspectorLayoutSummary()
         {
-            return "Draft-centered authoring layout with a minimal default flow: draft file create/import, grid size, map prefab slots, seed controls, preview/drawing, save current draft, and output are stacked vertically in production order; diagnostics and recovery/compatibility tools stay collapsed in advanced foldouts with responsive wrapping for narrow inspector widths.";
+            return "Draft-centered authoring layout with a minimal default flow: draft file create/import, grid size, cell size, map prefab slots, seed controls, preview/drawing, save current draft, and output are stacked vertically in production order; diagnostics and recovery/compatibility tools stay collapsed in advanced foldouts with responsive wrapping for narrow inspector widths.";
         }
 
         public static string BuildEditorTechnologySummary()
@@ -370,7 +374,7 @@ namespace Conn.MapGenV2.Editor
 
         public static string BuildInlineHelpCoverageSummary()
         {
-            return "Inline help/tooltips cover the draft file, grid size, map prefab slots, seed controls, preview drawing, connectors, post-process, prop placement, save/output readiness, bake settings, materialization output, and recovery tools.";
+            return "Inline help/tooltips cover the draft file, grid size, cell size, map prefab slots, seed controls, preview drawing, connectors, post-process, prop placement, save/output readiness, bake settings, materialization output, and recovery tools.";
         }
 
         public static string BuildKoreanCoverageSummary()
@@ -434,14 +438,16 @@ namespace Conn.MapGenV2.Editor
                 EditorGUILayout.LabelField("새 드래프트 설정 / New Draft Settings", EditorStyles.boldLabel);
                 EditorGUI.BeginChangeCheck();
                 newDraftGridSize = DrawGridSizeField("그리드 크기 / Grid Size", newDraftGridSize);
+                newDraftCellSize = DrawCellSizeField("셀 크기 / Cell Size", newDraftCellSize);
                 if (EditorGUI.EndChangeCheck())
                 {
                     newDraftGridSize = NormalizeGridSize(newDraftGridSize);
+                    newDraftCellSize = NormalizeCellSize(newDraftCellSize);
                     SaveWindowState();
                 }
 
                 DrawWrappingHelpBox(
-                    "그리드 크기는 맵 전체 칸 수입니다. 새 드래프트 생성 전에 정하고, 기존 드래프트는 아래 '크기와 시드' 단계에서 조정하세요.",
+                    "그리드 크기는 맵 전체 칸 수이고, 셀 크기는 씬에서 한 칸이 차지하는 Unity unit입니다. 새 드래프트 생성 전에 정하고, 기존 드래프트는 아래 '크기와 시드' 단계에서 조정하세요.",
                     MessageType.Info);
 
                 if (GUILayout.Button("새 드래프트 생성 / Create Draft"))
@@ -459,6 +465,7 @@ namespace Conn.MapGenV2.Editor
                         if (draft != null)
                         {
                             newDraftGridSize = NormalizeGridSize(draft.GridSize);
+                            newDraftCellSize = NormalizeCellSize(draft.GetCellSize());
                         }
 
                         var moduleSet = GetActiveModuleSet();
@@ -600,13 +607,14 @@ namespace Conn.MapGenV2.Editor
             EditorGUILayout.LabelField("맵 크기 / Grid Size", EditorStyles.boldLabel);
             EditorGUI.BeginChangeCheck();
             var nextGridSize = DrawGridSizeField("그리드 크기 / Grid Size", draft.GridSize);
+            var nextCellSize = DrawCellSizeField("셀 크기 / Cell Size", draft.GetCellSize());
             if (EditorGUI.EndChangeCheck())
             {
-                ResizeCurrentDraftGrid(nextGridSize);
+                ResizeCurrentDraftGrid(nextGridSize, nextCellSize);
             }
 
             DrawWrappingHelpBox(
-                "이 값은 생성될 맵의 전체 가로/세로 칸 수입니다. 시드 생성보다 먼저 정하세요. 생성 후 바꾸면 현재 셀은 겹치는 범위만 유지되고 저장 상태는 해제됩니다.",
+                "그리드 크기는 전체 가로/세로 칸 수, 셀 크기는 실제 씬에서 한 칸의 Unity unit입니다. 큰 방을 만들려고 칸 수만 늘리지 말고 프리팹 크기에 맞춰 셀 크기를 먼저 맞추세요.",
                 MessageType.Info);
         }
 
@@ -620,7 +628,17 @@ namespace Conn.MapGenV2.Editor
             return new Vector2Int(Mathf.Max(1, gridSize.x), Mathf.Max(1, gridSize.y));
         }
 
-        private void ResizeCurrentDraftGrid(Vector2Int gridSize)
+        private static float DrawCellSizeField(string label, float value)
+        {
+            return NormalizeCellSize(EditorGUILayout.FloatField(label, NormalizeCellSize(value)));
+        }
+
+        private static float NormalizeCellSize(float cellSize)
+        {
+            return Mathf.Max(0.01f, cellSize);
+        }
+
+        private void ResizeCurrentDraftGrid(Vector2Int gridSize, float cellSize)
         {
             if (draft == null)
             {
@@ -628,21 +646,35 @@ namespace Conn.MapGenV2.Editor
             }
 
             var normalized = NormalizeGridSize(gridSize);
-            if (draft.GridSize == normalized)
+            var normalizedCellSize = NormalizeCellSize(cellSize);
+            if (draft.GridSize == normalized && Mathf.Approximately(draft.GetCellSize(), normalizedCellSize))
             {
                 return;
             }
 
-            Undo.RecordObject(draft, "Resize MapGen Draft Grid");
-            draft.Resize(normalized);
+            Undo.RecordObject(draft, "Edit MapGen Draft Grid Scale");
+            if (draft.GridSize != normalized)
+            {
+                draft.Resize(normalized);
+            }
+
+            draft.CellSize = normalizedCellSize;
+            if (draft.Profile != null && !draft.EmbeddedSourceImported)
+            {
+                Undo.RecordObject(draft.Profile, "Edit MapGen Profile Cell Size");
+                draft.Profile.CellSize = normalizedCellSize;
+                EditorUtility.SetDirty(draft.Profile);
+            }
+
             draft.ClearAcceptance();
             draft.LastGeneratedSignature = string.Empty;
             draft.LastGeneratedSourceSignature = string.Empty;
             ClearSelection();
             EditorUtility.SetDirty(draft);
             newDraftGridSize = normalized;
+            newDraftCellSize = normalizedCellSize;
             SaveWindowState();
-            SetLastOperationResult($"Grid size changed to {normalized.x}x{normalized.y}. Generate From Seed before saving or output.");
+            SetLastOperationResult($"Grid scale changed to {normalized.x}x{normalized.y}, cell size {normalizedCellSize:0.###}. Generate From Seed before saving or output.");
         }
 
         private void DrawPrefabSlot(MapGenDraftPrefabSlot slot)
@@ -2067,13 +2099,14 @@ namespace Conn.MapGenV2.Editor
         private void CreateDraft()
         {
             var initialGridSize = NormalizeGridSize(newDraftGridSize);
+            var initialCellSize = NormalizeCellSize(newDraftCellSize);
             if (profile == null)
             {
-                var setup = MapGenV2StarterSetupBuilder.CreateStarterProfileSetup(initialGridSize);
+                var setup = MapGenV2StarterSetupBuilder.CreateStarterProfileSetup(initialGridSize, initialCellSize);
                 profile = setup.Profile;
                 draft = setup.Draft;
                 importDraft = draft;
-                ApplyInitialDraftGridSize(profile, draft, initialGridSize);
+                ApplyInitialDraftGridScale(profile, draft, initialGridSize, initialCellSize);
                 Selection.activeObject = draft != null ? draft : profile;
                 var moduleSet = GetActiveModuleSet();
                 EnsureDraftPrefabPalette(moduleSet);
@@ -2083,7 +2116,7 @@ namespace Conn.MapGenV2.Editor
                 }
 
                 AssetDatabase.SaveAssets();
-                SetLastOperationResult($"Created a single draft asset with grid {initialGridSize.x}x{initialGridSize.y}. Replace prefab slots before generating if needed.");
+                SetLastOperationResult($"Created a single draft asset with grid {initialGridSize.x}x{initialGridSize.y}, cell size {initialCellSize:0.###}. Replace prefab slots before generating if needed.");
                 return;
             }
 
@@ -2092,20 +2125,26 @@ namespace Conn.MapGenV2.Editor
             var path = AssetDatabase.GenerateUniqueAssetPath($"{draftFolder}/MapGenMockupDraft.asset");
             draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();
             draft.ImportFromProfileSource(profile, true);
-            ApplyInitialDraftGridSize(null, draft, initialGridSize);
+            ApplyInitialDraftGridScale(null, draft, initialGridSize, initialCellSize);
             CaptureModuleSetPrefabPalette(profile.StyleSet != null ? profile.StyleSet.ModuleSet : null);
             AssetDatabase.CreateAsset(draft, path);
             AssetDatabase.SaveAssets();
             Selection.activeObject = draft;
-            SetLastOperationResult($"Created draft asset: {path}. Grid {initialGridSize.x}x{initialGridSize.y}.");
+            SetLastOperationResult($"Created draft asset: {path}. Grid {initialGridSize.x}x{initialGridSize.y}, cell size {initialCellSize:0.###}.");
         }
 
-        private static void ApplyInitialDraftGridSize(MapGenProfileAsset sourceProfile, MapGenMockupDraftAsset targetDraft, Vector2Int gridSize)
+        private static void ApplyInitialDraftGridScale(
+            MapGenProfileAsset sourceProfile,
+            MapGenMockupDraftAsset targetDraft,
+            Vector2Int gridSize,
+            float cellSize)
         {
             var normalized = NormalizeGridSize(gridSize);
+            var normalizedCellSize = NormalizeCellSize(cellSize);
             if (sourceProfile != null)
             {
                 sourceProfile.MapSize = normalized;
+                sourceProfile.CellSize = normalizedCellSize;
                 EditorUtility.SetDirty(sourceProfile);
             }
 
@@ -2115,6 +2154,7 @@ namespace Conn.MapGenV2.Editor
             }
 
             targetDraft.Resize(normalized);
+            targetDraft.CellSize = normalizedCellSize;
             targetDraft.ClearAcceptance();
             targetDraft.LastGeneratedSignature = string.Empty;
             targetDraft.LastGeneratedSourceSignature = string.Empty;
@@ -2152,8 +2192,10 @@ namespace Conn.MapGenV2.Editor
             SaveAssetToEditorPrefs(ProfilePathKey, profile);
             SaveAssetToEditorPrefs(DraftPathKey, draft);
             newDraftGridSize = NormalizeGridSize(newDraftGridSize);
+            newDraftCellSize = NormalizeCellSize(newDraftCellSize);
             EditorPrefs.SetInt(NewDraftGridWidthKey, newDraftGridSize.x);
             EditorPrefs.SetInt(NewDraftGridHeightKey, newDraftGridSize.y);
+            EditorPrefs.SetFloat(NewDraftCellSizeKey, newDraftCellSize);
             EditorPrefs.SetFloat(PreviewCellSizeKey, previewCellSize);
             EditorPrefs.SetInt(OutputModeKey, (int)outputMode);
             EditorPrefs.SetBool(ShowPropOverlayKey, showPropPlacementOverlay);
@@ -2215,6 +2257,7 @@ namespace Conn.MapGenV2.Editor
                 EditorGUILayout.LabelField("드래프트 설정 ID / Draft Setup ID", string.IsNullOrEmpty(previewData.ProfileId) ? "(none)" : previewData.ProfileId);
                 EditorGUILayout.LabelField("시드 / Seed", previewData.Seed.ToString());
                 EditorGUILayout.LabelField("그리드 / Grid", $"{previewData.Width} x {previewData.Height}");
+                EditorGUILayout.LabelField("셀 크기 / Cell Size", draft.GetCellSize().ToString("0.###"));
                 EditorGUILayout.LabelField(
                     "생성 상태 / Generated State",
                     previewData.GeneratedSignatureCurrent ? "최신 / Current" : MapGenV2EditorText.Get("mapgenv2.draftStale"));

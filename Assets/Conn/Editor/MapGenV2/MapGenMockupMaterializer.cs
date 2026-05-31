@@ -85,6 +85,7 @@ namespace Conn.MapGenV2.Editor
             var groups = new Dictionary<MapGenModuleCategory, Transform>();
             CreateStandardGroups(root, groups);
             var rng = new MapGenRandom(draft.Seed).Fork("materialize");
+            var moduleScale = ResolveModuleScale(draft);
 
             for (var i = 0; i < plan.RequestCount; i++)
             {
@@ -112,6 +113,7 @@ namespace Conn.MapGenV2.Editor
                 {
                     var placeholder = CreatePlaceholderInstance(draft, request);
                     placeholder.transform.SetParent(group, false);
+                    placeholder.transform.localScale = Vector3.Scale(placeholder.transform.localScale, moduleScale);
                     placeholder.transform.position = ToWorld(draft, request.Coord);
                     placeholder.transform.rotation = RotationFor(request.Direction, MapGenModuleRotationPolicy.AnyOrthogonal);
                     AttachSourceMarker(placeholder, draft, request, "Placeholder", moduleSetSignature);
@@ -127,6 +129,7 @@ namespace Conn.MapGenV2.Editor
                 Undo.RegisterCreatedObjectUndo(instance, "Materialize MapGen Mockup");
                 instance.name = BuildInstanceName(draft, request, entry.Prefab.name);
                 instance.transform.SetParent(group, false);
+                instance.transform.localScale = Vector3.Scale(instance.transform.localScale, moduleScale);
                 instance.transform.position = ToWorld(draft, request.Coord) + entry.Offset;
                 instance.transform.rotation = RotationFor(request.Direction, entry.RotationPolicy);
                 AttachSourceMarker(instance, draft, request, entry.Prefab.name, moduleSetSignature);
@@ -976,7 +979,25 @@ namespace Conn.MapGenV2.Editor
         private static Vector3 ToWorld(MapGenMockupDraftAsset draft, MapGenGridCoord coord)
         {
             var cellSize = draft != null ? draft.GetCellSize() : 1f;
-            return new Vector3((coord.X + 0.5f) * cellSize, 0f, (coord.Y + 0.5f) * cellSize);
+            return new Vector3(coord.X * cellSize, 0f, coord.Y * cellSize);
+        }
+
+        private static Vector3 ResolveModuleScale(MapGenMockupDraftAsset draft)
+        {
+            if (draft == null)
+            {
+                return Vector3.one;
+            }
+
+            var boundsContract = draft.GetModuleBoundsContract();
+            if (boundsContract == null || !boundsContract.Enabled)
+            {
+                return Vector3.one;
+            }
+
+            var sourceCellSize = Mathf.Max(0.01f, boundsContract.CellSize);
+            var scale = draft.GetCellSize() / sourceCellSize;
+            return new Vector3(scale, scale, scale);
         }
 
         private static Quaternion RotationFor(MapGenGridDirection direction, MapGenModuleRotationPolicy policy)
