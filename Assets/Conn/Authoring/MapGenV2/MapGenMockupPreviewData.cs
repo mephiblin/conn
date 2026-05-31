@@ -95,7 +95,7 @@ namespace Conn.MapGenV2.Authoring
                 width,
                 height,
                 draft.Seed,
-                draft.Profile != null ? draft.Profile.ProfileId : string.Empty,
+                draft.GetMapId(),
                 draft.LastGeneratedSignature,
                 draft.ComputeSignature(),
                 draft.AcceptedSignature,

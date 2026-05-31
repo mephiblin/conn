@@ -25,7 +25,7 @@ namespace Conn.MapGenV2.Editor
             GameObject selectedRoot = null,
             Func<bool> shouldCancel = null)
         {
-            if (draft == null || draft.Profile == null || draft.Profile.StyleSet == null || draft.Profile.StyleSet.ModuleSet == null)
+            if (draft == null)
             {
                 return null;
             }
@@ -45,10 +45,10 @@ namespace Conn.MapGenV2.Editor
                 return null;
             }
 
-            var moduleSet = draft.Profile.StyleSet.ModuleSet;
-            var moduleSetSignature = BuildModuleSetSignature(moduleSet);
+            var moduleSet = GetLegacyModuleSet(draft);
+            var moduleSetSignature = BuildDraftModuleSignature(draft, moduleSet);
             var plan = BuildPlan(draft);
-            var report = BuildReport(moduleSet, plan, draft.Seed);
+            var report = BuildReport(moduleSet, plan, draft.Seed, draft);
             if (!ValidateCoverage(report).IsValid)
             {
                 return null;
@@ -65,11 +65,12 @@ namespace Conn.MapGenV2.Editor
                 ClearChildren(targetRoot);
             }
 
-            var root = new GameObject($"MapGenV2_{draft.Profile.ProfileId}_{draft.Seed}");
+            var rootName = BuildRootName(draft);
+            var root = new GameObject(rootName);
             if (targetRoot != null)
             {
                 root = targetRoot;
-                root.name = $"MapGenV2_{draft.Profile.ProfileId}_{draft.Seed}";
+                root.name = rootName;
             }
             else
             {
@@ -105,7 +106,7 @@ namespace Conn.MapGenV2.Editor
                     continue;
                 }
 
-                var entry = PickEntry(moduleSet.GetEntries(request.Category), ref rng);
+                var entry = PickEntry(GetEntries(draft, moduleSet, request.Category), ref rng);
                 var group = GetOrCreateGroup(root, groups, request.Category);
                 if (entry == null || entry.Prefab == null)
                 {
@@ -137,13 +138,13 @@ namespace Conn.MapGenV2.Editor
 
         public static MapGenMaterializationPlan BuildPlan(MapGenMockupDraftAsset draft)
         {
-            if (draft == null || draft.Profile == null)
+            if (draft == null)
             {
                 return new MapGenMaterializationPlan();
             }
 
             MapGenGridCoord[] propCoords = null;
-            var propRules = draft.Profile.LayoutRules != null ? draft.Profile.LayoutRules.PropPlacementRules : null;
+            var propRules = draft.GetPropPlacementRules();
             if (propRules != null && propRules.Length > 0)
             {
                 var propPlacement = MapGenPropPlacementPlanner.BuildForDraft(draft);
@@ -157,7 +158,7 @@ namespace Conn.MapGenV2.Editor
             return MapGenMaterializationPlanner.Build(
                 draft.Width,
                 draft.Height,
-                draft.Profile.CellSize,
+                draft.GetCellSize(),
                 draft.AcceptedSignature,
                 draft.Cells,
                 propCoords);
@@ -166,7 +167,8 @@ namespace Conn.MapGenV2.Editor
         public static MapGenMaterializationReport BuildReport(
             MapGenModuleSetAsset moduleSet,
             MapGenMaterializationPlan plan,
-            int seed = 0)
+            int seed = 0,
+            MapGenMockupDraftAsset draft = null)
         {
             var report = new MapGenMaterializationReport
             {
@@ -186,7 +188,7 @@ namespace Conn.MapGenV2.Editor
                     continue;
                 }
 
-                var entry = PickEntry(moduleSet != null ? moduleSet.GetEntries(request.Category) : null, ref rng);
+                var entry = PickEntry(GetEntries(draft, moduleSet, request.Category), ref rng);
                 if (entry != null && entry.Prefab != null)
                 {
                     report.InstantiableRequests++;
@@ -307,16 +309,14 @@ namespace Conn.MapGenV2.Editor
             AddMismatchIssue(
                 validation,
                 "materialized_output_stale_source_signature",
-                "Materialized output was produced from stale profile, style, rule, template, or shape data.",
+                "Materialized output was produced from stale draft source data.",
                 "Regenerate, post-process, save, and rematerialize after source asset changes.",
                 marker.SourceSignature,
                 draft.AcceptedSourceSignature,
                 "Root.SourceSignature");
 
-            var moduleSet = draft.Profile != null && draft.Profile.StyleSet != null
-                ? draft.Profile.StyleSet.ModuleSet
-                : null;
-            var expectedModuleSignature = BuildModuleSetSignature(moduleSet);
+            var moduleSet = GetLegacyModuleSet(draft);
+            var expectedModuleSignature = BuildDraftModuleSignature(draft, moduleSet);
             if (string.IsNullOrEmpty(marker.ModuleSetSignature))
             {
                 validation.Add(new MapGenIssue(
@@ -390,8 +390,7 @@ namespace Conn.MapGenV2.Editor
                 }
 
                 if (draft != null
-                    && draft.Profile != null
-                    && marker.ProfileId == draft.Profile.ProfileId
+                    && marker.ProfileId == draft.GetMapId()
                     && marker.Seed == draft.Seed
                     && marker.DraftSignature == draft.AcceptedSignature)
                 {
@@ -428,6 +427,128 @@ namespace Conn.MapGenV2.Editor
 
                 return hash.ToString("x16");
             }
+        }
+
+        public static string BuildDraftModuleSignature(MapGenMockupDraftAsset draft)
+        {
+            return BuildDraftModuleSignature(draft, GetLegacyModuleSet(draft));
+        }
+
+        private static string BuildDraftModuleSignature(MapGenMockupDraftAsset draft, MapGenModuleSetAsset moduleSet)
+        {
+            unchecked
+            {
+                var hash = 1469598103934665603UL;
+                AddSignaturePart(ref hash, draft != null ? draft.GetModuleSetId() : string.Empty);
+                foreach (MapGenModuleCategory category in Enum.GetValues(typeof(MapGenModuleCategory)))
+                {
+                    AddModuleEntries(ref hash, category.ToString(), draft != null ? draft.GetModuleEntries(category) : null);
+                }
+
+                AddSignaturePart(ref hash, BuildModuleSetSignature(moduleSet));
+                var palette = draft != null ? draft.PrefabPalette : null;
+                if (palette != null)
+                {
+                    AddObjectIdentity(ref hash, palette.RoomFloor);
+                    AddObjectIdentity(ref hash, palette.CorridorFloor);
+                    AddObjectIdentity(ref hash, palette.Wall);
+                    AddObjectIdentity(ref hash, palette.InsideCorner);
+                    AddObjectIdentity(ref hash, palette.OutsideCorner);
+                    AddObjectIdentity(ref hash, palette.Ceiling);
+                    AddObjectIdentity(ref hash, palette.Door);
+                    AddObjectIdentity(ref hash, palette.Blocker);
+                    AddObjectIdentity(ref hash, palette.Prop);
+                }
+
+                return hash.ToString("x16");
+            }
+        }
+
+        private static MapGenModuleEntry[] GetEntries(
+            MapGenMockupDraftAsset draft,
+            MapGenModuleSetAsset moduleSet,
+            MapGenModuleCategory category)
+        {
+            var prefab = GetDraftPrefab(draft, category);
+            if (prefab != null)
+            {
+                return new[]
+                {
+                    new MapGenModuleEntry
+                    {
+                        Prefab = prefab,
+                        Weight = 1,
+                        Footprint = Vector2Int.one,
+                        RotationPolicy = RotationPolicyFor(category)
+                    }
+                };
+            }
+
+            var draftEntries = draft != null ? draft.GetModuleEntries(category) : null;
+            if (draftEntries != null && draftEntries.Length > 0)
+            {
+                return draftEntries;
+            }
+
+            return moduleSet != null ? moduleSet.GetEntries(category) : Array.Empty<MapGenModuleEntry>();
+        }
+
+        private static MapGenModuleSetAsset GetLegacyModuleSet(MapGenMockupDraftAsset draft)
+        {
+            return draft != null && !draft.EmbeddedSourceImported && draft.Profile != null && draft.Profile.StyleSet != null
+                ? draft.Profile.StyleSet.ModuleSet
+                : null;
+        }
+
+        private static string BuildRootName(MapGenMockupDraftAsset draft)
+        {
+            var mapId = draft != null ? draft.GetMapId() : string.Empty;
+            if (string.IsNullOrWhiteSpace(mapId) && draft != null)
+            {
+                mapId = draft.name;
+            }
+
+            return $"MapGenV2_{SanitizeNameToken(mapId)}_{(draft != null ? draft.Seed : 0)}";
+        }
+
+        private static GameObject GetDraftPrefab(MapGenMockupDraftAsset draft, MapGenModuleCategory category)
+        {
+            var palette = draft != null ? draft.PrefabPalette : null;
+            if (palette == null)
+            {
+                return null;
+            }
+
+            return category switch
+            {
+                MapGenModuleCategory.FloorA => palette.RoomFloor,
+                MapGenModuleCategory.FloorB => palette.CorridorFloor,
+                MapGenModuleCategory.WallStraight => palette.Wall,
+                MapGenModuleCategory.WallCornerInside => palette.InsideCorner,
+                MapGenModuleCategory.WallCornerOutside => palette.OutsideCorner,
+                MapGenModuleCategory.CeilingInterior => palette.Ceiling,
+                MapGenModuleCategory.CeilingExterior => palette.Ceiling,
+                MapGenModuleCategory.DoorWhole => palette.Door,
+                MapGenModuleCategory.DoorFrameHalf => palette.Door,
+                MapGenModuleCategory.DoorPanelHalf => palette.Door,
+                MapGenModuleCategory.Prop => palette.Prop,
+                MapGenModuleCategory.Blocker => palette.Blocker,
+                _ => null
+            };
+        }
+
+        private static MapGenModuleRotationPolicy RotationPolicyFor(MapGenModuleCategory category)
+        {
+            return category switch
+            {
+                MapGenModuleCategory.WallStraight => MapGenModuleRotationPolicy.AnyOrthogonal,
+                MapGenModuleCategory.WallCornerInside => MapGenModuleRotationPolicy.AnyOrthogonal,
+                MapGenModuleCategory.WallCornerOutside => MapGenModuleRotationPolicy.AnyOrthogonal,
+                MapGenModuleCategory.DoorWhole => MapGenModuleRotationPolicy.AnyOrthogonal,
+                MapGenModuleCategory.DoorFrameHalf => MapGenModuleRotationPolicy.AnyOrthogonal,
+                MapGenModuleCategory.DoorPanelHalf => MapGenModuleRotationPolicy.AnyOrthogonal,
+                _ => MapGenModuleRotationPolicy.None
+            };
         }
 
         public static void ClearRoot(GameObject root)
@@ -719,6 +840,39 @@ namespace Conn.MapGenV2.Editor
             }
         }
 
+        private static void AddModuleEntries(ref ulong hash, string fieldName, MapGenModuleEntry[] entries)
+        {
+            AddSignaturePart(ref hash, fieldName);
+            AddSignaturePart(ref hash, (entries?.Length ?? 0).ToString());
+            foreach (var entry in entries ?? Array.Empty<MapGenModuleEntry>())
+            {
+                if (entry == null)
+                {
+                    AddSignaturePart(ref hash, "null_module_entry");
+                    continue;
+                }
+
+                AddObjectIdentity(ref hash, entry.Prefab);
+                AddSignaturePart(ref hash, entry.Weight.ToString());
+                AddSignaturePart(ref hash, ((int)entry.RotationPolicy).ToString());
+                AddSignaturePart(ref hash, Mathf.RoundToInt(entry.Offset.x * 1000f).ToString());
+                AddSignaturePart(ref hash, Mathf.RoundToInt(entry.Offset.y * 1000f).ToString());
+                AddSignaturePart(ref hash, Mathf.RoundToInt(entry.Offset.z * 1000f).ToString());
+                AddSignaturePart(ref hash, entry.Footprint.x.ToString());
+                AddSignaturePart(ref hash, entry.Footprint.y.ToString());
+                AddStrings(ref hash, entry.Tags);
+            }
+        }
+
+        private static void AddStrings(ref ulong hash, string[] values)
+        {
+            AddSignaturePart(ref hash, (values?.Length ?? 0).ToString());
+            foreach (var value in values ?? Array.Empty<string>())
+            {
+                AddSignaturePart(ref hash, value);
+            }
+        }
+
         private static void AddObjectIdentity(ref ulong hash, UnityEngine.Object asset)
         {
             if (asset == null)
@@ -821,7 +975,7 @@ namespace Conn.MapGenV2.Editor
 
         private static Vector3 ToWorld(MapGenMockupDraftAsset draft, MapGenGridCoord coord)
         {
-            var cellSize = draft.Profile != null ? draft.Profile.CellSize : 1f;
+            var cellSize = draft != null ? draft.GetCellSize() : 1f;
             return new Vector3((coord.X + 0.5f) * cellSize, 0f, (coord.Y + 0.5f) * cellSize);
         }
 

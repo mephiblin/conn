@@ -8,7 +8,7 @@ namespace Conn.MapGenV2.Authoring
     {
         public static MapGenPropPlacementResult BuildForDraft(MapGenMockupDraftAsset draft)
         {
-            if (draft == null || draft.Profile == null || draft.Profile.LayoutRules == null)
+            if (draft == null)
             {
                 return new MapGenPropPlacementResult();
             }
@@ -17,7 +17,7 @@ namespace Conn.MapGenV2.Authoring
                 draft.Width,
                 draft.Height,
                 draft.Cells,
-                draft.Profile.LayoutRules.PropPlacementRules,
+                draft.GetPropPlacementRules(),
                 draft.Seed);
         }
 

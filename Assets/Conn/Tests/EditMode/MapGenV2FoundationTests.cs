@@ -163,15 +163,16 @@ namespace Conn.Tests.EditMode
             Assert.That(technology, Does.Contain("new Scene View overlay uses UI Toolkit"));
             Assert.That(technology, Does.Contain("existing MapGenV2 window and inspectors stay IMGUI"));
             Assert.That(technology, Does.Contain("preview drawing, Undo, and serialized inspector workflows"));
-            Assert.That(help, Does.Contain("profile"));
-            Assert.That(help, Does.Contain("rule set"));
-            Assert.That(help, Does.Contain("style set"));
-            Assert.That(help, Does.Contain("module set"));
-            Assert.That(help, Does.Contain("room shape"));
+            Assert.That(help, Does.Contain("draft file"));
+            Assert.That(help, Does.Contain("map prefab slots"));
+            Assert.That(help, Does.Contain("seed controls"));
+            Assert.That(help, Does.Contain("preview drawing"));
             Assert.That(help, Does.Contain("connectors"));
             Assert.That(help, Does.Contain("post-process"));
             Assert.That(help, Does.Contain("prop placement"));
+            Assert.That(help, Does.Contain("draft output settings"));
             Assert.That(help, Does.Contain("bake settings"));
+            Assert.That(help, Does.Contain("legacy compatibility"));
         }
 
         [Test]
@@ -1472,7 +1473,7 @@ namespace Conn.Tests.EditMode
                 PopulateValidWorkflowProfile(profile, styleSet, moduleSet, ruleSet, roomShape, out floor, out wall);
                 PopulateRoomTemplate(template, "source_template", MapGenRoomCategory.Start);
                 styleSet.RoomTemplates = new[] { template };
-                draft.Profile = profile;
+                draft.ImportFromProfileSource(profile);
                 draft.GridSize = new Vector2Int(2, 2);
                 draft.Seed = 17;
                 draft.EnsureCellArray();
@@ -1482,15 +1483,15 @@ namespace Conn.Tests.EditMode
                 template.Weight = 2;
                 var templateSignature = draft.ComputeSignature();
                 template.Weight = 1;
-                ruleSet.LoopRate = 50;
+                draft.LoopRate = 50;
                 var ruleSignature = draft.ComputeSignature();
-                ruleSet.LoopRate = 0;
-                profile.ProfileId = "workflow_profile_changed";
-                var profileSignature = draft.ComputeSignature();
+                draft.LoopRate = 0;
+                draft.MapId = "workflow_draft_changed";
+                var draftIdSignature = draft.ComputeSignature();
 
                 Assert.That(templateSignature, Is.Not.EqualTo(baseSignature));
                 Assert.That(ruleSignature, Is.Not.EqualTo(baseSignature));
-                Assert.That(profileSignature, Is.Not.EqualTo(baseSignature));
+                Assert.That(draftIdSignature, Is.Not.EqualTo(baseSignature));
             }
             finally
             {
@@ -1944,10 +1945,14 @@ namespace Conn.Tests.EditMode
                 Assert.That(draft.IsGeneratedSignatureCurrent, Is.True);
 
                 profile.ProfileId = "workflow_profile_changed";
+                var generatedAfterExternalProfileChange = MapGenV2WorkflowStatus.From(profile, draft);
+                Assert.That(generatedAfterExternalProfileChange.GeneratedCurrent, Is.True);
+                draft.MapId = "workflow_draft_changed";
                 var generatedStale = MapGenV2WorkflowStatus.From(profile, draft);
                 Assert.That(generatedStale.GeneratedCurrent, Is.False);
                 Assert.That(generatedStale.CanAccept, Is.False);
                 Assert.That(generatedStale.AcceptReason, Is.EqualTo("The generated draft is stale because source assets changed. Regenerate from seed."));
+                draft.MapId = "workflow_profile";
                 profile.ProfileId = "workflow_profile";
                 Assert.That(draft.IsGeneratedSignatureCurrent, Is.True);
 
@@ -2489,7 +2494,7 @@ namespace Conn.Tests.EditMode
                 draft.Accept();
 
                 firstRoot = MapGenMockupMaterializer.Materialize(draft, MapGenV2SceneOutputMode.ReplacePreviousRoot);
-                var moduleSetSignature = MapGenMockupMaterializer.BuildModuleSetSignature(moduleSet);
+                var moduleSetSignature = MapGenMockupMaterializer.BuildDraftModuleSignature(draft);
                 Assert.That(firstRoot, Is.Not.Null);
                 Assert.That(firstRoot.name, Is.EqualTo("MapGenV2_scene_controls_profile_55"));
                 Assert.That(firstRoot.GetComponent<MapGenV2GeneratedMapMarker>(), Is.Not.Null);
@@ -2553,6 +2558,52 @@ namespace Conn.Tests.EditMode
                     Object.DestroyImmediate(secondRoot);
                 }
 
+                AssetDatabase.DeleteAsset(tempFolder);
+                Object.DestroyImmediate(draft);
+                Object.DestroyImmediate(profile);
+                Object.DestroyImmediate(styleSet);
+                Object.DestroyImmediate(moduleSet);
+            }
+        }
+
+        [Test]
+        public void MaterializerModuleSignatureUsesDraftSourceAfterImport()
+        {
+            const string tempFolder = "Assets/Conn/Tests/TempMapGenV2MaterializerDraftSource";
+            var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
+            var styleSet = ScriptableObject.CreateInstance<MapGenStyleSetAsset>();
+            var profile = ScriptableObject.CreateInstance<MapGenProfileAsset>();
+            var draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();
+
+            try
+            {
+                EnsureTempFolder(tempFolder);
+                var floorPrefab = CreateTempPrefab($"{tempFolder}/Floor.prefab", "Floor");
+                var wallPrefab = CreateTempPrefab($"{tempFolder}/Wall.prefab", "Wall");
+                var replacementPrefab = CreateTempPrefab($"{tempFolder}/ReplacementFloor.prefab", "ReplacementFloor");
+                moduleSet.ModuleSetId = "profile_module_set";
+                moduleSet.FloorsA = new[] { new MapGenModuleEntry { Prefab = floorPrefab, Weight = 1, Footprint = Vector2Int.one } };
+                moduleSet.WallsStraight = new[] { new MapGenModuleEntry { Prefab = wallPrefab, Weight = 1, Footprint = Vector2Int.one } };
+                PopulateCompleteMaterializationCoverage(moduleSet, floorPrefab, wallPrefab);
+                styleSet.ModuleSet = moduleSet;
+                profile.ProfileId = "draft_source_profile";
+                profile.StyleSet = styleSet;
+
+                draft.ImportFromProfileSource(profile);
+                var importedSignature = MapGenMockupMaterializer.BuildDraftModuleSignature(draft);
+
+                moduleSet.ModuleSetId = "profile_module_set_changed";
+                moduleSet.FloorsA = new[] { new MapGenModuleEntry { Prefab = replacementPrefab, Weight = 7, Footprint = Vector2Int.one } };
+                var afterExternalProfileChange = MapGenMockupMaterializer.BuildDraftModuleSignature(draft);
+
+                draft.ModuleData.FloorsA[0].Weight = 3;
+                var afterDraftModuleChange = MapGenMockupMaterializer.BuildDraftModuleSignature(draft);
+
+                Assert.That(afterExternalProfileChange, Is.EqualTo(importedSignature));
+                Assert.That(afterDraftModuleChange, Is.Not.EqualTo(importedSignature));
+            }
+            finally
+            {
                 AssetDatabase.DeleteAsset(tempFolder);
                 Object.DestroyImmediate(draft);
                 Object.DestroyImmediate(profile);
@@ -3506,12 +3557,9 @@ namespace Conn.Tests.EditMode
 
             try
             {
-                profile.LayoutRules = ruleSet;
-                ruleSet.UseDirectRoutes = false;
-                ruleSet.PostProcessRules = MapGenPostProcessRules.Defaults();
-                ruleSet.PostProcessRules.UseDirectRoutes = true;
-                ruleSet.PostProcessRules.MaxPasses = 2;
-                draft.Profile = profile;
+                draft.PostProcessRules = MapGenPostProcessRules.Defaults();
+                draft.PostProcessRules.UseDirectRoutes = true;
+                draft.PostProcessRules.MaxPasses = 2;
                 draft.GridSize = new Vector2Int(5, 5);
                 draft.EnsureCellArray();
                 draft.Cells[0] = new MapGenMockupCell

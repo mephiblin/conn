@@ -42,7 +42,7 @@ namespace Conn.MapGenV2.Editor
                 style = { whiteSpace = WhiteSpace.Normal }
             };
             root.Add(summary);
-            root.Add(new Button(() => MapGenV2Window.Open(draft != null ? draft.Profile : null, draft)) { text = "Open Map Generator" });
+            root.Add(new Button(() => MapGenV2Window.Open(null, draft)) { text = "Open Map Generator" });
             root.Add(new Button(() => GenerateSelectedDraft()) { text = "Generate" });
             root.Add(new Button(() => AcceptSelectedDraft()) { text = "Save Draft" });
             root.Add(new Button(() => MaterializeSelectedDraft()) { text = "Materialize" });
@@ -134,17 +134,13 @@ namespace Conn.MapGenV2.Editor
 
         private static MapGenBakedMapAsset ResolveBakedAsset(MapGenMockupDraftAsset draft)
         {
-            if (draft == null || draft.Profile == null)
+            if (draft == null)
             {
                 return null;
             }
 
-            var outputSettings = draft.Profile.OutputSettings;
-            var folder = string.IsNullOrWhiteSpace(outputSettings.BakedAssetFolder)
-                ? MapGenOutputSettings.Defaults().BakedAssetFolder
-                : outputSettings.BakedAssetFolder;
-            var path = $"{folder}/{draft.Profile.ProfileId}_{draft.Seed}_BakedMap.asset";
-            return AssetDatabase.LoadAssetAtPath<MapGenBakedMapAsset>(path);
+            return AssetDatabase.LoadAssetAtPath<MapGenBakedMapAsset>(
+                MapGenV2DraftOutputSettingsUtility.GetBakedAssetPath(draft));
         }
 
         private static GameObject ResolveSelectedRoot()
@@ -168,7 +164,7 @@ namespace Conn.MapGenV2.Editor
             }
 
             Undo.RecordObject(draft, "Scene Overlay Generate From Seed");
-            draft.GenerateFromProfile();
+            draft.GenerateFromDraft();
             EditorUtility.SetDirty(draft);
         }
 

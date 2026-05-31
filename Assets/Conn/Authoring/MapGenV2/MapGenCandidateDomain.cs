@@ -51,6 +51,32 @@ namespace Conn.MapGenV2.Authoring
                 : Array.Empty<MapGenCorridorTemplateAsset>();
 
             var landmarkEntropies = BuildLandmarkEntropies(width, height, quantity.RequiredCategories, roomTemplates);
+            return Build(width, height, quantity, roomTemplates, corridorTemplates, landmarkEntropies);
+        }
+
+        public static MapGenCandidateDomain Build(MapGenMockupDraftAsset draft)
+        {
+            var width = draft != null ? Mathf.Max(0, draft.Width) : 0;
+            var height = draft != null ? Mathf.Max(0, draft.Height) : 0;
+            var quantity = draft != null ? draft.GetQuantityRules() : MapGenQuantityRules.Defaults();
+            var roomTemplates = draft != null
+                ? draft.GetRoomTemplates()
+                : Array.Empty<MapGenRoomTemplateAsset>();
+            var corridorTemplates = draft != null
+                ? draft.GetCorridorTemplates()
+                : Array.Empty<MapGenCorridorTemplateAsset>();
+            var landmarkEntropies = BuildLandmarkEntropies(width, height, quantity.RequiredCategories, roomTemplates);
+            return Build(width, height, quantity, roomTemplates, corridorTemplates, landmarkEntropies);
+        }
+
+        private static MapGenCandidateDomain Build(
+            int width,
+            int height,
+            MapGenQuantityRules quantity,
+            MapGenRoomTemplateAsset[] roomTemplates,
+            MapGenCorridorTemplateAsset[] corridorTemplates,
+            MapGenLandmarkEntropy[] landmarkEntropies)
+        {
             var lowestEntropyIndex = FindLowestEntropyIndex(landmarkEntropies);
 
             return new MapGenCandidateDomain

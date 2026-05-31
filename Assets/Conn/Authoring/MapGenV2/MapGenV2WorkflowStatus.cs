@@ -68,13 +68,12 @@ namespace Conn.MapGenV2.Authoring
 
         public static MapGenV2WorkflowStatus From(MapGenProfileAsset selectedProfile, MapGenMockupDraftAsset selectedDraft)
         {
-            var hasProfile = selectedProfile != null;
-            var profileValid = hasProfile && selectedProfile.Validate().IsValid;
             var hasDraft = selectedDraft != null;
+            var hasProfile = hasDraft || selectedProfile != null;
             var draftProfile = hasDraft ? selectedDraft.Profile : null;
-            var draftUsesSelectedProfile = !hasProfile || !hasDraft || draftProfile == selectedProfile;
-            var draftHasProfile = hasDraft && draftProfile != null;
-            var draftProfileValid = draftHasProfile && draftProfile.Validate().IsValid;
+            var draftUsesSelectedProfile = !hasProfile || !hasDraft || draftProfile == null || draftProfile == selectedProfile;
+            var draftSourceValid = hasDraft && selectedDraft.ValidateDraftSource().IsValid;
+            var profileValid = hasDraft ? draftSourceValid : hasProfile && selectedProfile.Validate().IsValid;
             var hasGeneratedMockup = hasDraft
                 && !string.IsNullOrEmpty(selectedDraft.LastGeneratedSignature)
                 && HasMapCells(selectedDraft);
@@ -82,7 +81,7 @@ namespace Conn.MapGenV2.Authoring
             var accepted = hasDraft && selectedDraft.Accepted;
             var acceptedCurrent = hasDraft && selectedDraft.IsAcceptedSignatureCurrent;
 
-            var canGenerate = hasDraft && draftHasProfile && draftProfileValid;
+            var canGenerate = hasDraft && draftSourceValid;
             var canPostProcess = canGenerate && hasGeneratedMockup && generatedCurrent;
             var canAccept = hasGeneratedMockup && generatedCurrent;
             var canMaterialize = accepted && acceptedCurrent;
@@ -90,7 +89,7 @@ namespace Conn.MapGenV2.Authoring
 
             var generateReason = canGenerate
                 ? "Generate From Seed can write a new preview into the draft."
-                : BuildGenerateReason(hasDraft, draftHasProfile, draftProfileValid);
+                : BuildGenerateReason(hasDraft, draftSourceValid);
             var postProcessReason = canPostProcess
                 ? "Run Post-Process can update generated draft cells."
                 : BuildGeneratedReason(hasGeneratedMockup, generatedCurrent, generateReason);
@@ -123,22 +122,17 @@ namespace Conn.MapGenV2.Authoring
                 acceptReason,
                 materializeReason,
                 bakeRuntimeReason,
-                BuildNextAction(hasProfile, profileValid, hasDraft, draftUsesSelectedProfile, canGenerate, hasGeneratedMockup, generatedCurrent, accepted, acceptedCurrent));
+                BuildNextAction(profileValid, hasDraft, draftUsesSelectedProfile, canGenerate, hasGeneratedMockup, generatedCurrent, accepted, acceptedCurrent));
         }
 
-        private static string BuildGenerateReason(bool hasDraft, bool draftHasProfile, bool draftProfileValid)
+        private static string BuildGenerateReason(bool hasDraft, bool draftSourceValid)
         {
             if (!hasDraft)
             {
                 return "Create or import a draft first.";
             }
 
-            if (!draftHasProfile)
-            {
-                return "Create a draft with internal setup first.";
-            }
-
-            if (!draftProfileValid)
+            if (!draftSourceValid)
             {
                 return "Fix draft setup validation errors first.";
             }
@@ -195,7 +189,6 @@ namespace Conn.MapGenV2.Authoring
         }
 
         private static string BuildNextAction(
-            bool hasProfile,
             bool profileValid,
             bool hasDraft,
             bool draftUsesSelectedProfile,
@@ -205,7 +198,7 @@ namespace Conn.MapGenV2.Authoring
             bool accepted,
             bool acceptedCurrent)
         {
-            if (!hasProfile)
+            if (!hasDraft)
             {
                 return "Create or import a draft.";
             }
@@ -213,11 +206,6 @@ namespace Conn.MapGenV2.Authoring
             if (!profileValid)
             {
                 return "Fix draft setup validation errors.";
-            }
-
-            if (!hasDraft)
-            {
-                return "Create or import a draft.";
             }
 
             if (!draftUsesSelectedProfile)

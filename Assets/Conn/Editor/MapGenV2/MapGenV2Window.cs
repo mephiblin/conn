@@ -271,8 +271,8 @@ namespace Conn.MapGenV2.Editor
         public static void Open(MapGenProfileAsset selectedProfile, MapGenMockupDraftAsset selectedDraft)
         {
             var window = GetWindow<MapGenV2Window>("MapGenV2");
-            window.profile = selectedProfile;
             window.draft = selectedDraft;
+            window.profile = selectedDraft != null ? selectedDraft.Profile : selectedProfile;
             window.Repaint();
         }
 
@@ -309,6 +309,10 @@ namespace Conn.MapGenV2.Editor
             showRegionAdvancedEditFoldout = EditorPrefs.GetBool(RegionAdvancedEditFoldoutKey, showRegionAdvancedEditFoldout);
             profile = LoadAssetFromEditorPrefs<MapGenProfileAsset>(ProfilePathKey);
             draft = LoadAssetFromEditorPrefs<MapGenMockupDraftAsset>(DraftPathKey);
+            if (draft != null)
+            {
+                profile = draft.Profile;
+            }
         }
 
         private void OnDisable()
@@ -341,7 +345,7 @@ namespace Conn.MapGenV2.Editor
 
         public static string BuildInlineHelpCoverageSummary()
         {
-            return "Inline help/tooltips cover profile, rule set, style set, module set, room shape, connectors, post-process, prop placement, bake settings, and materialization output.";
+            return "Inline help/tooltips cover the draft file, map prefab slots, seed controls, preview drawing, connectors, post-process, prop placement, draft output settings, bake settings, materialization output, and legacy compatibility details.";
         }
 
         public static string BuildKoreanCoverageSummary()
@@ -366,10 +370,9 @@ namespace Conn.MapGenV2.Editor
                 DrawProfileValidation();
                 DrawDiagnosticsPanel();
             });
-            DrawFoldoutSection("고급 경로/연결 / Advanced Paths & Links", ref showOutputPathsFoldout, () =>
+            DrawFoldoutSection("레거시 호환 / Legacy Compatibility", ref showOutputPathsFoldout, () =>
             {
-                DrawReferenceFields();
-                DrawOutputPaths();
+                DrawLegacyReferenceFields();
                 DrawLinkedAssetShortcuts();
             });
         }
@@ -416,14 +419,9 @@ namespace Conn.MapGenV2.Editor
                         profile = draft != null ? draft.Profile : null;
                         var moduleSet = GetActiveModuleSet();
                         EnsureDraftPrefabPalette(moduleSet);
-                        if (draft != null)
+                        if (draft != null && draft.PrefabPalette != null)
                         {
-                            ApplyDraftPrefabPaletteToModuleSet(moduleSet);
                             EditorUtility.SetDirty(draft);
-                            if (moduleSet != null)
-                            {
-                                EditorUtility.SetDirty(moduleSet);
-                            }
                         }
 
                         selectedMaterializedRoot = null;
@@ -445,7 +443,7 @@ namespace Conn.MapGenV2.Editor
                     }
                 }
 
-                DrawFoldoutSection("설정 유틸리티 / Setup Utilities", ref showSetupUtilitiesFoldout, () =>
+                DrawFoldoutSection("레거시 설정 유틸리티 / Legacy Setup Utilities", ref showSetupUtilitiesFoldout, () =>
                 {
                     if (GUILayout.Button(MapGenV2EditorText.Get("mapgenv2.createDefaultFolders")))
                     {
@@ -471,29 +469,26 @@ namespace Conn.MapGenV2.Editor
             }
 
             var moduleSet = GetActiveModuleSet();
-            if (moduleSet == null)
-            {
-                DrawWrappingHelpBox("드래프트에 연결된 프리팹 구성이 없습니다. 새 드래프트를 생성하면 기본 구성이 함께 만들어집니다.", MessageType.Warning);
-                return;
-            }
-
             EnsureDraftPrefabPalette(moduleSet);
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
                 EditorGUILayout.LabelField("프리팹 슬롯 / Prefab Slots", EditorStyles.boldLabel);
-                DrawPrefabSlot(moduleSet, MapGenDraftPrefabSlot.RoomFloor);
-                DrawPrefabSlot(moduleSet, MapGenDraftPrefabSlot.CorridorFloor);
-                DrawPrefabSlot(moduleSet, MapGenDraftPrefabSlot.Wall);
-                DrawPrefabSlot(moduleSet, MapGenDraftPrefabSlot.InsideCorner);
-                DrawPrefabSlot(moduleSet, MapGenDraftPrefabSlot.OutsideCorner);
-                DrawPrefabSlot(moduleSet, MapGenDraftPrefabSlot.Ceiling);
-                DrawPrefabSlot(moduleSet, MapGenDraftPrefabSlot.Door);
-                DrawPrefabSlot(moduleSet, MapGenDraftPrefabSlot.Blocker);
-                DrawPrefabSlot(moduleSet, MapGenDraftPrefabSlot.Prop);
+                DrawPrefabSlot(MapGenDraftPrefabSlot.RoomFloor);
+                DrawPrefabSlot(MapGenDraftPrefabSlot.CorridorFloor);
+                DrawPrefabSlot(MapGenDraftPrefabSlot.Wall);
+                DrawPrefabSlot(MapGenDraftPrefabSlot.InsideCorner);
+                DrawPrefabSlot(MapGenDraftPrefabSlot.OutsideCorner);
+                DrawPrefabSlot(MapGenDraftPrefabSlot.Ceiling);
+                DrawPrefabSlot(MapGenDraftPrefabSlot.Door);
+                DrawPrefabSlot(MapGenDraftPrefabSlot.Blocker);
+                DrawPrefabSlot(MapGenDraftPrefabSlot.Prop);
 
-                if (GUILayout.Button("에셋 구성 갱신 / Refresh Asset Mapping"))
+                using (new EditorGUI.DisabledScope(moduleSet == null))
                 {
-                    RefreshDraftAssets(moduleSet);
+                    if (GUILayout.Button("레거시 기본값에서 빈 슬롯 채우기 / Fill Empty Slots From Legacy Defaults"))
+                    {
+                        RefreshDraftAssets(moduleSet);
+                    }
                 }
             }
         }
@@ -565,9 +560,9 @@ namespace Conn.MapGenV2.Editor
             }
         }
 
-        private void DrawPrefabSlot(MapGenModuleSetAsset moduleSet, MapGenDraftPrefabSlot slot)
+        private void DrawPrefabSlot(MapGenDraftPrefabSlot slot)
         {
-            var currentPrefab = GetDraftPrefab(slot, moduleSet);
+            var currentPrefab = GetDraftPrefab(slot, null);
             EditorGUI.BeginChangeCheck();
             var nextPrefab = (GameObject)EditorGUILayout.ObjectField(
                 LabelFor(slot),
@@ -579,17 +574,16 @@ namespace Conn.MapGenV2.Editor
                 return;
             }
 
-            Undo.RecordObjects(new Object[] { draft, moduleSet }, "Change MapGen Draft Prefab Slot");
+            Undo.RecordObject(draft, "Change MapGen Draft Prefab Slot");
             SetDraftPrefab(slot, nextPrefab);
-            SetQuickPrefab(moduleSet, slot, nextPrefab);
             EditorUtility.SetDirty(draft);
-            EditorUtility.SetDirty(moduleSet);
             SetLastOperationResult($"Updated {slot} prefab mapping. Seed remains {draft?.Seed.ToString() ?? "-"}.");
         }
 
         private MapGenModuleSetAsset GetActiveModuleSet()
         {
             return draft != null
+                && !draft.EmbeddedSourceImported
                 && draft.Profile != null
                 && draft.Profile.StyleSet != null
                     ? draft.Profile.StyleSet.ModuleSet
@@ -632,22 +626,58 @@ namespace Conn.MapGenV2.Editor
             draft.PrefabPalette.Prop = GetQuickPrefab(moduleSet, MapGenDraftPrefabSlot.Prop);
         }
 
-        private void ApplyDraftPrefabPaletteToModuleSet(MapGenModuleSetAsset moduleSet)
+        private void FillEmptyDraftPrefabSlotsFromModuleSet(MapGenModuleSetAsset moduleSet)
         {
-            if (draft == null || draft.PrefabPalette == null || moduleSet == null)
+            if (draft == null || moduleSet == null)
             {
                 return;
             }
 
-            SetQuickPrefab(moduleSet, MapGenDraftPrefabSlot.RoomFloor, draft.PrefabPalette.RoomFloor);
-            SetQuickPrefab(moduleSet, MapGenDraftPrefabSlot.CorridorFloor, draft.PrefabPalette.CorridorFloor);
-            SetQuickPrefab(moduleSet, MapGenDraftPrefabSlot.Wall, draft.PrefabPalette.Wall);
-            SetQuickPrefab(moduleSet, MapGenDraftPrefabSlot.InsideCorner, draft.PrefabPalette.InsideCorner);
-            SetQuickPrefab(moduleSet, MapGenDraftPrefabSlot.OutsideCorner, draft.PrefabPalette.OutsideCorner);
-            SetQuickPrefab(moduleSet, MapGenDraftPrefabSlot.Ceiling, draft.PrefabPalette.Ceiling);
-            SetQuickPrefab(moduleSet, MapGenDraftPrefabSlot.Door, draft.PrefabPalette.Door);
-            SetQuickPrefab(moduleSet, MapGenDraftPrefabSlot.Blocker, draft.PrefabPalette.Blocker);
-            SetQuickPrefab(moduleSet, MapGenDraftPrefabSlot.Prop, draft.PrefabPalette.Prop);
+            draft.PrefabPalette ??= new MapGenDraftPrefabPalette();
+            if (draft.PrefabPalette.RoomFloor == null)
+            {
+                draft.PrefabPalette.RoomFloor = GetQuickPrefab(moduleSet, MapGenDraftPrefabSlot.RoomFloor);
+            }
+
+            if (draft.PrefabPalette.CorridorFloor == null)
+            {
+                draft.PrefabPalette.CorridorFloor = GetQuickPrefab(moduleSet, MapGenDraftPrefabSlot.CorridorFloor);
+            }
+
+            if (draft.PrefabPalette.Wall == null)
+            {
+                draft.PrefabPalette.Wall = GetQuickPrefab(moduleSet, MapGenDraftPrefabSlot.Wall);
+            }
+
+            if (draft.PrefabPalette.InsideCorner == null)
+            {
+                draft.PrefabPalette.InsideCorner = GetQuickPrefab(moduleSet, MapGenDraftPrefabSlot.InsideCorner);
+            }
+
+            if (draft.PrefabPalette.OutsideCorner == null)
+            {
+                draft.PrefabPalette.OutsideCorner = GetQuickPrefab(moduleSet, MapGenDraftPrefabSlot.OutsideCorner);
+            }
+
+            if (draft.PrefabPalette.Ceiling == null)
+            {
+                draft.PrefabPalette.Ceiling = GetQuickPrefab(moduleSet, MapGenDraftPrefabSlot.Ceiling);
+            }
+
+            if (draft.PrefabPalette.Door == null)
+            {
+                draft.PrefabPalette.Door = GetQuickPrefab(moduleSet, MapGenDraftPrefabSlot.Door);
+            }
+
+            if (draft.PrefabPalette.Blocker == null)
+            {
+                draft.PrefabPalette.Blocker = GetQuickPrefab(moduleSet, MapGenDraftPrefabSlot.Blocker);
+            }
+
+            if (draft.PrefabPalette.Prop == null)
+            {
+                draft.PrefabPalette.Prop = GetQuickPrefab(moduleSet, MapGenDraftPrefabSlot.Prop);
+            }
         }
 
         private GameObject GetDraftPrefab(MapGenDraftPrefabSlot slot, MapGenModuleSetAsset moduleSet)
@@ -710,6 +740,74 @@ namespace Conn.MapGenV2.Editor
                     draft.PrefabPalette.Prop = prefab;
                     break;
             }
+
+            SetDraftModuleEntry(slot, prefab);
+        }
+
+        private void SetDraftModuleEntry(MapGenDraftPrefabSlot slot, GameObject prefab)
+        {
+            if (draft == null)
+            {
+                return;
+            }
+
+            draft.ModuleData ??= new MapGenDraftModuleSet();
+            var entries = prefab != null
+                ? new[]
+                {
+                    new MapGenModuleEntry
+                    {
+                        Prefab = prefab,
+                        Weight = 1,
+                        Footprint = Vector2Int.one,
+                        RotationPolicy = RotationPolicyFor(slot)
+                    }
+                }
+                : System.Array.Empty<MapGenModuleEntry>();
+
+            switch (slot)
+            {
+                case MapGenDraftPrefabSlot.RoomFloor:
+                    draft.ModuleData.FloorsA = entries;
+                    break;
+                case MapGenDraftPrefabSlot.CorridorFloor:
+                    draft.ModuleData.FloorsB = entries;
+                    break;
+                case MapGenDraftPrefabSlot.Wall:
+                    draft.ModuleData.WallsStraight = entries;
+                    break;
+                case MapGenDraftPrefabSlot.InsideCorner:
+                    draft.ModuleData.WallsCornerInside = entries;
+                    break;
+                case MapGenDraftPrefabSlot.OutsideCorner:
+                    draft.ModuleData.WallsCornerOutside = entries;
+                    break;
+                case MapGenDraftPrefabSlot.Ceiling:
+                    draft.ModuleData.InteriorCeilings = entries;
+                    draft.ModuleData.ExteriorCeilings = entries;
+                    break;
+                case MapGenDraftPrefabSlot.Door:
+                    draft.ModuleData.WholeDoors = entries;
+                    draft.ModuleData.HalfDoorFrames = entries;
+                    draft.ModuleData.HalfDoorPanels = entries;
+                    break;
+                case MapGenDraftPrefabSlot.Blocker:
+                    draft.ModuleData.Blockers = entries;
+                    break;
+                case MapGenDraftPrefabSlot.Prop:
+                    draft.ModuleData.PropCategories = entries;
+                    break;
+            }
+        }
+
+        private static MapGenModuleRotationPolicy RotationPolicyFor(MapGenDraftPrefabSlot slot)
+        {
+            return slot == MapGenDraftPrefabSlot.Wall
+                || slot == MapGenDraftPrefabSlot.InsideCorner
+                || slot == MapGenDraftPrefabSlot.OutsideCorner
+                || slot == MapGenDraftPrefabSlot.Door
+                    ? MapGenModuleRotationPolicy.AnyOrthogonal
+                    : MapGenModuleRotationPolicy.None;
         }
 
         private void RefreshDraftAssets(MapGenModuleSetAsset moduleSet)
@@ -720,12 +818,30 @@ namespace Conn.MapGenV2.Editor
             }
 
             EnsureDraftPrefabPalette(moduleSet);
-            Undo.RecordObjects(new Object[] { draft, moduleSet }, "Refresh MapGen Draft Asset Mapping");
-            ApplyDraftPrefabPaletteToModuleSet(moduleSet);
-            EditorUtility.SetDirty(moduleSet);
+            Undo.RecordObject(draft, "Refresh MapGen Draft Asset Mapping");
+            FillEmptyDraftPrefabSlotsFromModuleSet(moduleSet);
+            SyncDraftModuleDataFromPalette();
             EditorUtility.SetDirty(draft);
             AssetDatabase.SaveAssets();
-            SetLastOperationResult($"Asset mapping refreshed without changing seed {draft?.Seed.ToString() ?? "-"}.");
+            SetLastOperationResult($"Empty draft prefab slots filled without changing seed {draft?.Seed.ToString() ?? "-"}.");
+        }
+
+        private void SyncDraftModuleDataFromPalette()
+        {
+            if (draft?.PrefabPalette == null)
+            {
+                return;
+            }
+
+            SetDraftModuleEntry(MapGenDraftPrefabSlot.RoomFloor, draft.PrefabPalette.RoomFloor);
+            SetDraftModuleEntry(MapGenDraftPrefabSlot.CorridorFloor, draft.PrefabPalette.CorridorFloor);
+            SetDraftModuleEntry(MapGenDraftPrefabSlot.Wall, draft.PrefabPalette.Wall);
+            SetDraftModuleEntry(MapGenDraftPrefabSlot.InsideCorner, draft.PrefabPalette.InsideCorner);
+            SetDraftModuleEntry(MapGenDraftPrefabSlot.OutsideCorner, draft.PrefabPalette.OutsideCorner);
+            SetDraftModuleEntry(MapGenDraftPrefabSlot.Ceiling, draft.PrefabPalette.Ceiling);
+            SetDraftModuleEntry(MapGenDraftPrefabSlot.Door, draft.PrefabPalette.Door);
+            SetDraftModuleEntry(MapGenDraftPrefabSlot.Blocker, draft.PrefabPalette.Blocker);
+            SetDraftModuleEntry(MapGenDraftPrefabSlot.Prop, draft.PrefabPalette.Prop);
         }
 
         private void SaveCurrentDraft()
@@ -743,14 +859,6 @@ namespace Conn.MapGenV2.Editor
             }
 
             EditorUtility.SetDirty(draft);
-            var moduleSet = GetActiveModuleSet();
-            if (moduleSet != null)
-            {
-                Undo.RecordObject(moduleSet, "Save MapGen Draft");
-                ApplyDraftPrefabPaletteToModuleSet(moduleSet);
-                EditorUtility.SetDirty(moduleSet);
-            }
-
             AssetDatabase.SaveAssets();
             SetLastOperationResult(canMarkSceneSource
                 ? $"Saved draft: {AssetDatabase.GetAssetPath(draft)}."
@@ -796,53 +904,6 @@ namespace Conn.MapGenV2.Editor
                 MapGenDraftPrefabSlot.Prop => FirstPrefab(moduleSet.PropCategories),
                 _ => null
             };
-        }
-
-        private static void SetQuickPrefab(MapGenModuleSetAsset moduleSet, MapGenDraftPrefabSlot slot, GameObject prefab)
-        {
-            var rotationPolicy = slot == MapGenDraftPrefabSlot.Wall
-                || slot == MapGenDraftPrefabSlot.InsideCorner
-                || slot == MapGenDraftPrefabSlot.OutsideCorner
-                || slot == MapGenDraftPrefabSlot.Door
-                    ? MapGenModuleRotationPolicy.AnyOrthogonal
-                    : MapGenModuleRotationPolicy.None;
-            var entries = prefab != null
-                ? new[] { new MapGenModuleEntry { Prefab = prefab, Weight = 1, Footprint = Vector2Int.one, RotationPolicy = rotationPolicy } }
-                : System.Array.Empty<MapGenModuleEntry>();
-
-            switch (slot)
-            {
-                case MapGenDraftPrefabSlot.RoomFloor:
-                    moduleSet.FloorsA = entries;
-                    break;
-                case MapGenDraftPrefabSlot.CorridorFloor:
-                    moduleSet.FloorsB = entries;
-                    break;
-                case MapGenDraftPrefabSlot.Wall:
-                    moduleSet.WallsStraight = entries;
-                    break;
-                case MapGenDraftPrefabSlot.InsideCorner:
-                    moduleSet.WallsCornerInside = entries;
-                    break;
-                case MapGenDraftPrefabSlot.OutsideCorner:
-                    moduleSet.WallsCornerOutside = entries;
-                    break;
-                case MapGenDraftPrefabSlot.Ceiling:
-                    moduleSet.InteriorCeilings = entries;
-                    moduleSet.ExteriorCeilings = entries;
-                    break;
-                case MapGenDraftPrefabSlot.Door:
-                    moduleSet.WholeDoors = entries;
-                    moduleSet.HalfDoorFrames = entries;
-                    moduleSet.HalfDoorPanels = entries;
-                    break;
-                case MapGenDraftPrefabSlot.Blocker:
-                    moduleSet.Blockers = entries;
-                    break;
-                case MapGenDraftPrefabSlot.Prop:
-                    moduleSet.PropCategories = entries;
-                    break;
-            }
         }
 
         private static GameObject FirstPrefab(MapGenModuleEntry[] entries)
@@ -947,7 +1008,7 @@ namespace Conn.MapGenV2.Editor
             var materializedRoot = ResolveMaterializedRoot();
             var badges = new[]
             {
-                new StepBadge("Draft", workflow.HasProfile && workflow.ProfileValid && workflow.HasDraft, !workflow.HasProfile || !workflow.ProfileValid || !workflow.HasDraft),
+                new StepBadge("Draft", workflow.HasDraft && workflow.ProfileValid, !workflow.HasDraft || !workflow.ProfileValid),
                 new StepBadge("Generate", workflow.HasGeneratedMockup, workflow.CanGenerate && !workflow.HasGeneratedMockup),
                 new StepBadge("Edit", workflow.HasGeneratedMockup, workflow.CanPostProcess && !workflow.Accepted),
                 new StepBadge("Save", workflow.Accepted && workflow.AcceptedCurrent, workflow.CanAccept && (!workflow.Accepted || !workflow.AcceptedCurrent)),
@@ -1005,13 +1066,21 @@ namespace Conn.MapGenV2.Editor
             }
         }
 
-        private void DrawReferenceFields()
+        private void DrawLegacyReferenceFields()
         {
+            DrawWrappingHelpBox(
+                "일반 제작 플로우는 Draft만 선택합니다. 아래 내부 설정 링크는 기존 에셋 호환/복구가 필요할 때만 사용하세요.",
+                MessageType.Info);
             EditorGUI.BeginChangeCheck();
             draft = (MapGenMockupDraftAsset)EditorGUILayout.ObjectField("드래프트 / Draft", draft, typeof(MapGenMockupDraftAsset), false);
             profile = (MapGenProfileAsset)EditorGUILayout.ObjectField("내부 설정 / Internal Profile", profile, typeof(MapGenProfileAsset), false);
             if (EditorGUI.EndChangeCheck())
             {
+                if (draft != null)
+                {
+                    profile = draft.Profile;
+                }
+
                 SaveWindowState();
             }
         }
@@ -1049,6 +1118,12 @@ namespace Conn.MapGenV2.Editor
 
         private void DrawProfileValidation()
         {
+            if (draft != null)
+            {
+                MapGenValidationReportEditorGUI.Draw(draft.ValidateDraftSource(), draft, "Draft setup is valid.");
+                return;
+            }
+
             if (profile == null)
             {
                 EditorGUILayout.HelpBox(MapGenV2EditorText.Get("mapgenv2.profileMissing"), MessageType.Info);
@@ -1096,39 +1171,35 @@ namespace Conn.MapGenV2.Editor
             {
                 report.AddRange(MapGenMockupFeasibilityValidator.Validate(draft.Width, draft.Height, draft.Cells), draft);
                 report.AddRange(MapGenPropPlacementValidator.Validate(draft.Width, draft.Height, draft.Cells), draft);
-                if (draft.Profile != null && draft.Profile.LayoutRules != null)
-                {
-                    var postProcessRules = draft.Profile.LayoutRules.PostProcessRules;
-                    report.AddRange(
-                        MapGenMockupPostProcessor.ValidateSafety(
-                            draft.Width,
-                            draft.Height,
-                            draft.Cells,
-                            new MapGenPostProcessOptions
-                            {
-                                UseDirectRoutes = postProcessRules.UseDirectRoutes,
-                                ReduceDeadEnds = postProcessRules.ReduceDeadEnds,
-                                RemoveSmallRooms = postProcessRules.RemoveSmallRooms,
-                                FillEnclosedEmptySpace = postProcessRules.FillEnclosedEmptySpace,
-                                MaxPasses = postProcessRules.MaxPasses
-                            }),
-                        draft);
-                }
+                var postProcessRules = draft.GetPostProcessRules();
+                report.AddRange(
+                    MapGenMockupPostProcessor.ValidateSafety(
+                        draft.Width,
+                        draft.Height,
+                        draft.Cells,
+                        new MapGenPostProcessOptions
+                        {
+                            UseDirectRoutes = postProcessRules.UseDirectRoutes,
+                            ReduceDeadEnds = postProcessRules.ReduceDeadEnds,
+                            RemoveSmallRooms = postProcessRules.RemoveSmallRooms,
+                            FillEnclosedEmptySpace = postProcessRules.FillEnclosedEmptySpace,
+                            MaxPasses = postProcessRules.MaxPasses
+                        }),
+                    draft);
             }
 
             if (draft != null
                 && draft.Accepted
-                && draft.IsAcceptedSignatureCurrent
-                && draft.Profile != null
-                && draft.Profile.StyleSet != null
-                && draft.Profile.StyleSet.ModuleSet != null)
+                && draft.IsAcceptedSignatureCurrent)
             {
+                var moduleSet = GetActiveModuleSet();
                 var materializationPlan = MapGenMockupMaterializer.BuildPlan(draft);
                 var materializationReport = MapGenMockupMaterializer.BuildReport(
-                    draft.Profile.StyleSet.ModuleSet,
+                    moduleSet,
                     materializationPlan,
-                    draft.Seed);
-                report.AddRange(MapGenMockupMaterializer.ValidateCoverage(materializationReport), draft.Profile.StyleSet.ModuleSet);
+                    draft.Seed,
+                    draft);
+                report.AddRange(MapGenMockupMaterializer.ValidateCoverage(materializationReport), moduleSet);
             }
 
             if (selectedMaterializedRoot != null)
@@ -1161,6 +1232,11 @@ namespace Conn.MapGenV2.Editor
                 EditorGUILayout.LabelField("드래프트 에셋 / Draft Asset", draft != null ? AssetDatabase.GetAssetPath(draft) : "(none)");
                 EditorGUILayout.LabelField("Materialized Prefab 폴더 / Materialized Prefab Folder", GetMaterializedPrefabFolder());
                 EditorGUILayout.LabelField("베이크 에셋 / Baked Asset", BuildExpectedBakedAssetPath());
+                EditorGUILayout.LabelField(
+                    "출력 설정 소스 / Output Settings Source",
+                    MapGenV2DraftOutputSettingsUtility.HasDraftOutputSettings(draft)
+                        ? "Draft.OutputSettings"
+                        : "Legacy profile/default compatibility");
             }
         }
 
@@ -1171,7 +1247,6 @@ namespace Conn.MapGenV2.Editor
                 var style = new GUIStyle(EditorStyles.miniLabel) { wordWrap = true };
                 EditorGUILayout.LabelField(BuildLinkedAssetShortcutSummary(), style);
                 DrawObjectShortcutRow("드래프트 / Draft", draft, profile != null ? CreateDraft : null);
-                DrawObjectShortcutRow("내부 설정 / Internal Profile", profile, CreateStarterSetupFromShortcut);
                 DrawObjectShortcutRow("씬 출력 루트 / Materialized Root", selectedMaterializedRoot);
                 DrawObjectShortcutRow("베이크 에셋 / Baked Asset", LoadExpectedBakedAsset());
 
@@ -1180,44 +1255,48 @@ namespace Conn.MapGenV2.Editor
                     return;
                 }
 
-                DrawObjectShortcutRow("규칙 세트 / Rule Set", profile.LayoutRules);
-                DrawObjectShortcutRow("스타일 세트 / Style Set", profile.StyleSet);
-                DrawObjectShortcutRow("모듈 세트 / Module Set", profile.StyleSet != null ? profile.StyleSet.ModuleSet : null);
-
-                var roomShapes = profile.RoomShapes ?? System.Array.Empty<MapGenRoomShapeAsset>();
-                for (var i = 0; i < roomShapes.Length; i++)
+                DrawFoldoutSection("내부 에셋 링크 / Internal Legacy Asset Links", ref showLinkedAssetsFoldout, () =>
                 {
-                    DrawObjectShortcutRow($"룸 셰이프 / Room Shape {i}", roomShapes[i]);
-                }
+                    DrawObjectShortcutRow("내부 설정 / Internal Profile", profile, CreateStarterSetupFromShortcut);
+                    DrawObjectShortcutRow("규칙 세트 / Rule Set", profile.LayoutRules);
+                    DrawObjectShortcutRow("스타일 세트 / Style Set", profile.StyleSet);
+                    DrawObjectShortcutRow("모듈 세트 / Module Set", profile.StyleSet != null ? profile.StyleSet.ModuleSet : null);
 
-                if (profile.StyleSet != null)
-                {
-                    var roomTemplates = profile.StyleSet.RoomTemplates ?? System.Array.Empty<MapGenRoomTemplateAsset>();
-                    for (var i = 0; i < roomTemplates.Length; i++)
+                    var roomShapes = profile.RoomShapes ?? System.Array.Empty<MapGenRoomShapeAsset>();
+                    for (var i = 0; i < roomShapes.Length; i++)
                     {
-                        DrawObjectShortcutRow($"방 템플릿 / Room Template {i}", roomTemplates[i]);
+                        DrawObjectShortcutRow($"룸 셰이프 / Room Shape {i}", roomShapes[i]);
                     }
 
-                    var corridorTemplates = profile.StyleSet.CorridorTemplates ?? System.Array.Empty<MapGenCorridorTemplateAsset>();
-                    for (var i = 0; i < corridorTemplates.Length; i++)
+                    if (profile.StyleSet != null)
                     {
-                        DrawObjectShortcutRow($"복도 템플릿 / Corridor Template {i}", corridorTemplates[i]);
+                        var roomTemplates = profile.StyleSet.RoomTemplates ?? System.Array.Empty<MapGenRoomTemplateAsset>();
+                        for (var i = 0; i < roomTemplates.Length; i++)
+                        {
+                            DrawObjectShortcutRow($"방 템플릿 / Room Template {i}", roomTemplates[i]);
+                        }
+
+                        var corridorTemplates = profile.StyleSet.CorridorTemplates ?? System.Array.Empty<MapGenCorridorTemplateAsset>();
+                        for (var i = 0; i < corridorTemplates.Length; i++)
+                        {
+                            DrawObjectShortcutRow($"복도 템플릿 / Corridor Template {i}", corridorTemplates[i]);
+                        }
                     }
-                }
+                });
             }
         }
 
         public static string BuildLinkedAssetShortcutSummary()
         {
-            return "연결 에셋 작업: 위치 표시(Ping), 선택(Select), 열기(Open), 생성(Create), 복제(Duplicate), 검증(Validate), 누락 생성(Fix/Create Missing). "
-                + "중요 참조 옆에서 즉시 찾기, 열기, 복제, 검증, 누락 생성 흐름을 실행합니다.";
+            return "연결 에셋 작업: Draft, scene root, baked asset은 바로 위치 표시(Ping), 선택(Select), 열기(Open), 생성(Create), 복제(Duplicate), 검증(Validate), 누락 생성(Fix/Create Missing)을 제공합니다. "
+                + "Profile/Rule/Style/Module 링크는 내부 에셋 링크 foldout에 숨겨진 legacy compatibility 도구입니다.";
         }
 
         public static string BuildUndoCoverageSummary()
         {
             return "Undo/Redo coverage: serialized inspector asset edits, room-shape paint/resize/rotate/flip, "
                 + "draft generate/post-process/save/clear, selected-region category/lock/regenerate/state edits, "
-                + "profile output settings, and scene materialization create/update/clear via Undo object creation/destruction.";
+                + "draft output settings, and scene materialization create/update/clear via Undo object creation/destruction.";
         }
 
         private void DrawObjectShortcutRow(string label, Object target, System.Action createAction = null)
@@ -1328,8 +1407,8 @@ namespace Conn.MapGenV2.Editor
                     }
 
                     return report;
-                case MapGenMockupDraftAsset mockupDraft when mockupDraft.Profile != null:
-                    report.AddRange(mockupDraft.Profile.Validate(), mockupDraft.Profile.name);
+                case MapGenMockupDraftAsset mockupDraft:
+                    report.AddRange(mockupDraft.ValidateDraftSource(), mockupDraft.name);
                     report.AddRange(MapGenMockupFeasibilityValidator.Validate(mockupDraft.Width, mockupDraft.Height, mockupDraft.Cells), mockupDraft.name);
                     return report;
                 default:
@@ -1379,6 +1458,7 @@ namespace Conn.MapGenV2.Editor
         {
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
+                DrawOutputPaths();
                 EditorGUI.BeginChangeCheck();
                 DrawOverwritePolicyField();
                 var overwriteMode = GetOverwriteMode();
@@ -1471,6 +1551,7 @@ namespace Conn.MapGenV2.Editor
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
                 EditorGUILayout.LabelField("베이크 에셋 / Baked Asset", BuildExpectedBakedAssetPath());
+                DrawBakedAssetFolderField();
             if (!workflow.CanBakeRuntime)
             {
                 DrawWrappingHelpBox($"런타임 베이크 불가 / Bake unavailable: {workflow.BakeRuntimeReason}", MessageType.Info);
@@ -1491,16 +1572,20 @@ namespace Conn.MapGenV2.Editor
 
         private void DrawMaterializedPrefabFolderField()
         {
-            using (new EditorGUI.DisabledScope(profile == null))
+            using (new EditorGUI.DisabledScope(draft == null && profile == null))
             {
                 var currentFolder = GetMaterializedPrefabFolder();
                 EditorGUI.BeginChangeCheck();
                 var newFolder = EditorGUILayout.TextField("Materialized Prefab Folder", currentFolder);
-                if (EditorGUI.EndChangeCheck() && profile != null)
+                if (EditorGUI.EndChangeCheck())
                 {
-                    Undo.RecordObject(profile, "Change MapGen Materialized Prefab Folder");
-                    profile.OutputSettings.MaterializedPrefabFolder = newFolder;
-                    EditorUtility.SetDirty(profile);
+                    var outputSettings = MapGenV2DraftOutputSettingsUtility.Get(draft, profile);
+                    outputSettings.MaterializedPrefabFolder = newFolder;
+                    MapGenV2DraftOutputSettingsUtility.Set(
+                        draft,
+                        profile,
+                        outputSettings,
+                        "Change MapGen Materialized Prefab Folder");
                 }
 
                 using (new EditorGUILayout.HorizontalScope())
@@ -1510,6 +1595,36 @@ namespace Conn.MapGenV2.Editor
                     {
                         MapGenV2AssetFolderUtility.EnsureAssetFolder(GetMaterializedPrefabFolder());
                         SetLastOperationResult($"Materialized prefab folder ready: {GetMaterializedPrefabFolder()}.");
+                    }
+                }
+            }
+        }
+
+        private void DrawBakedAssetFolderField()
+        {
+            using (new EditorGUI.DisabledScope(draft == null && profile == null))
+            {
+                var currentFolder = GetBakedAssetFolder();
+                EditorGUI.BeginChangeCheck();
+                var newFolder = EditorGUILayout.TextField("Baked Asset Folder", currentFolder);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    var outputSettings = MapGenV2DraftOutputSettingsUtility.Get(draft, profile);
+                    outputSettings.BakedAssetFolder = newFolder;
+                    MapGenV2DraftOutputSettingsUtility.Set(
+                        draft,
+                        profile,
+                        outputSettings,
+                        "Change MapGen Baked Asset Folder");
+                }
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    GUILayout.FlexibleSpace();
+                    if (GUILayout.Button("Ensure Baked Folder", GUILayout.Width(170f)))
+                    {
+                        MapGenV2AssetFolderUtility.EnsureAssetFolder(GetBakedAssetFolder());
+                        SetLastOperationResult($"Baked asset folder ready: {GetBakedAssetFolder()}.");
                     }
                 }
             }
@@ -1575,8 +1690,8 @@ namespace Conn.MapGenV2.Editor
                     draft.Height,
                     budget.GenerationBudgetMs,
                     () => preserveLockedRegions
-                        ? draft.RegenerateUnlockedFromProfile(() => MapGenV2EditorProgress.Begin(operationName, "Solving mockup layout..."))
-                        : draft.GenerateFromProfile(() => MapGenV2EditorProgress.Begin(operationName, "Solving mockup layout...")),
+                        ? draft.RegenerateUnlockedFromDraft(() => MapGenV2EditorProgress.Begin(operationName, "Solving mockup layout..."))
+                        : draft.GenerateFromDraft(() => MapGenV2EditorProgress.Begin(operationName, "Solving mockup layout...")),
                     result => MapGenV2PerformanceDetails.ForValidationReport(result, 1, $"Seed={draft.Seed}"),
                     out var sample);
                 MapGenV2EditorProgress.Report(operationName, "Building preview summary...", 0.85f);
@@ -1617,7 +1732,7 @@ namespace Conn.MapGenV2.Editor
                     draft.Width,
                     draft.Height,
                     budget.GenerationBudgetMs,
-                    () => draft.ApplyPostProcessingFromProfile(() => MapGenV2EditorProgress.Begin("Post-Process Mockup", "Running post-process passes...")),
+                    () => draft.ApplyPostProcessingFromDraft(() => MapGenV2EditorProgress.Begin("Post-Process Mockup", "Running post-process passes...")),
                     result => MapGenV2PerformanceDetails.ForPostProcess(result, $"Seed={draft.Seed}"),
                     out var sample);
                 lastPostProcessReport = report;
@@ -1664,9 +1779,10 @@ namespace Conn.MapGenV2.Editor
                         () => MapGenV2EditorProgress.Begin("Materialize To Scene", "Instantiating prefab modules...")),
                     _ => MapGenV2PerformanceDetails.ForMaterialization(
                         MapGenMockupMaterializer.BuildReport(
-                            draft.Profile != null && draft.Profile.StyleSet != null ? draft.Profile.StyleSet.ModuleSet : null,
+                            GetActiveModuleSet(),
                             MapGenMockupMaterializer.BuildPlan(draft),
-                            draft.Seed),
+                            draft.Seed,
+                            draft),
                         $"Seed={draft.Seed}"),
                     out var sample);
                 selectedMaterializedRoot = root;
@@ -1788,28 +1904,32 @@ namespace Conn.MapGenV2.Editor
 
         private void DrawOverwritePolicyField()
         {
-            if (profile == null)
+            if (draft == null && profile == null)
             {
                 outputMode = (MapGenV2SceneOutputMode)EditorGUILayout.EnumPopup("출력 모드 / Output Mode", outputMode);
                 return;
             }
 
-            var overwriteMode = profile.OutputSettings.OverwriteMode;
+            var outputSettings = MapGenV2DraftOutputSettingsUtility.Get(draft, profile);
+            var overwriteMode = outputSettings.OverwriteMode;
             overwriteMode = (MapGenV2OutputOverwriteMode)EditorGUILayout.EnumPopup("덮어쓰기 정책 / Overwrite Policy", overwriteMode);
-            if (overwriteMode != profile.OutputSettings.OverwriteMode)
+            if (overwriteMode != outputSettings.OverwriteMode)
             {
-                Undo.RecordObject(profile, "Change MapGen Overwrite Policy");
-                profile.OutputSettings.OverwriteMode = overwriteMode;
+                outputSettings.OverwriteMode = overwriteMode;
+                MapGenV2DraftOutputSettingsUtility.Set(
+                    draft,
+                    profile,
+                    outputSettings,
+                    "Change MapGen Overwrite Policy");
                 outputMode = ToSceneOutputMode(overwriteMode);
-                EditorUtility.SetDirty(profile);
             }
         }
 
         private MapGenV2OutputOverwriteMode GetOverwriteMode()
         {
-            if (profile != null)
+            if (draft != null || profile != null)
             {
-                return profile.OutputSettings.OverwriteMode;
+                return MapGenV2DraftOutputSettingsUtility.Get(draft, profile).OverwriteMode;
             }
 
             return outputMode switch
@@ -1822,7 +1942,9 @@ namespace Conn.MapGenV2.Editor
 
         private MapGenV2SceneOutputMode GetSceneOutputMode()
         {
-            return profile != null ? ToSceneOutputMode(profile.OutputSettings.OverwriteMode) : outputMode;
+            return draft != null || profile != null
+                ? ToSceneOutputMode(MapGenV2DraftOutputSettingsUtility.Get(draft, profile).OverwriteMode)
+                : outputMode;
         }
 
         private static MapGenV2SceneOutputMode ToSceneOutputMode(MapGenV2OutputOverwriteMode overwriteMode)
@@ -1864,18 +1986,21 @@ namespace Conn.MapGenV2.Editor
                 Selection.activeObject = draft != null ? draft : profile;
                 var moduleSet = GetActiveModuleSet();
                 EnsureDraftPrefabPalette(moduleSet);
-                EditorUtility.SetDirty(draft);
+                if (draft != null)
+                {
+                    EditorUtility.SetDirty(draft);
+                }
+
                 AssetDatabase.SaveAssets();
-                SetLastOperationResult("Created a draft. Replace prefab slots before generating if needed.");
+                SetLastOperationResult("Created a single draft asset with hidden internal setup. Replace prefab slots before generating if needed.");
                 return;
             }
 
-            MapGenV2AssetFolderUtility.CreateDefaultFolders();
             var draftFolder = GetDraftFolder();
             MapGenV2AssetFolderUtility.EnsureAssetFolder(draftFolder);
             var path = AssetDatabase.GenerateUniqueAssetPath($"{draftFolder}/MapGenMockupDraft.asset");
             draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();
-            draft.Profile = profile;
+            draft.ImportFromProfileSource(profile, true);
             CaptureModuleSetPrefabPalette(profile.StyleSet != null ? profile.StyleSet.ModuleSet : null);
             AssetDatabase.CreateAsset(draft, path);
             AssetDatabase.SaveAssets();
@@ -1885,12 +2010,7 @@ namespace Conn.MapGenV2.Editor
 
         private string BuildExpectedBakedAssetPath()
         {
-            if (draft == null || draft.Profile == null)
-            {
-                return GetBakedAssetFolder();
-            }
-
-            return $"{GetBakedAssetFolder()}/{draft.Profile.ProfileId}_{draft.Seed}_BakedMap.asset";
+            return MapGenV2DraftOutputSettingsUtility.GetBakedAssetPath(draft, profile);
         }
 
         private MapGenBakedMapAsset LoadExpectedBakedAsset()
@@ -1901,23 +2021,17 @@ namespace Conn.MapGenV2.Editor
 
         private string GetDraftFolder()
         {
-            return profile != null && !string.IsNullOrWhiteSpace(profile.OutputSettings.DraftFolder)
-                ? profile.OutputSettings.DraftFolder
-                : MapGenOutputSettings.Defaults().DraftFolder;
+            return MapGenV2DraftOutputSettingsUtility.Get(draft, profile).DraftFolder;
         }
 
         private string GetMaterializedPrefabFolder()
         {
-            return profile != null && !string.IsNullOrWhiteSpace(profile.OutputSettings.MaterializedPrefabFolder)
-                ? profile.OutputSettings.MaterializedPrefabFolder
-                : MapGenOutputSettings.Defaults().MaterializedPrefabFolder;
+            return MapGenV2DraftOutputSettingsUtility.Get(draft, profile).MaterializedPrefabFolder;
         }
 
         private string GetBakedAssetFolder()
         {
-            return profile != null && !string.IsNullOrWhiteSpace(profile.OutputSettings.BakedAssetFolder)
-                ? profile.OutputSettings.BakedAssetFolder
-                : MapGenOutputSettings.Defaults().BakedAssetFolder;
+            return MapGenV2DraftOutputSettingsUtility.Get(draft, profile).BakedAssetFolder;
         }
 
         private void SaveWindowState()
@@ -1982,7 +2096,7 @@ namespace Conn.MapGenV2.Editor
 
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
-                EditorGUILayout.LabelField("내부 설정 / Internal Profile", string.IsNullOrEmpty(previewData.ProfileId) ? "(none)" : previewData.ProfileId);
+                EditorGUILayout.LabelField("드래프트 설정 ID / Draft Setup ID", string.IsNullOrEmpty(previewData.ProfileId) ? "(none)" : previewData.ProfileId);
                 EditorGUILayout.LabelField("시드 / Seed", previewData.Seed.ToString());
                 EditorGUILayout.LabelField("그리드 / Grid", $"{previewData.Width} x {previewData.Height}");
                 EditorGUILayout.LabelField(
@@ -2668,7 +2782,7 @@ namespace Conn.MapGenV2.Editor
 
             Undo.RecordObject(draft, "Regenerate MapGen Room Region");
             draft.Seed = CreateRandomSeed();
-            var report = draft.RegenerateRegionFromProfile(selectedRegionId);
+            var report = draft.RegenerateRegionFromDraft(selectedRegionId);
             EditorUtility.SetDirty(draft);
             var preview = MapGenMockupPreviewData.FromDraft(draft);
             SetLastOperationResult(report.IsValid

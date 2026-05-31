@@ -61,7 +61,7 @@ namespace Conn.MapGenV2.Editor
         private static void DrawDraftGizmos(MapGenMockupDraftAsset draft)
         {
             draft.EnsureCellArray();
-            var cellSize = draft.Profile != null ? Mathf.Max(0.1f, draft.Profile.CellSize) : 1f;
+            var cellSize = draft != null ? Mathf.Max(0.1f, draft.GetCellSize()) : 1f;
             var selectedRegion = ResolveSelectedRegion();
             var showGrid = EditorPrefs.GetBool(MapGenV2SceneViewOverlay.ShowMockupGridKey, true);
             var showRegionIds = EditorPrefs.GetBool(MapGenV2SceneViewOverlay.ShowRegionIdsKey, true);

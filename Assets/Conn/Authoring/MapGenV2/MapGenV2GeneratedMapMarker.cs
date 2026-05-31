@@ -21,13 +21,11 @@ namespace Conn.MapGenV2.Authoring
         public void PopulateFromDraft(MapGenMockupDraftAsset draft, string generatedUtc)
         {
             SourceDraft = draft;
-            ProfileId = draft != null && draft.Profile != null ? draft.Profile.ProfileId : string.Empty;
+            ProfileId = draft != null ? draft.GetMapId() : string.Empty;
             Seed = draft != null ? draft.Seed : 0;
             DraftSignature = draft != null ? draft.AcceptedSignature : string.Empty;
             SourceSignature = draft != null ? draft.AcceptedSourceSignature : string.Empty;
-            StyleId = draft != null && draft.Profile != null && draft.Profile.StyleSet != null
-                ? draft.Profile.StyleSet.StyleId
-                : string.Empty;
+            StyleId = draft != null ? draft.GetStyleId() : string.Empty;
             GeneratedUtc = generatedUtc;
         }
 

@@ -47,8 +47,11 @@ namespace Conn.MapGenV2.Editor
             var doorPrefab = CreatePrimitivePrefab(root, "StarterDoor", PrimitiveType.Cube, new Color(0.95f, 0.66f, 0.18f), new Vector3(0.56f, 1f, 0.12f), new Vector3(0f, 0.5f, 0f));
             var propPrefab = CreatePrimitivePrefab(root, "StarterProp", PrimitiveType.Sphere, new Color(0.2f, 0.72f, 0.42f), new Vector3(0.32f, 0.32f, 0.32f), new Vector3(0f, 0.2f, 0f));
 
-            var moduleSet = ScriptableObjectUtility.CreateAsset<MapGenModuleSetAsset>(
-                AssetDatabase.GenerateUniqueAssetPath($"{root}/ModuleSets/StarterModuleSet.asset"));
+            var draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();
+            draft.name = "StarterDraft";
+            AssetDatabase.CreateAsset(draft, AssetDatabase.GenerateUniqueAssetPath($"{root}/Drafts/StarterDraft.asset"));
+
+            var moduleSet = CreateInternalSubAsset<MapGenModuleSetAsset>(draft, "StarterModuleSet");
             moduleSet.ModuleSetId = "starter_module_set";
             moduleSet.FloorsA = Entries(floorPrefab);
             moduleSet.FloorsB = Entries(corridorPrefab);
@@ -63,13 +66,11 @@ namespace Conn.MapGenV2.Editor
             moduleSet.PropCategories = Entries(propPrefab);
             moduleSet.Blockers = Entries(wallPrefab);
 
-            var styleSet = ScriptableObjectUtility.CreateAsset<MapGenStyleSetAsset>(
-                AssetDatabase.GenerateUniqueAssetPath($"{root}/StyleSets/StarterStyleSet.asset"));
+            var styleSet = CreateInternalSubAsset<MapGenStyleSetAsset>(draft, "StarterStyleSet");
             styleSet.StyleId = "starter_style";
             styleSet.ModuleSet = moduleSet;
 
-            var ruleSet = ScriptableObjectUtility.CreateAsset<MapGenRuleSetAsset>(
-                AssetDatabase.GenerateUniqueAssetPath($"{root}/RuleSets/StarterRuleSet.asset"));
+            var ruleSet = CreateInternalSubAsset<MapGenRuleSetAsset>(draft, "StarterRuleSet");
             ruleSet.RequiredRoomCategories = new[]
             {
                 MapGenRoomCategory.Start,
@@ -84,27 +85,24 @@ namespace Conn.MapGenV2.Editor
             ruleSet.PostProcessRules.UseDirectRoutes = true;
             ruleSet.PostProcessRules.ReduceDeadEnds = true;
 
-            var roomShape = ScriptableObjectUtility.CreateAsset<MapGenRoomShapeAsset>(
-                AssetDatabase.GenerateUniqueAssetPath($"{root}/RoomShapes/StarterRoomShape.asset"));
+            var roomShape = CreateInternalSubAsset<MapGenRoomShapeAsset>(draft, "StarterRoomShape");
             PopulateStarterRoomShape(roomShape);
 
             var roomTemplates = new[]
             {
-                CreateStarterRoomTemplate(root, roomShape, "StarterRoomTemplate_Start", "starter_room_template_start", MapGenRoomCategory.Start),
-                CreateStarterRoomTemplate(root, roomShape, "StarterRoomTemplate_Quest", "starter_room_template_quest", MapGenRoomCategory.Quest),
-                CreateStarterRoomTemplate(root, roomShape, "StarterRoomTemplate_Boss", "starter_room_template_boss", MapGenRoomCategory.Boss),
-                CreateStarterRoomTemplate(root, roomShape, "StarterRoomTemplate_Exit", "starter_room_template_exit", MapGenRoomCategory.Exit)
+                CreateStarterRoomTemplate(draft, roomShape, "StarterRoomTemplate_Start", "starter_room_template_start", MapGenRoomCategory.Start),
+                CreateStarterRoomTemplate(draft, roomShape, "StarterRoomTemplate_Quest", "starter_room_template_quest", MapGenRoomCategory.Quest),
+                CreateStarterRoomTemplate(draft, roomShape, "StarterRoomTemplate_Boss", "starter_room_template_boss", MapGenRoomCategory.Boss),
+                CreateStarterRoomTemplate(draft, roomShape, "StarterRoomTemplate_Exit", "starter_room_template_exit", MapGenRoomCategory.Exit)
             };
 
-            var corridorTemplate = ScriptableObjectUtility.CreateAsset<MapGenCorridorTemplateAsset>(
-                AssetDatabase.GenerateUniqueAssetPath($"{root}/Templates/StarterCorridorTemplate.asset"));
+            var corridorTemplate = CreateInternalSubAsset<MapGenCorridorTemplateAsset>(draft, "StarterCorridorTemplate");
             PopulateStarterCorridorTemplate(corridorTemplate);
 
             styleSet.RoomTemplates = roomTemplates;
             styleSet.CorridorTemplates = new[] { corridorTemplate };
 
-            var profile = ScriptableObjectUtility.CreateAsset<MapGenProfileAsset>(
-                AssetDatabase.GenerateUniqueAssetPath($"{root}/Profiles/StarterProfile.asset"));
+            var profile = CreateInternalSubAsset<MapGenProfileAsset>(draft, "StarterProfile");
             profile.ProfileId = "starter_profile";
             profile.DisplayName = "Starter Profile";
             profile.AuthoringNotes =
@@ -127,10 +125,7 @@ namespace Conn.MapGenV2.Editor
 
             profile.NavigationSettings = MapGenNavigationAdapterSettings.Defaults();
 
-            var draft = ScriptableObjectUtility.CreateAsset<MapGenMockupDraftAsset>(
-                AssetDatabase.GenerateUniqueAssetPath($"{root}/Drafts/StarterDraft.asset"));
-            draft.Profile = profile;
-            draft.Seed = profile.Seed;
+            draft.ImportFromProfileSource(profile, true);
             draft.PrefabPalette.RoomFloor = floorPrefab;
             draft.PrefabPalette.CorridorFloor = corridorPrefab;
             draft.PrefabPalette.Wall = wallPrefab;
@@ -273,12 +268,6 @@ namespace Conn.MapGenV2.Editor
             EnsureAssetFolder(root);
             EnsureAssetFolder($"{root}/Drafts");
             EnsureAssetFolder($"{root}/MaterializedPrefabs");
-            EnsureAssetFolder($"{root}/ModuleSets");
-            EnsureAssetFolder($"{root}/Profiles");
-            EnsureAssetFolder($"{root}/RoomShapes");
-            EnsureAssetFolder($"{root}/RuleSets");
-            EnsureAssetFolder($"{root}/StyleSets");
-            EnsureAssetFolder($"{root}/Templates");
             EnsureAssetFolder($"{root}/BakedMaps");
         }
 
@@ -379,15 +368,24 @@ namespace Conn.MapGenV2.Editor
             }
         }
 
+        private static T CreateInternalSubAsset<T>(MapGenMockupDraftAsset draft, string name)
+            where T : ScriptableObject
+        {
+            var asset = ScriptableObject.CreateInstance<T>();
+            asset.name = name;
+            asset.hideFlags = HideFlags.HideInHierarchy;
+            AssetDatabase.AddObjectToAsset(asset, draft);
+            return asset;
+        }
+
         private static MapGenRoomTemplateAsset CreateStarterRoomTemplate(
-            string root,
+            MapGenMockupDraftAsset draft,
             MapGenRoomShapeAsset roomShape,
             string assetName,
             string templateId,
             MapGenRoomCategory category)
         {
-            var template = ScriptableObjectUtility.CreateAsset<MapGenRoomTemplateAsset>(
-                AssetDatabase.GenerateUniqueAssetPath($"{root}/Templates/{assetName}.asset"));
+            var template = CreateInternalSubAsset<MapGenRoomTemplateAsset>(draft, assetName);
             PopulateStarterRoomTemplate(template, templateId, category);
             template.SourceRoomShapes = new[] { roomShape };
             return template;

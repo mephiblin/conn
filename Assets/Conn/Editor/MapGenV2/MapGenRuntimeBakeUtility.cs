@@ -14,7 +14,7 @@ namespace Conn.MapGenV2.Editor
 
         public static MapGenBakedMapAsset Bake(MapGenMockupDraftAsset draft, Func<bool> shouldCancel)
         {
-            if (draft == null || draft.Profile == null || !draft.Accepted || !draft.IsAcceptedSignatureCurrent)
+            if (draft == null || !draft.Accepted || !draft.IsAcceptedSignatureCurrent)
             {
                 return null;
             }
@@ -24,11 +24,11 @@ namespace Conn.MapGenV2.Editor
                 return null;
             }
 
-            var bakeFolder = string.IsNullOrWhiteSpace(draft.Profile.OutputSettings.BakedAssetFolder)
-                ? MapGenOutputSettings.Defaults().BakedAssetFolder
-                : draft.Profile.OutputSettings.BakedAssetFolder;
+            var outputSettings = draft.GetOutputSettings();
+            var bakeFolder = outputSettings.BakedAssetFolder;
             MapGenV2AssetFolderUtility.EnsureAssetFolder(bakeFolder);
-            var assetPath = $"{bakeFolder}/{draft.Profile.ProfileId}_{draft.Seed}_BakedMap.asset";
+            var mapId = string.IsNullOrWhiteSpace(draft.GetMapId()) ? draft.name : draft.GetMapId();
+            var assetPath = $"{bakeFolder}/{mapId}_{draft.Seed}_BakedMap.asset";
             var asset = ScriptableObjectUtility.CreateAsset<MapGenBakedMapAsset>(assetPath);
             var propPlacement = MapGenPropPlacementPlanner.BuildForDraft(draft);
             if (shouldCancel != null && shouldCancel())
@@ -37,9 +37,9 @@ namespace Conn.MapGenV2.Editor
                 return null;
             }
 
-            asset.ProfileId = draft.Profile.ProfileId;
-            asset.StyleId = draft.Profile.StyleSet != null ? draft.Profile.StyleSet.StyleId : string.Empty;
-            asset.RuleSetId = draft.Profile.LayoutRules != null ? draft.Profile.LayoutRules.name : string.Empty;
+            asset.ProfileId = mapId;
+            asset.StyleId = draft.GetStyleId();
+            asset.RuleSetId = draft.GetRuleSetId();
             asset.Seed = draft.Seed;
             asset.SourceSignature = draft.AcceptedSignature;
             asset.Width = draft.Width;

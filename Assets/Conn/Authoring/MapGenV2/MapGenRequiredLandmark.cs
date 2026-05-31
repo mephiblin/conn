@@ -22,6 +22,17 @@ namespace Conn.MapGenV2.Authoring
         public static MapGenRequiredLandmark[] Build(MapGenProfileAsset profile)
         {
             var categories = GetRequiredCategories(profile);
+            return Build(categories);
+        }
+
+        public static MapGenRequiredLandmark[] Build(MapGenMockupDraftAsset draft)
+        {
+            var categories = GetRequiredCategories(draft);
+            return Build(categories);
+        }
+
+        private static MapGenRequiredLandmark[] Build(MapGenRoomCategory[] categories)
+        {
             var landmarks = new MapGenRequiredLandmark[categories.Length];
             for (var i = 0; i < categories.Length; i++)
             {
@@ -50,6 +61,13 @@ namespace Conn.MapGenV2.Authoring
             }
 
             return new[] { MapGenRoomCategory.Start, MapGenRoomCategory.Exit };
+        }
+
+        public static MapGenRoomCategory[] GetRequiredCategories(MapGenMockupDraftAsset draft)
+        {
+            return draft != null
+                ? draft.GetRequiredRoomCategories()
+                : new[] { MapGenRoomCategory.Start, MapGenRoomCategory.Exit };
         }
     }
 }

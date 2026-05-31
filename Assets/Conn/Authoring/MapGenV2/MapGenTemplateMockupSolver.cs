@@ -17,6 +17,13 @@ namespace Conn.MapGenV2.Authoring
                 && profile.StyleSet.RoomTemplates.Length > 0;
         }
 
+        public static bool CanUseTemplates(MapGenMockupDraftAsset draft)
+        {
+            return draft != null
+                && draft.GetRoomTemplates() != null
+                && draft.GetRoomTemplates().Length > 0;
+        }
+
         public static MapGenMockupSolverResult Generate(
             MapGenProfileAsset profile,
             int seed,
@@ -74,6 +81,9 @@ namespace Conn.MapGenV2.Authoring
             var corridorTemplates = profile.StyleSet != null
                 ? profile.StyleSet.CorridorTemplates
                 : Array.Empty<MapGenCorridorTemplateAsset>();
+            var quantityRules = profile.LayoutRules != null ? profile.LayoutRules.QuantityRules : MapGenQuantityRules.Defaults();
+            var distanceRules = profile.LayoutRules != null ? profile.LayoutRules.DistanceRules : MapGenDistanceRules.Defaults();
+            var loopRate = profile.LayoutRules != null ? profile.LayoutRules.LoopRate : 0;
             var domain = MapGenCandidateDomainBuilder.Build(profile);
             if (domain.RoomFootprintCandidateCells <= 0)
             {
@@ -94,7 +104,101 @@ namespace Conn.MapGenV2.Authoring
                 }
 
                 var attemptSeed = GetAttemptSeed(seed, attempt);
-                var result = GenerateAttempt(profile, seed, attemptSeed, attempt + 1, width, height, sourceSignature, roomTemplates, corridorTemplates, landmarks, shouldCancel);
+                var result = GenerateAttempt(seed, attemptSeed, attempt + 1, width, height, sourceSignature, roomTemplates, corridorTemplates, landmarks, quantityRules, distanceRules, loopRate, shouldCancel);
+                if (result.Success)
+                {
+                    return result;
+                }
+
+                lastFailure = result;
+                if (!ShouldRetry(result.Report))
+                {
+                    return result;
+                }
+            }
+
+            AddRetryExhaustedIssue(lastFailure.Report, maxAttempts);
+            return lastFailure;
+        }
+
+        public static MapGenMockupSolverResult Generate(
+            MapGenMockupDraftAsset draft,
+            int seed,
+            int maxAttempts = DefaultMaxAttempts,
+            Func<bool> shouldCancel = null)
+        {
+            var report = new MapGenValidationReport();
+            maxAttempts = Mathf.Max(1, maxAttempts);
+            if (IsCancelled(shouldCancel, report))
+            {
+                return Failed(0, 0, seed, report, 1);
+            }
+
+            if (draft == null)
+            {
+                report.Add(new MapGenIssue(
+                    MapGenGenerationPhase.SolveMockup,
+                    "production_solver_missing_draft",
+                    "Production solver requires a draft.",
+                    "Select or create a MapGenMockupDraftAsset."));
+                return Failed(0, 0, seed, report, 1);
+            }
+
+            var width = draft.Width;
+            var height = draft.Height;
+            if (!MapGenGridCoord.IsValidSize(width, height))
+            {
+                report.Add(new MapGenIssue(
+                    MapGenGenerationPhase.SolveMockup,
+                    "production_solver_invalid_grid_size",
+                    "Production solver requires a positive grid size.",
+                    "Use a draft grid size of at least 1x1."));
+                return Failed(width, height, seed, report, 1);
+            }
+
+            var roomTemplates = draft.GetRoomTemplates();
+            if (roomTemplates == null || roomTemplates.Length == 0)
+            {
+                report.Add(new MapGenIssue(
+                    MapGenGenerationPhase.SolveMockup,
+                    "production_solver_missing_room_templates",
+                    "Production solver requires at least one room template.",
+                    "Assign room templates to the draft."));
+                return Failed(width, height, seed, report, 1);
+            }
+
+            var sourceReport = draft.ValidateDraftSource();
+            if (!sourceReport.IsValid)
+            {
+                return Failed(width, height, seed, sourceReport, 1);
+            }
+
+            var landmarks = MapGenRequiredLandmarkReservation.Build(draft);
+            var sourceSignature = MapGenMockupSourceSignature.Build(draft);
+            var corridorTemplates = draft.GetCorridorTemplates();
+            var quantityRules = draft.GetQuantityRules();
+            var distanceRules = draft.GetDistanceRules();
+            var domain = MapGenCandidateDomainBuilder.Build(draft);
+            if (domain.RoomFootprintCandidateCells <= 0)
+            {
+                report.Add(new MapGenIssue(
+                    MapGenGenerationPhase.SolveMockup,
+                    "production_solver_empty_room_candidate_domain",
+                    "No room template footprint can fit inside the draft map size.",
+                    "Increase map size or use smaller room templates."));
+                return Failed(width, height, seed, report, 1);
+            }
+
+            MapGenMockupSolverResult lastFailure = null;
+            for (var attempt = 0; attempt < maxAttempts; attempt++)
+            {
+                if (IsCancelled(shouldCancel, report))
+                {
+                    return Failed(width, height, seed, report, attempt + 1);
+                }
+
+                var attemptSeed = GetAttemptSeed(seed, attempt);
+                var result = GenerateAttempt(seed, attemptSeed, attempt + 1, width, height, sourceSignature, roomTemplates, corridorTemplates, landmarks, quantityRules, distanceRules, draft.LoopRate, shouldCancel);
                 if (result.Success)
                 {
                     return result;
@@ -112,7 +216,6 @@ namespace Conn.MapGenV2.Authoring
         }
 
         private static MapGenMockupSolverResult GenerateAttempt(
-            MapGenProfileAsset profile,
             int seed,
             int attemptSeed,
             int attemptCount,
@@ -122,6 +225,9 @@ namespace Conn.MapGenV2.Authoring
             MapGenRoomTemplateAsset[] roomTemplates,
             MapGenCorridorTemplateAsset[] corridorTemplates,
             MapGenRequiredLandmark[] landmarks,
+            MapGenQuantityRules quantityRules,
+            MapGenDistanceRules distanceRules,
+            int loopRate,
             Func<bool> shouldCancel)
         {
             var report = new MapGenValidationReport();
@@ -200,10 +306,10 @@ namespace Conn.MapGenV2.Authoring
             }
 
             var allPlacements = new List<RoomPlacement>(placements);
-            ApplyBranchAndDeadEndPolicy(profile.LayoutRules, cells, width, height, roomTemplates, corridorTemplates, allPlacements, report, ref rng);
-            ApplyLoopPolicy(profile.LayoutRules, cells, width, height, allPlacements.ToArray(), ref rng);
+            ApplyBranchAndDeadEndPolicy(quantityRules, cells, width, height, roomTemplates, corridorTemplates, allPlacements, report, ref rng);
+            ApplyLoopPolicy(loopRate, cells, width, height, allPlacements.ToArray(), ref rng);
 
-            if (!ValidateDistanceRules(profile.LayoutRules.DistanceRules, landmarks, placements, report))
+            if (!ValidateDistanceRules(distanceRules, landmarks, placements, report))
             {
                 return Failed(width, height, seed, report, attemptCount);
             }
@@ -689,7 +795,7 @@ namespace Conn.MapGenV2.Authoring
         }
 
         private static void ApplyBranchAndDeadEndPolicy(
-            MapGenRuleSetAsset ruleSet,
+            MapGenQuantityRules quantityRules,
             MapGenMockupCell[] cells,
             int width,
             int height,
@@ -699,16 +805,16 @@ namespace Conn.MapGenV2.Authoring
             MapGenValidationReport report,
             ref MapGenRandom rng)
         {
-            if (ruleSet == null || placements == null || placements.Count == 0)
+            if (placements == null || placements.Count == 0)
             {
                 return;
             }
 
             var targetRoomCount = Mathf.Clamp(
-                ruleSet.QuantityRules.MinRooms,
+                quantityRules.MinRooms,
                 placements.Count,
-                Mathf.Max(placements.Count, ruleSet.QuantityRules.MaxRooms));
-            var categories = BuildBranchCategories(ruleSet.QuantityRules.OptionalCategories, targetRoomCount - placements.Count);
+                Mathf.Max(placements.Count, quantityRules.MaxRooms));
+            var categories = BuildBranchCategories(quantityRules.OptionalCategories, targetRoomCount - placements.Count);
             while (categories.Count > 0 && placements.Count < targetRoomCount)
             {
                 var categoryIndex = PickLowestEntropyBranchCategoryIndex(categories, roomTemplates, cells, width, height);
@@ -834,19 +940,19 @@ namespace Conn.MapGenV2.Authoring
         }
 
         private static void ApplyLoopPolicy(
-            MapGenRuleSetAsset ruleSet,
+            int loopRate,
             MapGenMockupCell[] cells,
             int width,
             int height,
             RoomPlacement[] placements,
             ref MapGenRandom rng)
         {
-            if (ruleSet == null || ruleSet.LoopRate <= 0 || placements == null || placements.Length < 3)
+            if (loopRate <= 0 || placements == null || placements.Length < 3)
             {
                 return;
             }
 
-            if (ruleSet.LoopRate < 100 && rng.NextInt(0, 100) >= ruleSet.LoopRate)
+            if (loopRate < 100 && rng.NextInt(0, 100) >= loopRate)
             {
                 return;
             }
