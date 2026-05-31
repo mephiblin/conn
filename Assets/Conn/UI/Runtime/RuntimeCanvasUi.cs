@@ -487,7 +487,6 @@ namespace Conn.UI.Runtime
             BuildPanel(hud, "Karash Outpost", false);
             AddText(hud, $"Gold {session.Gold}  XP {session.Player.Xp}  HP {session.Player.Hp}/{session.Player.MaxHp}");
             AddText(hud, session.Quest.HasActiveQuest ? $"Quest: {session.Quest.ActiveQuestTitle}" : "Quest: none");
-            AddText(hud, RuntimeCursorService.ManualReleaseActive ? "Cursor: free (Esc)" : "Cursor: locked (Esc)");
 
             var quickActions = Panel("TownQuickActionsPanel");
             BuildPanel(quickActions, string.Empty, false);
