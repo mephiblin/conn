@@ -33,15 +33,15 @@ namespace Conn.Tests.EditMode
             {
                 MapGenV2EditorText.LanguagePreference = MapGenV2EditorLanguage.Korean;
 
-                Assert.That(MapGenV2EditorText.Get("mapgenv2.generateMockup"), Is.EqualTo("목업 생성"));
+                Assert.That(MapGenV2EditorText.Get("mapgenv2.generateMockup"), Is.EqualTo("지정한 시드로 생성"));
                 Assert.That(MapGenV2EditorText.Get("mapgenv2.materializeToScene"), Is.EqualTo("씬 생성"));
-                Assert.That(MapGenV2EditorText.Get("mapgenv2.profileMissing"), Is.EqualTo("프로필을 지정하세요."));
+                Assert.That(MapGenV2EditorText.Get("mapgenv2.profileMissing"), Is.EqualTo("드래프트를 생성하거나 임포트하세요."));
 
                 MapGenV2EditorText.LanguagePreference = MapGenV2EditorLanguage.English;
 
-                Assert.That(MapGenV2EditorText.Get("mapgenv2.generateMockup"), Is.EqualTo("Generate Mockup"));
+                Assert.That(MapGenV2EditorText.Get("mapgenv2.generateMockup"), Is.EqualTo("Generate From Seed"));
                 Assert.That(MapGenV2EditorText.Get("mapgenv2.materializeToScene"), Is.EqualTo("Materialize To Scene"));
-                Assert.That(MapGenV2EditorText.Get("mapgenv2.profileMissing"), Is.EqualTo("Assign a profile."));
+                Assert.That(MapGenV2EditorText.Get("mapgenv2.profileMissing"), Is.EqualTo("Create or import a draft."));
             }
             finally
             {
@@ -52,7 +52,7 @@ namespace Conn.Tests.EditMode
         [Test]
         public void MapGenV2EditorTextProvidesPseudoLocalizationLengthCheck()
         {
-            var source = "Generate Mockup";
+            var source = "Generate From Seed";
             var pseudo = MapGenV2EditorText.PseudoLocalize(source);
 
             Assert.That(pseudo.Length, Is.GreaterThan(source.Length));
@@ -108,15 +108,14 @@ namespace Conn.Tests.EditMode
                 "draft_a",
                 2001,
                 "Valid",
-                "Confirmed current",
+                "Saved current",
                 "MapGenV2_profile_a_2001",
                 "Assets/Conn/Core/Maps/profile_a_2001_BakedMap.asset");
 
-            Assert.That(status, Does.Contain("Profile profile_a"));
-            Assert.That(status, Does.Contain("Current Mockup draft_a"));
+            Assert.That(status, Does.Contain("Draft draft_a"));
             Assert.That(status, Does.Contain("Seed 2001"));
-            Assert.That(status, Does.Contain("Validation Valid"));
-            Assert.That(status, Does.Contain("Mockup State Confirmed current"));
+            Assert.That(status, Does.Contain("Setup Valid"));
+            Assert.That(status, Does.Contain("Save State Saved current"));
             Assert.That(status, Does.Contain("Materialized Root MapGenV2_profile_a_2001"));
             Assert.That(status, Does.Contain("Baked Asset Assets/Conn/Core/Maps/profile_a_2001_BakedMap.asset"));
         }
@@ -125,10 +124,10 @@ namespace Conn.Tests.EditMode
         public void MapGenV2WindowOperationResultsAppendNextStepGuidance()
         {
             var result = MapGenV2Window.AppendNextStep(
-                "Generate Mockup complete.",
-                "Inspect the preview, then Confirm Mockup.");
+                "Generate From Seed complete.",
+                "Inspect or draw in the preview, then Save Draft.");
 
-            Assert.That(result, Is.EqualTo("Generate Mockup complete. Next: Inspect the preview, then Confirm Mockup."));
+            Assert.That(result, Is.EqualTo("Generate From Seed complete. Next: Inspect or draw in the preview, then Save Draft."));
         }
 
         [Test]
@@ -152,12 +151,14 @@ namespace Conn.Tests.EditMode
             var technology = MapGenV2Window.BuildEditorTechnologySummary();
             var help = MapGenV2Window.BuildInlineHelpCoverageSummary();
 
-            Assert.That(summary, Does.Contain("Inspector-style authoring layout"));
-            Assert.That(summary, Does.Contain("scene output"));
-            Assert.That(summary, Does.Contain("runtime bake"));
+            Assert.That(summary, Does.Contain("Draft-centered authoring layout"));
+            Assert.That(summary, Does.Contain("draft file create/import/save"));
+            Assert.That(summary, Does.Contain("map prefab slots"));
+            Assert.That(summary, Does.Contain("seed controls"));
+            Assert.That(summary, Does.Contain("preview/drawing"));
+            Assert.That(summary, Does.Contain("output"));
             Assert.That(summary, Does.Contain("stacked vertically"));
             Assert.That(summary, Does.Contain("foldout sections"));
-            Assert.That(summary, Does.Contain("utility sections"));
             Assert.That(summary, Does.Contain("responsive wrapping"));
             Assert.That(technology, Does.Contain("new Scene View overlay uses UI Toolkit"));
             Assert.That(technology, Does.Contain("existing MapGenV2 window and inspectors stay IMGUI"));
@@ -229,7 +230,7 @@ namespace Conn.Tests.EditMode
 
             Assert.That(summary, Does.Contain("serialized inspector asset edits"));
             Assert.That(summary, Does.Contain("room-shape paint"));
-            Assert.That(summary, Does.Contain("current mockup generate"));
+            Assert.That(summary, Does.Contain("draft generate"));
             Assert.That(summary, Does.Contain("selected-region"));
             Assert.That(summary, Does.Contain("scene materialization"));
             Assert.That(summary, Does.Contain("Undo object creation/destruction"));
@@ -263,7 +264,7 @@ namespace Conn.Tests.EditMode
             Assert.That(corridorTemplate, Does.Contain("raw arrays"));
             Assert.That(draft, Does.Contain("primary UX"));
             Assert.That(draft, Does.Contain("preview-only"));
-            Assert.That(draft, Does.Contain("generation, confirmation, materialization, bake"));
+            Assert.That(draft, Does.Contain("generation, save, materialization, bake"));
         }
 
         [Test]
@@ -272,13 +273,13 @@ namespace Conn.Tests.EditMode
             var explanation = MapGenV2Window.BuildPrimaryActionExplanation(
                 "Materialize To Scene",
                 false,
-                "Confirm Mockup first.",
+                "Save Draft first.",
                 "instantiates prefab or placeholder modules",
                 "Scene root MapGenV2_profile_2001");
 
             Assert.That(explanation, Does.Contain("Materialize To Scene"));
             Assert.That(explanation, Does.Contain("Disabled"));
-            Assert.That(explanation, Does.Contain("Confirm Mockup first."));
+            Assert.That(explanation, Does.Contain("Save Draft first."));
             Assert.That(explanation, Does.Contain("Change: instantiates prefab or placeholder modules"));
             Assert.That(explanation, Does.Contain("Output: Scene root MapGenV2_profile_2001"));
         }
@@ -297,11 +298,11 @@ namespace Conn.Tests.EditMode
 
                 var summary = MapGenV2SceneViewOverlay.BuildOverlaySummary(draft, root, null, "Move");
 
-                Assert.That(summary, Does.Contain("Current Mockup draft_a"));
+                Assert.That(summary, Does.Contain("Draft draft_a"));
                 Assert.That(summary, Does.Contain("Root MapGenV2_profile_2001"));
-                Assert.That(summary, Does.Contain("confirmed mockup"));
+                Assert.That(summary, Does.Contain("saved draft"));
                 Assert.That(summary, Does.Contain("Tool Move"));
-                Assert.That(summary, Does.Contain("Generate/Confirm/Materialize/Clear/Frame"));
+                Assert.That(summary, Does.Contain("Generate/Save/Materialize/Clear/Frame"));
                 Assert.That(summary, Does.Contain("Toggles Grid/Region IDs/Connectors/Sockets/Blocked/Props/Nav/Bounds/Diagnostics"));
             }
             finally
@@ -330,12 +331,12 @@ namespace Conn.Tests.EditMode
 
                 var summary = MapGenV2SceneViewOverlay.BuildSceneStateSummary(draft, root, baked);
 
-                Assert.That(summary, Does.Contain("confirmed mockup"));
+                Assert.That(summary, Does.Contain("saved draft"));
                 Assert.That(summary, Does.Contain("stale materialized output"));
                 Assert.That(summary, Does.Contain("stale baked runtime output"));
                 Assert.That(MapGenV2SceneViewOverlay.BuildSceneStateSummary(draft, null, null), Does.Contain("no materialized output"));
                 draft.ClearAcceptance();
-                Assert.That(MapGenV2SceneViewOverlay.BuildSceneStateSummary(draft, null, null), Does.Contain("unconfirmed mockup"));
+                Assert.That(MapGenV2SceneViewOverlay.BuildSceneStateSummary(draft, null, null), Does.Contain("unsaved draft"));
             }
             finally
             {
@@ -626,7 +627,7 @@ namespace Conn.Tests.EditMode
             Assert.That(MapGenV2StatusPresentation.For(MapGenV2StatusKind.Warning).Label, Is.EqualTo("Warning"));
             Assert.That(MapGenV2StatusPresentation.For(MapGenV2StatusKind.Error).IconName, Is.EqualTo("console.erroricon"));
             Assert.That(MapGenV2StatusPresentation.For(MapGenV2StatusKind.Stale).Label, Is.EqualTo("Stale"));
-            Assert.That(MapGenV2StatusPresentation.For(MapGenV2StatusKind.Accepted).Label, Is.EqualTo("Confirmed"));
+            Assert.That(MapGenV2StatusPresentation.For(MapGenV2StatusKind.Accepted).Label, Is.EqualTo("Saved"));
             Assert.That(MapGenV2StatusPresentation.For(MapGenV2StatusKind.Generated).Label, Is.EqualTo("Generated"));
             Assert.That(MapGenV2StatusPresentation.For(MapGenV2StatusKind.ManualOverride).Label, Is.EqualTo("Manual Override"));
             Assert.That(MapGenV2StatusPresentation.For(MapGenV2StatusKind.Locked).Label, Is.EqualTo("Locked"));
@@ -719,8 +720,8 @@ namespace Conn.Tests.EditMode
                 Assert.That(summary, Does.Contain("Regions 1"));
                 Assert.That(summary, Does.Contain("Selected 7"));
                 Assert.That(summary, Does.Contain("Overrides 1"));
-                Assert.That(summary, Does.Contain("Confirmed Yes"));
-                Assert.That(summary, Does.Contain("Stale No"));
+                Assert.That(summary, Does.Contain("Saved Yes"));
+                Assert.That(summary, Does.Contain("Changed No"));
                 Assert.That(summary, Does.Contain("Materialization Ready"));
                 Assert.That(selected, Does.Contain("Selected region 7"));
                 Assert.That(selected, Does.Contain("State Connector"));
@@ -1913,8 +1914,8 @@ namespace Conn.Tests.EditMode
         {
             var emptyStatus = MapGenV2WorkflowStatus.From(null, null);
             Assert.That(emptyStatus.CanGenerate, Is.False);
-            Assert.That(emptyStatus.GenerateReason, Is.EqualTo("Create or assign the current mockup asset first."));
-            Assert.That(emptyStatus.NextAction, Is.EqualTo("Create Starter Setup or assign a profile."));
+            Assert.That(emptyStatus.GenerateReason, Is.EqualTo("Create or import a draft first."));
+            Assert.That(emptyStatus.NextAction, Is.EqualTo("Create or import a draft."));
 
             var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
             var styleSet = ScriptableObject.CreateInstance<MapGenStyleSetAsset>();
@@ -1933,20 +1934,20 @@ namespace Conn.Tests.EditMode
 
                 var readyToGenerate = MapGenV2WorkflowStatus.From(profile, draft);
                 Assert.That(readyToGenerate.CanGenerate, Is.True);
-                Assert.That(readyToGenerate.NextAction, Is.EqualTo("Generate Mockup."));
+                Assert.That(readyToGenerate.NextAction, Is.EqualTo("Generate From Seed."));
 
                 draft.GenerateFromProfile();
                 var generated = MapGenV2WorkflowStatus.From(profile, draft);
                 Assert.That(generated.CanAccept, Is.True);
                 Assert.That(generated.CanMaterialize, Is.False);
-                Assert.That(generated.MaterializeReason, Is.EqualTo("Confirm Mockup first."));
+                Assert.That(generated.MaterializeReason, Is.EqualTo("Save Draft first."));
                 Assert.That(draft.IsGeneratedSignatureCurrent, Is.True);
 
                 profile.ProfileId = "workflow_profile_changed";
                 var generatedStale = MapGenV2WorkflowStatus.From(profile, draft);
                 Assert.That(generatedStale.GeneratedCurrent, Is.False);
                 Assert.That(generatedStale.CanAccept, Is.False);
-                Assert.That(generatedStale.AcceptReason, Is.EqualTo("The generated mockup is stale because source assets changed. Regenerate Mockup."));
+                Assert.That(generatedStale.AcceptReason, Is.EqualTo("The generated draft is stale because source assets changed. Regenerate from seed."));
                 profile.ProfileId = "workflow_profile";
                 Assert.That(draft.IsGeneratedSignatureCurrent, Is.True);
 
@@ -1958,7 +1959,7 @@ namespace Conn.Tests.EditMode
                 draft.Cells[0].State = MapGenCellState.Blocked;
                 var stale = MapGenV2WorkflowStatus.From(profile, draft);
                 Assert.That(stale.CanMaterialize, Is.False);
-                Assert.That(stale.MaterializeReason, Is.EqualTo("The confirmed mockup is stale. Confirm the current mockup."));
+                Assert.That(stale.MaterializeReason, Is.EqualTo("The saved draft is stale. Save the current draft."));
             }
             finally
             {
@@ -2370,6 +2371,11 @@ namespace Conn.Tests.EditMode
                 Assert.That(setup.Profile, Is.Not.Null);
                 Assert.That(setup.Draft, Is.Not.Null);
                 Assert.That(setup.Draft.Profile, Is.SameAs(setup.Profile));
+                Assert.That(setup.Draft.PrefabPalette.HasAnyPrefab(), Is.True);
+                Assert.That(setup.Draft.PrefabPalette.RoomFloor, Is.Not.Null);
+                Assert.That(setup.Draft.PrefabPalette.CorridorFloor, Is.Not.Null);
+                Assert.That(setup.Draft.PrefabPalette.Wall, Is.Not.Null);
+                Assert.That(setup.Draft.PrefabPalette.Door, Is.Not.Null);
                 Assert.That(setup.Profile.StyleSet, Is.Not.Null);
                 Assert.That(setup.Profile.StyleSet.ModuleSet, Is.Not.Null);
                 Assert.That(setup.Profile.LayoutRules, Is.Not.Null);

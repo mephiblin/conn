@@ -44,7 +44,7 @@ namespace Conn.MapGenV2.Editor
             root.Add(summary);
             root.Add(new Button(() => MapGenV2Window.Open(draft != null ? draft.Profile : null, draft)) { text = "Open Map Generator" });
             root.Add(new Button(() => GenerateSelectedDraft()) { text = "Generate" });
-            root.Add(new Button(() => AcceptSelectedDraft()) { text = "Confirm" });
+            root.Add(new Button(() => AcceptSelectedDraft()) { text = "Save Draft" });
             root.Add(new Button(() => MaterializeSelectedDraft()) { text = "Materialize" });
             root.Add(new Button(() => ClearSelectedRoot()) { text = "Clear Root" });
             root.Add(new Button(() => FrameSelectedRoot()) { text = "Frame Root" });
@@ -68,8 +68,8 @@ namespace Conn.MapGenV2.Editor
         {
             var draftLabel = draft != null ? draft.name : "(none)";
             var rootLabel = materializedRoot != null ? materializedRoot.name : "(none)";
-            return $"Current Mockup {draftLabel}, Root {rootLabel}, State {BuildSceneStateSummary(draft, materializedRoot, bakedAsset)}, Tool {toolMode}, "
-                + "Actions Generate/Confirm/Materialize/Clear/Frame, "
+            return $"Draft {draftLabel}, Root {rootLabel}, State {BuildSceneStateSummary(draft, materializedRoot, bakedAsset)}, Tool {toolMode}, "
+                + "Actions Generate/Save/Materialize/Clear/Frame, "
                 + "Toggles Grid/Region IDs/Connectors/Sockets/Blocked/Props/Nav/Bounds/Diagnostics";
         }
 
@@ -80,12 +80,12 @@ namespace Conn.MapGenV2.Editor
         {
             if (draft == null)
             {
-                return "no selected current mockup";
+                return "no selected draft";
             }
 
             var mockupState = draft.Accepted
-                ? draft.IsAcceptedSignatureCurrent ? "confirmed mockup" : "confirmed mockup stale"
-                : "unconfirmed mockup";
+                ? draft.IsAcceptedSignatureCurrent ? "saved draft" : "saved draft stale"
+                : "unsaved draft";
             var materializedState = materializedRoot == null
                 ? "no materialized output"
                 : MapGenMockupMaterializer.ValidateExistingOutput(draft, materializedRoot).IsValid
@@ -167,7 +167,7 @@ namespace Conn.MapGenV2.Editor
                 return;
             }
 
-            Undo.RecordObject(draft, "Scene Overlay Generate Mockup");
+            Undo.RecordObject(draft, "Scene Overlay Generate From Seed");
             draft.GenerateFromProfile();
             EditorUtility.SetDirty(draft);
         }
@@ -180,7 +180,7 @@ namespace Conn.MapGenV2.Editor
                 return;
             }
 
-            Undo.RecordObject(draft, "Scene Overlay Confirm Mockup");
+            Undo.RecordObject(draft, "Scene Overlay Save Draft");
             draft.Accept();
             EditorUtility.SetDirty(draft);
         }

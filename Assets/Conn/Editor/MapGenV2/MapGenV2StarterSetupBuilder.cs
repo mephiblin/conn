@@ -111,7 +111,7 @@ namespace Conn.MapGenV2.Editor
                 "Starter MapGenV2 profile for learning the production workflow.\n"
                 + "- Uses generated placeholder prefabs only; replace the module set with real project prefabs for production.\n"
                 + "- Red floor modules are rooms, black floor modules are corridors, blue blocks are walls/corners, pale slabs are ceilings, yellow blocks are doors, and green spheres are prop markers.\n"
-                + "- Generate Mockup is editor-only. Confirm the mockup before Materialize To Scene or Bake Runtime Asset.";
+                + "- Generate From Seed is editor-only. Save the draft before Materialize To Scene or Bake Runtime Asset.";
             profile.MapSize = new Vector2Int(10, 8);
             profile.Seed = 2001;
             profile.StyleSet = styleSet;
@@ -131,6 +131,15 @@ namespace Conn.MapGenV2.Editor
                 AssetDatabase.GenerateUniqueAssetPath($"{root}/Drafts/StarterDraft.asset"));
             draft.Profile = profile;
             draft.Seed = profile.Seed;
+            draft.PrefabPalette.RoomFloor = floorPrefab;
+            draft.PrefabPalette.CorridorFloor = corridorPrefab;
+            draft.PrefabPalette.Wall = wallPrefab;
+            draft.PrefabPalette.InsideCorner = cornerPrefab;
+            draft.PrefabPalette.OutsideCorner = cornerPrefab;
+            draft.PrefabPalette.Ceiling = ceilingPrefab;
+            draft.PrefabPalette.Door = doorPrefab;
+            draft.PrefabPalette.Blocker = wallPrefab;
+            draft.PrefabPalette.Prop = propPrefab;
 
             MarkDirty(moduleSet, styleSet, ruleSet, roomShape, corridorTemplate, profile, draft);
             MarkDirty(roomTemplates);

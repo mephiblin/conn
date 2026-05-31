@@ -46,7 +46,7 @@ namespace Conn.MapGenV2.Editor
                 case MapGenV2StatusKind.Stale:
                     return new MapGenV2StatusStyle("Stale", "d_Refresh", new Color(0.95f, 0.73f, 0.24f, 1f));
                 case MapGenV2StatusKind.Accepted:
-                    return new MapGenV2StatusStyle("Confirmed", "TestPassed", new Color(0.38f, 0.72f, 0.42f, 1f));
+                    return new MapGenV2StatusStyle("Saved", "TestPassed", new Color(0.38f, 0.72f, 0.42f, 1f));
                 case MapGenV2StatusKind.Generated:
                     return new MapGenV2StatusStyle("Generated", "d_PreMatCube", new Color(0.28f, 0.52f, 0.9f, 1f));
                 case MapGenV2StatusKind.ManualOverride:

@@ -34,7 +34,7 @@ namespace Conn.MapGenV2.Editor
         public static string BuildInspectorUxSummary()
         {
             return "Draft primary UX is preview-only for normal use: preview, status, selected-region summary, and validation are shown; "
-                + "generation, confirmation, materialization, bake, and raw serialized edits stay in the MapGenV2 window or debug tooling.";
+                + "generation, save, materialization, bake, and raw serialized edits stay in the MapGenV2 window or debug tooling.";
         }
 
         public static string BuildInspectorSummary(MapGenMockupDraftAsset draft, int selectedRegionId)
@@ -51,8 +51,8 @@ namespace Conn.MapGenV2.Editor
             builder.Append($", Regions {CountRegions(draft)}");
             builder.Append($", Selected {FormatSelectedRegion(draft, selectedRegionId)}");
             builder.Append($", Overrides {Count(draft.RegionOverrides)}");
-            builder.Append($", Confirmed {(draft.Accepted ? "Yes" : "No")}");
-            builder.Append($", Stale {(draft.IsAcceptedSignatureCurrent ? "No" : "Yes")}");
+            builder.Append($", Saved {(draft.Accepted ? "Yes" : "No")}");
+            builder.Append($", Changed {(draft.IsAcceptedSignatureCurrent ? "No" : "Yes")}");
             builder.Append($", Materialization {FormatMaterializationReadiness(draft)}");
             builder.Append($", Signature {FormatValue(draft.ComputeSignature())}");
             return builder.ToString();
@@ -128,7 +128,7 @@ namespace Conn.MapGenV2.Editor
 
         private static void DrawDraftStatus(MapGenMockupDraftAsset draft, int selectedRegionId)
         {
-            EditorGUILayout.LabelField("현재 목업 상태 / Current Mockup Status", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("드래프트 상태 / Draft Status", EditorStyles.boldLabel);
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
                 var style = new GUIStyle(EditorStyles.label) { wordWrap = true };
@@ -264,12 +264,12 @@ namespace Conn.MapGenV2.Editor
         {
             if (!draft.Accepted)
             {
-                return "Blocked: confirm mockup first";
+                return "Blocked: save draft first";
             }
 
             if (!draft.IsAcceptedSignatureCurrent)
             {
-                return "Blocked: confirmed mockup is stale";
+                return "Blocked: draft changed since save";
             }
 
             return "Ready";

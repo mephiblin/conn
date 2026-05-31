@@ -13,6 +13,7 @@ namespace Conn.MapGenV2.Authoring
         public MapGenProfileAsset Profile;
         public int Seed;
         public Vector2Int GridSize = new Vector2Int(32, 32);
+        public MapGenDraftPrefabPalette PrefabPalette = new MapGenDraftPrefabPalette();
         public MapGenMockupCell[] Cells = Array.Empty<MapGenMockupCell>();
         public bool Accepted;
         public string AcceptedSignature = string.Empty;
@@ -425,6 +426,7 @@ namespace Conn.MapGenV2.Authoring
         private void OnValidate()
         {
             EnsureCellArray();
+            PrefabPalette ??= new MapGenDraftPrefabPalette();
             RegionOverrides ??= Array.Empty<MapGenMockupRegionOverride>();
         }
 
@@ -643,6 +645,33 @@ namespace Conn.MapGenV2.Authoring
             }
 
             return cells;
+        }
+    }
+
+    [Serializable]
+    public sealed class MapGenDraftPrefabPalette
+    {
+        public GameObject RoomFloor;
+        public GameObject CorridorFloor;
+        public GameObject Wall;
+        public GameObject InsideCorner;
+        public GameObject OutsideCorner;
+        public GameObject Ceiling;
+        public GameObject Door;
+        public GameObject Blocker;
+        public GameObject Prop;
+
+        public bool HasAnyPrefab()
+        {
+            return RoomFloor != null
+                || CorridorFloor != null
+                || Wall != null
+                || InsideCorner != null
+                || OutsideCorner != null
+                || Ceiling != null
+                || Door != null
+                || Blocker != null
+                || Prop != null;
         }
     }
 

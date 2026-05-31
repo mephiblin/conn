@@ -21,24 +21,28 @@ When the language selector is `Auto` on a Korean editor, the window shows Korean
 button names. The English names below are only the equivalent names in English
 mode.
 
-1. Click `스타터 설정 생성` (`Create Starter Setup`).
-2. Confirm the generated `프로필 / Profile` and `현재 목업 / Current Mockup`
-   fields are assigned in the MapGenV2 window.
-3. Click `목업 생성` (`Generate Mockup`).
-4. Inspect the preview. Rooms are blue, corridors are red, blocked cells are
-   black, and empty cells are gray.
-5. Optional: click a room/corridor region to inspect, lock, edit metadata, or
-   regenerate that region.
-6. Click `후처리 재실행` (`Repostprocess Mockup`) when post-process rules should
-   be applied.
-7. Click `목업 확정` (`Confirm Mockup`).
-8. In `씬 출력 / Scene Output`, choose the overwrite policy:
+1. In `드래프트 파일 / Draft File`, click `새 드래프트 생성`
+   (`Create Draft`) or assign a draft to `임포트 항목 / Import` and click
+   `드래프트 임포트` (`Import Draft`).
+2. In `맵 에셋 / Map Assets`, assign the room floor, corridor floor, wall,
+   corner, ceiling, door, blocker, and prop prefabs needed by the map.
+3. In `시드 / Seed`, edit the seed manually or click `랜덤 시드 입력`
+   (`Fill Random Seed`), then click `지정한 시드로 생성`
+   (`Generate From Seed`).
+4. Inspect or edit the preview in `프리뷰 & 드로잉 / Preview & Drawing`.
+   Empty cells are blue, rooms are red, corridors are black, and
+   blocked/reserved cells are gray.
+5. Use the drawing toolbar to select, paint room/corridor cells, erase cells, or
+   mark blocked/reserved cells directly in the draft.
+6. Click `드래프트 저장` (`Save Draft`) when the draft should become the current
+   source for scene output and runtime bake.
+7. Optional: in `출력 / Output`, choose the overwrite policy:
    `CreateUnique`, `ReplacePrevious`, or `UpdateSelected`.
-9. Click `씬 생성` (`Materialize To Scene`).
-10. Click `런타임 베이크` (`Bake Runtime Asset`).
+8. Click `씬 생성` (`Materialize To Scene`), then `런타임 베이크`
+   (`Bake Runtime Asset`).
 
-The confirmed mockup signature is the source of materialization and runtime
-bake. Materialization does not rerun the solver.
+The saved draft signature is the source of materialization and runtime bake.
+Materialization does not rerun the solver.
 
 ## Production Authoring
 
@@ -115,8 +119,8 @@ Ownership guidance:
   designer owner in the asset description or adjacent notes.
 - Module set changes require coverage validation because they affect every
   profile that references the module set.
-- Profile/rule changes that alter confirmed current mockups should be treated as layout
-  changes and reviewed with before/after mockup screenshots.
+- Draft/setup changes that alter saved draft maps should be treated as layout
+  changes and reviewed with before/after preview screenshots.
 
 Review checklist for shared MapGenV2 assets:
 
@@ -126,7 +130,7 @@ Review checklist for shared MapGenV2 assets:
   style-specific categories used by templates.
 - Connector, blocker, and prop-channel diagnostics have no unexpected warnings.
 - Focused MapGenV2 EditMode tests pass for code changes; asset-only changes
-  include a manual generate, accept, materialize, and bake smoke check.
+  include a manual generate, save draft, materialize, and bake smoke check.
 - No ignored local generated output is staged unless it was intentionally moved
   to `Samples` or `Production`.
 
@@ -163,11 +167,11 @@ Runtime integration priority is:
 - `Style set has no module set`: assign a `MapGenModuleSetAsset`.
 - `Materialization has no prefab coverage`: add a prefab to the named module
   category.
-- `Generated mockup is stale`: source profile/style/rule/template/shape data
-  changed. Run `Regenerate Mockup / 목업 재생성`.
-- `Confirmed signature is stale`: current mockup cells changed after confirmation. Run
-  `목업 확정` / `Confirm Mockup`.
-- `Materialized output is stale`: confirmed current mockup or module set changed. Run
+- `Generated draft is stale`: source style/rule/template/shape data changed.
+  Run `같은 시드 재생성` / `Regenerate Same Seed`.
+- `Saved draft is stale`: preview cells changed after the last save. Run
+  `드래프트 저장` / `Save Draft`.
+- `Materialized output is stale`: saved draft or map asset slots changed. Run
   `Rematerialize To Scene / 씬 재생성`.
 - `Baked runtime asset source signature does not match`: run
   `Rebake Runtime Asset / 런타임 재베이크`.
@@ -178,10 +182,10 @@ Runtime integration priority is:
 
 Mockup preview color language:
 
-- Blue: room cell.
-- Red: corridor cell.
-- Black: blocked cell.
-- Gray: empty cell.
+- Blue: empty cell.
+- Red: room cell.
+- Black: corridor cell.
+- Gray: blocked or reserved cell.
 - Highlight outline: hovered or selected region.
 
 Materialized hierarchy shape:
@@ -204,8 +208,9 @@ template, category, direction, prefab name, and cell coordinate can be traced.
 
 ## Glossary
 
-- Profile: top-level asset that links style, rules, room shapes, output folders,
-  overwrite policy, and runtime adapter settings.
+- Profile: internal setup asset that links style, rules, room shapes, output
+  folders, overwrite policy, and runtime adapter settings. Normal MapGenV2
+  authoring should not start from this asset.
 - Style set: visual/template set for a profile.
 - Module set: prefab pools used during materialization.
 - Room shape: reusable editable room footprint.
@@ -214,11 +219,10 @@ template, category, direction, prefab name, and cell coordinate can be traced.
 - Corridor template: production corridor candidate with connectors and length
   rules.
 - Connector: edge socket that allows room/corridor template compatibility.
-- Draft: internal asset for the current mockup grid generated from a profile and
-  seed. Normal authoring should use the MapGenV2 window, not the draft
-  inspector.
-- Materialization: scene/prefab stamping from a confirmed current mockup.
-- Bake: runtime-safe asset generation from a confirmed current mockup.
+- Draft: primary user-facing map data asset. It stores seed, generated/edited
+  preview cells, direct prefab slot references, and the saved source signature.
+- Materialization: scene/prefab stamping from a saved draft.
+- Bake: runtime-safe asset generation from a saved draft.
 
 ## Verification Commands
 

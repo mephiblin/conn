@@ -16,9 +16,10 @@ Done, verification levels, inspection checklists, and commit/push rules.
 The current implementation proves that the basic data path works:
 
 ```text
-Create starter setup
-  -> generate current mockup data
-  -> confirm mockup
+Create/import draft
+  -> assign map asset prefabs
+  -> generate from seed or draw preview cells
+  -> save draft
   -> materialize placeholder prefabs
   -> bake runtime data
 ```
@@ -32,11 +33,19 @@ materialize it into real project modules, then bake reliable runtime data.
 Working today:
 
 - `Conn/MapGenV2/Map Generator` opens the main editor window.
-- `Create Starter Setup` creates a linked profile, rule set, style set, module
-  set, room shape, draft, and placeholder prefabs.
-- `Generate Mockup` writes generated layout data into the current mockup asset.
+- `Draft File` now exposes the user-facing primary file: create draft, import
+  draft, and save draft.
+- `Map Assets` exposes direct prefab slots for room floor, corridor floor, wall,
+  corners, ceiling, door, blocker, and prop mappings.
+- `Seed` now exposes a seed field, random-seed fill, and generate-from-seed
+  action.
+- `Generate From Seed` writes generated layout data into the current draft asset.
 - `Run Post-Process` applies the current simple post-process pass.
-- `Confirm Mockup` records the confirmed signature.
+- `Save Draft` records the saved source signature internally without exposing a
+  separate confirm/reconfirm step.
+- `MapGenMockupDraftAsset` now stores direct prefab slot references so the
+  user-facing map data lives on the draft; the internal profile/module-set assets
+  are synchronized as backing implementation details.
 - `Materialize` creates placeholder scene objects under a generated root.
 - `Bake Runtime` writes a `MapGenBakedMapAsset`.
 - Focused MapGenV2 EditMode tests passed: 12/12.
@@ -45,8 +54,8 @@ Working today:
 
 Observed hands-on problems:
 
-- `Generate Mockup` appears to do nothing because the main window does not draw
-  the mockup grid preview.
+- Legacy `Generate Mockup` wording was removed from the primary flow; the active
+  button is `지정한 시드로 생성 / Generate From Seed`.
 - The materialized scene result is gray placeholder geometry and does not look
   like an intentional room/corridor map.
 - The current solver is a simple connected-cell MVP, not a production-quality
@@ -61,10 +70,10 @@ Observed hands-on problems:
 
 MapGenV2 should not be called production-ready until all of these are true:
 
-- A first-time user can create a starter setup, generate a visible mockup,
-  understand it, change the seed/rules, confirm the mockup, materialize it, and
-  bake it without reading source code.
-- `Generate Mockup` immediately shows a blue/red/black/gray grid preview.
+- A first-time user can create/import one draft, assign map prefabs, generate a
+  visible preview, understand it, change the seed/rules, save the draft,
+  materialize it, and bake it without reading source code.
+- `Generate From Seed` immediately shows a blue/red/black/gray grid preview.
 - The user can click generated room/corridor regions in the mockup preview,
   inspect and edit them, then regenerate or materialize from that edited
   mockup state.
@@ -74,7 +83,7 @@ MapGenV2 should not be called production-ready until all of these are true:
 - Connectors/doors are represented explicitly and validated.
 - Materialization creates readable floor/wall/corner/door/ceiling/prop output
   from real module pools.
-- Runtime bake data matches the confirmed and materialized layout.
+- Runtime bake data matches the saved and materialized layout.
 - MapGenV2-specific tests are independent from quarantined legacy generator
   tests.
 - There is clear user documentation for authoring profiles, shapes, modules,
@@ -102,18 +111,19 @@ tool, and generated output workflow.
 
 - [x] Use UI Toolkit for new editor windows and complex custom inspectors unless
   an existing IMGUI path is simpler to maintain.
-- [x] Use a consistent inspector-style authoring layout with vertical foldout
-  sections for setup/assets, mockup actions, preview, scene output, runtime
-  bake, diagnostics, and collapsed utility sections; workflow badges, status
-  text, preview controls, and legends wrap responsively at narrow widths.
+- [x] Use a draft-centered authoring layout with vertical foldout sections for
+  draft file create/import/save, map prefab slots, seed controls,
+  preview/drawing, output, diagnostics, and collapsed utility sections; workflow
+  badges, status text, preview controls, and legends wrap responsively at narrow
+  widths.
 - [x] Every primary action must show:
   what it will change, why it is enabled/disabled, and where the output will be
   created.
 - [x] Add a persistent top status strip:
-  current profile, current mockup, seed, validation state, confirmed/stale state,
-  materialized root, and baked asset.
+  draft, seed, setup validation state, saved/changed state, materialized root,
+  and baked asset.
 - [x] Add clear next-step guidance after each action:
-  after starter setup, after mockup generation, after post-process, after confirm,
+  after draft creation/import, after preview generation, after post-process, after save,
   after materialize, and after bake.
 - [x] Add inline help text and tooltips for profile, rule set, style set,
   module set, room shape, connector, post-process, prop placement, and bake
@@ -131,7 +141,7 @@ tool, and generated output workflow.
   last selected assets, preview zoom/pan, visible overlays, language, and
   advanced/debug foldout state.
 - [x] Use stable icons/colors for:
-  valid, warning, error, stale, confirmed, generated, manual override, locked,
+  valid, warning, error, stale, saved, generated, manual override, locked,
   missing reference, and runtime-safe.
 
 ### Korean Localization
@@ -167,7 +177,7 @@ tool, and generated output workflow.
   room count, corridor density, loops, dead-end policy, blocked regions,
   required categories, post-process pass list.
 - [x] Draft inspector must show the mockup preview, selected region details,
-  manual overrides, confirmed/stale status, and materialization readiness.
+  manual overrides, saved/changed status, and materialization readiness.
 - [x] Baked map inspector must show runtime-safe summary only:
   grid bounds, regions, connectors, traversal graph, nav data availability,
   and source signatures.
@@ -175,7 +185,7 @@ tool, and generated output workflow.
 ### Scene View UX
 
 - [x] Add a MapGenV2 Scene View overlay with:
-  selected current mockup/root, generate, confirm, materialize, clear, frame, overlay
+  selected draft/root, generate, save, materialize, clear, frame, overlay
   visibility toggles, and current tool mode.
 - [x] Add Scene View handles/gizmos for:
   generated bounds, cell grid, selected region outline, room id, connector
@@ -185,7 +195,7 @@ tool, and generated output workflow.
   mockup grid, region ids, connectors, sockets, blocked cells, prop channels,
   nav graph, prefab bounds, and diagnostics.
 - [x] Scene View must clearly distinguish states:
-  unconfirmed mockup, confirmed mockup, materialized output, stale materialized
+  unsaved draft, saved draft, materialized output, stale materialized
   output, baked runtime output.
 - [x] Clicking a materialized room object should be able to select its source
   mockup region or show source metadata in the inspector.
@@ -198,7 +208,7 @@ tool, and generated output workflow.
   practical.
 - [x] Materialized output should use real prefabs when available and readable
   placeholder meshes/materials when not.
-- [x] Materialized output must visually match the confirmed mockup:
+- [x] Materialized output must visually match the saved draft:
   red room masses become floors/walls/ceilings/doors/props, black corridors
   become corridor floors/walls/doors, gray blocked cells become reserved or
   blocker output, and blue background remains empty/non-instantiated space.
@@ -210,23 +220,26 @@ tool, and generated output workflow.
 
 Progress note 2026-05-31:
 
-- `MapGenV2Window` now draws the selected current mockup grid directly after
+- `MapGenV2Window` now draws the selected draft grid directly after
   generation with the documented color language, zoom/scroll support, summary
   counts, hover cell details, and click selection/highlighting for generated
   room regions.
+- The preview now has drawing tools for select, room paint, corridor paint,
+  erase, blocked, and reserved cells; drawing edits the current draft cells
+  directly with Undo and marks the draft for saving.
 - `MapGenMockupPreviewData` provides testable draft preview extraction and
   summary counts for the editor UI.
-- Seed controls now support `Regenerate Same Seed`, `새 랜덤 목업 생성 /
-  Generate Random Mockup`, seed-only randomize in utilities, and clearing current
-  mockup generated/confirmed state.
+- Seed controls now support direct seed editing, random seed fill without
+  generation, generate-from-seed, same-seed regeneration in advanced generation,
+  and clearing current draft generated/saved state.
 - Selected generated regions can now be inspected in the main window, locked or
   unlocked, assigned a category override, and cleared; category edits persist
-  in the draft cells and require `목업 확정 / Confirm Mockup` before scene output.
+  in the draft cells and require `드래프트 저장 / Save Draft` before scene output.
 - Regenerate Same Seed now preserves locked region cells and locked override
   metadata while regenerating unlocked regions from the current profile/seed.
 - Selected regions can now be deleted or converted to blocked/reserved cells
   from the preview inspector; those edits persist in the draft and require
-  `목업 확정 / Confirm Mockup` before scene output.
+  `드래프트 저장 / Save Draft` before scene output.
 - Generated corridor components now receive selectable region ids, so clicking a
   corridor cell selects and highlights the owning corridor region through the
   same preview path used for rooms.
@@ -235,7 +248,7 @@ Progress note 2026-05-31:
   labels where useful.
 - The preview now highlights the selected region, selected connector cells, and
   adjacent corridor/connector links so region connectivity is visible before
-  acceptance.
+  saving.
 - Focused tests now lock the invariant that mockup generation updates draft data
   only and does not create scene objects.
 - Draft cells now carry source template/shape ids, signatures include those
@@ -255,7 +268,7 @@ Goal: make the mockup stage obvious and usable.
 Tasks:
 
 - [x] Add a mockup preview panel to `MapGenV2Window`.
-- [x] Draw the selected current mockup grid after `Generate Mockup`.
+- [x] Draw the selected draft grid after `Generate From Seed`.
 - [x] Use the intended mockup color language:
   blue = base/empty, red = room, black = corridor/connector,
   gray = blocked/reserved.
@@ -272,26 +285,28 @@ Tasks:
   lock/unlock, change category, reroll shape, delete/regenerate region,
   reroute connectors, mark blocked/reserved cells, and clear manual override.
 - [x] Persist selected-region edits in `MapGenMockupDraftAsset`.
-- [x] Mark confirmed/materialized output stale when a selected-region edit
+- [x] Mark saved/materialized output stale when a selected-region edit
   changes the draft signature.
 - [x] Show draft summary:
-  profile id, seed, grid size, generated signature, confirmed signature,
-  confirmed/stale state, room cell count, corridor cell count, connector count.
-- [x] Add `Randomize Seed` as a utility action and `새 랜덤 목업 생성 /
-  Generate Random Mockup` as the main random-generation action.
+  internal profile id, seed, grid size, generated signature, saved signature,
+  saved/changed state, room cell count, corridor cell count, connector count.
+- [x] Add `랜덤 시드 입력 / Fill Random Seed` as a seed-field action without
+  generating immediately.
 - [x] Add `Regenerate Same Seed`.
 - [x] Add `Clear Draft`.
+- [x] Add direct preview drawing tools for room, corridor, empty, blocked, and
+  reserved cells.
 - [x] Keep mockup preview editor-only; do not create scene objects on
-  `Generate Mockup`.
+  `Generate From Seed`.
 - [x] Add screenshot-friendly preview sizing and scroll/zoom for large grids.
 
 Acceptance:
 
-- After pressing `Generate Mockup`, the user can see the generated layout in the
+- After pressing `Generate From Seed`, the user can see the generated layout in the
   window without checking the inspector or scene hierarchy.
 - The user can click a red room chunk or black corridor chunk and edit that
-  generated region before confirming it.
-- The user can visually decide whether to confirm or regenerate the mockup.
+  generated region before saving it.
+- The user can visually decide whether to save or regenerate the draft.
 - Same profile and same seed produce the same preview signature.
 - Manual region edits survive save/reload and are the source used by
   materialization.
@@ -308,14 +323,14 @@ Verification:
 - Manual Unity check: generate 3 seeds and confirm visible layout changes.
 - Manual Unity check: select a generated room, change/lock it, regenerate
   allowed parts, and confirm the locked edit remains.
-- Manual Unity check: confirm one mockup and confirm confirmed/stale labels.
+- Manual Unity check: save one draft and confirm saved/changed labels.
 
 ## Phase 2: Guided Editor Workflow
 
 Progress note 2026-05-31:
 
 - `MapGenV2Window` now shows a top workflow strip for
-  `Setup -> Generate -> Post-Process -> Confirm -> Materialize -> Bake`,
+  `Draft -> Generate -> Edit -> Save -> Scene -> Bake`,
   highlights the current next action, reports the last operation result, and
   explains disabled Generate/Materialize/Bake actions.
 - The main materialization and bake buttons are renamed to
@@ -333,7 +348,7 @@ Goal: make the editor window explain what to do next.
 Tasks:
 
 - [x] Add workflow status strip:
-  `Setup -> Generate -> Post-Process -> Confirm -> Materialize -> Bake`.
+  `Draft -> Generate -> Edit -> Save -> Scene -> Bake`.
 - [x] Highlight the next valid action.
 - [x] Show disabled-action reasons for `Materialize` and `Bake Runtime`.
 - [x] Rename buttons:
@@ -406,7 +421,7 @@ Progress note 2026-05-31:
 - Materialization now creates a predictable root named
   `MapGenV2_<Profile>_<Seed>`.
 - The generated root receives `MapGenV2GeneratedMapMarker` with profile id,
-  seed, confirmed current mockup signature, style id, generated UTC timestamp,
+  seed, saved draft signature, style id, generated UTC timestamp,
   and source draft reference.
 - Materialization now creates standard child groups for Floors, Corridors,
   Walls, Ceilings, Doors, Props, Navigation, and Debug.
@@ -622,7 +637,7 @@ Progress note 2026-05-31:
   `MinRooms`/`MaxRooms` to place extra side/main rooms and connect each one to
   the nearest existing route as a dead-end branch.
 - Layout signatures now include profile, rule, room shape, room template, and
-  corridor template source contracts, so accepted/generated mockups become stale
+  corridor template source contracts, so saved/generated drafts become stale
   when relevant authoring inputs change.
 
 Goal: replace the current simple connected-cell MVP with a real rooms/corridors
@@ -739,7 +754,7 @@ Verification:
 
 Progress note 2026-05-31:
 
-- Added a core `MapGenMaterializationPlan` built from confirmed draft cells,
+- Added a core `MapGenMaterializationPlan` built from saved draft cells,
   cell size, source signature, and classified module requests.
 - Module requests now preserve draft region ids and source template ids, and
   materialized scene objects receive editor-only source metadata components.
@@ -766,12 +781,12 @@ Progress note 2026-05-31:
   requests. Multi-cell door openings suppress overlapping wall requests and
   emit a single door module request carrying the connector width.
 
-Goal: turn confirmed mockups into readable project-prefab maps.
+Goal: turn saved drafts into readable project-prefab maps.
 
 Tasks:
 
-- [x] Build a materialization plan from confirmed draft cells and region graph.
-- [x] Consume the confirmed edited mockup exactly; do not rerun the solver during
+- [x] Build a materialization plan from saved draft cells and region graph.
+- [x] Consume the saved edited draft exactly; do not rerun the solver during
   materialization.
 - [x] Preserve mockup region ids so selected/locked room edits can be traced in
   the materialized output.
@@ -795,7 +810,7 @@ Tasks:
 
 Acceptance:
 
-- Materialized output visually matches the confirmed mockup.
+- Materialized output visually matches the saved draft.
 - Edited/locked mockup rooms and corridors are preserved when converted to
   mesh/prefab parts.
 - Real project prefabs can be used without code changes.
@@ -946,7 +961,7 @@ Progress note 2026-05-31:
   categories now block scene output before creating a partial root, while
   current footprint overlap/bounds checks are reported as warnings until module
   layer semantics are explicit.
-- Added runtime bake consistency validation for stale confirmed signatures,
+- Added runtime bake consistency validation for stale saved signatures,
   dimension mismatches, and baked payload count mismatches.
 - Added profile graph diagnostics for required category/template pools,
   impossible room/corridor/distance ranges, and room-to-corridor connector
@@ -990,17 +1005,17 @@ Verification:
 Progress note 2026-05-31:
 
 - Draft assets now store an asset version, generated source signature,
-  confirmed source signature, and generation notes.
+  saved source signature, and generation notes.
 - Workflow status detects stale generated drafts when profile/style/rule or
-  template source signatures change, and blocks accept/post-process until the
-  mockup is regenerated.
+  template source signatures change, and blocks save/post-process until the draft
+  is regenerated.
 - Materialized root/module markers now store source signatures in addition to
-  confirmed draft signatures; saved prefabs preserve those markers.
+  saved draft signatures; saved prefabs preserve those markers.
 - Materialized root/module markers now also store module-set signatures, and
-  diagnostics report stale materialized outputs when the confirmed draft source
+  diagnostics report stale materialized outputs when the saved draft source
   or module set no longer matches the selected/previous scene root.
 - The editor next-action guide now switches to explicit Regenerate,
-  Repostprocess, Confirm, Rematerialize, and Rebake actions based on stale
+  Repostprocess, Save, Rematerialize, and Rebake actions based on stale
   draft/materialized/baked state, with matching Korean/English button labels.
 - Profile overwrite policy is now exposed in the Scene Output panel:
   CreateUnique creates a new root, ReplacePrevious deletes the previous tracked
@@ -1021,7 +1036,7 @@ Tasks:
   assets.
 - [x] Detect stale drafts when profile/style/rule/template assets change.
 - [x] Detect stale materialized output when draft or module set changes.
-- [x] Add `Regenerate`, `Repostprocess`, `Confirm`, `Rematerialize`,
+- [x] Add `Regenerate`, `Repostprocess`, `Save`, `Rematerialize`,
   `Rebake` workflows.
 - [x] Add explicit overwrite policy.
 - [x] Add asset version fields and migration helpers.
@@ -1103,7 +1118,7 @@ Required automated tests:
 - [x] materialization reports missing module categories.
 - [x] prop placement deterministic and traversal-safe.
 - [x] runtime baked data contains no editor-only references.
-- [x] save/reload retains profile, draft, confirmed state, materialized marker,
+- [x] save/reload retains profile, draft, saved state, materialized marker,
   and baked data.
 
 Manual checks:
@@ -1226,7 +1241,7 @@ Acceptance:
 Verification:
 
 - Run starter setup and confirm which files are expected to remain untracked.
-- Confirm verification runners clean up temporary assets.
+- Verify verification runners clean up temporary assets.
 
 ## Phase 18: Compatibility And Integration
 
@@ -1260,8 +1275,8 @@ Tasks:
 - [x] Add build-time validation that production scenes do not depend on editor
   types.
 - [x] Add render-pipeline-neutral starter materials where possible.
-- [x] Confirm generated prefabs survive player build serialization.
-- [x] Confirm generated output can be used in source-controlled scenes without
+- [x] Verify generated prefabs survive player build serialization.
+- [x] Verify generated output can be used in source-controlled scenes without
   hidden editor-only dependencies.
 
 Acceptance:

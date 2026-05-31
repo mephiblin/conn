@@ -95,13 +95,13 @@ namespace Conn.MapGenV2.Editor
                 case "mapgenv2.createDefaultFolders":
                     return korean ? "기본 폴더 생성" : "Create Default Folders";
                 case "mapgenv2.createDraft":
-                    return korean ? "현재 목업 생성" : "Create Current Mockup";
+                    return korean ? "새 드래프트 생성" : "Create Draft";
                 case "mapgenv2.generateMockup":
-                    return korean ? "목업 생성" : "Generate Mockup";
+                    return korean ? "지정한 시드로 생성" : "Generate From Seed";
                 case "mapgenv2.regenerateMockup":
-                    return korean ? "목업 재생성" : "Regenerate Mockup";
+                    return korean ? "같은 시드 재생성" : "Regenerate Same Seed";
                 case "mapgenv2.acceptMockup":
-                    return korean ? "목업 확정" : "Confirm Mockup";
+                    return korean ? "드래프트 저장" : "Save Draft";
                 case "mapgenv2.materializeToScene":
                     return korean ? "씬 생성" : "Materialize To Scene";
                 case "mapgenv2.rematerializeToScene":
@@ -111,7 +111,7 @@ namespace Conn.MapGenV2.Editor
                 case "mapgenv2.rebakeRuntimeAsset":
                     return korean ? "런타임 재베이크" : "Rebake Runtime Asset";
                 case "mapgenv2.profileMissing":
-                    return korean ? "프로필을 지정하세요." : "Assign a profile.";
+                    return korean ? "드래프트를 생성하거나 임포트하세요." : "Create or import a draft.";
                 case "mapgenv2.draftStale":
                     return korean ? "소스 변경됨: 재생성 필요" : "Stale: regenerate required";
                 default:
@@ -142,6 +142,29 @@ namespace Conn.MapGenV2.Editor
 
     public sealed class MapGenV2Window : EditorWindow
     {
+        private enum MapGenDraftPaintTool
+        {
+            Select,
+            Room,
+            Corridor,
+            Empty,
+            Blocked,
+            Reserved
+        }
+
+        private enum MapGenDraftPrefabSlot
+        {
+            RoomFloor,
+            CorridorFloor,
+            Wall,
+            InsideCorner,
+            OutsideCorner,
+            Ceiling,
+            Door,
+            Blocker,
+            Prop
+        }
+
         public static readonly Vector2 MinimumWindowSize = new Vector2(420f, 620f);
         private const string ProfilePathKey = "Conn.MapGenV2.Window.ProfilePath";
         private const string DraftPathKey = "Conn.MapGenV2.Window.DraftPath";
@@ -157,6 +180,7 @@ namespace Conn.MapGenV2.Editor
         private const string SelectedRegionIdKey = "Conn.MapGenV2.Window.SelectedRegionId";
         private const string DiagnosticsFoldoutKey = "Conn.MapGenV2.Window.DiagnosticsFoldout";
         private const string SetupAssetsFoldoutKey = "Conn.MapGenV2.Window.SetupAssetsFoldout";
+        private const string MapAssetsFoldoutKey = "Conn.MapGenV2.Window.MapAssetsFoldout";
         private const string OutputPathsFoldoutKey = "Conn.MapGenV2.Window.OutputPathsFoldout";
         private const string LinkedAssetsFoldoutKey = "Conn.MapGenV2.Window.LinkedAssetsFoldout";
         private const string MockupActionsFoldoutKey = "Conn.MapGenV2.Window.MockupActionsFoldout";
@@ -187,6 +211,7 @@ namespace Conn.MapGenV2.Editor
         private static readonly Color ObjectivePropOverlayColor = new Color(1f, 0.95f, 0.05f, 0.9f);
         private MapGenProfileAsset profile;
         private MapGenMockupDraftAsset draft;
+        private MapGenMockupDraftAsset importDraft;
         private Vector2 scroll;
         private Vector2 previewScroll;
         private Vector2Int hoveredCell;
@@ -201,6 +226,7 @@ namespace Conn.MapGenV2.Editor
         private bool showPostProcessOverlay = true;
         private bool showDiagnosticsFoldout = true;
         private bool showSetupAssetsFoldout = true;
+        private bool showMapAssetsFoldout = true;
         private bool showOutputPathsFoldout = false;
         private bool showLinkedAssetsFoldout = false;
         private bool showMockupActionsFoldout = true;
@@ -214,6 +240,9 @@ namespace Conn.MapGenV2.Editor
         private bool showSceneOutputUtilitiesFoldout;
         private bool showMockupTechnicalDetailsFoldout;
         private bool showRegionAdvancedEditFoldout;
+        private MapGenDraftPaintTool paintTool = MapGenDraftPaintTool.Select;
+        private int paintStrokeRegionId = -1;
+        private bool paintUndoRecorded;
         private int selectedPostProcessPassIndex;
         private MapGenPostProcessReport lastPostProcessReport;
         private string lastOperationResult = "아직 실행한 작업이 없습니다. / No operation has run yet.";
@@ -264,6 +293,7 @@ namespace Conn.MapGenV2.Editor
             selectedRegionId = EditorPrefs.GetInt(SelectedRegionIdKey, selectedRegionId);
             showDiagnosticsFoldout = EditorPrefs.GetBool(DiagnosticsFoldoutKey, showDiagnosticsFoldout);
             showSetupAssetsFoldout = EditorPrefs.GetBool(SetupAssetsFoldoutKey, showSetupAssetsFoldout);
+            showMapAssetsFoldout = EditorPrefs.GetBool(MapAssetsFoldoutKey, showMapAssetsFoldout);
             showOutputPathsFoldout = EditorPrefs.GetBool(OutputPathsFoldoutKey, showOutputPathsFoldout);
             showLinkedAssetsFoldout = EditorPrefs.GetBool(LinkedAssetsFoldoutKey, showLinkedAssetsFoldout);
             showMockupActionsFoldout = EditorPrefs.GetBool(MockupActionsFoldoutKey, showMockupActionsFoldout);
@@ -301,7 +331,7 @@ namespace Conn.MapGenV2.Editor
 
         public static string BuildInspectorLayoutSummary()
         {
-            return "Inspector-style authoring layout: setup, mockup actions, preview, scene output, runtime bake, diagnostics, and utility sections are stacked vertically with foldout sections and responsive wrapping for narrow inspector widths.";
+            return "Draft-centered authoring layout: draft file create/import/save, map prefab slots, seed controls, preview/drawing, output, diagnostics, and advanced utility sections are stacked vertically with foldout sections and responsive wrapping for narrow inspector widths.";
         }
 
         public static string BuildEditorTechnologySummary()
@@ -321,23 +351,27 @@ namespace Conn.MapGenV2.Editor
 
         private void DrawInspectorWorkspace(MapGenV2WorkflowStatus workflow)
         {
-            DrawFoldoutSection("설정/에셋 / Setup & Assets", ref showSetupAssetsFoldout, () =>
+            DrawFoldoutSection("드래프트 파일 / Draft File", ref showSetupAssetsFoldout, DrawDraftFileSection);
+            DrawFoldoutSection("맵 에셋 / Map Assets", ref showMapAssetsFoldout, DrawMapAssetSection);
+            DrawFoldoutSection("시드 / Seed", ref showMockupActionsFoldout, () => DrawSeedSection(workflow));
+            DrawFoldoutSection("프리뷰 & 드로잉 / Preview & Drawing", ref showMockupPreviewFoldout, DrawDraftSummaryAndPreview);
+            DrawFoldoutSection("출력 / Output", ref showSceneOutputFoldout, () =>
             {
-                DrawReferenceFields();
-                DrawSetupActions();
+                DrawSceneOutputControls(workflow);
+                DrawRuntimeBakeControls(workflow);
             });
-            DrawFoldoutSection("목업 제작 / Mockup Authoring", ref showMockupActionsFoldout, () => DrawDraftActions(workflow));
-            DrawFoldoutSection("목업 미리보기 / Mockup Preview", ref showMockupPreviewFoldout, DrawDraftSummaryAndPreview);
-            DrawFoldoutSection("씬 출력 / Scene Output", ref showSceneOutputFoldout, () => DrawSceneOutputControls(workflow));
-            DrawFoldoutSection("런타임 베이크 / Runtime Bake", ref showRuntimeBakeFoldout, () => DrawRuntimeBakeControls(workflow));
             DrawFoldoutSection("상세/진단 / Details & Diagnostics", ref showDetailsFoldout, () =>
             {
                 DrawNextAction(workflow);
                 DrawProfileValidation();
                 DrawDiagnosticsPanel();
             });
-            DrawFoldoutSection("출력 경로 / Output Paths", ref showOutputPathsFoldout, DrawOutputPaths);
-            DrawFoldoutSection("연결 에셋 / Linked Assets", ref showLinkedAssetsFoldout, DrawLinkedAssetShortcuts);
+            DrawFoldoutSection("고급 경로/연결 / Advanced Paths & Links", ref showOutputPathsFoldout, () =>
+            {
+                DrawReferenceFields();
+                DrawOutputPaths();
+                DrawLinkedAssetShortcuts();
+            });
         }
 
         private void DrawFoldoutSection(string title, ref bool expanded, System.Action drawContent)
@@ -360,25 +394,55 @@ namespace Conn.MapGenV2.Editor
             }
         }
 
-        private void DrawSetupActions()
+        private void DrawDraftFileSection()
         {
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
-                EditorGUILayout.LabelField("빠른 설정 / Quick Setup", EditorStyles.boldLabel);
-                if (GUILayout.Button(MapGenV2EditorText.Get("mapgenv2.createStarterSetup")))
-                {
-                    var setup = MapGenV2StarterSetupBuilder.CreateStarterProfileSetup();
-                    profile = setup.Profile;
-                    draft = setup.Draft;
-                    Selection.activeObject = draft != null ? draft : profile;
-                    SaveWindowState();
-                    SetLastOperationResult("스타터 설정 생성 완료 / Starter setup created.");
-                }
+                EditorGUILayout.LabelField("기본 파일 / Primary File", EditorStyles.boldLabel);
+                EditorGUILayout.ObjectField("드래프트 / Draft", draft, typeof(MapGenMockupDraftAsset), false);
+                importDraft = (MapGenMockupDraftAsset)EditorGUILayout.ObjectField("임포트 항목 / Import", importDraft, typeof(MapGenMockupDraftAsset), false);
 
-                if (GUILayout.Button(MapGenV2EditorText.Get("mapgenv2.createDraft")))
+                if (GUILayout.Button("새 드래프트 생성 / Create Draft"))
                 {
                     CreateDraft();
                     SaveWindowState();
+                }
+
+                using (new EditorGUI.DisabledScope(importDraft == null))
+                {
+                    if (GUILayout.Button("드래프트 임포트 / Import Draft"))
+                    {
+                        draft = importDraft;
+                        profile = draft != null ? draft.Profile : null;
+                        var moduleSet = GetActiveModuleSet();
+                        EnsureDraftPrefabPalette(moduleSet);
+                        if (draft != null)
+                        {
+                            ApplyDraftPrefabPaletteToModuleSet(moduleSet);
+                            EditorUtility.SetDirty(draft);
+                            if (moduleSet != null)
+                            {
+                                EditorUtility.SetDirty(moduleSet);
+                            }
+                        }
+
+                        selectedMaterializedRoot = null;
+                        ClearSelection();
+                        Selection.activeObject = draft;
+                        AssetDatabase.SaveAssets();
+                        SaveWindowState();
+                        SetLastOperationResult(draft != null
+                            ? $"Imported draft: {draft.name}."
+                            : "Import draft failed.");
+                    }
+                }
+
+                using (new EditorGUI.DisabledScope(draft == null))
+                {
+                    if (GUILayout.Button("드래프트 저장 / Save Draft"))
+                    {
+                        SaveCurrentDraft();
+                    }
                 }
 
                 DrawFoldoutSection("설정 유틸리티 / Setup Utilities", ref showSetupUtilitiesFoldout, () =>
@@ -398,6 +462,394 @@ namespace Conn.MapGenV2.Editor
             }
         }
 
+        private void DrawMapAssetSection()
+        {
+            if (draft == null)
+            {
+                DrawWrappingHelpBox("먼저 드래프트를 생성하거나 임포트하세요. / Create or import a draft first.", MessageType.Info);
+                return;
+            }
+
+            var moduleSet = GetActiveModuleSet();
+            if (moduleSet == null)
+            {
+                DrawWrappingHelpBox("드래프트에 연결된 프리팹 구성이 없습니다. 새 드래프트를 생성하면 기본 구성이 함께 만들어집니다.", MessageType.Warning);
+                return;
+            }
+
+            EnsureDraftPrefabPalette(moduleSet);
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                EditorGUILayout.LabelField("프리팹 슬롯 / Prefab Slots", EditorStyles.boldLabel);
+                DrawPrefabSlot(moduleSet, MapGenDraftPrefabSlot.RoomFloor);
+                DrawPrefabSlot(moduleSet, MapGenDraftPrefabSlot.CorridorFloor);
+                DrawPrefabSlot(moduleSet, MapGenDraftPrefabSlot.Wall);
+                DrawPrefabSlot(moduleSet, MapGenDraftPrefabSlot.InsideCorner);
+                DrawPrefabSlot(moduleSet, MapGenDraftPrefabSlot.OutsideCorner);
+                DrawPrefabSlot(moduleSet, MapGenDraftPrefabSlot.Ceiling);
+                DrawPrefabSlot(moduleSet, MapGenDraftPrefabSlot.Door);
+                DrawPrefabSlot(moduleSet, MapGenDraftPrefabSlot.Blocker);
+                DrawPrefabSlot(moduleSet, MapGenDraftPrefabSlot.Prop);
+
+                if (GUILayout.Button("에셋 구성 갱신 / Refresh Asset Mapping"))
+                {
+                    RefreshDraftAssets(moduleSet);
+                }
+            }
+        }
+
+        private void DrawSeedSection(MapGenV2WorkflowStatus workflow)
+        {
+            if (draft == null)
+            {
+                DrawWrappingHelpBox("먼저 드래프트를 생성하거나 임포트하세요. / Create or import a draft first.", MessageType.Info);
+                return;
+            }
+
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                EditorGUI.BeginChangeCheck();
+                var nextSeed = EditorGUILayout.IntField("시드 / Seed", draft.Seed);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    Undo.RecordObject(draft, "Edit MapGen Draft Seed");
+                    draft.Seed = nextSeed;
+                    EditorUtility.SetDirty(draft);
+                    SaveWindowState();
+                }
+
+                if (GUILayout.Button("랜덤 시드 입력 / Fill Random Seed"))
+                {
+                    Undo.RecordObject(draft, "Randomize MapGen Draft Seed");
+                    draft.Seed = CreateRandomSeed();
+                    EditorUtility.SetDirty(draft);
+                    SaveWindowState();
+                    SetLastOperationResult($"Random seed filled: {draft.Seed}. Generate with the seed when ready.");
+                }
+
+                using (new EditorGUI.DisabledScope(!workflow.CanGenerate))
+                {
+                    if (GUILayout.Button("지정한 시드로 생성 / Generate From Seed"))
+                    {
+                        GenerateMockup("Generate From Seed");
+                    }
+                }
+
+                DrawFoldoutSection("고급 생성 작업 / Advanced Generation", ref showDraftUtilitiesFoldout, () =>
+                {
+                    using (new EditorGUI.DisabledScope(!workflow.CanGenerate))
+                    {
+                        if (GUILayout.Button("같은 시드 재생성 / Regenerate Same Seed"))
+                        {
+                            GenerateMockup("Regenerate Same Seed", preserveLockedRegions: true);
+                        }
+                    }
+
+                    using (new EditorGUI.DisabledScope(!workflow.CanPostProcess))
+                    {
+                        if (GUILayout.Button("후처리 재실행 / Repostprocess Mockup"))
+                        {
+                            RunPostProcess();
+                        }
+                    }
+
+                    if (GUILayout.Button("현재 드래프트 비우기 / Clear Current Draft"))
+                    {
+                        Undo.RecordObject(draft, "Clear MapGen Draft");
+                        draft.ClearDraft();
+                        ClearSelection();
+                        EditorUtility.SetDirty(draft);
+                        SetLastOperationResult("Cleared current draft cells, generated signature, post-process report, and save state.");
+                    }
+                });
+            }
+        }
+
+        private void DrawPrefabSlot(MapGenModuleSetAsset moduleSet, MapGenDraftPrefabSlot slot)
+        {
+            var currentPrefab = GetDraftPrefab(slot, moduleSet);
+            EditorGUI.BeginChangeCheck();
+            var nextPrefab = (GameObject)EditorGUILayout.ObjectField(
+                LabelFor(slot),
+                currentPrefab,
+                typeof(GameObject),
+                false);
+            if (!EditorGUI.EndChangeCheck())
+            {
+                return;
+            }
+
+            Undo.RecordObjects(new Object[] { draft, moduleSet }, "Change MapGen Draft Prefab Slot");
+            SetDraftPrefab(slot, nextPrefab);
+            SetQuickPrefab(moduleSet, slot, nextPrefab);
+            EditorUtility.SetDirty(draft);
+            EditorUtility.SetDirty(moduleSet);
+            SetLastOperationResult($"Updated {slot} prefab mapping. Seed remains {draft?.Seed.ToString() ?? "-"}.");
+        }
+
+        private MapGenModuleSetAsset GetActiveModuleSet()
+        {
+            return draft != null
+                && draft.Profile != null
+                && draft.Profile.StyleSet != null
+                    ? draft.Profile.StyleSet.ModuleSet
+                    : null;
+        }
+
+        private void EnsureDraftPrefabPalette(MapGenModuleSetAsset moduleSet)
+        {
+            if (draft == null)
+            {
+                return;
+            }
+
+            draft.PrefabPalette ??= new MapGenDraftPrefabPalette();
+            if (!draft.PrefabPalette.HasAnyPrefab() && moduleSet != null)
+            {
+                CaptureModuleSetPrefabPalette(moduleSet);
+                if (draft.PrefabPalette.HasAnyPrefab())
+                {
+                    EditorUtility.SetDirty(draft);
+                }
+            }
+        }
+
+        private void CaptureModuleSetPrefabPalette(MapGenModuleSetAsset moduleSet)
+        {
+            if (draft == null || moduleSet == null)
+            {
+                return;
+            }
+
+            draft.PrefabPalette.RoomFloor = GetQuickPrefab(moduleSet, MapGenDraftPrefabSlot.RoomFloor);
+            draft.PrefabPalette.CorridorFloor = GetQuickPrefab(moduleSet, MapGenDraftPrefabSlot.CorridorFloor);
+            draft.PrefabPalette.Wall = GetQuickPrefab(moduleSet, MapGenDraftPrefabSlot.Wall);
+            draft.PrefabPalette.InsideCorner = GetQuickPrefab(moduleSet, MapGenDraftPrefabSlot.InsideCorner);
+            draft.PrefabPalette.OutsideCorner = GetQuickPrefab(moduleSet, MapGenDraftPrefabSlot.OutsideCorner);
+            draft.PrefabPalette.Ceiling = GetQuickPrefab(moduleSet, MapGenDraftPrefabSlot.Ceiling);
+            draft.PrefabPalette.Door = GetQuickPrefab(moduleSet, MapGenDraftPrefabSlot.Door);
+            draft.PrefabPalette.Blocker = GetQuickPrefab(moduleSet, MapGenDraftPrefabSlot.Blocker);
+            draft.PrefabPalette.Prop = GetQuickPrefab(moduleSet, MapGenDraftPrefabSlot.Prop);
+        }
+
+        private void ApplyDraftPrefabPaletteToModuleSet(MapGenModuleSetAsset moduleSet)
+        {
+            if (draft == null || draft.PrefabPalette == null || moduleSet == null)
+            {
+                return;
+            }
+
+            SetQuickPrefab(moduleSet, MapGenDraftPrefabSlot.RoomFloor, draft.PrefabPalette.RoomFloor);
+            SetQuickPrefab(moduleSet, MapGenDraftPrefabSlot.CorridorFloor, draft.PrefabPalette.CorridorFloor);
+            SetQuickPrefab(moduleSet, MapGenDraftPrefabSlot.Wall, draft.PrefabPalette.Wall);
+            SetQuickPrefab(moduleSet, MapGenDraftPrefabSlot.InsideCorner, draft.PrefabPalette.InsideCorner);
+            SetQuickPrefab(moduleSet, MapGenDraftPrefabSlot.OutsideCorner, draft.PrefabPalette.OutsideCorner);
+            SetQuickPrefab(moduleSet, MapGenDraftPrefabSlot.Ceiling, draft.PrefabPalette.Ceiling);
+            SetQuickPrefab(moduleSet, MapGenDraftPrefabSlot.Door, draft.PrefabPalette.Door);
+            SetQuickPrefab(moduleSet, MapGenDraftPrefabSlot.Blocker, draft.PrefabPalette.Blocker);
+            SetQuickPrefab(moduleSet, MapGenDraftPrefabSlot.Prop, draft.PrefabPalette.Prop);
+        }
+
+        private GameObject GetDraftPrefab(MapGenDraftPrefabSlot slot, MapGenModuleSetAsset moduleSet)
+        {
+            if (draft?.PrefabPalette == null)
+            {
+                return GetQuickPrefab(moduleSet, slot);
+            }
+
+            return slot switch
+            {
+                MapGenDraftPrefabSlot.RoomFloor => draft.PrefabPalette.RoomFloor,
+                MapGenDraftPrefabSlot.CorridorFloor => draft.PrefabPalette.CorridorFloor,
+                MapGenDraftPrefabSlot.Wall => draft.PrefabPalette.Wall,
+                MapGenDraftPrefabSlot.InsideCorner => draft.PrefabPalette.InsideCorner,
+                MapGenDraftPrefabSlot.OutsideCorner => draft.PrefabPalette.OutsideCorner,
+                MapGenDraftPrefabSlot.Ceiling => draft.PrefabPalette.Ceiling,
+                MapGenDraftPrefabSlot.Door => draft.PrefabPalette.Door,
+                MapGenDraftPrefabSlot.Blocker => draft.PrefabPalette.Blocker,
+                MapGenDraftPrefabSlot.Prop => draft.PrefabPalette.Prop,
+                _ => GetQuickPrefab(moduleSet, slot)
+            };
+        }
+
+        private void SetDraftPrefab(MapGenDraftPrefabSlot slot, GameObject prefab)
+        {
+            if (draft == null)
+            {
+                return;
+            }
+
+            draft.PrefabPalette ??= new MapGenDraftPrefabPalette();
+            switch (slot)
+            {
+                case MapGenDraftPrefabSlot.RoomFloor:
+                    draft.PrefabPalette.RoomFloor = prefab;
+                    break;
+                case MapGenDraftPrefabSlot.CorridorFloor:
+                    draft.PrefabPalette.CorridorFloor = prefab;
+                    break;
+                case MapGenDraftPrefabSlot.Wall:
+                    draft.PrefabPalette.Wall = prefab;
+                    break;
+                case MapGenDraftPrefabSlot.InsideCorner:
+                    draft.PrefabPalette.InsideCorner = prefab;
+                    break;
+                case MapGenDraftPrefabSlot.OutsideCorner:
+                    draft.PrefabPalette.OutsideCorner = prefab;
+                    break;
+                case MapGenDraftPrefabSlot.Ceiling:
+                    draft.PrefabPalette.Ceiling = prefab;
+                    break;
+                case MapGenDraftPrefabSlot.Door:
+                    draft.PrefabPalette.Door = prefab;
+                    break;
+                case MapGenDraftPrefabSlot.Blocker:
+                    draft.PrefabPalette.Blocker = prefab;
+                    break;
+                case MapGenDraftPrefabSlot.Prop:
+                    draft.PrefabPalette.Prop = prefab;
+                    break;
+            }
+        }
+
+        private void RefreshDraftAssets(MapGenModuleSetAsset moduleSet)
+        {
+            if (draft == null || moduleSet == null)
+            {
+                return;
+            }
+
+            EnsureDraftPrefabPalette(moduleSet);
+            Undo.RecordObjects(new Object[] { draft, moduleSet }, "Refresh MapGen Draft Asset Mapping");
+            ApplyDraftPrefabPaletteToModuleSet(moduleSet);
+            EditorUtility.SetDirty(moduleSet);
+            EditorUtility.SetDirty(draft);
+            AssetDatabase.SaveAssets();
+            SetLastOperationResult($"Asset mapping refreshed without changing seed {draft?.Seed.ToString() ?? "-"}.");
+        }
+
+        private void SaveCurrentDraft()
+        {
+            if (draft == null)
+            {
+                return;
+            }
+
+            Undo.RecordObject(draft, "Save MapGen Draft");
+            var canMarkSceneSource = MapGenV2WorkflowStatus.From(profile, draft).CanAccept;
+            if (canMarkSceneSource)
+            {
+                draft.Accept();
+            }
+
+            EditorUtility.SetDirty(draft);
+            var moduleSet = GetActiveModuleSet();
+            if (moduleSet != null)
+            {
+                Undo.RecordObject(moduleSet, "Save MapGen Draft");
+                ApplyDraftPrefabPaletteToModuleSet(moduleSet);
+                EditorUtility.SetDirty(moduleSet);
+            }
+
+            AssetDatabase.SaveAssets();
+            SetLastOperationResult(canMarkSceneSource
+                ? $"Saved draft: {AssetDatabase.GetAssetPath(draft)}."
+                : $"Saved draft settings: {AssetDatabase.GetAssetPath(draft)}. Generate or draw a map before scene output.");
+        }
+
+        private static string LabelFor(MapGenDraftPrefabSlot slot)
+        {
+            return slot switch
+            {
+                MapGenDraftPrefabSlot.RoomFloor => "방 바닥 / Room Floor",
+                MapGenDraftPrefabSlot.CorridorFloor => "복도 바닥 / Corridor Floor",
+                MapGenDraftPrefabSlot.Wall => "벽 / Wall",
+                MapGenDraftPrefabSlot.InsideCorner => "안쪽 코너 / Inside Corner",
+                MapGenDraftPrefabSlot.OutsideCorner => "바깥 코너 / Outside Corner",
+                MapGenDraftPrefabSlot.Ceiling => "천장 / Ceiling",
+                MapGenDraftPrefabSlot.Door => "문 / Door",
+                MapGenDraftPrefabSlot.Blocker => "차단물 / Blocker",
+                MapGenDraftPrefabSlot.Prop => "장식 프롭 / Prop",
+                _ => slot.ToString()
+            };
+        }
+
+        private static GameObject GetQuickPrefab(MapGenModuleSetAsset moduleSet, MapGenDraftPrefabSlot slot)
+        {
+            if (moduleSet == null)
+            {
+                return null;
+            }
+
+            return slot switch
+            {
+                MapGenDraftPrefabSlot.RoomFloor => FirstPrefab(moduleSet.FloorsA),
+                MapGenDraftPrefabSlot.CorridorFloor => FirstPrefab(moduleSet.FloorsB),
+                MapGenDraftPrefabSlot.Wall => FirstPrefab(moduleSet.WallsStraight),
+                MapGenDraftPrefabSlot.InsideCorner => FirstPrefab(moduleSet.WallsCornerInside),
+                MapGenDraftPrefabSlot.OutsideCorner => FirstPrefab(moduleSet.WallsCornerOutside),
+                MapGenDraftPrefabSlot.Ceiling => FirstPrefab(moduleSet.InteriorCeilings) != null
+                    ? FirstPrefab(moduleSet.InteriorCeilings)
+                    : FirstPrefab(moduleSet.ExteriorCeilings),
+                MapGenDraftPrefabSlot.Door => FirstPrefab(moduleSet.WholeDoors),
+                MapGenDraftPrefabSlot.Blocker => FirstPrefab(moduleSet.Blockers),
+                MapGenDraftPrefabSlot.Prop => FirstPrefab(moduleSet.PropCategories),
+                _ => null
+            };
+        }
+
+        private static void SetQuickPrefab(MapGenModuleSetAsset moduleSet, MapGenDraftPrefabSlot slot, GameObject prefab)
+        {
+            var rotationPolicy = slot == MapGenDraftPrefabSlot.Wall
+                || slot == MapGenDraftPrefabSlot.InsideCorner
+                || slot == MapGenDraftPrefabSlot.OutsideCorner
+                || slot == MapGenDraftPrefabSlot.Door
+                    ? MapGenModuleRotationPolicy.AnyOrthogonal
+                    : MapGenModuleRotationPolicy.None;
+            var entries = prefab != null
+                ? new[] { new MapGenModuleEntry { Prefab = prefab, Weight = 1, Footprint = Vector2Int.one, RotationPolicy = rotationPolicy } }
+                : System.Array.Empty<MapGenModuleEntry>();
+
+            switch (slot)
+            {
+                case MapGenDraftPrefabSlot.RoomFloor:
+                    moduleSet.FloorsA = entries;
+                    break;
+                case MapGenDraftPrefabSlot.CorridorFloor:
+                    moduleSet.FloorsB = entries;
+                    break;
+                case MapGenDraftPrefabSlot.Wall:
+                    moduleSet.WallsStraight = entries;
+                    break;
+                case MapGenDraftPrefabSlot.InsideCorner:
+                    moduleSet.WallsCornerInside = entries;
+                    break;
+                case MapGenDraftPrefabSlot.OutsideCorner:
+                    moduleSet.WallsCornerOutside = entries;
+                    break;
+                case MapGenDraftPrefabSlot.Ceiling:
+                    moduleSet.InteriorCeilings = entries;
+                    moduleSet.ExteriorCeilings = entries;
+                    break;
+                case MapGenDraftPrefabSlot.Door:
+                    moduleSet.WholeDoors = entries;
+                    moduleSet.HalfDoorFrames = entries;
+                    moduleSet.HalfDoorPanels = entries;
+                    break;
+                case MapGenDraftPrefabSlot.Blocker:
+                    moduleSet.Blockers = entries;
+                    break;
+                case MapGenDraftPrefabSlot.Prop:
+                    moduleSet.PropCategories = entries;
+                    break;
+            }
+        }
+
+        private static GameObject FirstPrefab(MapGenModuleEntry[] entries)
+        {
+            return entries != null && entries.Length > 0 && entries[0] != null ? entries[0].Prefab : null;
+        }
+
         private void DrawWorkflowStatus(MapGenV2WorkflowStatus workflow)
         {
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
@@ -405,23 +857,24 @@ namespace Conn.MapGenV2.Editor
                 EditorGUILayout.LabelField("워크플로우 상태 / Workflow Status", EditorStyles.boldLabel);
                 DrawWorkflowStepBadges(workflow);
 
-                var profileName = profile != null ? profile.ProfileId : "(none)";
                 var draftName = draft != null ? draft.name : "(none)";
                 var seed = draft != null ? draft.Seed : (int?)null;
                 var validationState = workflow.HasProfile ? (workflow.ProfileValid ? "Valid" : "Invalid") : "(none)";
-                var acceptedState = workflow.Accepted
-                    ? workflow.AcceptedCurrent ? "Confirmed current" : "Confirmed stale"
-                    : "Not confirmed";
+                var savedState = !workflow.HasGeneratedMockup
+                    ? "No map yet"
+                    : workflow.Accepted
+                        ? workflow.AcceptedCurrent ? "Saved current" : "Changed since save"
+                        : "Needs save";
                 var materializedRoot = ResolveMaterializedRoot();
                 var bakedAsset = LoadExpectedBakedAsset();
                 DrawWrappedReadOnlyLine(
                     "현재 / Current",
                     BuildTopStatusStripText(
-                        profileName,
+                        profile != null ? profile.ProfileId : "(none)",
                         draftName,
                         seed,
                         validationState,
-                        acceptedState,
+                        savedState,
                         materializedRoot != null ? materializedRoot.name : "(none)",
                         bakedAsset != null ? AssetDatabase.GetAssetPath(bakedAsset) : "(none)"));
                 DrawWrappedReadOnlyLine("마지막 작업 / Last Result", lastOperationResult);
@@ -437,8 +890,8 @@ namespace Conn.MapGenV2.Editor
             string materializedRootName,
             string bakedAssetPath)
         {
-            return $"Profile {NullLabel(profileName)}, Current Mockup {NullLabel(draftName)}, Seed {(seed.HasValue ? seed.Value.ToString() : "-")}, "
-                + $"Validation {NullLabel(validationState)}, Mockup State {NullLabel(acceptedState)}, "
+            return $"Draft {NullLabel(draftName)}, Seed {(seed.HasValue ? seed.Value.ToString() : "-")}, "
+                + $"Setup {NullLabel(validationState)}, Save State {NullLabel(acceptedState)}, "
                 + $"Materialized Root {NullLabel(materializedRootName)}, Baked Asset {NullLabel(bakedAssetPath)}";
         }
 
@@ -454,7 +907,7 @@ namespace Conn.MapGenV2.Editor
 
         public static string BuildPrimaryMockupUxSummary()
         {
-            return "Primary mockup UX: MapGenV2 window supports Generate, Post-Process, Confirm, selected-region inspect/edit, "
+            return "Primary mockup UX: MapGenV2 window supports Generate, Post-Process, Save Draft, selected-region inspect/edit, "
                 + "prop/post overlays, Materialize, Bake, and clear/frame/select output without requiring Scene View. "
                 + "Scene View remains a secondary inspection/materialization surface.";
         }
@@ -494,11 +947,11 @@ namespace Conn.MapGenV2.Editor
             var materializedRoot = ResolveMaterializedRoot();
             var badges = new[]
             {
-                new StepBadge("Setup", workflow.HasProfile && workflow.ProfileValid && workflow.HasDraft, !workflow.HasProfile || !workflow.ProfileValid || !workflow.HasDraft),
+                new StepBadge("Draft", workflow.HasProfile && workflow.ProfileValid && workflow.HasDraft, !workflow.HasProfile || !workflow.ProfileValid || !workflow.HasDraft),
                 new StepBadge("Generate", workflow.HasGeneratedMockup, workflow.CanGenerate && !workflow.HasGeneratedMockup),
-                new StepBadge("Post-Process", workflow.HasGeneratedMockup, workflow.CanPostProcess && !workflow.Accepted),
-                new StepBadge("Confirm", workflow.Accepted && workflow.AcceptedCurrent, workflow.CanAccept && (!workflow.Accepted || !workflow.AcceptedCurrent)),
-                new StepBadge("Materialize", materializedRoot != null, workflow.CanMaterialize),
+                new StepBadge("Edit", workflow.HasGeneratedMockup, workflow.CanPostProcess && !workflow.Accepted),
+                new StepBadge("Save", workflow.Accepted && workflow.AcceptedCurrent, workflow.CanAccept && (!workflow.Accepted || !workflow.AcceptedCurrent)),
+                new StepBadge("Scene", materializedRoot != null, workflow.CanMaterialize),
                 new StepBadge("Bake", LoadExpectedBakedAsset() != null, workflow.CanBakeRuntime)
             };
             var availableWidth = Mathf.Max(180f, EditorGUIUtility.currentViewWidth - 36f);
@@ -555,8 +1008,8 @@ namespace Conn.MapGenV2.Editor
         private void DrawReferenceFields()
         {
             EditorGUI.BeginChangeCheck();
-            profile = (MapGenProfileAsset)EditorGUILayout.ObjectField("프로필 / Profile", profile, typeof(MapGenProfileAsset), false);
-            draft = (MapGenMockupDraftAsset)EditorGUILayout.ObjectField("현재 목업 / Current Mockup", draft, typeof(MapGenMockupDraftAsset), false);
+            draft = (MapGenMockupDraftAsset)EditorGUILayout.ObjectField("드래프트 / Draft", draft, typeof(MapGenMockupDraftAsset), false);
+            profile = (MapGenProfileAsset)EditorGUILayout.ObjectField("내부 설정 / Internal Profile", profile, typeof(MapGenProfileAsset), false);
             if (EditorGUI.EndChangeCheck())
             {
                 SaveWindowState();
@@ -602,7 +1055,7 @@ namespace Conn.MapGenV2.Editor
                 return;
             }
 
-            MapGenValidationReportEditorGUI.Draw(profile.Validate(), profile, "Profile is valid.");
+            MapGenValidationReportEditorGUI.Draw(profile.Validate(), profile, "Draft setup is valid.");
         }
 
         private void DrawDiagnosticsPanel()
@@ -704,8 +1157,8 @@ namespace Conn.MapGenV2.Editor
         {
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
-                EditorGUILayout.LabelField("목업 에셋 폴더 / Current Mockup Folder", GetDraftFolder());
-                EditorGUILayout.LabelField("현재 목업 에셋 / Current Mockup Asset", draft != null ? AssetDatabase.GetAssetPath(draft) : "(none)");
+                EditorGUILayout.LabelField("드래프트 폴더 / Draft Folder", GetDraftFolder());
+                EditorGUILayout.LabelField("드래프트 에셋 / Draft Asset", draft != null ? AssetDatabase.GetAssetPath(draft) : "(none)");
                 EditorGUILayout.LabelField("Materialized Prefab 폴더 / Materialized Prefab Folder", GetMaterializedPrefabFolder());
                 EditorGUILayout.LabelField("베이크 에셋 / Baked Asset", BuildExpectedBakedAssetPath());
             }
@@ -717,8 +1170,8 @@ namespace Conn.MapGenV2.Editor
             {
                 var style = new GUIStyle(EditorStyles.miniLabel) { wordWrap = true };
                 EditorGUILayout.LabelField(BuildLinkedAssetShortcutSummary(), style);
-                DrawObjectShortcutRow("프로필 / Profile", profile, CreateStarterSetupFromShortcut);
-                DrawObjectShortcutRow("현재 목업 / Current Mockup", draft, profile != null ? CreateDraft : null);
+                DrawObjectShortcutRow("드래프트 / Draft", draft, profile != null ? CreateDraft : null);
+                DrawObjectShortcutRow("내부 설정 / Internal Profile", profile, CreateStarterSetupFromShortcut);
                 DrawObjectShortcutRow("씬 출력 루트 / Materialized Root", selectedMaterializedRoot);
                 DrawObjectShortcutRow("베이크 에셋 / Baked Asset", LoadExpectedBakedAsset());
 
@@ -763,7 +1216,7 @@ namespace Conn.MapGenV2.Editor
         public static string BuildUndoCoverageSummary()
         {
             return "Undo/Redo coverage: serialized inspector asset edits, room-shape paint/resize/rotate/flip, "
-                + "current mockup generate/post-process/confirm/clear, selected-region category/lock/regenerate/state edits, "
+                + "draft generate/post-process/save/clear, selected-region category/lock/regenerate/state edits, "
                 + "profile output settings, and scene materialization create/update/clear via Undo object creation/destruction.";
         }
 
@@ -944,10 +1397,10 @@ namespace Conn.MapGenV2.Editor
                     DrawWrappingHelpBox("UpdateSelected는 Materialized Root가 필요합니다. 기존 출력을 갱신하려면 root를 지정하거나 아래 유틸리티에서 Find Previous Root를 사용하세요.", MessageType.Info);
                 }
 
-                if (!workflow.CanMaterialize)
-                {
-                    DrawWrappingHelpBox($"Materialize To Scene is unavailable: {workflow.MaterializeReason}", MessageType.Info);
-                }
+            if (!workflow.CanMaterialize)
+            {
+                DrawWrappingHelpBox($"씬 생성 불가 / Materialize unavailable: {workflow.MaterializeReason}", MessageType.Info);
+            }
 
                 using (new EditorGUI.DisabledScope(!workflow.CanMaterialize))
                 {
@@ -981,7 +1434,7 @@ namespace Conn.MapGenV2.Editor
                         selectedMaterializedRoot = marker != null ? marker.gameObject : null;
                         SetLastOperationResult(selectedMaterializedRoot != null
                             ? $"Found materialized root: {selectedMaterializedRoot.name}."
-                            : "No previous materialized root found for the current mockup.");
+                            : "No previous materialized root found for the current draft.");
                     }
 
                     using (new EditorGUI.DisabledScope(selectedMaterializedRoot == null))
@@ -1018,10 +1471,10 @@ namespace Conn.MapGenV2.Editor
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
                 EditorGUILayout.LabelField("베이크 에셋 / Baked Asset", BuildExpectedBakedAssetPath());
-                if (!workflow.CanBakeRuntime)
-                {
-                    DrawWrappingHelpBox($"Bake Runtime Asset is unavailable: {workflow.BakeRuntimeReason}", MessageType.Info);
-                }
+            if (!workflow.CanBakeRuntime)
+            {
+                DrawWrappingHelpBox($"런타임 베이크 불가 / Bake unavailable: {workflow.BakeRuntimeReason}", MessageType.Info);
+            }
 
                 using (new EditorGUI.DisabledScope(!workflow.CanBakeRuntime))
                 {
@@ -1091,158 +1544,6 @@ namespace Conn.MapGenV2.Editor
             SetLastOperationResult(prefab != null
                 ? $"Saved materialized prefab: {path}."
                 : "Save Materialized As Prefab failed.");
-        }
-
-        private void DrawDraftActions(MapGenV2WorkflowStatus workflow)
-        {
-            if (draft == null)
-            {
-                DrawWrappingHelpBox("현재 목업을 생성하거나 지정하세요. / Create or assign the current mockup asset.", MessageType.Info);
-                return;
-            }
-
-            if (profile != null && draft.Profile != profile)
-            {
-                if (GUILayout.Button("현재 목업에 프로필 연결 / Assign Profile To Current Mockup"))
-                {
-                    Undo.RecordObject(draft, "Assign MapGen Profile");
-                    draft.Profile = profile;
-                    EditorUtility.SetDirty(draft);
-                    SaveWindowState();
-                    SetLastOperationResult("Selected profile assigned to the current mockup.");
-                }
-            }
-
-            DrawFoldoutSection("주요 작업 설명 / Primary Action Impact", ref showPrimaryActionImpactFoldout, () => DrawPrimaryActionSummary(workflow));
-
-            using (new EditorGUI.DisabledScope(!workflow.CanGenerate))
-            {
-                var generateLabel = workflow.HasGeneratedMockup && !workflow.GeneratedCurrent
-                    ? MapGenV2EditorText.Get("mapgenv2.regenerateMockup")
-                    : MapGenV2EditorText.Get("mapgenv2.generateMockup");
-                if (GUILayout.Button(generateLabel))
-                {
-                    GenerateMockup("Generate Mockup");
-                }
-            }
-
-            using (new EditorGUI.DisabledScope(!workflow.CanGenerate))
-            {
-                if (GUILayout.Button("Regenerate Same Seed / 같은 시드 재생성"))
-                {
-                    GenerateMockup("Regenerate Same Seed", preserveLockedRegions: true);
-                }
-            }
-
-            using (new EditorGUI.DisabledScope(!workflow.CanGenerate))
-            {
-                if (GUILayout.Button("새 랜덤 목업 생성 / Generate Random Mockup"))
-                {
-                    Undo.RecordObject(draft, "Generate Random Mockup");
-                    draft.Seed = CreateRandomSeed();
-                    GenerateMockup("Generate Random Mockup", recordUndo: false);
-                }
-            }
-
-            using (new EditorGUI.DisabledScope(!workflow.CanPostProcess))
-            {
-                if (GUILayout.Button("Repostprocess Mockup / 후처리 재실행"))
-                {
-                    RunPostProcess();
-                }
-            }
-
-            using (new EditorGUI.DisabledScope(!workflow.CanAccept))
-            {
-                if (GUILayout.Button(MapGenV2EditorText.Get("mapgenv2.acceptMockup")))
-                {
-                    Undo.RecordObject(draft, "Confirm Mockup");
-                    draft.Accept();
-                    EditorUtility.SetDirty(draft);
-                    SetLastOperationResult($"목업 확정 완료 / Confirmed mockup signature {draft.AcceptedSignature}.");
-                }
-            }
-
-            DrawFoldoutSection("시드/목업 유틸리티 / Seed & Mockup Utilities", ref showDraftUtilitiesFoldout, () =>
-            {
-                using (new EditorGUI.DisabledScope(draft == null))
-                {
-                    if (GUILayout.Button("시드만 랜덤화 / Randomize Seed Only"))
-                    {
-                        Undo.RecordObject(draft, "Randomize MapGen Seed");
-                        draft.Seed = CreateRandomSeed();
-                        draft.ClearDraft();
-                        ClearSelection();
-                        EditorUtility.SetDirty(draft);
-                        SetLastOperationResult($"Randomized seed to {draft.Seed}.");
-                    }
-                }
-
-                using (new EditorGUI.DisabledScope(draft == null))
-                {
-                    if (GUILayout.Button("현재 목업 비우기 / Clear Current Mockup"))
-                    {
-                        Undo.RecordObject(draft, "Clear MapGen Draft");
-                        draft.ClearDraft();
-                        ClearSelection();
-                        EditorUtility.SetDirty(draft);
-                        SetLastOperationResult("Cleared current mockup cells, generated signature, post-process report, and confirmation.");
-                    }
-                }
-            });
-
-            if (!workflow.CanGenerate)
-            {
-                DrawWrappingHelpBox($"Generate Mockup disabled: {workflow.GenerateReason}", MessageType.Info);
-            }
-        }
-
-        private void DrawPrimaryActionSummary(MapGenV2WorkflowStatus workflow)
-        {
-            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
-            {
-                var style = new GUIStyle(EditorStyles.label) { wordWrap = true };
-                EditorGUILayout.LabelField(
-                    BuildPrimaryActionExplanation(
-                        "Generate Mockup",
-                        workflow.CanGenerate,
-                        workflow.GenerateReason,
-                        "writes a new blue/red/black/gray preview into the current mockup",
-                        draft != null ? AssetDatabase.GetAssetPath(draft) : "(current mockup asset)"),
-                    style);
-                EditorGUILayout.LabelField(
-                    BuildPrimaryActionExplanation(
-                        "Post-Process",
-                        workflow.CanPostProcess,
-                        workflow.PostProcessReason,
-                        "updates generated cells using the rule set pass list",
-                        draft != null ? AssetDatabase.GetAssetPath(draft) : "(current mockup asset)"),
-                    style);
-                EditorGUILayout.LabelField(
-                    BuildPrimaryActionExplanation(
-                        "Confirm Mockup",
-                        workflow.CanAccept,
-                        workflow.AcceptReason,
-                        "records the current mockup signature as the materialization source",
-                        draft != null ? AssetDatabase.GetAssetPath(draft) : "(current mockup asset)"),
-                    style);
-                EditorGUILayout.LabelField(
-                    BuildPrimaryActionExplanation(
-                        "Materialize To Scene",
-                        workflow.CanMaterialize,
-                        workflow.MaterializeReason,
-                        "instantiates prefab or placeholder modules from the confirmed mockup",
-                        $"Scene root MapGenV2_<Profile>_<Seed>; prefab folder {GetMaterializedPrefabFolder()}"),
-                    style);
-                EditorGUILayout.LabelField(
-                    BuildPrimaryActionExplanation(
-                        "Bake Runtime Asset",
-                        workflow.CanBakeRuntime,
-                        workflow.BakeRuntimeReason,
-                        "writes runtime-safe grid, region, connector, prop, marker, and traversal data",
-                        BuildExpectedBakedAssetPath()),
-                    style);
-            }
         }
 
         private void GenerateMockup(string operationName, bool recordUndo = true, bool preserveLockedRegions = false)
@@ -1371,7 +1672,7 @@ namespace Conn.MapGenV2.Editor
                 selectedMaterializedRoot = root;
                 SetLastOperationResult(root != null
                     ? $"Materialized scene root: {root.name}. Perf {sample.ElapsedMs}ms/{sample.BudgetMs}ms {sample.Target}."
-                    : $"Materialize To Scene failed. Check confirmed state and module coverage. Perf {sample.ElapsedMs}ms/{sample.BudgetMs}ms {sample.Target}.");
+                    : $"Materialize To Scene failed. Check saved draft state and module coverage. Perf {sample.ElapsedMs}ms/{sample.BudgetMs}ms {sample.Target}.");
             }
             finally
             {
@@ -1409,7 +1710,7 @@ namespace Conn.MapGenV2.Editor
                     out var sample);
                 SetLastOperationResult(bakedAsset != null
                     ? $"Baked runtime asset: {AssetDatabase.GetAssetPath(bakedAsset)}. Perf {sample.ElapsedMs}ms/{sample.BudgetMs}ms {sample.Target}."
-                    : $"Bake Runtime Asset failed. Check confirmed state. Perf {sample.ElapsedMs}ms/{sample.BudgetMs}ms {sample.Target}.");
+                    : $"Bake Runtime Asset failed. Check saved draft state. Perf {sample.ElapsedMs}ms/{sample.BudgetMs}ms {sample.Target}.");
             }
             finally
             {
@@ -1427,13 +1728,13 @@ namespace Conn.MapGenV2.Editor
             var materializedRoot = ResolveMaterializedRoot();
             if (materializedRoot == null)
             {
-                return "Materialize To Scene / 확정된 목업을 씬 출력으로 생성.";
+                return "씬 생성 / 저장된 드래프트를 씬 출력으로 생성.";
             }
 
             var materializedReport = MapGenMockupMaterializer.ValidateExistingOutput(draft, materializedRoot);
             if (!materializedReport.IsValid)
             {
-                return "Rematerialize To Scene / stale materialized root를 현재 확정 목업과 module set으로 재생성.";
+                return "씬 재생성 / 오래된 씬 출력을 현재 저장된 드래프트와 에셋 구성으로 재생성.";
             }
 
             if (!workflow.CanBakeRuntime)
@@ -1444,16 +1745,16 @@ namespace Conn.MapGenV2.Editor
             var bakedAsset = LoadExpectedBakedAsset();
             if (bakedAsset == null)
             {
-                return "Bake Runtime Asset / runtime-safe baked map asset 생성.";
+                return "런타임 베이크 / runtime-safe baked map asset 생성.";
             }
 
             var bakeReport = MapGenRuntimeBakeUtility.ValidateConsistency(draft, bakedAsset);
             if (!bakeReport.IsValid)
             {
-                return "Rebake Runtime Asset / stale baked asset을 현재 확정 목업으로 재생성.";
+                return "런타임 재베이크 / 오래된 baked asset을 현재 저장된 드래프트로 재생성.";
             }
 
-            return "Outputs are current / materialized scene output과 runtime bake가 현재 확정 목업과 일치.";
+            return "출력 최신 / 씬 출력과 runtime bake가 현재 저장된 드래프트와 일치.";
         }
 
         private bool ShouldRematerialize()
@@ -1543,7 +1844,7 @@ namespace Conn.MapGenV2.Editor
                 MapGenV2OutputOverwriteMode.UpdateSelected =>
                     "UpdateSelected: 선택한 Materialized Root의 children/marker만 교체합니다. 선택 root가 없으면 materialize를 실행하지 않습니다.",
                 _ =>
-                    "ReplacePrevious: 같은 current mockup/profile/seed/signature의 이전 MapGenV2 root를 삭제한 뒤 새 root를 생성합니다."
+                    "ReplacePrevious: 같은 draft/seed/signature의 이전 MapGenV2 root를 삭제한 뒤 새 root를 생성합니다."
             };
         }
 
@@ -1554,16 +1855,32 @@ namespace Conn.MapGenV2.Editor
 
         private void CreateDraft()
         {
+            if (profile == null)
+            {
+                var setup = MapGenV2StarterSetupBuilder.CreateStarterProfileSetup();
+                profile = setup.Profile;
+                draft = setup.Draft;
+                importDraft = draft;
+                Selection.activeObject = draft != null ? draft : profile;
+                var moduleSet = GetActiveModuleSet();
+                EnsureDraftPrefabPalette(moduleSet);
+                EditorUtility.SetDirty(draft);
+                AssetDatabase.SaveAssets();
+                SetLastOperationResult("Created a draft. Replace prefab slots before generating if needed.");
+                return;
+            }
+
             MapGenV2AssetFolderUtility.CreateDefaultFolders();
             var draftFolder = GetDraftFolder();
             MapGenV2AssetFolderUtility.EnsureAssetFolder(draftFolder);
             var path = AssetDatabase.GenerateUniqueAssetPath($"{draftFolder}/MapGenMockupDraft.asset");
             draft = ScriptableObject.CreateInstance<MapGenMockupDraftAsset>();
             draft.Profile = profile;
+            CaptureModuleSetPrefabPalette(profile.StyleSet != null ? profile.StyleSet.ModuleSet : null);
             AssetDatabase.CreateAsset(draft, path);
             AssetDatabase.SaveAssets();
             Selection.activeObject = draft;
-            SetLastOperationResult($"Created current mockup asset: {path}.");
+            SetLastOperationResult($"Created draft asset: {path}.");
         }
 
         private string BuildExpectedBakedAssetPath()
@@ -1619,6 +1936,7 @@ namespace Conn.MapGenV2.Editor
             EditorPrefs.SetInt(SelectedRegionIdKey, selectedRegionId);
             EditorPrefs.SetBool(DiagnosticsFoldoutKey, showDiagnosticsFoldout);
             EditorPrefs.SetBool(SetupAssetsFoldoutKey, showSetupAssetsFoldout);
+            EditorPrefs.SetBool(MapAssetsFoldoutKey, showMapAssetsFoldout);
             EditorPrefs.SetBool(OutputPathsFoldoutKey, showOutputPathsFoldout);
             EditorPrefs.SetBool(LinkedAssetsFoldoutKey, showLinkedAssetsFoldout);
             EditorPrefs.SetBool(MockupActionsFoldoutKey, showMockupActionsFoldout);
@@ -1664,17 +1982,17 @@ namespace Conn.MapGenV2.Editor
 
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
-                EditorGUILayout.LabelField("프로필 / Profile", string.IsNullOrEmpty(previewData.ProfileId) ? "(none)" : previewData.ProfileId);
+                EditorGUILayout.LabelField("내부 설정 / Internal Profile", string.IsNullOrEmpty(previewData.ProfileId) ? "(none)" : previewData.ProfileId);
                 EditorGUILayout.LabelField("시드 / Seed", previewData.Seed.ToString());
                 EditorGUILayout.LabelField("그리드 / Grid", $"{previewData.Width} x {previewData.Height}");
                 EditorGUILayout.LabelField(
                     "생성 상태 / Generated State",
                     previewData.GeneratedSignatureCurrent ? "최신 / Current" : MapGenV2EditorText.Get("mapgenv2.draftStale"));
                 EditorGUILayout.LabelField(
-                    "상태 / State",
+                    "저장 상태 / Save State",
                     previewData.Accepted
-                        ? previewData.AcceptedSignatureCurrent ? "확정됨 / Confirmed" : "변경됨: 다시 확정 필요 / Stale"
-                        : "미확정 / Not confirmed");
+                        ? previewData.AcceptedSignatureCurrent ? "저장됨 / Saved" : "변경됨: 다시 저장 필요 / Changed"
+                        : "저장 필요 / Needs save");
                 EditorGUILayout.LabelField(
                     "셀 / Cells",
                     $"Rooms {previewData.Summary.RoomCells}, Corridors {previewData.Summary.CorridorCells}, Blocked {previewData.Summary.BlockedCells}, Connectors {previewData.Summary.ConnectorCells}, Reserved {previewData.Summary.ReservedCells}");
@@ -1685,15 +2003,40 @@ namespace Conn.MapGenV2.Editor
             {
                 EditorGUILayout.LabelField("생성 서명 / Generated Signature", string.IsNullOrEmpty(previewData.LastGeneratedSignature) ? "(none)" : previewData.LastGeneratedSignature);
                 EditorGUILayout.LabelField("현재 서명 / Current Signature", previewData.CurrentSignature);
-                EditorGUILayout.LabelField("확정 서명 / Confirmed Signature", string.IsNullOrEmpty(previewData.AcceptedSignature) ? "(none)" : previewData.AcceptedSignature);
+                EditorGUILayout.LabelField("저장 서명 / Saved Signature", string.IsNullOrEmpty(previewData.AcceptedSignature) ? "(none)" : previewData.AcceptedSignature);
                 DrawWrappingHelpBox(BuildPrimaryMockupUxSummary(), MessageType.Info);
             });
 
             var propPlacement = MapGenPropPlacementPlanner.BuildForDraft(draft);
             DrawPropPlacementPreviewSummary(propPlacement);
             DrawPostProcessPassSummary();
+            DrawDrawingToolbar();
             DrawMockupPreview(previewData);
             DrawCellDetails(previewData);
+        }
+
+        private void DrawDrawingToolbar()
+        {
+            EditorGUILayout.Space(4f);
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                EditorGUILayout.LabelField("드로잉 도구 / Drawing Tools", EditorStyles.boldLabel);
+                var labels = new[]
+                {
+                    "선택 / Select",
+                    "방 / Room",
+                    "복도 / Corridor",
+                    "비우기 / Empty",
+                    "차단 / Blocked",
+                    "예약 / Reserved"
+                };
+                paintTool = (MapGenDraftPaintTool)GUILayout.Toolbar((int)paintTool, labels);
+                EditorGUILayout.HelpBox(
+                    paintTool == MapGenDraftPaintTool.Select
+                        ? "클릭하면 셀/리전을 선택합니다. / Click cells to inspect regions."
+                        : "클릭 또는 드래그로 현재 드래프트 셀을 직접 수정합니다. 저장 전까지 씬 출력에는 반영하지 않습니다.",
+                    MessageType.Info);
+            }
         }
 
         private void DrawMockupPreview(MapGenMockupPreviewData previewData)
@@ -1727,7 +2070,7 @@ namespace Conn.MapGenV2.Editor
 
             if (previewData.Width <= 0 || previewData.Height <= 0)
             {
-                EditorGUILayout.HelpBox("생성된 목업이 없습니다. Generate Mockup을 누르면 이 영역에 파랑/빨강/검정/회색 그리드가 표시됩니다.", MessageType.Info);
+                EditorGUILayout.HelpBox("생성된 드래프트 맵이 없습니다. 지정한 시드로 생성을 누르면 이 영역에 파랑/빨강/검정/회색 그리드가 표시됩니다.", MessageType.Info);
                 return;
             }
 
@@ -1981,6 +2324,12 @@ namespace Conn.MapGenV2.Editor
                 return;
             }
 
+            if (current.type == EventType.MouseUp && current.button == 0)
+            {
+                paintStrokeRegionId = -1;
+                paintUndoRecorded = false;
+            }
+
             var inside = rect.Contains(current.mousePosition);
             if (!inside)
             {
@@ -2009,6 +2358,16 @@ namespace Conn.MapGenV2.Editor
                 Repaint();
             }
 
+            if (paintTool != MapGenDraftPaintTool.Select
+                && current.button == 0
+                && (current.type == EventType.MouseDown || current.type == EventType.MouseDrag))
+            {
+                PaintDraftCell(coord, cell);
+                current.Use();
+                Repaint();
+                return;
+            }
+
             if (current.type == EventType.MouseDown && current.button == 0)
             {
                 selectedCell = coord;
@@ -2018,6 +2377,115 @@ namespace Conn.MapGenV2.Editor
                 current.Use();
                 Repaint();
             }
+        }
+
+        private void PaintDraftCell(Vector2Int coord, MapGenMockupCell currentCell)
+        {
+            if (draft == null)
+            {
+                return;
+            }
+
+            draft.EnsureCellArray();
+            if (coord.x < 0 || coord.y < 0 || coord.x >= draft.Width || coord.y >= draft.Height)
+            {
+                return;
+            }
+
+            var state = StateForPaintTool(paintTool);
+            var regionState = IsPaintRegionState(state);
+            if (regionState && paintStrokeRegionId < 0)
+            {
+                paintStrokeRegionId = currentCell.State == state && currentCell.RegionId >= 0
+                    ? currentCell.RegionId
+                    : NextRegionId(draft);
+            }
+
+            var nextCell = BuildPaintCell(state, regionState ? paintStrokeRegionId : -1);
+            var index = (coord.y * draft.Width) + coord.x;
+            if (index < 0 || index >= draft.Cells.Length || CellsMatchForPaint(draft.Cells[index], nextCell))
+            {
+                return;
+            }
+
+            if (!paintUndoRecorded)
+            {
+                Undo.RecordObject(draft, "Paint MapGen Draft Cell");
+                paintUndoRecorded = true;
+            }
+
+            draft.Cells[index] = nextCell;
+            draft.LastGeneratedSignature = draft.ComputeSignature();
+            draft.LastGeneratedSourceSignature = draft.CurrentSourceSignature;
+            draft.ClearAcceptance();
+            selectedCell = coord;
+            hasSelectedCell = true;
+            selectedRegionId = nextCell.RegionId;
+            EditorUtility.SetDirty(draft);
+            SaveWindowState();
+            SetLastOperationResult($"Painted {state} at {coord.x},{coord.y}. Save Draft when ready.");
+        }
+
+        private static MapGenCellState StateForPaintTool(MapGenDraftPaintTool tool)
+        {
+            return tool switch
+            {
+                MapGenDraftPaintTool.Room => MapGenCellState.Room,
+                MapGenDraftPaintTool.Corridor => MapGenCellState.Corridor,
+                MapGenDraftPaintTool.Blocked => MapGenCellState.Blocked,
+                MapGenDraftPaintTool.Reserved => MapGenCellState.Reserved,
+                _ => MapGenCellState.Empty
+            };
+        }
+
+        private static bool IsPaintRegionState(MapGenCellState state)
+        {
+            return state == MapGenCellState.Room || state == MapGenCellState.Corridor || state == MapGenCellState.Connector;
+        }
+
+        private static int NextRegionId(MapGenMockupDraftAsset sourceDraft)
+        {
+            var maxRegionId = -1;
+            foreach (var cell in sourceDraft.Cells ?? System.Array.Empty<MapGenMockupCell>())
+            {
+                if (cell.RegionId > maxRegionId)
+                {
+                    maxRegionId = cell.RegionId;
+                }
+            }
+
+            return maxRegionId + 1;
+        }
+
+        private static MapGenMockupCell BuildPaintCell(MapGenCellState state, int regionId)
+        {
+            if (state == MapGenCellState.Empty)
+            {
+                return MapGenMockupCell.Empty;
+            }
+
+            return new MapGenMockupCell
+            {
+                State = state,
+                RegionId = regionId,
+                RoomCategory = MapGenRoomCategory.Main,
+                SocketKind = state == MapGenCellState.Blocked ? MapGenSocketKind.Blocked : MapGenSocketKind.None,
+                SocketId = string.Empty,
+                SocketWidth = state == MapGenCellState.Blocked ? 1 : 0,
+                PropChannel = string.Empty,
+                PropWeight = 1,
+                SourceTemplateId = string.Empty,
+                SourceShapeId = string.Empty
+            };
+        }
+
+        private static bool CellsMatchForPaint(MapGenMockupCell a, MapGenMockupCell b)
+        {
+            return a.State == b.State
+                && a.RegionId == b.RegionId
+                && a.RoomCategory == b.RoomCategory
+                && a.SocketKind == b.SocketKind
+                && a.SocketWidth == b.SocketWidth;
         }
 
         private void DrawCellDetails(MapGenMockupPreviewData previewData)
@@ -2153,7 +2621,7 @@ namespace Conn.MapGenV2.Editor
                         Undo.RecordObject(draft, "Change MapGen Region Category");
                         draft.SetRegionCategory(selectedRegionId, newCategory);
                         EditorUtility.SetDirty(draft);
-                        SetLastOperationResult($"Changed region {selectedRegionId} category to {newCategory}. Confirm the mockup before scene output.");
+                        SetLastOperationResult($"Changed region {selectedRegionId} category to {newCategory}. Save the draft before scene output.");
                     }
 
                     if (GUILayout.Button("Clear Region Override"))
@@ -2305,7 +2773,7 @@ namespace Conn.MapGenV2.Editor
             Undo.RecordObject(draft, $"MapGen {actionLabel} Region");
             draft.SetRegionState(selectedRegionId, state);
             EditorUtility.SetDirty(draft);
-            SetLastOperationResult($"{actionLabel} region {selectedRegionId}. Confirm the mockup before scene output.");
+            SetLastOperationResult($"{actionLabel} region {selectedRegionId}. Save the draft before scene output.");
             Repaint();
         }
 

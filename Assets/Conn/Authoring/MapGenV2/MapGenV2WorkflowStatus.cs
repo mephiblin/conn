@@ -1,3 +1,5 @@
+using Conn.MapGenV2.Core;
+
 namespace Conn.MapGenV2.Authoring
 {
     public readonly struct MapGenV2WorkflowStatus
@@ -73,7 +75,9 @@ namespace Conn.MapGenV2.Authoring
             var draftUsesSelectedProfile = !hasProfile || !hasDraft || draftProfile == selectedProfile;
             var draftHasProfile = hasDraft && draftProfile != null;
             var draftProfileValid = draftHasProfile && draftProfile.Validate().IsValid;
-            var hasGeneratedMockup = hasDraft && !string.IsNullOrEmpty(selectedDraft.LastGeneratedSignature);
+            var hasGeneratedMockup = hasDraft
+                && !string.IsNullOrEmpty(selectedDraft.LastGeneratedSignature)
+                && HasMapCells(selectedDraft);
             var generatedCurrent = hasDraft && selectedDraft.IsGeneratedSignatureCurrent;
             var accepted = hasDraft && selectedDraft.Accepted;
             var acceptedCurrent = hasDraft && selectedDraft.IsAcceptedSignatureCurrent;
@@ -85,19 +89,19 @@ namespace Conn.MapGenV2.Authoring
             var canBakeRuntime = canMaterialize;
 
             var generateReason = canGenerate
-                ? "Generate Mockup can write a new preview into the current mockup asset."
+                ? "Generate From Seed can write a new preview into the draft."
                 : BuildGenerateReason(hasDraft, draftHasProfile, draftProfileValid);
             var postProcessReason = canPostProcess
-                ? "Run Post-Process can update the generated current mockup cells."
+                ? "Run Post-Process can update generated draft cells."
                 : BuildGeneratedReason(hasGeneratedMockup, generatedCurrent, generateReason);
             var acceptReason = canAccept
-                ? "Confirm Mockup can mark the current mockup signature as the materialization source."
-                : BuildGeneratedReason(hasGeneratedMockup, generatedCurrent, "Generate Mockup first.");
+                ? "Save Draft can mark the current draft grid as the scene output source."
+                : BuildGeneratedReason(hasGeneratedMockup, generatedCurrent, "Generate From Seed first.");
             var materializeReason = canMaterialize
-                ? "Materialize To Scene can instantiate the confirmed mockup."
+                ? "Materialize To Scene can instantiate the saved draft."
                 : BuildAcceptedReason(hasGeneratedMockup, accepted, acceptedCurrent);
             var bakeRuntimeReason = canBakeRuntime
-                ? "Bake Runtime Asset can write runtime-safe map data from the confirmed mockup."
+                ? "Bake Runtime Asset can write runtime-safe map data from the saved draft."
                 : materializeReason;
 
             return new MapGenV2WorkflowStatus(
@@ -126,52 +130,65 @@ namespace Conn.MapGenV2.Authoring
         {
             if (!hasDraft)
             {
-                return "Create or assign the current mockup asset first.";
+                return "Create or import a draft first.";
             }
 
             if (!draftHasProfile)
             {
-                return "Assign a profile to the current mockup first.";
+                return "Create a draft with internal setup first.";
             }
 
             if (!draftProfileValid)
             {
-                return "Fix profile validation errors first.";
+                return "Fix draft setup validation errors first.";
             }
 
             return "Generation is unavailable.";
+        }
+
+        private static bool HasMapCells(MapGenMockupDraftAsset draft)
+        {
+            foreach (var cell in draft?.Cells ?? System.Array.Empty<MapGenMockupCell>())
+            {
+                if (cell.State != MapGenCellState.Empty)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static string BuildAcceptedReason(bool hasGeneratedMockup, bool accepted, bool acceptedCurrent)
         {
             if (!hasGeneratedMockup)
             {
-                return "Generate Mockup first.";
+                return "Generate From Seed first.";
             }
 
             if (!accepted)
             {
-                return "Confirm Mockup first.";
+                return "Save Draft first.";
             }
 
             if (!acceptedCurrent)
             {
-                return "The confirmed mockup is stale. Confirm the current mockup.";
+                return "The saved draft is stale. Save the current draft.";
             }
 
-            return "Confirmed mockup is not ready.";
+            return "Saved draft is not ready.";
         }
 
         private static string BuildGeneratedReason(bool hasGeneratedMockup, bool generatedCurrent, string fallback)
         {
             if (!hasGeneratedMockup)
             {
-                return "Generate Mockup first.";
+                return "Generate From Seed first.";
             }
 
             if (!generatedCurrent)
             {
-                return "The generated mockup is stale because source assets changed. Regenerate Mockup.";
+                return "The generated draft is stale because source assets changed. Regenerate from seed.";
             }
 
             return fallback;
@@ -190,42 +207,42 @@ namespace Conn.MapGenV2.Authoring
         {
             if (!hasProfile)
             {
-                return "Create Starter Setup or assign a profile.";
+                return "Create or import a draft.";
             }
 
             if (!profileValid)
             {
-                return "Fix profile validation errors.";
+                return "Fix draft setup validation errors.";
             }
 
             if (!hasDraft)
             {
-                return "Create or assign the current mockup asset.";
+                return "Create or import a draft.";
             }
 
             if (!draftUsesSelectedProfile)
             {
-                return "Assign the selected profile to the current mockup.";
+                return "Import the draft again or use its internal setup.";
             }
 
             if (!canGenerate)
             {
-                return "Fix current mockup/profile setup before generation.";
+                return "Fix draft setup before generation.";
             }
 
             if (!hasGeneratedMockup)
             {
-                return "Generate Mockup.";
+                return "Generate From Seed.";
             }
 
             if (!generatedCurrent)
             {
-                return "Regenerate Mockup because source assets changed.";
+                return "Regenerate from seed because source assets changed.";
             }
 
             if (!accepted || !acceptedCurrent)
             {
-                return "Inspect the preview, then Confirm Mockup.";
+                return "Inspect or draw in the preview, then Save Draft.";
             }
 
             return "Materialize To Scene, then Bake Runtime Asset.";
