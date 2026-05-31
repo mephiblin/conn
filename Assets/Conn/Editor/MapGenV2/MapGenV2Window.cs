@@ -170,7 +170,7 @@ namespace Conn.MapGenV2.Editor
         private const string DraftPathKey = "Conn.MapGenV2.Window.DraftPath";
         private const string PreviewCellSizeKey = "Conn.MapGenV2.Window.PreviewCellSize";
         private const string OutputModeKey = "Conn.MapGenV2.Window.OutputMode";
-        private const string ShowPropOverlayKey = "Conn.MapGenV2.Window.ShowPropOverlay";
+        private const string ShowPropOverlayKey = "Conn.MapGenV2.Window.ShowPropDebugOverlay";
         private const string ShowPostProcessOverlayKey = "Conn.MapGenV2.Window.ShowPostProcessOverlay";
         private const string PreviewScrollXKey = "Conn.MapGenV2.Window.PreviewScrollX";
         private const string PreviewScrollYKey = "Conn.MapGenV2.Window.PreviewScrollY";
@@ -195,12 +195,30 @@ namespace Conn.MapGenV2.Editor
         private const string MockupTechnicalDetailsFoldoutKey = "Conn.MapGenV2.Window.MockupTechnicalDetailsFoldout";
         private const string RegionAdvancedEditFoldoutKey = "Conn.MapGenV2.Window.RegionAdvancedEditFoldout";
         private static readonly string[] LanguageOptions = { "Auto", "한국어", "English" };
+        private static readonly MapGenDraftPaintTool[] PrimaryPaintTools =
+        {
+            MapGenDraftPaintTool.Select,
+            MapGenDraftPaintTool.Room,
+            MapGenDraftPaintTool.Corridor,
+            MapGenDraftPaintTool.Empty,
+            MapGenDraftPaintTool.Blocked
+        };
+
+        private static readonly string[] PrimaryPaintToolLabels =
+        {
+            "선택 / Select",
+            "방 / Room",
+            "복도 / Corridor",
+            "비우기 / Empty",
+            "차단 / Blocked"
+        };
+
         private static readonly Color EmptyColor = new Color(0.04f, 0.08f, 0.9f, 1f);
         private static readonly Color RoomColor = new Color(0.9f, 0f, 0f, 1f);
         private static readonly Color CorridorColor = new Color(0f, 0f, 0f, 1f);
         private static readonly Color BlockedColor = new Color(0.45f, 0.45f, 0.45f, 1f);
-        private static readonly Color ConnectorColor = CorridorColor;
-        private static readonly Color ReservedColor = BlockedColor;
+        private static readonly Color ConnectorColor = new Color(1f, 0.72f, 0.05f, 1f);
+        private static readonly Color ReservedColor = new Color(0.1f, 0.55f, 0.6f, 1f);
         private static readonly Color GridLineColor = new Color(0f, 0f, 0f, 0.28f);
         private static readonly Color SelectedRegionColor = new Color(1f, 1f, 1f, 0.38f);
         private static readonly Color SelectedConnectorColor = new Color(1f, 0.72f, 0.05f, 0.58f);
@@ -222,7 +240,7 @@ namespace Conn.MapGenV2.Editor
         private float previewCellSize = 18f;
         private GameObject selectedMaterializedRoot;
         private MapGenV2SceneOutputMode outputMode = MapGenV2SceneOutputMode.ReplacePreviousRoot;
-        private bool showPropPlacementOverlay = true;
+        private bool showPropPlacementOverlay;
         private bool showPostProcessOverlay = true;
         private bool showDiagnosticsFoldout = true;
         private bool showSetupAssetsFoldout = true;
@@ -962,7 +980,7 @@ namespace Conn.MapGenV2.Editor
         public static string BuildPrimaryMockupUxSummary()
         {
             return "Primary mockup UX: MapGenV2 window supports Generate, Post-Process, Save Current Draft, selected-region inspect/edit, "
-                + "prop/post overlays, Materialize, Bake, and clear/frame/select output without requiring Scene View. "
+                + "post overlay, technical-only prop debug overlay, Materialize, Bake, and clear/frame/select output without requiring Scene View. "
                 + "Scene View remains a secondary inspection/materialization surface.";
         }
 
@@ -2112,10 +2130,19 @@ namespace Conn.MapGenV2.Editor
                 EditorGUILayout.LabelField("현재 서명 / Current Signature", previewData.CurrentSignature);
                 EditorGUILayout.LabelField("저장 서명 / Saved Signature", string.IsNullOrEmpty(previewData.AcceptedSignature) ? "(none)" : previewData.AcceptedSignature);
                 DrawWrappingHelpBox(BuildPrimaryMockupUxSummary(), MessageType.Info);
+                using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+                {
+                    showPropPlacementOverlay = EditorGUILayout.ToggleLeft("프롭 배치 디버그 표시 / Show Prop Debug", showPropPlacementOverlay);
+                    DrawWrappingHelpBox(
+                        "프롭 디버그는 실제 구조 셀이 아니라 Materialize 전에 내부 배치 후보/결과를 확인하는 용도입니다. 일반 맵 편집은 방, 복도, 비우기, 차단만 사용하세요.",
+                        MessageType.Info);
+                    if (showPropPlacementOverlay)
+                    {
+                        DrawPropPlacementPreviewSummary(MapGenPropPlacementPlanner.BuildForDraft(draft));
+                    }
+                }
             });
 
-            var propPlacement = MapGenPropPlacementPlanner.BuildForDraft(draft);
-            DrawPropPlacementPreviewSummary(propPlacement);
             DrawPostProcessPassSummary();
             DrawDrawingToolbar();
             DrawMockupPreview(previewData);
@@ -2149,22 +2176,74 @@ namespace Conn.MapGenV2.Editor
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
                 EditorGUILayout.LabelField("드로잉 도구 / Drawing Tools", EditorStyles.boldLabel);
-                var labels = new[]
-                {
-                    "선택 / Select",
-                    "방 / Room",
-                    "복도 / Corridor",
-                    "비우기 / Empty",
-                    "차단 / Blocked",
-                    "예약 / Reserved"
-                };
-                paintTool = (MapGenDraftPaintTool)GUILayout.Toolbar((int)paintTool, labels);
+                DrawPaintToolButtons();
                 EditorGUILayout.HelpBox(
-                    paintTool == MapGenDraftPaintTool.Select
-                        ? "클릭하면 셀/리전을 선택합니다. / Click cells to inspect regions."
-                        : "클릭 또는 드래그로 현재 드래프트 셀을 직접 수정합니다. 저장 전까지 씬 출력에는 반영하지 않습니다.",
+                    GetPaintToolHelpText(paintTool),
                     MessageType.Info);
             }
+        }
+
+        private void DrawPaintToolButtons()
+        {
+            var selectedIndex = System.Array.IndexOf(PrimaryPaintTools, paintTool);
+            if (selectedIndex < 0)
+            {
+                paintTool = MapGenDraftPaintTool.Select;
+                selectedIndex = 0;
+            }
+
+            var availableWidth = Mathf.Max(220f, EditorGUIUtility.currentViewWidth - 42f);
+            if (availableWidth >= 560f)
+            {
+                selectedIndex = GUILayout.Toolbar(selectedIndex, PrimaryPaintToolLabels);
+                paintTool = PrimaryPaintTools[Mathf.Clamp(selectedIndex, 0, PrimaryPaintTools.Length - 1)];
+                return;
+            }
+
+            var columns = availableWidth < 360f ? 1 : 2;
+            var buttonWidth = Mathf.Max(120f, (availableWidth / columns) - 6f);
+            for (var index = 0; index < PrimaryPaintTools.Length; index += columns)
+            {
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    for (var column = 0; column < columns; column++)
+                    {
+                        var itemIndex = index + column;
+                        if (itemIndex >= PrimaryPaintTools.Length)
+                        {
+                            GUILayout.FlexibleSpace();
+                            continue;
+                        }
+
+                        var tool = PrimaryPaintTools[itemIndex];
+                        var previousColor = GUI.backgroundColor;
+                        if (tool == paintTool)
+                        {
+                            GUI.backgroundColor = new Color(0.45f, 0.65f, 0.95f, 1f);
+                        }
+
+                        if (GUILayout.Button(PrimaryPaintToolLabels[itemIndex], GUILayout.Width(buttonWidth)))
+                        {
+                            paintTool = tool;
+                        }
+
+                        GUI.backgroundColor = previousColor;
+                    }
+                }
+            }
+        }
+
+        private static string GetPaintToolHelpText(MapGenDraftPaintTool tool)
+        {
+            return tool switch
+            {
+                MapGenDraftPaintTool.Select => "클릭하면 셀/리전을 선택합니다. / Click cells to inspect regions.",
+                MapGenDraftPaintTool.Room => "방 셀을 직접 그립니다. 같은 드래그 스트로크는 하나의 방 리전으로 묶입니다.",
+                MapGenDraftPaintTool.Corridor => "복도 셀을 직접 그립니다. 같은 드래그 스트로크는 하나의 복도 리전으로 묶입니다.",
+                MapGenDraftPaintTool.Blocked => "차단은 벽/막힘 영역입니다. 이동과 방/복도 생성에서 제외되고 씬 생성 시 차단물 후보가 됩니다.",
+                MapGenDraftPaintTool.Empty => "빈칸으로 지웁니다. 기존 방/복도/차단 정보를 제거합니다.",
+                _ => "클릭 또는 드래그로 현재 드래프트 셀을 직접 수정합니다. 저장 전까지 씬 출력에는 반영하지 않습니다."
+            };
         }
 
         private void DrawMockupPreview(MapGenMockupPreviewData previewData)
@@ -2174,7 +2253,6 @@ namespace Conn.MapGenV2.Editor
             if (EditorGUIUtility.currentViewWidth < 620f)
             {
                 previewCellSize = EditorGUILayout.Slider("확대 / Zoom", previewCellSize, 6f, 32f);
-                showPropPlacementOverlay = EditorGUILayout.ToggleLeft("프롭 오버레이 / Props", showPropPlacementOverlay);
                 using (new EditorGUI.DisabledScope(!HasPostProcessPassOverlay()))
                 {
                     showPostProcessOverlay = EditorGUILayout.ToggleLeft("후처리 오버레이 / Post", showPostProcessOverlay);
@@ -2186,7 +2264,6 @@ namespace Conn.MapGenV2.Editor
                 {
                     EditorGUILayout.LabelField("확대 / Zoom", GUILayout.Width(72f));
                     previewCellSize = EditorGUILayout.Slider(previewCellSize, 6f, 32f, GUILayout.Width(180f));
-                    showPropPlacementOverlay = EditorGUILayout.ToggleLeft("프롭 오버레이 / Props", showPropPlacementOverlay, GUILayout.Width(150f));
                     using (new EditorGUI.DisabledScope(!HasPostProcessPassOverlay()))
                     {
                         showPostProcessOverlay = EditorGUILayout.ToggleLeft("후처리 오버레이 / Post", showPostProcessOverlay, GUILayout.Width(170f));
@@ -2194,7 +2271,8 @@ namespace Conn.MapGenV2.Editor
                 }
             }
 
-            DrawLegend();
+            var showPropDebugOverlay = ShouldShowPropPlacementDebugOverlay();
+            DrawLegend(previewData, showPropDebugOverlay);
 
             if (previewData.Width <= 0 || previewData.Height <= 0)
             {
@@ -2207,7 +2285,7 @@ namespace Conn.MapGenV2.Editor
             var viewHeight = Mathf.Min(Mathf.Max(180f, previewHeight + 20f), 520f);
             previewScroll = EditorGUILayout.BeginScrollView(previewScroll, GUILayout.MinHeight(viewHeight), GUILayout.MaxHeight(viewHeight));
             var rect = GUILayoutUtility.GetRect(previewWidth, previewHeight, GUILayout.ExpandWidth(false), GUILayout.ExpandHeight(false));
-            var propPlacement = showPropPlacementOverlay ? MapGenPropPlacementPlanner.BuildForDraft(draft) : null;
+            var propPlacement = showPropDebugOverlay ? MapGenPropPlacementPlanner.BuildForDraft(draft) : null;
             HandlePreviewInput(previewData, rect);
             DrawPreviewCells(previewData, rect);
             DrawPropPlacementOverlay(previewData, rect, propPlacement);
@@ -2215,40 +2293,53 @@ namespace Conn.MapGenV2.Editor
             EditorGUILayout.EndScrollView();
         }
 
-        private void DrawLegend()
+        private bool ShouldShowPropPlacementDebugOverlay()
         {
-            var colors = new[]
+            return showMockupTechnicalDetailsFoldout && showPropPlacementOverlay;
+        }
+
+        private void DrawLegend(MapGenMockupPreviewData previewData, bool includePropDebugOverlay)
+        {
+            var colors = new List<Color>
             {
                 EmptyColor,
                 RoomColor,
                 CorridorColor,
-                BlockedColor,
                 ConnectorColor,
-                ReservedColor,
-                PropOverlayColor,
-                BlockerPropOverlayColor
+                BlockedColor
             };
-            var labels = new[]
+            var labels = new List<string>
             {
-                "파랑 Empty",
-                "빨강 Room",
-                "검정 Corridor",
-                "회색 Blocked",
-                "검정 Connector",
-                "회색 Reserved",
-                "초록 Prop",
-                "주황 Blocker"
+                "파랑 빈칸 / Empty",
+                "빨강 방 / Room",
+                "검정 복도 / Corridor",
+                "노랑 연결부 / Connector",
+                "회색 차단 / Blocked"
             };
+            if (previewData.Summary.ReservedCells > 0 || showMockupTechnicalDetailsFoldout)
+            {
+                colors.Add(ReservedColor);
+                labels.Add("청록 예약(고급) / Reserved");
+            }
+
+            if (includePropDebugOverlay)
+            {
+                colors.Add(PropOverlayColor);
+                labels.Add("초록 프롭 디버그 / Prop");
+                colors.Add(BlockerPropOverlayColor);
+                labels.Add("주황 차단프롭 디버그 / Blocker");
+            }
+
             var availableWidth = Mathf.Max(180f, EditorGUIUtility.currentViewWidth - 36f);
-            var itemWidth = availableWidth < 520f ? 128f : 136f;
-            var columns = Mathf.Clamp(Mathf.FloorToInt(availableWidth / itemWidth), 1, labels.Length);
+            var itemWidth = availableWidth < 520f ? Mathf.Min(178f, availableWidth) : 178f;
+            var columns = Mathf.Clamp(Mathf.FloorToInt(availableWidth / itemWidth), 1, labels.Count);
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
-                for (var index = 0; index < labels.Length; index += columns)
+                for (var index = 0; index < labels.Count; index += columns)
                 {
                     using (new EditorGUILayout.HorizontalScope())
                     {
-                        var rowEnd = Mathf.Min(index + columns, labels.Length);
+                        var rowEnd = Mathf.Min(index + columns, labels.Count);
                         for (var itemIndex = index; itemIndex < rowEnd; itemIndex++)
                         {
                             DrawLegendItem(colors[itemIndex], labels[itemIndex], itemWidth - 4f);
