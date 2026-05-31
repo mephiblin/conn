@@ -40,12 +40,17 @@ namespace Conn.Runtime.World
                 var stateKey = string.IsNullOrWhiteSpace(encounterPlacement.StateKey)
                     ? CompiledMapDungeonRuntimeService.StateKeyFor(compiledMap, placement)
                     : encounterPlacement.StateKey;
-                var encounterId = string.IsNullOrWhiteSpace(encounterPlacement.EncounterId)
-                    ? session.Quest.TargetEncounterId
-                    : encounterPlacement.EncounterId;
-                var monsterId = string.IsNullOrWhiteSpace(encounterPlacement.PrimaryMonsterId)
-                    ? session.Quest.TargetMonsterId
-                    : encounterPlacement.PrimaryMonsterId;
+                var useQuestTarget = encounterPlacement.RequiredForQuest || placement.Kind == MapPlacementKind.QuestTarget;
+                var encounterId = useQuestTarget
+                    ? CompiledMapDungeonRuntimeService.ResolveQuestEncounterId(session, encounterPlacement)
+                    : string.IsNullOrWhiteSpace(encounterPlacement.EncounterId)
+                        ? session.Quest.TargetEncounterId
+                        : encounterPlacement.EncounterId;
+                var monsterId = useQuestTarget
+                    ? CompiledMapDungeonRuntimeService.ResolveQuestMonsterId(session, encounterPlacement)
+                    : string.IsNullOrWhiteSpace(encounterPlacement.PrimaryMonsterId)
+                        ? session.Quest.TargetMonsterId
+                        : encounterPlacement.PrimaryMonsterId;
 
                 FieldMonsterRuntimeService.RegisterAt(session, stateKey, placement.Id, encounterId, monsterId, placement.X, placement.Y);
                 CreateActor(root, compiledMap, placement, stateKey, encounterId, monsterId);
@@ -118,9 +123,7 @@ namespace Conn.Runtime.World
 
         private static Vector3 WorldPosition(CompiledMap compiledMap, MapPlacement placement)
         {
-            var offsetX = compiledMap != null ? compiledMap.Width * 0.5f : 0f;
-            var offsetZ = compiledMap != null ? compiledMap.Height * 0.5f : 0f;
-            return new Vector3(placement.X - offsetX, 1f, placement.Y - offsetZ);
+            return DungeonMapActorSpawner.WorldPosition(compiledMap, placement.X, placement.Y, 1.4f);
         }
 
         private static bool ShouldSpawnActor(MapPlacementKind kind, CompiledEncounterPlacement encounterPlacement)

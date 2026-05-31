@@ -11,6 +11,7 @@ using Conn.Runtime.Scenes;
 using Conn.Runtime.Session;
 using Conn.Runtime.Skills;
 using Conn.Runtime.World;
+using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -46,6 +47,12 @@ namespace Conn.UI.Runtime
             "CharacterCreation/portrait_duelist",
             "CharacterCreation/portrait_arcanist"
         };
+        private static readonly string[] CharacterPortraitIds =
+        {
+            "portrait_vanguard",
+            "portrait_duelist",
+            "portrait_arcanist"
+        };
         private static readonly string[] CharacterPortraitNames =
         {
             "Vanguard",
@@ -57,6 +64,7 @@ namespace Conn.UI.Runtime
             EquipmentCatalog.RustySwordId,
             EquipmentCatalog.GreatAxeId
         };
+        private static readonly Dictionary<string, Sprite> CombatSpriteCache = new Dictionary<string, Sprite>();
 
         public GameSceneId SceneId
         {
@@ -110,7 +118,7 @@ namespace Conn.UI.Runtime
 
             if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
             {
-                RuntimeCursorService.ToggleManualRelease();
+                HandleEscapePressed();
             }
 
             if (Time.unscaledTime >= nextRefreshTime && !IsPointerPressActive())
@@ -120,6 +128,22 @@ namespace Conn.UI.Runtime
             }
 
             RuntimeCursorService.Apply(sceneId, GameSession.Instance != null ? GameSession.Instance.State : null, characterOpen);
+        }
+
+        private void HandleEscapePressed()
+        {
+            if (sceneId == GameSceneId.Town)
+            {
+                if (TownNpcInteractionState.IsOpen
+                    || TownQuestBoardPanelState.IsOpen
+                    || TownShopPanelState.Current != TownShopPanelKind.None)
+                {
+                    CloseTownInteraction();
+                    return;
+                }
+            }
+
+            RuntimeCursorService.ToggleManualRelease();
         }
 
         private void OnDisable()
@@ -197,9 +221,6 @@ namespace Conn.UI.Runtime
                 .Append('|').Append(TownNpcInteractionState.ItemId)
                 .Append('|').Append(selectedSkillId)
                 .Append('|').Append(selectedQuestBoardOffset)
-                .Append('|').Append(hoveredShopKind)
-                .Append('|').Append(hoveredShopMode)
-                .Append('|').Append(hoveredShopItemId)
                 .Append('|').Append(session.Quest.HasActiveQuest)
                 .Append('|').Append(session.Quest.ActiveQuestId)
                 .Append('|').Append(session.Quest.BoardOfferIndex)
@@ -217,10 +238,6 @@ namespace Conn.UI.Runtime
                     .Append('|').Append(session.Combat.SelectedDiceCount)
                     .Append('|').Append(session.Combat.ReelSpinActive)
                     .Append('|').Append(session.Combat.ReelStopCount);
-                if (session.Combat.ReelSpinActive)
-                {
-                    key.Append('|').Append(Mathf.FloorToInt(Time.unscaledTime * 8f));
-                }
             }
 
             return key.ToString();
@@ -247,6 +264,7 @@ namespace Conn.UI.Runtime
             SetGroup("RuntimePrimaryPanel", false);
             SetGroup("RuntimeSecondaryPanel", false);
             SetGroup("RuntimeBottomPanel", false);
+            SetGroup("RuntimeDebugPanel", false);
 
             foreach (var name in RuntimeCanvasUiBuilder.TitlePanelNames)
             {
@@ -278,6 +296,39 @@ namespace Conn.UI.Runtime
         {
             var hud = Panel("RuntimeHud");
             BuildPanel(hud, $"{sceneId}  |  Gold {session.Gold}  XP {session.Player.Xp}  HP {session.Player.Hp}/{session.Player.MaxHp}", false);
+        }
+
+        private void DrawRuntimeDebugPanel(GameSessionState session)
+        {
+            var panel = Panel("RuntimeDebugPanel");
+            BuildPanel(panel, "Runtime Debug", false);
+            AddText(panel, $"Scene: {sceneId} / Mode: {session.Mode}", 12);
+            AddText(panel, $"Cursor: {(RuntimeCursorService.ManualReleaseActive ? "free" : "locked")}", 12);
+            if (sceneId == GameSceneId.Town)
+            {
+                AddText(panel, TownUiDebugSummary(), 12);
+                AddText(panel, $"Visible: npc={PanelActive("TownNpcInteractionPanel")} board={PanelActive("TownQuestBoardPanel")} shop={PanelActive("TownShopPanel")}", 12);
+            }
+            else if (sceneId == GameSceneId.Dungeon)
+            {
+                var compiledMap = CompiledMapDungeonRuntimeService.CurrentCompiledMap;
+                AddText(panel, $"Map: {compiledMap?.MapId ?? "none"}", 12);
+                AddText(panel, $"Cell: {(compiledMap?.CellSize ?? 0f):0.##}->{DungeonMapActorSpawner.WorldCellSize(compiledMap):0.##}", 12);
+                AddText(panel, $"Monsters: {FieldMonsterRuntimeService.CountActive(session)} active / {FieldMonsterRuntimeService.CountDefeated(session)} defeated", 12);
+                AddText(panel, $"Debug root: {GameObject.Find(DungeonVisualDebugOverlay.RootName) != null}", 12);
+            }
+            else if (sceneId == GameSceneId.Combat)
+            {
+                AddText(panel, $"Combat: {session.Combat.Active} round {session.Combat.Round}", 12);
+                AddText(panel, $"Dice: {session.Combat.DiceFaces.Count} spin={session.Combat.ReelSpinActive}", 12);
+            }
+
+            panel.SetAsLastSibling();
+        }
+
+        private string TownUiDebugSummary()
+        {
+            return $"npc={TownNpcInteractionState.IsOpen}:{TownNpcInteractionState.Kind} board={TownQuestBoardPanelState.IsOpen} shop={TownShopPanelState.Current}";
         }
 
         private void DrawTitle(GameSessionState session)
@@ -328,8 +379,8 @@ namespace Conn.UI.Runtime
         {
             var panel = Panel("CharacterCreationPortraitPanel");
             BuildPanel(panel, string.Empty, false);
-            var portraitRow = AddHorizontalGroup(panel, 10f);
-            AddButton(portraitRow, "<", () => SelectCharacterPortrait(characterDraftPortraitIndex - 1));
+            var portraitRow = AddSelectionRow(panel, 10f);
+            AddSquareButton(portraitRow, "<", () => SelectCharacterPortrait(characterDraftPortraitIndex - 1));
 
             var portraitFrame = new GameObject("PortraitFrame");
             portraitFrame.transform.SetParent(ContentParent(portraitRow), false);
@@ -357,8 +408,9 @@ namespace Conn.UI.Runtime
             portraitLayout.minHeight = 700f;
             portraitLayout.flexibleHeight = 1f;
 
-            AddButton(portraitRow, ">", () => SelectCharacterPortrait(characterDraftPortraitIndex + 1));
-            AddText(panel, CharacterPortraitNames[ClampPortraitIndex(characterDraftPortraitIndex)], 24, FontStyle.Bold);
+            AddSquareButton(portraitRow, ">", () => SelectCharacterPortrait(characterDraftPortraitIndex + 1));
+            var portraitIndex = ClampPortraitIndex(characterDraftPortraitIndex);
+            AddText(panel, $"{CharacterPortraitNames[portraitIndex]}  {portraitIndex + 1}/{CharacterPortraitResourcePaths.Length}", 24, FontStyle.Bold);
         }
 
         private void DrawCharacterCreationForm(GameSessionState session)
@@ -368,17 +420,7 @@ namespace Conn.UI.Runtime
             AddText(panel, "Name");
             AddInputField(panel, characterDraftName, value => characterDraftName = value);
             AddText(panel, "Starting Weapon");
-            for (var i = 0; i < StarterWeaponIds.Length; i++)
-            {
-                var index = i;
-                var selected = index == characterDraftWeaponIndex;
-                AddButton(panel, selected ? $"> {EquipmentName(StarterWeaponIds[index])}" : EquipmentName(StarterWeaponIds[index]), () =>
-                {
-                    characterDraftWeaponIndex = index;
-                    lastRenderKey = string.Empty;
-                    Refresh();
-                });
-            }
+            DrawStarterWeaponSelector(panel);
 
             AddText(panel, " ");
             AddButton(panel, "Create Character", () =>
@@ -410,11 +452,14 @@ namespace Conn.UI.Runtime
 
         private void DrawTown(GameSessionState session)
         {
+            EnsureTownNpcPanelState();
+
             var hud = Panel("TownHud");
             BuildPanel(hud, "Karash Outpost", false);
             AddText(hud, $"Gold {session.Gold}  XP {session.Player.Xp}  HP {session.Player.Hp}/{session.Player.MaxHp}");
             AddText(hud, session.Quest.HasActiveQuest ? $"Quest: {session.Quest.ActiveQuestTitle}" : "Quest: none");
             AddText(hud, RuntimeCursorService.ManualReleaseActive ? "Cursor: free (Esc)" : "Cursor: locked (Esc)");
+            AddText(hud, $"UI: {TownUiDebugSummary()}");
 
             var quickActions = Panel("TownQuickActionsPanel");
             BuildPanel(quickActions, string.Empty, false);
@@ -438,6 +483,21 @@ namespace Conn.UI.Runtime
                 DrawTownQuestBoard(session);
                 HidePanel("TownShopPanel");
             }
+            else if (TownNpcInteractionState.IsOpen
+                && (TownNpcInteractionState.Kind == TownNpcInteractionKind.Blacksmith
+                    || TownNpcInteractionState.Kind == TownNpcInteractionKind.SkillMerchant))
+            {
+                HidePanel("TownHud");
+                HidePanel("TownQuickActionsPanel");
+                HidePanel("TownInteractionPrompt");
+                HidePanel("TownNoticePanel");
+                HidePanel("TownCharacterInventoryPanel");
+                DrawTownNpcBackdrop();
+                HidePanel("TownNpcInteractionPanel");
+                HidePanel("TownNpcStandingCgPanel");
+                HidePanel("TownQuestBoardPanel");
+                DrawTownShop(session);
+            }
             else if (TownNpcInteractionState.IsOpen)
             {
                 HidePanel("TownHud");
@@ -460,6 +520,40 @@ namespace Conn.UI.Runtime
                 DrawTownShop(session);
                 DrawTownNotice(session);
                 DrawCharacterInventory(session);
+            }
+
+            OrderTownPanels();
+            DrawRuntimeDebugPanel(session);
+        }
+
+        private static void EnsureTownNpcPanelState()
+        {
+            if (!TownNpcInteractionState.IsOpen)
+            {
+                return;
+            }
+
+            if (TownNpcInteractionState.Kind == TownNpcInteractionKind.QuestBoard)
+            {
+                if (!TownQuestBoardPanelState.IsOpen)
+                {
+                    TownQuestBoardPanelState.OpenForNpcInteraction();
+                }
+
+                return;
+            }
+
+            if (TownNpcInteractionState.Kind == TownNpcInteractionKind.Blacksmith
+                && TownShopPanelState.Current != TownShopPanelKind.Blacksmith)
+            {
+                TownShopPanelState.OpenForNpcInteraction(TownShopPanelKind.Blacksmith);
+                return;
+            }
+
+            if (TownNpcInteractionState.Kind == TownNpcInteractionKind.SkillMerchant
+                && TownShopPanelState.Current != TownShopPanelKind.SkillMerchant)
+            {
+                TownShopPanelState.OpenForNpcInteraction(TownShopPanelKind.SkillMerchant);
             }
         }
 
@@ -507,8 +601,6 @@ namespace Conn.UI.Runtime
             var npcName = FirstNonEmpty(TownNpcInteractionState.NpcName, string.Empty, "Town NPC");
             var dialogue = FirstNonEmpty(TownNpcInteractionState.Dialogue, string.Empty, "Welcome. What do you need?");
 
-            OrderTownNpcPanels();
-
             var interaction = Panel("TownNpcInteractionPanel");
             BuildPanel(interaction, npcName, true);
             AddText(interaction, dialogue, 16, FontStyle.Italic);
@@ -530,7 +622,7 @@ namespace Conn.UI.Runtime
             }
 
             AddNpcInteractionActions(interaction, session);
-            AddButton(interaction, "Close", TownNpcInteractionState.Close);
+            AddButton(interaction, "Close", CloseTownInteraction);
 
             var standingCg = Panel("TownNpcStandingCgPanel");
             BuildPanel(standingCg, string.Empty, false);
@@ -538,11 +630,17 @@ namespace Conn.UI.Runtime
             AddText(standingCg, npcName);
         }
 
-        private void OrderTownNpcPanels()
+        private void OrderTownPanels()
         {
             canvas.transform.Find("TownNpcBackdropPanel")?.SetAsLastSibling();
             canvas.transform.Find("TownNpcStandingCgPanel")?.SetAsLastSibling();
             canvas.transform.Find("TownNpcInteractionPanel")?.SetAsLastSibling();
+            canvas.transform.Find("TownQuestBoardPanel")?.SetAsLastSibling();
+            canvas.transform.Find("TownShopPanel")?.SetAsLastSibling();
+            canvas.transform.Find("TownCharacterInventoryPanel")?.SetAsLastSibling();
+            canvas.transform.Find("TownNoticePanel")?.SetAsLastSibling();
+            canvas.transform.Find("TownQuickActionsPanel")?.SetAsLastSibling();
+            canvas.transform.Find("TownInteractionPrompt")?.SetAsLastSibling();
         }
 
         private void AddNpcInteractionActions(Transform panel, GameSessionState session)
@@ -600,6 +698,11 @@ namespace Conn.UI.Runtime
             var listColumn = AddQuestBoardColumn(body, "QuestList", 430f, 0.72f, new Color(0.025f, 0.026f, 0.025f, 0.88f));
             var detailColumn = AddQuestBoardColumn(body, "QuestDetail", 720f, 1.2f, new Color(0.87f, 0.82f, 0.72f, 0.96f));
 
+            DrawTownQuestBoardColumns(listColumn, detailColumn, session);
+        }
+
+        private void DrawTownQuestBoardColumns(Transform listColumn, Transform detailColumn, GameSessionState session)
+        {
             AddQuestBoardHeader(listColumn, "Available Side Quests");
             if (session.Quest.HasActiveQuest)
             {
@@ -635,8 +738,7 @@ namespace Conn.UI.Runtime
                             () =>
                             {
                                 selectedQuestBoardOffset = offset;
-                                lastRenderKey = string.Empty;
-                                Refresh();
+                                RefreshQuestBoardContentOnly(session);
                             });
                     }
 
@@ -645,14 +747,44 @@ namespace Conn.UI.Runtime
                     {
                         selectedQuestBoardOffset = 0;
                         QuestRuntimeService.RerollBoard(session);
+                        TownQuestBoardPanelState.OpenForNpcInteraction();
                         RuntimeNoticeService.Set(session, "Quest board rerolled.");
+                        RefreshQuestBoardContentOnly(session);
                     });
 
                     DrawQuestOfferDetail(detailColumn, session, offers[selectedQuestBoardOffset]);
                 }
             }
 
-            AddButton(listColumn, "Close Board", TownQuestBoardPanelState.Close);
+            AddButton(listColumn, "Close", CloseTownInteraction);
+        }
+
+        private void RefreshQuestBoardContentOnly(GameSessionState session)
+        {
+            if (canvas == null || !TownQuestBoardPanelState.IsOpen)
+            {
+                RequestRefresh();
+                return;
+            }
+
+            var panel = canvas.transform.Find("TownQuestBoardPanel");
+            var body = panel?.Find("ScrollViewport/ScrollContent/Row");
+            var listColumn = body?.Find("QuestList");
+            var detailColumn = body?.Find("QuestDetail");
+            if (listColumn == null
+                || detailColumn == null
+                || !listColumn.gameObject.activeInHierarchy
+                || !detailColumn.gameObject.activeInHierarchy)
+            {
+                RequestRefresh();
+                return;
+            }
+
+            Clear(listColumn);
+            Clear(detailColumn);
+            DrawTownQuestBoardColumns(listColumn, detailColumn, session);
+            lastRenderKey = BuildRenderKey(session);
+            nextRefreshTime = Time.unscaledTime + RefreshIntervalSeconds;
         }
 
         private static void ApplyQuestBoardPanelRect(RectTransform panel)
@@ -783,9 +915,9 @@ namespace Conn.UI.Runtime
             {
                 QuestRuntimeService.AcceptQuest(session, questId);
                 RuntimeNoticeService.Set(session, $"Accepted quest: {questId}");
-                TownQuestBoardPanelState.Close();
+                CloseTownInteraction();
             });
-            AddButton(actions, "Cancel", TownQuestBoardPanelState.Close);
+            AddButton(actions, "Close", CloseTownInteraction);
         }
 
         private void DrawActiveQuestDetail(Transform parent, GameSessionState session)
@@ -801,7 +933,7 @@ namespace Conn.UI.Runtime
             AddQuestDetailRow(parent, "Encounter", session.Quest.TargetEncounterId, string.Empty);
             AddQuestDetailRow(parent, "Map", session.Quest.MapProfileId, string.Empty);
             AddQuestText(parent, session.Quest.ReturnAvailable ? "The quest target is complete. Return from the dungeon to collect the reward." : "Enter the dungeon and defeat the target to unlock return.", 19, FontStyle.Normal, new Color(0.12f, 0.1f, 0.08f, 1f), TextAnchor.UpperLeft);
-            AddButton(parent, "Cancel", TownQuestBoardPanelState.Close);
+            AddButton(parent, "Close", CloseTownInteraction);
         }
 
         private void DrawEmptyQuestDetail(Transform parent)
@@ -809,7 +941,7 @@ namespace Conn.UI.Runtime
             AddQuestText(parent, "No Quest Available", 31, FontStyle.Bold, Color.black, TextAnchor.MiddleCenter);
             AddQuestSeparator(parent);
             AddQuestText(parent, "The board has no valid hunt contracts right now.", 20, FontStyle.Normal, new Color(0.12f, 0.1f, 0.08f, 1f), TextAnchor.UpperLeft);
-            AddButton(parent, "Cancel", TownQuestBoardPanelState.Close);
+            AddButton(parent, "Close", CloseTownInteraction);
         }
 
         private void AddQuestSectionTitle(Transform parent, string title)
@@ -884,12 +1016,12 @@ namespace Conn.UI.Runtime
         {
             if (shopKind == TownShopPanelKind.Blacksmith)
             {
-                AddText(panel, $"Blacksmith  |  Gold {session.Gold}g", 17, FontStyle.Bold);
+                AddTownShopHeader(panel, $"Blacksmith  |  Gold {session.Gold}g");
                 AddText(panel, "Buy equipment, compare it against your current loadout, or sell unequipped gear.", 13);
 
                 var shopBody = AddHorizontalGroup(panel, 10f);
-                var listColumn = AddShopColumn(shopBody, 430f, 1f);
-                var detailColumn = AddShopColumn(shopBody, 330f, 0.8f);
+                var listColumn = AddShopColumn(shopBody, 430f, 1f, "ShopListColumn");
+                var detailColumn = AddShopColumn(shopBody, 330f, 0.8f, "ShopDetailColumn");
 
                 AddText(listColumn, "For Sale", 15, FontStyle.Bold);
                 var stock = EquipmentShopRuntimeService.BlacksmithStockItemIds();
@@ -942,18 +1074,18 @@ namespace Conn.UI.Runtime
                 }
 
                 AddButton(listColumn, "Switch Owned Loadout", () => EquipmentRuntimeService.ToggleOwnedLoadout(session));
-                AddButton(listColumn, "Close Shop", TownShopPanelState.Close);
+                AddButton(listColumn, "Close", CloseTownInteraction);
                 DrawEquipmentShopDetail(detailColumn, session, ResolveHoveredShopItem(shopKind, firstDetailItemId), IsHoveredShopSellMode(shopKind));
             }
             else if (shopKind == TownShopPanelKind.SkillMerchant)
             {
                 var refreshIndex = session.Shop != null ? session.Shop.SkillMerchantRefreshIndex : 0;
-                AddText(panel, $"Skill Merchant  |  Gold {session.Gold}g  |  Refresh #{refreshIndex}", 17, FontStyle.Bold);
+                AddTownShopHeader(panel, $"Skill Merchant  |  Gold {session.Gold}g  |  Refresh #{refreshIndex}");
                 AddText(panel, "Buy skill faces for your dice, inspect exact effects, or sell loose un-equipped copies.", 13);
 
                 var shopBody = AddHorizontalGroup(panel, 10f);
-                var listColumn = AddShopColumn(shopBody, 430f, 1f);
-                var detailColumn = AddShopColumn(shopBody, 330f, 0.8f);
+                var listColumn = AddShopColumn(shopBody, 430f, 1f, "ShopListColumn");
+                var detailColumn = AddShopColumn(shopBody, 330f, 0.8f, "ShopDetailColumn");
 
                 AddText(listColumn, "For Sale", 15, FontStyle.Bold);
                 var stock = SkillShopRuntimeService.SkillMerchantStock(session);
@@ -1006,14 +1138,29 @@ namespace Conn.UI.Runtime
                         SkillShopRuntimeService.CanSellLoose(session, skillId));
                 }
 
-                AddButton(listColumn, "Close Shop", TownShopPanelState.Close);
+                AddButton(listColumn, "Close", CloseTownInteraction);
                 DrawSkillShopDetail(detailColumn, session, ResolveHoveredShopItem(shopKind, firstDetailSkillId), IsHoveredShopSellMode(shopKind));
             }
         }
 
-        private RectTransform AddShopColumn(Transform parent, float preferredWidth, float flexibleWidth)
+        private void AddTownShopHeader(Transform panel, string title)
         {
-            var obj = new GameObject("ShopColumn");
+            var row = AddHorizontalGroup(panel, 8f);
+            AddText(row, title, 17, FontStyle.Bold);
+            AddButton(row, "Close", CloseTownInteraction);
+        }
+
+        private void CloseTownInteraction()
+        {
+            TownNpcInteractionState.Close();
+            RuntimeCursorService.ClearManualRelease();
+            RuntimeCursorService.Apply(sceneId, GameSession.Instance != null ? GameSession.Instance.State : null, characterOpen);
+            RequestRefresh();
+        }
+
+        private RectTransform AddShopColumn(Transform parent, float preferredWidth, float flexibleWidth, string name = "ShopColumn")
+        {
+            var obj = new GameObject(name);
             obj.transform.SetParent(parent, false);
             var rect = obj.AddComponent<RectTransform>();
             var image = obj.AddComponent<Image>();
@@ -1058,7 +1205,7 @@ namespace Conn.UI.Runtime
                 EquipmentSummary(item),
                 action,
                 interactable);
-            BindShopHover(card.gameObject, TownShopPanelKind.Blacksmith, itemId, buying ? "buy" : "sell");
+            BindShopHover(card.gameObject, session, TownShopPanelKind.Blacksmith, itemId, buying ? "buy" : "sell");
         }
 
         private void AddSkillShopCard(
@@ -1087,7 +1234,7 @@ namespace Conn.UI.Runtime
                 $"{skill.EffectKind} +{skill.Power}  |  Owned {owned} / Equipped {equipped}",
                 action,
                 interactable);
-            BindShopHover(card.gameObject, TownShopPanelKind.SkillMerchant, skillId, buying ? "buy" : "sell");
+            BindShopHover(card.gameObject, session, TownShopPanelKind.SkillMerchant, skillId, buying ? "buy" : "sell");
         }
 
         private Button AddShopCard(
@@ -1237,7 +1384,7 @@ namespace Conn.UI.Runtime
             return hoveredShopKind == shopKind && hoveredShopMode == "sell";
         }
 
-        private void BindShopHover(GameObject target, TownShopPanelKind shopKind, string itemId, string mode)
+        private void BindShopHover(GameObject target, GameSessionState session, TownShopPanelKind shopKind, string itemId, string mode)
         {
             var trigger = target.AddComponent<EventTrigger>();
             if (trigger.triggers == null)
@@ -1251,10 +1398,37 @@ namespace Conn.UI.Runtime
                 hoveredShopKind = shopKind;
                 hoveredShopItemId = itemId;
                 hoveredShopMode = mode;
-                lastRenderKey = string.Empty;
-                Refresh();
+                RefreshShopDetailColumn(session, shopKind, itemId, mode == "sell");
             });
             trigger.triggers.Add(enter);
+        }
+
+        private void RefreshShopDetailColumn(GameSessionState session, TownShopPanelKind shopKind, string itemId, bool selling)
+        {
+            if (canvas == null || TownShopPanelState.Current != shopKind)
+            {
+                return;
+            }
+
+            var panel = canvas.transform.Find("TownShopPanel");
+            var detailColumn = panel?.Find("ScrollViewport/ScrollContent/Row/ShopDetailColumn");
+            if (detailColumn == null || !detailColumn.gameObject.activeInHierarchy)
+            {
+                RequestRefresh();
+                return;
+            }
+
+            Clear(detailColumn);
+            if (shopKind == TownShopPanelKind.Blacksmith)
+            {
+                DrawEquipmentShopDetail(detailColumn, session, itemId, selling);
+                return;
+            }
+
+            if (shopKind == TownShopPanelKind.SkillMerchant)
+            {
+                DrawSkillShopDetail(detailColumn, session, itemId, selling);
+            }
         }
 
         private static Text CreateChildText(Transform parent, string value, int size, FontStyle style, TextAnchor alignment)
@@ -1517,13 +1691,21 @@ namespace Conn.UI.Runtime
             var readout = Panel("DungeonPlacementReadout");
             BuildPanel(readout, "CompiledMap Readout", true);
             var compiledMap = CompiledMapDungeonRuntimeService.CurrentCompiledMap;
+            AddText(readout, $"Map: {compiledMap?.MapId ?? "none"}");
+            AddText(readout, $"Profile: {compiledMap?.ProfileId ?? "none"}");
+            AddText(readout, $"Quest profile: {session.Quest.MapProfileId}");
+            AddText(readout, $"Encounter: {session.Quest.TargetEncounterId}");
             AddText(readout, $"Snapshot: {(session.PreEncounterSnapshot.Valid ? "saved" : "none")}");
             AddText(readout, $"Field monsters active: {FieldMonsterRuntimeService.CountActive(session)}");
             AddText(readout, $"Field monsters defeated: {FieldMonsterRuntimeService.CountDefeated(session)}");
             AddText(readout, $"Baked cells: {CompiledMapDungeonRuntimeService.CountBakedCells(compiledMap)}");
             AddText(readout, $"Baked objects: {CompiledMapDungeonRuntimeService.CountBakedObjects(compiledMap)}");
             AddText(readout, $"Interactive objects: {CompiledMapDungeonRuntimeService.CountInteractiveObjects(compiledMap)}");
+            AddText(readout, $"World cell: {DungeonMapActorSpawner.WorldCellSize(compiledMap):0.##}  authored: {(compiledMap?.CellSize ?? 0f):0.##}");
+            AddText(readout, $"Visual debug root: {DungeonVisualDebugOverlay.RootName}");
+            AddText(readout, "Markers: green start / magenta target / cyan exit / orange monster / yellow loot");
             AddText(readout, "Placements: start / quest target / exit / monster / loot");
+            DrawRuntimeDebugPanel(session);
         }
 
         private void DrawCombat(GameSessionState session)
@@ -1534,14 +1716,15 @@ namespace Conn.UI.Runtime
             }
 
             var enemy = Panel("CombatEnemyStagePanel");
-            BuildPanel(enemy, session.Combat.Enemy.DisplayName, true);
+            BuildPanel(enemy, session.Combat.Enemy.DisplayName, false);
+            AddCombatCgImage(enemy, MonsterCombatSprite(session), 132f);
             AddText(enemy, $"Enemy: {session.Combat.Enemy.DisplayName}");
             AddText(enemy, $"HP {session.Combat.Enemy.Hp}/{session.Combat.Enemy.MaxHp}");
             AddText(enemy, $"Will attack for: {session.Combat.EnemyAttackPower} dmg");
             AddText(enemy, CombatRuntimeService.DescribeCombatantStatuses(session.Combat.Enemy));
 
             var command = Panel("CombatCommandPanel");
-            BuildPanel(command, $"Round {session.Combat.Round}", true);
+            BuildPanel(command, $"Round {session.Combat.Round}", false);
             AddText(command, session.Combat.LastMessage);
             AddText(
                 command,
@@ -1554,18 +1737,19 @@ namespace Conn.UI.Runtime
             AddButton(commandRow, "Flee", () => CombatRuntimeService.Flee(session));
 
             var status = Panel("CombatStatusPanel");
-            BuildPanel(status, "Player", true);
+            BuildPanel(status, "Player", false);
+            AddCombatCgImage(status, PlayerCombatSprite(session), 124f);
             AddText(status, $"HP {session.Combat.Player.Hp}/{session.Combat.Player.MaxHp}");
             AddText(status, $"Defense {session.Combat.PlayerDefenseBonus}");
             AddText(status, CombatRuntimeService.DescribeCombatantStatuses(session.Combat.Player));
 
             var dice = Panel("CombatDicePanel");
-            BuildPanel(dice, "Skill Roulette", true);
+            BuildPanel(dice, "Skill Roulette", false);
             AddText(
                 dice,
                 session.Combat.ReelSpinActive
-                    ? "모든 릴이 동시에 회전 중이다. STOP을 누르면 슬롯머신처럼 전체 결과가 한 번에 확정된다."
-                    : "멈춘 결과 중 최대 3개를 선택해 공격을 만든다.");
+                    ? "SPIN LOCK  STOP으로 결과를 확정한 뒤 선택한다."
+                    : "멈춘 결과 중 최대 3개를 선택한다.");
             AddText(dice, $"선택 {session.Combat.SelectedDiceCount}/3 · 릴 {session.Combat.DiceFaces.Count}개");
             var reelTray = AddHorizontalGroup(dice, 14f);
             for (var i = 0; i < session.Combat.DiceFaces.Count; i++)
@@ -1646,7 +1830,8 @@ namespace Conn.UI.Runtime
 
             image.color = PanelBackgroundColor(panel.name);
             image.raycastTarget = panel.name != "TitleRoot"
-                && panel.name != "TownNpcStandingCgPanel";
+                && panel.name != "TownNpcStandingCgPanel"
+                && panel.name != "RuntimeDebugPanel";
             var layout = panel.GetComponent<VerticalLayoutGroup>();
             if (layout == null)
             {
@@ -1683,7 +1868,12 @@ namespace Conn.UI.Runtime
             AddTextRaw(ContentParent(parent), text, size, style);
         }
 
-        private void AddTextRaw(Transform parent, string text, int size = 15, FontStyle style = FontStyle.Normal)
+        private Text AddTextRaw(Transform parent, string text, int size = 15, FontStyle style = FontStyle.Normal)
+        {
+            return AddTextRaw(parent, text, size, style, Color.white);
+        }
+
+        private Text AddTextRaw(Transform parent, string text, int size, FontStyle style, Color color)
         {
             var obj = new GameObject("Text");
             obj.transform.SetParent(parent, false);
@@ -1692,12 +1882,32 @@ namespace Conn.UI.Runtime
             textComponent.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             textComponent.fontSize = size;
             textComponent.fontStyle = style;
-            textComponent.color = Color.white;
+            textComponent.color = color;
             textComponent.horizontalOverflow = HorizontalWrapMode.Wrap;
             textComponent.verticalOverflow = VerticalWrapMode.Overflow;
             textComponent.raycastTarget = false;
             var layout = obj.AddComponent<LayoutElement>();
             layout.minHeight = Mathf.Max(22f, size + 8f);
+            return textComponent;
+        }
+
+        private void AddCombatCgImage(Transform parent, Sprite sprite, float minHeight)
+        {
+            if (parent == null || sprite == null)
+            {
+                return;
+            }
+
+            var obj = new GameObject("CombatCg");
+            obj.transform.SetParent(ContentParent(parent), false);
+            var image = obj.AddComponent<Image>();
+            image.sprite = sprite;
+            image.preserveAspect = true;
+            image.raycastTarget = false;
+            image.color = Color.white;
+            var layout = obj.AddComponent<LayoutElement>();
+            layout.minHeight = minHeight;
+            layout.preferredHeight = minHeight;
         }
 
         private InputField AddInputField(Transform parent, string value, UnityEngine.Events.UnityAction<string> onChanged)
@@ -1805,9 +2015,9 @@ namespace Conn.UI.Runtime
             button.onClick.AddListener(() => CombatRuntimeService.ToggleDieSelection(session, faceIndex));
 
             var layout = obj.AddComponent<LayoutElement>();
-            layout.minWidth = 150f;
-            layout.preferredWidth = 170f;
-            layout.minHeight = 242f;
+            layout.minWidth = 132f;
+            layout.preferredWidth = 154f;
+            layout.minHeight = 250f;
 
             var vertical = obj.AddComponent<VerticalLayoutGroup>();
             vertical.padding = new RectOffset(12, 12, 12, 12);
@@ -1836,17 +2046,20 @@ namespace Conn.UI.Runtime
             var windowImage = window.AddComponent<Image>();
             windowImage.color = new Color(0.87f, 0.88f, 0.93f, 0.96f);
             var windowLayout = window.AddComponent<LayoutElement>();
-            windowLayout.minHeight = 132f;
+            windowLayout.minHeight = 164f;
             var windowVertical = window.AddComponent<VerticalLayoutGroup>();
-            windowVertical.padding = new RectOffset(8, 8, 8, 8);
+            windowVertical.padding = new RectOffset(8, 8, 6, 6);
             windowVertical.spacing = 4f;
             windowVertical.childControlWidth = true;
             windowVertical.childControlHeight = true;
-            windowVertical.childForceExpandHeight = true;
+            windowVertical.childForceExpandHeight = false;
 
             var centerIndex = ResolveVisibleReelCenterIndex(face);
+            var valueTexts = new Text[3];
+            var skillTexts = new Text[3];
             for (var offset = -1; offset <= 1; offset++)
             {
+                var cellIndex = offset + 1;
                 var cellSkillId = ResolveReelSkillId(face, centerIndex + offset);
                 var skill = RuntimeContentDatabase.FindSkill(cellSkillId);
                 var cell = new GameObject("Cell");
@@ -1857,18 +2070,28 @@ namespace Conn.UI.Runtime
                     ? new Color(0.95f, 0.87f, 0.72f, 0.95f)
                     : new Color(0.79f, 0.82f, 0.9f, 0.62f);
                 var cellLayout = cell.AddComponent<LayoutElement>();
-                cellLayout.minHeight = 34f;
+                cellLayout.minHeight = isFocus ? 56f : 48f;
                 var cellVertical = cell.AddComponent<VerticalLayoutGroup>();
                 cellVertical.padding = new RectOffset(6, 6, 4, 4);
-                cellVertical.spacing = 1f;
+                cellVertical.spacing = 0f;
                 cellVertical.childAlignment = TextAnchor.MiddleCenter;
                 cellVertical.childControlWidth = true;
                 cellVertical.childControlHeight = true;
-                cellVertical.childForceExpandHeight = true;
+                cellVertical.childForceExpandHeight = false;
 
                 var rolledValue = isFocus && face.ReelStopped ? face.RolledValue : ResolvePreviewValue(face, offset);
-                AddTextRaw(cell.transform, rolledValue.ToString(), 18, FontStyle.Bold);
-                AddTextRaw(cell.transform, skill != null ? skill.DisplayName : "기본공격", 11, FontStyle.Normal);
+                var skillName = skill != null ? skill.DisplayName : "기본공격";
+                var textColor = isFocus
+                    ? new Color(0.13f, 0.12f, 0.11f, 1f)
+                    : new Color(0.18f, 0.2f, 0.24f, 0.72f);
+                valueTexts[cellIndex] = AddTextRaw(cell.transform, rolledValue.ToString(), isFocus ? 18 : 15, FontStyle.Bold, textColor);
+                skillTexts[cellIndex] = AddTextRaw(cell.transform, skillName, isFocus ? 12 : 10, isFocus ? FontStyle.Bold : FontStyle.Normal, textColor);
+            }
+
+            if (!face.ReelStopped)
+            {
+                var animator = window.AddComponent<CombatReelSpinAnimator>();
+                animator.Configure(face.Index, face.ReelSkillIds, valueTexts, skillTexts);
             }
 
             AddTextRaw(
@@ -1888,7 +2111,7 @@ namespace Conn.UI.Runtime
                 return Mathf.Abs(face.ReelStopIndex) % length;
             }
 
-            return Mathf.FloorToInt(Time.unscaledTime * 8f + face.Index * 1.7f) % length;
+            return Mathf.Abs(face.Index * 2) % length;
         }
 
         private static string ResolveReelSkillId(Conn.Core.Combat.DiceFaceState face, int rawIndex)
@@ -1910,7 +2133,7 @@ namespace Conn.UI.Runtime
 
         private static int ResolvePreviewValue(Conn.Core.Combat.DiceFaceState face, int offset)
         {
-            var value = Mathf.Abs(Mathf.FloorToInt(Time.unscaledTime * 9f) + face.Index * 2 + offset) % 6;
+            var value = Mathf.Abs(face.Index * 2 + offset) % 6;
             return value + 1;
         }
 
@@ -2027,10 +2250,16 @@ namespace Conn.UI.Runtime
             return false;
         }
 
+        private void RequestRefresh()
+        {
+            lastRenderKey = string.Empty;
+            nextRefreshTime = 0f;
+        }
+
         private static Transform ContentParent(Transform parent)
         {
             var content = parent.Find("ScrollViewport/ScrollContent");
-            return content != null ? content : parent;
+            return content != null && content.gameObject.activeInHierarchy ? content : parent;
         }
 
         private static void CreateScrollContent(RectTransform panel)
@@ -2110,17 +2339,31 @@ namespace Conn.UI.Runtime
 
             group.alpha = visible ? 1f : 0f;
             var passivePanel = name == "TownNoticePanel"
-                || name == "TownNpcStandingCgPanel";
+                || name == "TownNpcStandingCgPanel"
+                || name == "RuntimeDebugPanel";
             group.interactable = visible && !passivePanel;
             group.blocksRaycasts = visible && !passivePanel;
+        }
+
+        private bool PanelActive(string name)
+        {
+            if (canvas == null)
+            {
+                return false;
+            }
+
+            var child = canvas.transform.Find(name);
+            return child != null && child.gameObject.activeInHierarchy;
         }
 
         private static void Clear(Transform parent)
         {
             for (var i = parent.childCount - 1; i >= 0; i--)
             {
-                var child = parent.GetChild(i).gameObject;
+                var childTransform = parent.GetChild(i);
+                var child = childTransform.gameObject;
                 child.SetActive(false);
+                childTransform.SetParent(null, false);
                 if (Application.isPlaying)
                 {
                     Destroy(child);
@@ -2165,16 +2408,23 @@ namespace Conn.UI.Runtime
             Refresh();
         }
 
+        private void SelectStarterWeapon(int index)
+        {
+            characterDraftWeaponIndex = ClampStarterWeaponIndex(index);
+            lastRenderKey = string.Empty;
+            Refresh();
+        }
+
         private CharacterCreationOptions BuildCharacterCreationOptions()
         {
             var stats = CharacterStatsFor(characterDraftPortraitIndex);
             var portraitIndex = ClampPortraitIndex(characterDraftPortraitIndex);
-            var weaponIndex = Mathf.Clamp(characterDraftWeaponIndex, 0, StarterWeaponIds.Length - 1);
+            var weaponIndex = ClampStarterWeaponIndex(characterDraftWeaponIndex);
             return new CharacterCreationOptions
             {
                 CharacterName = string.IsNullOrWhiteSpace(characterDraftName) ? "Adventurer" : characterDraftName.Trim(),
                 SelectedPortraitIndex = portraitIndex,
-                SelectedPortraitId = CharacterPortraitNames[portraitIndex].ToLowerInvariant(),
+                SelectedPortraitId = CharacterPortraitIds[portraitIndex],
                 Strength = Mathf.RoundToInt(stats.x),
                 Dexterity = Mathf.RoundToInt(stats.y),
                 Vitality = Mathf.RoundToInt(stats.z),
@@ -2189,6 +2439,79 @@ namespace Conn.UI.Runtime
             return Resources.Load<Sprite>(CharacterPortraitResourcePaths[safeIndex]);
         }
 
+        private static Sprite PlayerCombatSprite(GameSessionState session)
+        {
+            var character = session?.Character;
+            if (character != null)
+            {
+                for (var i = 0; i < CharacterPortraitIds.Length; i++)
+                {
+                    if (CharacterPortraitIds[i] == character.SelectedPortraitId)
+                    {
+                        return CharacterPortraitSprite(i);
+                    }
+                }
+
+                return CharacterPortraitSprite(character.SelectedPortraitIndex);
+            }
+
+            return CharacterPortraitSprite(0);
+        }
+
+        private static Sprite MonsterCombatSprite(GameSessionState session)
+        {
+            var monsterId = session?.Combat?.MonsterId;
+            if (string.IsNullOrWhiteSpace(monsterId))
+            {
+                monsterId = session?.Quest?.TargetMonsterId;
+            }
+
+            var monster = RuntimeContentDatabase.FindMonster(monsterId);
+            var resourcePath = monster != null ? monster.CombatCgResourcePath : string.Empty;
+            if (string.IsNullOrWhiteSpace(resourcePath) && !string.IsNullOrWhiteSpace(monsterId))
+            {
+                resourcePath = $"Combat/Monsters/{monsterId}";
+            }
+
+            return string.IsNullOrWhiteSpace(resourcePath)
+                ? null
+                : LoadCombatSpriteResource(resourcePath);
+        }
+
+        private static Sprite LoadCombatSpriteResource(string resourcePath)
+        {
+            if (string.IsNullOrWhiteSpace(resourcePath))
+            {
+                return null;
+            }
+
+            if (CombatSpriteCache.TryGetValue(resourcePath, out var cachedSprite))
+            {
+                return cachedSprite;
+            }
+
+            var sprite = Resources.Load<Sprite>(resourcePath);
+            if (sprite == null)
+            {
+                var texture = Resources.Load<Texture2D>(resourcePath);
+                if (texture != null)
+                {
+                    sprite = Sprite.Create(
+                        texture,
+                        new Rect(0f, 0f, texture.width, texture.height),
+                        new Vector2(0.5f, 0.5f),
+                        100f);
+                }
+            }
+
+            if (sprite != null)
+            {
+                CombatSpriteCache[resourcePath] = sprite;
+            }
+
+            return sprite;
+        }
+
         private static int ClampPortraitIndex(int index)
         {
             if (CharacterPortraitResourcePaths.Length == 0)
@@ -2198,6 +2521,17 @@ namespace Conn.UI.Runtime
 
             var wrapped = index % CharacterPortraitResourcePaths.Length;
             return wrapped < 0 ? wrapped + CharacterPortraitResourcePaths.Length : wrapped;
+        }
+
+        private static int ClampStarterWeaponIndex(int index)
+        {
+            if (StarterWeaponIds.Length == 0)
+            {
+                return 0;
+            }
+
+            var wrapped = index % StarterWeaponIds.Length;
+            return wrapped < 0 ? wrapped + StarterWeaponIds.Length : wrapped;
         }
 
         private static int StarterWeaponIndex(string weaponId)
@@ -2211,6 +2545,54 @@ namespace Conn.UI.Runtime
             }
 
             return 0;
+        }
+
+        private void DrawStarterWeaponSelector(Transform panel)
+        {
+            var weaponIndex = ClampStarterWeaponIndex(characterDraftWeaponIndex);
+            var weaponId = StarterWeaponIds[weaponIndex];
+            var item = RuntimeContentDatabase.FindEquipment(weaponId) ?? EquipmentCatalog.Find(weaponId);
+            var weaponRow = AddSelectionRow(panel, 8f);
+            AddSquareButton(weaponRow, "<", () => SelectStarterWeapon(characterDraftWeaponIndex - 1));
+            AddSelectionLabel(
+                weaponRow,
+                $"{EquipmentName(weaponId)}  {weaponIndex + 1}/{StarterWeaponIds.Length}",
+                item != null ? $"{PlayerEquipmentState.SlotLabelFor(item.Kind)}  Buy {item.BuyPrice}g" : "Unknown weapon");
+            AddSquareButton(weaponRow, ">", () => SelectStarterWeapon(characterDraftWeaponIndex + 1));
+        }
+
+        private RectTransform AddSelectionRow(Transform parent, float spacing)
+        {
+            var row = AddHorizontalGroup(parent, spacing);
+            var layout = row.GetComponent<HorizontalLayoutGroup>();
+            if (layout != null)
+            {
+                layout.childForceExpandWidth = false;
+                layout.childAlignment = TextAnchor.MiddleCenter;
+            }
+
+            return row;
+        }
+
+        private void AddSelectionLabel(Transform parent, string title, string subtitle)
+        {
+            var obj = new GameObject("SelectionLabel");
+            obj.transform.SetParent(ContentParent(parent), false);
+            var image = obj.AddComponent<Image>();
+            image.color = new Color(0.15f, 0.18f, 0.22f, 0.92f);
+            var layout = obj.AddComponent<LayoutElement>();
+            layout.minHeight = 58f;
+            layout.minWidth = 220f;
+            layout.flexibleWidth = 1f;
+            var group = obj.AddComponent<VerticalLayoutGroup>();
+            group.padding = new RectOffset(12, 12, 6, 6);
+            group.spacing = 2f;
+            group.childControlWidth = true;
+            group.childControlHeight = false;
+            group.childForceExpandWidth = true;
+            group.childForceExpandHeight = false;
+            AddTextRaw(obj.transform, title, 16, FontStyle.Bold);
+            AddTextRaw(obj.transform, subtitle, 13);
         }
 
         private static Vector4 CharacterStatsFor(int portraitIndex)
@@ -2264,6 +2646,67 @@ namespace Conn.UI.Runtime
             }
 
             return !string.IsNullOrWhiteSpace(second) ? second : fallback;
+        }
+
+        private sealed class CombatReelSpinAnimator : MonoBehaviour
+        {
+            private int faceIndex;
+            private int lastTick = -1;
+            private string[] skillIds = System.Array.Empty<string>();
+            private Text[] valueTexts = System.Array.Empty<Text>();
+            private Text[] skillTexts = System.Array.Empty<Text>();
+
+            public void Configure(int index, string[] reelSkillIds, Text[] values, Text[] skills)
+            {
+                faceIndex = index;
+                skillIds = reelSkillIds != null && reelSkillIds.Length > 0 ? reelSkillIds : System.Array.Empty<string>();
+                valueTexts = values ?? System.Array.Empty<Text>();
+                skillTexts = skills ?? System.Array.Empty<Text>();
+                UpdateCells(force: true);
+            }
+
+            private void Update()
+            {
+                UpdateCells(force: false);
+            }
+
+            private void UpdateCells(bool force)
+            {
+                if (skillIds.Length == 0)
+                {
+                    return;
+                }
+
+                var tick = Mathf.FloorToInt(Time.unscaledTime * 8f + faceIndex * 1.7f);
+                if (!force && tick == lastTick)
+                {
+                    return;
+                }
+
+                lastTick = tick;
+                for (var i = 0; i < 3; i++)
+                {
+                    var offset = i - 1;
+                    var skillId = skillIds[Wrap(tick + offset, skillIds.Length)];
+                    var skill = RuntimeContentDatabase.FindSkill(skillId);
+                    var rolledValue = Mathf.Abs(tick + faceIndex * 2 + offset) % 6 + 1;
+                    if (i < valueTexts.Length && valueTexts[i] != null)
+                    {
+                        valueTexts[i].text = rolledValue.ToString();
+                    }
+
+                    if (i < skillTexts.Length && skillTexts[i] != null)
+                    {
+                        skillTexts[i].text = skill != null ? skill.DisplayName : "기본공격";
+                    }
+                }
+            }
+
+            private static int Wrap(int value, int length)
+            {
+                var wrapped = value % length;
+                return wrapped < 0 ? wrapped + length : wrapped;
+            }
         }
     }
 }

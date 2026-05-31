@@ -18,7 +18,8 @@ namespace Conn.UI.Runtime
             "RuntimeInteractionPrompt",
             "RuntimePrimaryPanel",
             "RuntimeSecondaryPanel",
-            "RuntimeBottomPanel"
+            "RuntimeBottomPanel",
+            "RuntimeDebugPanel"
         };
 
         public static readonly string[] TitlePanelNames =
@@ -113,22 +114,22 @@ namespace Conn.UI.Runtime
 
             if (panelName == "CombatEnemyStagePanel")
             {
-                return new Rect(0.64f, 0.62f, 0.32f, 0.22f);
+                return new Rect(0.58f, 0.56f, 0.38f, 0.36f);
             }
 
             if (panelName == "CombatCommandPanel")
             {
-                return new Rect(0.36f, 0.22f, 0.28f, 0.1f);
+                return new Rect(0.34f, 0.42f, 0.32f, 0.16f);
             }
 
             if (panelName == "CombatStatusPanel")
             {
-                return new Rect(0.04f, 0.42f, 0.24f, 0.18f);
+                return new Rect(0.04f, 0.5f, 0.28f, 0.34f);
             }
 
             if (panelName == "CombatDicePanel")
             {
-                return new Rect(0.32f, 0.03f, 0.36f, 0.18f);
+                return new Rect(0.16f, 0.04f, 0.68f, 0.36f);
             }
 
             if (panelName == "CombatLogPanel")
@@ -179,6 +180,11 @@ namespace Conn.UI.Runtime
             if (panelName == "TownShopPanel")
             {
                 return new Rect(0.34f, 0.16f, 0.62f, 0.62f);
+            }
+
+            if (panelName == "RuntimeDebugPanel")
+            {
+                return new Rect(0.02f, 0.54f, 0.28f, 0.22f);
             }
 
             if (panelName.Contains("Bottom") || panelName.Contains("Dice") || panelName.Contains("Log"))

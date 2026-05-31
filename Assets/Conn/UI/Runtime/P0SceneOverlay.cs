@@ -23,6 +23,23 @@ namespace Conn.UI.Runtime
         private const float MaxOverlayWidth = 360f;
         private const float MinOverlayWidth = 240f;
         private const float OverlayMargin = 16f;
+        private static readonly string[] CharacterPortraitIds =
+        {
+            "portrait_vanguard",
+            "portrait_duelist",
+            "portrait_arcanist"
+        };
+        private static readonly string[] CharacterPortraitNames =
+        {
+            "Vanguard",
+            "Duelist",
+            "Arcanist"
+        };
+        private static readonly string[] StarterWeaponIds =
+        {
+            EquipmentCatalog.RustySwordId,
+            EquipmentCatalog.GreatAxeId
+        };
 
         public GameSceneId SceneId
         {
@@ -80,21 +97,49 @@ namespace Conn.UI.Runtime
 
             if (sceneId == GameSceneId.Title)
             {
-                if (GUILayout.Button("New Game"))
+                if (session.Mode == GameMode.CharacterCreation)
                 {
-                    GameSession.Instance.StartNewGame();
-                    SceneFlowService.Load(GameSceneId.Town);
-                }
-
-                if (GUILayout.Button("Continue"))
-                {
-                    var gameSession = GameSession.Instance;
-                    if (!gameSession.TryContinue())
+                    GUILayout.Label("Character Creation");
+                    GUILayout.Label($"Name: {session.Character.CharacterName}");
+                    DrawCharacterCreationSelectorControls(session);
+                    if (GUILayout.Button("Create Character"))
                     {
-                        gameSession.StartNewGame();
+                        GameSession.Instance.StartNewGame(new CharacterCreationOptions
+                        {
+                            CharacterName = session.Character.CharacterName,
+                            SelectedPortraitIndex = session.Character.SelectedPortraitIndex,
+                            SelectedPortraitId = session.Character.SelectedPortraitId,
+                            Strength = session.Character.Strength,
+                            Dexterity = session.Character.Dexterity,
+                            Vitality = session.Character.Vitality,
+                            Energy = session.Character.Energy,
+                            StarterWeaponId = session.Character.StarterWeaponId
+                        });
+                        SceneFlowService.Load(GameSceneId.Town);
                     }
 
-                    SceneFlowService.Load(SaveRuntimeService.SceneForLoadedState(gameSession.State));
+                    if (GUILayout.Button("Back"))
+                    {
+                        session.Mode = GameMode.Title;
+                    }
+                }
+                else
+                {
+                    if (GUILayout.Button("New Game"))
+                    {
+                        GameSession.Instance.BeginCharacterCreation();
+                    }
+
+                    if (GUILayout.Button("Continue"))
+                    {
+                        var gameSession = GameSession.Instance;
+                        if (!gameSession.TryContinue())
+                        {
+                            gameSession.BeginCharacterCreation();
+                        }
+
+                        SceneFlowService.Load(SaveRuntimeService.SceneForLoadedState(gameSession.State));
+                    }
                 }
             }
             else if (sceneId == GameSceneId.Town)
@@ -536,8 +581,15 @@ namespace Conn.UI.Runtime
             GUILayout.Label($"Enemy HP: {session.Combat.Enemy.Hp}/{session.Combat.Enemy.MaxHp}");
             GUILayout.Label($"Enemy {CombatRuntimeService.DescribeCombatantStatuses(session.Combat.Enemy)}");
             GUILayout.Label(CombatRuntimeService.DescribeEnemySlots(session.Combat));
-            GUILayout.Label($"Selected: {session.Combat.SelectedDiceCount}/3 / Cooldown shown per die");
+            GUILayout.Label($"Selected: {session.Combat.SelectedDiceCount}/3 / Cooldown shown per rolled result");
             GUILayout.Label($"Log: {session.Combat.LastMessage}");
+
+            GUI.enabled = CombatRuntimeService.CanStopReels(session);
+            if (GUILayout.Button("STOP Reels"))
+            {
+                CombatRuntimeService.StopReels(session);
+            }
+            GUI.enabled = true;
 
             for (var i = 0; i < session.Combat.DiceFaces.Count; i++)
             {
@@ -557,6 +609,113 @@ namespace Conn.UI.Runtime
             {
                 CombatRuntimeService.Flee(session);
             }
+        }
+
+        private static void DrawCharacterCreationSelectorControls(GameSessionState session)
+        {
+            var portraitIndex = ClampIndex(session.Character.SelectedPortraitIndex, CharacterPortraitIds.Length);
+            if (session.Character.SelectedPortraitId != CharacterPortraitIds[portraitIndex])
+            {
+                ApplyCharacterPortrait(session, portraitIndex);
+            }
+
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("<", GUILayout.Width(42f)))
+            {
+                ApplyCharacterPortrait(session, portraitIndex - 1);
+            }
+
+            GUILayout.Label($"Portrait: {CharacterPortraitNames[portraitIndex]} ({portraitIndex + 1}/{CharacterPortraitIds.Length})");
+            if (GUILayout.Button(">", GUILayout.Width(42f)))
+            {
+                ApplyCharacterPortrait(session, portraitIndex + 1);
+            }
+
+            GUILayout.EndHorizontal();
+
+            var starterIndex = StarterWeaponIndex(session.Character.StarterWeaponId);
+            if (session.Character.StarterWeaponId != StarterWeaponIds[starterIndex])
+            {
+                ApplyStarterWeapon(session, starterIndex);
+            }
+
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("<", GUILayout.Width(42f)))
+            {
+                ApplyStarterWeapon(session, starterIndex - 1);
+            }
+
+            GUILayout.Label($"Starter: {EquipmentName(StarterWeaponIds[starterIndex])} ({starterIndex + 1}/{StarterWeaponIds.Length})");
+            if (GUILayout.Button(">", GUILayout.Width(42f)))
+            {
+                ApplyStarterWeapon(session, starterIndex + 1);
+            }
+
+            GUILayout.EndHorizontal();
+        }
+
+        private static void ApplyCharacterPortrait(GameSessionState session, int index)
+        {
+            var portraitIndex = ClampIndex(index, CharacterPortraitIds.Length);
+            session.Character.SelectedPortraitIndex = portraitIndex;
+            session.Character.SelectedPortraitId = CharacterPortraitIds[portraitIndex];
+            session.Character.Strength = portraitIndex switch
+            {
+                0 => 30,
+                1 => 18,
+                2 => 12,
+                _ => 20
+            };
+            session.Character.Dexterity = portraitIndex switch
+            {
+                0 => 18,
+                1 => 30,
+                2 => 18,
+                _ => 20
+            };
+            session.Character.Vitality = portraitIndex switch
+            {
+                0 => 26,
+                1 => 20,
+                2 => 22,
+                _ => 20
+            };
+            session.Character.Energy = portraitIndex switch
+            {
+                0 => 10,
+                1 => 14,
+                2 => 30,
+                _ => 20
+            };
+        }
+
+        private static void ApplyStarterWeapon(GameSessionState session, int index)
+        {
+            session.Character.StarterWeaponId = StarterWeaponIds[ClampIndex(index, StarterWeaponIds.Length)];
+        }
+
+        private static int StarterWeaponIndex(string weaponId)
+        {
+            for (var i = 0; i < StarterWeaponIds.Length; i++)
+            {
+                if (StarterWeaponIds[i] == weaponId)
+                {
+                    return i;
+                }
+            }
+
+            return 0;
+        }
+
+        private static int ClampIndex(int index, int count)
+        {
+            if (count <= 0)
+            {
+                return 0;
+            }
+
+            var wrapped = index % count;
+            return wrapped < 0 ? wrapped + count : wrapped;
         }
 
         private static void ReturnToTown(GameSessionState session)

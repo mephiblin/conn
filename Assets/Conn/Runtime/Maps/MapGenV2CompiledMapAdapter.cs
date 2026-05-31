@@ -29,7 +29,7 @@ namespace Conn.Runtime.Maps
             AddRegions(compiled, baked);
             AddConnectors(compiled, baked);
             AddProps(compiled, baked);
-            AddRegionAnchors(compiled, baked);
+            AddRegionAnchors(compiled, baked, baked.ObjectiveMarkers != null && baked.ObjectiveMarkers.Length > 0);
             AddMarkers(compiled, baked.SpawnMarkers, MapPlacementKind.Monster, "spawn");
             AddMarkers(compiled, baked.ObjectiveMarkers, MapPlacementKind.QuestTarget, "objective");
             return compiled;
@@ -108,12 +108,12 @@ namespace Conn.Runtime.Maps
             }
         }
 
-        private static void AddRegionAnchors(CompiledMap compiled, MapGenBakedMapAsset baked)
+        private static void AddRegionAnchors(CompiledMap compiled, MapGenBakedMapAsset baked, bool hasObjectiveMarkers)
         {
             var representativeCells = BuildRegionRepresentativeCells(baked.Cells);
             foreach (var region in baked.Regions)
             {
-                if (!TryGetRegionPlacementKind(region.RoomCategory, out var kind))
+                if (!TryGetRegionPlacementKind(region.RoomCategory, hasObjectiveMarkers, out var kind))
                 {
                     continue;
                 }
@@ -187,13 +187,16 @@ namespace Conn.Runtime.Maps
             return RoomChunkObjectKind.Decor;
         }
 
-        private static bool TryGetRegionPlacementKind(MapGenRoomCategory category, out MapPlacementKind kind)
+        private static bool TryGetRegionPlacementKind(MapGenRoomCategory category, bool hasObjectiveMarkers, out MapPlacementKind kind)
         {
             switch (category)
             {
                 case MapGenRoomCategory.Start:
                     kind = MapPlacementKind.Start;
                     return true;
+                case MapGenRoomCategory.Quest:
+                    kind = MapPlacementKind.QuestTarget;
+                    return !hasObjectiveMarkers;
                 case MapGenRoomCategory.Boss:
                     kind = MapPlacementKind.Boss;
                     return true;

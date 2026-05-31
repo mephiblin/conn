@@ -39,6 +39,7 @@ namespace Conn.Editor.Content
             EditorGUILayout.PropertyField(Prop(nameof(MonsterGeneratorWorkspace.CreateId)), new GUIContent("몬스터 ID", "소문자/숫자/밑줄 기준으로 정규화되어 저장됩니다."));
             EditorGUILayout.PropertyField(Prop(nameof(MonsterGeneratorWorkspace.CreateDisplayName)), new GUIContent("표시 이름", "게임 UI에 노출되는 이름입니다."));
             EditorGUILayout.PropertyField(Prop(nameof(MonsterGeneratorWorkspace.CreateVisualImage)), new GUIContent("비주얼 이미지", "프리팹의 투명 쿼드 머티리얼에 적용할 이미지입니다."));
+            EditorGUILayout.PropertyField(Prop(nameof(MonsterGeneratorWorkspace.CreateCombatCgResourcePath)), new GUIContent("전투 CG 리소스 경로", "Resources 아래 경로입니다. 비워두면 VisualImage가 Resources 안에 있을 때 자동 계산합니다."));
 
             using (new EditorGUILayout.HorizontalScope())
             {
@@ -292,6 +293,7 @@ namespace Conn.Editor.Content
                 ? ObjectNames.NicifyVariableName(monster.Id)
                 : workspace.CreateDisplayName.Trim();
             monster.VisualImage = workspace.CreateVisualImage;
+            monster.CombatCgResourcePath = ResolveCombatCgResourcePath(workspace);
             monster.Species = workspace.CreateSpecies;
             monster.Grade = workspace.CreateGrade;
             monster.DefaultGroupCount = Mathf.Max(1, workspace.CreateDefaultGroupCount);
@@ -321,6 +323,30 @@ namespace Conn.Editor.Content
             EditorUtility.SetDirty(workspace);
             Selection.activeObject = monster;
             EditorGUIUtility.PingObject(monster);
+        }
+
+        private static string ResolveCombatCgResourcePath(MonsterGeneratorWorkspace workspace)
+        {
+            if (!string.IsNullOrWhiteSpace(workspace.CreateCombatCgResourcePath))
+            {
+                return workspace.CreateCombatCgResourcePath.Trim();
+            }
+
+            if (workspace.CreateVisualImage == null)
+            {
+                return string.Empty;
+            }
+
+            var assetPath = AssetDatabase.GetAssetPath(workspace.CreateVisualImage);
+            var resourcesIndex = assetPath.IndexOf("/Resources/");
+            if (resourcesIndex < 0)
+            {
+                return string.Empty;
+            }
+
+            var resourcePath = assetPath.Substring(resourcesIndex + "/Resources/".Length);
+            var extensionIndex = resourcePath.LastIndexOf('.');
+            return extensionIndex > 0 ? resourcePath.Substring(0, extensionIndex) : resourcePath;
         }
 
         private static GameObject CreateMonsterPrefab(MonsterGeneratorWorkspace workspace, MonsterDefinitionAsset monster)

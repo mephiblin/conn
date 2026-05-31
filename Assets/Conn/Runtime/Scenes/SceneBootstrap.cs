@@ -64,9 +64,14 @@ namespace Conn.Runtime.Scenes
             else if (sceneId == GameSceneId.Dungeon)
             {
                 var compiledMap = CompiledMapDungeonRuntimeService.BuildQuestCompiledMap(session.State);
+                var mapCells = DungeonMapActorSpawner.SpawnFromCompiledMap(compiledMap);
+                var placedPlayer = DungeonMapActorSpawner.PlacePlayerAtStart(compiledMap);
                 CompiledMapDungeonRuntimeService.RegisterQuestTargetFieldMonster(session.State, compiledMap);
-                FieldMonsterActorSpawner.SpawnFromCompiledMap(session.State, compiledMap);
-                DungeonObjectActorSpawner.SpawnFromCompiledMap(compiledMap);
+                var fieldMonsters = FieldMonsterActorSpawner.SpawnFromCompiledMap(session.State, compiledMap);
+                var dungeonObjects = DungeonObjectActorSpawner.SpawnFromCompiledMap(compiledMap);
+                DungeonVisualDebugOverlay.SpawnForCompiledMap(compiledMap);
+                Debug.Log(
+                    $"Dungeon map loaded: {compiledMap?.MapId} profile={compiledMap?.ProfileId} quest={session.State.Quest.ActiveQuestId} cells={mapCells} monsters={fieldMonsters} objects={dungeonObjects} playerPlaced={placedPlayer}");
             }
         }
     }

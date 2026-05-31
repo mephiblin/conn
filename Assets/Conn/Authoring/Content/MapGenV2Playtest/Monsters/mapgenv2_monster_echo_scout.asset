@@ -1,0 +1,51 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2fce17d3ad5e6b34992ae1de3a194e0c, type: 3}
+  m_Name: mapgenv2_monster_echo_scout
+  m_EditorClassIdentifier: Conn.Authoring::Conn.Authoring.Content.MonsterDefinitionAsset
+  Id: mapgenv2_monster_echo_scout
+  DisplayName: Echo Scout
+  VisualImage: {fileID: 0}
+  Species: 0
+  Grade: 0
+  DefaultGroupCount: 1
+  MaxHp: 10
+  AttackPower: 3
+  Defense: 0
+  EvasionRate: 0
+  XpReward: 5
+  Boss: 0
+  Ai: Quick Probe
+  FieldAiProfile:
+    ProfileId: field_ai_mapgenv2_monster_echo_scout
+    DetectionRadius: 5
+    PatrolRadius: 2.5
+    MoveSpeed: 2.35
+    ContactCooldownSeconds: 1
+  Traits: []
+  Prefab: {fileID: 0}
+  FbxOrMeshSource: {fileID: 0}
+  AnimatorController: {fileID: 0}
+  AudioReferences: []
+  VfxReferences: []
+  ThemeTags:
+  - mapgenv2
+  - ruins
+  BiomeTags:
+  - starter
+  SpawnRoleTags:
+  - trash
+  - scout
+  CompatibilityTags:
+  - mapgenv2
+  - dungeon
+  - mapgenv2_playtest

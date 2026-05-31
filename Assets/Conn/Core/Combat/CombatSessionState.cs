@@ -22,6 +22,7 @@ namespace Conn.Core.Combat
         public CombatantState Enemy = new CombatantState();
         public List<EncounterEnemySlotState> EnemySlots = new List<EncounterEnemySlotState>();
         public List<DiceFaceState> DiceFaces = new List<DiceFaceState>();
+        public List<DiceResultCooldownState> DiceResultCooldowns = new List<DiceResultCooldownState>();
         public string LastMessage = string.Empty;
         public bool ReelSpinActive;
         public int ReelStopCount;
@@ -64,6 +65,7 @@ namespace Conn.Core.Combat
             Enemy.ClearStatusEffects();
             EnemySlots.Clear();
             DiceFaces.Clear();
+            DiceResultCooldowns.Clear();
             LastMessage = string.Empty;
             ReelSpinActive = false;
             ReelStopCount = 0;
@@ -85,5 +87,12 @@ namespace Conn.Core.Combat
             var role = Primary ? "primary" : "support";
             return $"{SlotId}: {name} x{Count} ({role})";
         }
+    }
+
+    [System.Serializable]
+    public sealed class DiceResultCooldownState
+    {
+        public string ResultKey = string.Empty;
+        public int RemainingTurns;
     }
 }

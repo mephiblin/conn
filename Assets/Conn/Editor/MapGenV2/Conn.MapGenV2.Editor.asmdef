@@ -3,7 +3,8 @@
   "rootNamespace": "Conn.MapGenV2.Editor",
   "references": [
     "Conn.MapGenV2.Core",
-    "Conn.MapGenV2.Authoring"
+    "Conn.MapGenV2.Authoring",
+    "Conn.Runtime"
   ],
   "includePlatforms": [
     "Editor"

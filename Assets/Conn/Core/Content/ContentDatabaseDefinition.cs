@@ -96,6 +96,7 @@ namespace Conn.Core.Content
     {
         public string Id;
         public string DisplayName;
+        public string CombatCgResourcePath;
         public int MaxHp;
         public int AttackPower;
         public int Defense;

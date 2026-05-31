@@ -69,8 +69,8 @@ MonoBehaviour:
     SellPrice: 2
     ArmorValue: 0
     Generated: 0
-    RarityId: 
-    AffixPoolId: 
+    RarityId:
+    AffixPoolId:
   - Id: iron_shield
     DisplayName: Iron Shield
     Kind: shield
@@ -78,8 +78,8 @@ MonoBehaviour:
     SellPrice: 3
     ArmorValue: 0
     Generated: 0
-    RarityId: 
-    AffixPoolId: 
+    RarityId:
+    AffixPoolId:
   - Id: great_axe
     DisplayName: Great Axe
     Kind: two_hand_weapon
@@ -87,8 +87,8 @@ MonoBehaviour:
     SellPrice: 6
     ArmorValue: 0
     Generated: 0
-    RarityId: 
-    AffixPoolId: 
+    RarityId:
+    AffixPoolId:
   - Id: leather_cap
     DisplayName: Leather Cap
     Kind: head_armor
@@ -96,8 +96,8 @@ MonoBehaviour:
     SellPrice: 2
     ArmorValue: 1
     Generated: 0
-    RarityId: 
-    AffixPoolId: 
+    RarityId:
+    AffixPoolId:
   - Id: padded_vest
     DisplayName: Padded Vest
     Kind: chest_armor
@@ -105,8 +105,8 @@ MonoBehaviour:
     SellPrice: 4
     ArmorValue: 2
     Generated: 0
-    RarityId: 
-    AffixPoolId: 
+    RarityId:
+    AffixPoolId:
   - Id: traveler_gloves
     DisplayName: Traveler Gloves
     Kind: arms_armor
@@ -114,8 +114,8 @@ MonoBehaviour:
     SellPrice: 2
     ArmorValue: 1
     Generated: 0
-    RarityId: 
-    AffixPoolId: 
+    RarityId:
+    AffixPoolId:
   - Id: reinforced_pants
     DisplayName: Reinforced Pants
     Kind: legs_armor
@@ -123,8 +123,8 @@ MonoBehaviour:
     SellPrice: 3
     ArmorValue: 1
     Generated: 0
-    RarityId: 
-    AffixPoolId: 
+    RarityId:
+    AffixPoolId:
   - Id: worn_boots
     DisplayName: Worn Boots
     Kind: feet_armor
@@ -132,18 +132,19 @@ MonoBehaviour:
     SellPrice: 2
     ArmorValue: 1
     Generated: 0
-    RarityId: 
-    AffixPoolId: 
+    RarityId:
+    AffixPoolId:
   Skills:
   - Id: skill_berserk
     DisplayName: "\uAD11\uBD84"
     EffectKind: attack
     TargetMode: enemy
     Formula: die_times_effect
-    SpecialEffectId: 
+    SpecialEffectId:
     BuyPrice: 12
     SellPrice: 6
     Power: 3
+    SpeciesModifiers: []
     CatalogIds:
     - merchant_basic
   - Id: skill_guard_stance
@@ -151,10 +152,11 @@ MonoBehaviour:
     EffectKind: guard
     TargetMode: self
     Formula: die_plus_effect
-    SpecialEffectId: 
+    SpecialEffectId:
     BuyPrice: 10
     SellPrice: 5
     Power: 2
+    SpeciesModifiers: []
     CatalogIds:
     - merchant_basic
   - Id: skill_vital_stab
@@ -162,10 +164,11 @@ MonoBehaviour:
     EffectKind: attack
     TargetMode: enemy
     Formula: die_plus_effect
-    SpecialEffectId: 
+    SpecialEffectId:
     BuyPrice: 14
     SellPrice: 7
     Power: 4
+    SpeciesModifiers: []
     CatalogIds:
     - merchant_basic
   - Id: skill_piercing_shot
@@ -173,10 +176,11 @@ MonoBehaviour:
     EffectKind: attack
     TargetMode: enemy
     Formula: die_times_effect
-    SpecialEffectId: 
+    SpecialEffectId:
     BuyPrice: 13
     SellPrice: 6
     Power: 2
+    SpeciesModifiers: []
     CatalogIds:
     - merchant_basic
   - Id: skill_serpent_phantasm
@@ -184,10 +188,11 @@ MonoBehaviour:
     EffectKind: attack
     TargetMode: enemy
     Formula: die_equals_effect
-    SpecialEffectId: 
+    SpecialEffectId:
     BuyPrice: 22
     SellPrice: 11
     Power: 6
+    SpeciesModifiers: []
     CatalogIds:
     - merchant_basic
   - Id: skill_purify
@@ -195,10 +200,11 @@ MonoBehaviour:
     EffectKind: support
     TargetMode: ally
     Formula: die_plus_effect
-    SpecialEffectId: 
+    SpecialEffectId:
     BuyPrice: 11
     SellPrice: 5
     Power: 2
+    SpeciesModifiers: []
     CatalogIds:
     - merchant_basic
   - Id: skill_weakness_read
@@ -206,10 +212,11 @@ MonoBehaviour:
     EffectKind: support
     TargetMode: enemy
     Formula: die_as_effect
-    SpecialEffectId: 
+    SpecialEffectId:
     BuyPrice: 9
     SellPrice: 4
     Power: 0
+    SpeciesModifiers: []
     CatalogIds:
     - merchant_basic
   - Id: skill_blood_cleave
@@ -217,10 +224,11 @@ MonoBehaviour:
     EffectKind: attack
     TargetMode: enemy
     Formula: die_plus_effect
-    SpecialEffectId: 
+    SpecialEffectId:
     BuyPrice: 18
     SellPrice: 9
     Power: 6
+    SpeciesModifiers: []
     CatalogIds:
     - merchant_basic
   - Id: skill_bastion_vow
@@ -228,10 +236,11 @@ MonoBehaviour:
     EffectKind: guard
     TargetMode: self
     Formula: die_times_effect
-    SpecialEffectId: 
+    SpecialEffectId:
     BuyPrice: 17
     SellPrice: 8
     Power: 2
+    SpeciesModifiers: []
     CatalogIds:
     - merchant_basic
   - Id: skill_chain_lightning
@@ -239,10 +248,11 @@ MonoBehaviour:
     EffectKind: attack
     TargetMode: enemy
     Formula: die_plus_effect
-    SpecialEffectId: 
+    SpecialEffectId:
     BuyPrice: 20
     SellPrice: 10
     Power: 5
+    SpeciesModifiers: []
     CatalogIds:
     - merchant_basic
   - Id: skill_mending_wave
@@ -250,10 +260,11 @@ MonoBehaviour:
     EffectKind: heal
     TargetMode: ally
     Formula: die_times_effect
-    SpecialEffectId: 
+    SpecialEffectId:
     BuyPrice: 16
     SellPrice: 8
     Power: 2
+    SpeciesModifiers: []
     CatalogIds:
     - merchant_basic
   - Id: skill_venom_mark
@@ -261,10 +272,11 @@ MonoBehaviour:
     EffectKind: support
     TargetMode: enemy
     Formula: die_plus_effect
-    SpecialEffectId: 
+    SpecialEffectId:
     BuyPrice: 12
     SellPrice: 6
     Power: 1
+    SpeciesModifiers: []
     CatalogIds:
     - merchant_basic
   - Id: skill_storm_bolt
@@ -272,10 +284,11 @@ MonoBehaviour:
     EffectKind: debuff
     TargetMode: enemy
     Formula: die_plus_effect
-    SpecialEffectId: 
+    SpecialEffectId:
     BuyPrice: 24
     SellPrice: 12
     Power: 1
+    SpeciesModifiers: []
     CatalogIds:
     - merchant_basic
     - trainer_skill_rotation
@@ -284,10 +297,11 @@ MonoBehaviour:
     EffectKind: debuff
     TargetMode: enemy
     Formula: die_minus_effect
-    SpecialEffectId: 
+    SpecialEffectId:
     BuyPrice: 21
     SellPrice: 10
     Power: 2
+    SpeciesModifiers: []
     CatalogIds:
     - merchant_basic
   - Id: skill_holy_light
@@ -295,10 +309,11 @@ MonoBehaviour:
     EffectKind: heal
     TargetMode: ally
     Formula: die_plus_effect
-    SpecialEffectId: 
+    SpecialEffectId:
     BuyPrice: 19
     SellPrice: 9
     Power: 5
+    SpeciesModifiers: []
     CatalogIds:
     - merchant_basic
     - trainer_skill_rotation
@@ -307,10 +322,11 @@ MonoBehaviour:
     EffectKind: lifesteal
     TargetMode: enemy
     Formula: die_times_effect
-    SpecialEffectId: 
+    SpecialEffectId:
     BuyPrice: 23
     SellPrice: 11
     Power: 2
+    SpeciesModifiers: []
     CatalogIds:
     - merchant_basic
   - Id: skill_avatar_vow
@@ -318,10 +334,11 @@ MonoBehaviour:
     EffectKind: buff
     TargetMode: self
     Formula: die_as_effect
-    SpecialEffectId: 
+    SpecialEffectId:
     BuyPrice: 26
     SellPrice: 13
     Power: 0
+    SpeciesModifiers: []
     CatalogIds:
     - trainer_skill_rotation
   - Id: skill_mana_burn
@@ -329,10 +346,11 @@ MonoBehaviour:
     EffectKind: debuff
     TargetMode: enemy
     Formula: die_as_effect
-    SpecialEffectId: 
+    SpecialEffectId:
     BuyPrice: 18
     SellPrice: 9
     Power: 0
+    SpeciesModifiers: []
     CatalogIds:
     - merchant_basic
     - trainer_skill_rotation
@@ -341,10 +359,11 @@ MonoBehaviour:
     EffectKind: guard
     TargetMode: self
     Formula: die_divide_effect
-    SpecialEffectId: 
+    SpecialEffectId:
     BuyPrice: 8
     SellPrice: 4
     Power: 2
+    SpeciesModifiers: []
     CatalogIds:
     - merchant_basic
   - Id: skill_summon_serpent_egg
@@ -352,27 +371,180 @@ MonoBehaviour:
     EffectKind: summon
     TargetMode: self
     Formula: die_equals_effect
-    SpecialEffectId: 
+    SpecialEffectId:
     BuyPrice: 30
     SellPrice: 15
     Power: 1
+    SpeciesModifiers: []
     CatalogIds:
     - trainer_skill_rotation
+  - Id: phase6_skill_battle_focus
+    DisplayName: Battle Focus
+    EffectKind: buff
+    TargetMode: self
+    Formula: guard_power
+    SpecialEffectId:
+    BuyPrice: 7
+    SellPrice: 3
+    Power: 3
+    SpeciesModifiers: []
+    CatalogIds:
+    - phase6_support
+  - Id: phase6_skill_bleeding_edge
+    DisplayName: Bleeding Edge
+    EffectKind: attack
+    TargetMode: enemy
+    Formula: base_plus_power
+    SpecialEffectId: bleed
+    BuyPrice: 8
+    SellPrice: 4
+    Power: 2
+    SpeciesModifiers: []
+    CatalogIds:
+    - phase6_advanced
+  - Id: phase6_skill_field_mend
+    DisplayName: Field Mend
+    EffectKind: heal
+    TargetMode: self
+    Formula: heal_power
+    SpecialEffectId:
+    BuyPrice: 6
+    SellPrice: 3
+    Power: 3
+    SpeciesModifiers: []
+    CatalogIds:
+    - phase6_support
+  - Id: phase6_skill_guard_step
+    DisplayName: Guard Step
+    EffectKind: guard
+    TargetMode: self
+    Formula: guard_power
+    SpecialEffectId:
+    BuyPrice: 4
+    SellPrice: 2
+    Power: 2
+    SpeciesModifiers: []
+    CatalogIds:
+    - phase6_basic
+  - Id: phase6_skill_guardian_echo
+    DisplayName: Guardian Echo
+    EffectKind: summon
+    TargetMode: self
+    Formula: guard_power
+    SpecialEffectId:
+    BuyPrice: 10
+    SellPrice: 5
+    Power: 2
+    SpeciesModifiers: []
+    CatalogIds:
+    - phase6_advanced
+  - Id: phase6_skill_last_light
+    DisplayName: Last Light
+    EffectKind: heal
+    TargetMode: self
+    Formula: heal_power
+    SpecialEffectId:
+    BuyPrice: 11
+    SellPrice: 5
+    Power: 5
+    SpeciesModifiers: []
+    CatalogIds:
+    - phase6_support
+  - Id: phase6_skill_quick_cut
+    DisplayName: Quick Cut
+    EffectKind: attack
+    TargetMode: enemy
+    Formula: base_plus_power
+    SpecialEffectId:
+    BuyPrice: 3
+    SellPrice: 1
+    Power: 1
+    SpeciesModifiers: []
+    CatalogIds:
+    - phase6_basic
+  - Id: phase6_skill_rallying_cry
+    DisplayName: Rallying Cry
+    EffectKind: support
+    TargetMode: self
+    Formula: guard_power
+    SpecialEffectId:
+    BuyPrice: 8
+    SellPrice: 4
+    Power: 3
+    SpeciesModifiers: []
+    CatalogIds:
+    - phase6_support
+  - Id: phase6_skill_rattle_curse
+    DisplayName: Rattle Curse
+    EffectKind: debuff
+    TargetMode: enemy
+    Formula: attack_plus_bleed
+    SpecialEffectId:
+    BuyPrice: 7
+    SellPrice: 3
+    Power: 2
+    SpeciesModifiers: []
+    CatalogIds:
+    - phase6_advanced
+  - Id: phase6_skill_smoke_feint
+    DisplayName: Smoke Feint
+    EffectKind: support
+    TargetMode: self
+    Formula: guard_power
+    SpecialEffectId:
+    BuyPrice: 5
+    SellPrice: 2
+    Power: 2
+    SpeciesModifiers: []
+    CatalogIds:
+    - phase6_support
+  - Id: phase6_skill_soul_siphon
+    DisplayName: Soul Siphon
+    EffectKind: lifesteal
+    TargetMode: enemy
+    Formula: damage_and_heal
+    SpecialEffectId:
+    BuyPrice: 9
+    SellPrice: 4
+    Power: 2
+    SpeciesModifiers: []
+    CatalogIds:
+    - phase6_advanced
+  - Id: phase6_skill_stonebreaker
+    DisplayName: Stonebreaker
+    EffectKind: attack
+    TargetMode: enemy
+    Formula: base_plus_power
+    SpecialEffectId:
+    BuyPrice: 9
+    SellPrice: 4
+    Power: 4
+    SpeciesModifiers: []
+    CatalogIds:
+    - phase6_advanced
+  SpeciesProfiles: []
+  MonsterTraits: []
   Monsters:
   - Id: desert_rat
     DisplayName: "\uC0AC\uB9C9 \uC9D0\uC2B9"
+    CombatCgResourcePath: Combat/Monsters/desert_rat_cg
     MaxHp: 15
     AttackPower: 4
     Defense: 1
+    EvasionRate: 0
     XpReward: 8
     Boss: 0
     Ai: aggressive
+    Species:
+    Grade:
+    DefaultGroupCount: 1
     FieldAiProfile:
       ProfileId: field_ai_static_contact
       DetectionRadius: 6
       PatrolRadius: 3
       MoveSpeed: 2.5
       ContactCooldownSeconds: 1
+    TraitIds: []
     ThemeTags: []
     BiomeTags: []
     SpawnRoleTags: []
@@ -382,15 +554,20 @@ MonoBehaviour:
     MaxHp: 22
     AttackPower: 6
     Defense: 2
+    EvasionRate: 0
     XpReward: 14
     Boss: 0
     Ai: coward
+    Species:
+    Grade:
+    DefaultGroupCount: 1
     FieldAiProfile:
       ProfileId: field_ai_static_contact
       DetectionRadius: 6
       PatrolRadius: 3
       MoveSpeed: 2.5
       ContactCooldownSeconds: 1
+    TraitIds: []
     ThemeTags: []
     BiomeTags: []
     SpawnRoleTags: []
@@ -400,15 +577,20 @@ MonoBehaviour:
     MaxHp: 28
     AttackPower: 7
     Defense: 4
+    EvasionRate: 0
     XpReward: 20
     Boss: 0
     Ai: guardian
+    Species:
+    Grade:
+    DefaultGroupCount: 1
     FieldAiProfile:
       ProfileId: field_ai_static_contact
       DetectionRadius: 6
       PatrolRadius: 3
       MoveSpeed: 2.5
       ContactCooldownSeconds: 1
+    TraitIds: []
     ThemeTags: []
     BiomeTags: []
     SpawnRoleTags: []
@@ -418,15 +600,20 @@ MonoBehaviour:
     MaxHp: 30
     AttackPower: 8
     Defense: 3
+    EvasionRate: 0
     XpReward: 24
     Boss: 0
     Ai: ambusher
+    Species:
+    Grade:
+    DefaultGroupCount: 1
     FieldAiProfile:
       ProfileId: field_ai_static_contact
       DetectionRadius: 6
       PatrolRadius: 3
       MoveSpeed: 2.5
       ContactCooldownSeconds: 1
+    TraitIds: []
     ThemeTags: []
     BiomeTags: []
     SpawnRoleTags: []
@@ -436,15 +623,20 @@ MonoBehaviour:
     MaxHp: 42
     AttackPower: 11
     Defense: 5
+    EvasionRate: 0
     XpReward: 34
     Boss: 0
     Ai: defensive
+    Species:
+    Grade:
+    DefaultGroupCount: 1
     FieldAiProfile:
       ProfileId: field_ai_static_contact
       DetectionRadius: 6
       PatrolRadius: 3
       MoveSpeed: 2.5
       ContactCooldownSeconds: 1
+    TraitIds: []
     ThemeTags: []
     BiomeTags: []
     SpawnRoleTags: []
@@ -454,15 +646,20 @@ MonoBehaviour:
     MaxHp: 70
     AttackPower: 12
     Defense: 5
+    EvasionRate: 0
     XpReward: 70
     Boss: 1
     Ai: aggressive
+    Species:
+    Grade:
+    DefaultGroupCount: 1
     FieldAiProfile:
       ProfileId: field_ai_static_contact
       DetectionRadius: 6
       PatrolRadius: 3
       MoveSpeed: 2.5
       ContactCooldownSeconds: 1
+    TraitIds: []
     ThemeTags: []
     BiomeTags: []
     SpawnRoleTags: []
@@ -472,15 +669,20 @@ MonoBehaviour:
     MaxHp: 36
     AttackPower: 9
     Defense: 3
+    EvasionRate: 0
     XpReward: 32
     Boss: 0
     Ai: caster
+    Species:
+    Grade:
+    DefaultGroupCount: 1
     FieldAiProfile:
       ProfileId: field_ai_static_contact
       DetectionRadius: 6
       PatrolRadius: 3
       MoveSpeed: 2.5
       ContactCooldownSeconds: 1
+    TraitIds: []
     ThemeTags: []
     BiomeTags: []
     SpawnRoleTags: []
@@ -490,15 +692,20 @@ MonoBehaviour:
     MaxHp: 82
     AttackPower: 13
     Defense: 5
+    EvasionRate: 0
     XpReward: 90
     Boss: 1
     Ai: caster
+    Species:
+    Grade:
+    DefaultGroupCount: 1
     FieldAiProfile:
       ProfileId: field_ai_static_contact
       DetectionRadius: 6
       PatrolRadius: 3
       MoveSpeed: 2.5
       ContactCooldownSeconds: 1
+    TraitIds: []
     ThemeTags: []
     BiomeTags: []
     SpawnRoleTags: []
@@ -508,15 +715,20 @@ MonoBehaviour:
     MaxHp: 10
     AttackPower: 8
     Defense: 1
+    EvasionRate: 0
     XpReward: 10
     Boss: 0
     Ai: aggressive
+    Species:
+    Grade:
+    DefaultGroupCount: 1
     FieldAiProfile:
       ProfileId: field_ai_static_contact
       DetectionRadius: 6
       PatrolRadius: 3
       MoveSpeed: 2.5
       ContactCooldownSeconds: 1
+    TraitIds: []
     ThemeTags: []
     BiomeTags: []
     SpawnRoleTags: []
@@ -526,15 +738,20 @@ MonoBehaviour:
     MaxHp: 24
     AttackPower: 7
     Defense: 2
+    EvasionRate: 0
     XpReward: 18
     Boss: 0
     Ai: caster
+    Species:
+    Grade:
+    DefaultGroupCount: 1
     FieldAiProfile:
       ProfileId: field_ai_static_contact
       DetectionRadius: 6
       PatrolRadius: 3
       MoveSpeed: 2.5
       ContactCooldownSeconds: 1
+    TraitIds: []
     ThemeTags: []
     BiomeTags: []
     SpawnRoleTags: []
@@ -544,25 +761,355 @@ MonoBehaviour:
     MaxHp: 26
     AttackPower: 7
     Defense: 3
+    EvasionRate: 0
     XpReward: 18
     Boss: 0
     Ai: defensive
+    Species:
+    Grade:
+    DefaultGroupCount: 1
     FieldAiProfile:
       ProfileId: field_ai_static_contact
       DetectionRadius: 6
       PatrolRadius: 3
       MoveSpeed: 2.5
       ContactCooldownSeconds: 1
+    TraitIds: []
     ThemeTags: []
     BiomeTags: []
     SpawnRoleTags: []
     CompatibilityTags: []
+  - Id: mapgenv2_monster_cinder_husk
+    DisplayName: Cinder Husk
+    MaxHp: 14
+    AttackPower: 4
+    Defense: 1
+    EvasionRate: 0
+    XpReward: 7
+    Boss: 0
+    Ai: Ashen Swipe
+    Species: Undead
+    Grade: Normal
+    DefaultGroupCount: 1
+    FieldAiProfile:
+      ProfileId: field_ai_mapgenv2_monster_cinder_husk
+      DetectionRadius: 5
+      PatrolRadius: 2.5
+      MoveSpeed: 2.35
+      ContactCooldownSeconds: 1
+    TraitIds: []
+    ThemeTags:
+    - mapgenv2
+    - ash
+    BiomeTags:
+    - starter
+    SpawnRoleTags:
+    - trash
+    - ambush
+    CompatibilityTags:
+    - mapgenv2
+    - dungeon
+    - mapgenv2_playtest
+  - Id: mapgenv2_monster_echo_scout
+    DisplayName: Echo Scout
+    MaxHp: 10
+    AttackPower: 3
+    Defense: 0
+    EvasionRate: 0
+    XpReward: 5
+    Boss: 0
+    Ai: Quick Probe
+    Species: Human
+    Grade: Normal
+    DefaultGroupCount: 1
+    FieldAiProfile:
+      ProfileId: field_ai_mapgenv2_monster_echo_scout
+      DetectionRadius: 5
+      PatrolRadius: 2.5
+      MoveSpeed: 2.35
+      ContactCooldownSeconds: 1
+    TraitIds: []
+    ThemeTags:
+    - mapgenv2
+    - ruins
+    BiomeTags:
+    - starter
+    SpawnRoleTags:
+    - trash
+    - scout
+    CompatibilityTags:
+    - mapgenv2
+    - dungeon
+    - mapgenv2_playtest
+  - Id: mapgenv2_monster_gate_sentinel
+    DisplayName: Gate Sentinel
+    MaxHp: 24
+    AttackPower: 5
+    Defense: 2
+    EvasionRate: 0
+    XpReward: 12
+    Boss: 0
+    Ai: Sentinel Crush
+    Species: Aberration
+    Grade: Elite
+    DefaultGroupCount: 1
+    FieldAiProfile:
+      ProfileId: field_ai_mapgenv2_monster_gate_sentinel
+      DetectionRadius: 7
+      PatrolRadius: 4
+      MoveSpeed: 2.7
+      ContactCooldownSeconds: 1
+    TraitIds: []
+    ThemeTags:
+    - mapgenv2
+    - stone
+    BiomeTags:
+    - starter
+    SpawnRoleTags:
+    - elite
+    - quest_target
+    CompatibilityTags:
+    - mapgenv2
+    - dungeon
+    - mapgenv2_playtest
+  - Id: phase6_monster_ash_wisp
+    DisplayName: Ash Wisp
+    MaxHp: 8
+    AttackPower: 4
+    Defense: 0
+    EvasionRate: 0
+    XpReward: 6
+    Boss: 0
+    Ai: Ember Lash
+    Species: Human
+    Grade: Normal
+    DefaultGroupCount: 1
+    FieldAiProfile:
+      ProfileId: field_ai_static_contact
+      DetectionRadius: 6
+      PatrolRadius: 3
+      MoveSpeed: 2.5
+      ContactCooldownSeconds: 1
+    TraitIds: []
+    ThemeTags:
+    - ruins
+    - fire
+    BiomeTags:
+    - ash
+    SpawnRoleTags:
+    - ambush
+    CompatibilityTags:
+    - chapter1
+    - dungeon
+  - Id: phase6_monster_bone_archer
+    DisplayName: Bone Archer
+    MaxHp: 10
+    AttackPower: 4
+    Defense: 0
+    EvasionRate: 0
+    XpReward: 6
+    Boss: 0
+    Ai: Splinter Shot
+    Species: Human
+    Grade: Normal
+    DefaultGroupCount: 1
+    FieldAiProfile:
+      ProfileId: field_ai_static_contact
+      DetectionRadius: 6
+      PatrolRadius: 3
+      MoveSpeed: 2.5
+      ContactCooldownSeconds: 1
+    TraitIds: []
+    ThemeTags:
+    - undead
+    BiomeTags:
+    - crypt
+    SpawnRoleTags:
+    - ranged
+    - trash
+    CompatibilityTags:
+    - chapter1
+    - dungeon
+  - Id: phase6_monster_cult_acolyte
+    DisplayName: Cult Acolyte
+    MaxHp: 11
+    AttackPower: 3
+    Defense: 0
+    EvasionRate: 0
+    XpReward: 6
+    Boss: 0
+    Ai: Hex Bolt
+    Species: Human
+    Grade: Normal
+    DefaultGroupCount: 1
+    FieldAiProfile:
+      ProfileId: field_ai_static_contact
+      DetectionRadius: 6
+      PatrolRadius: 3
+      MoveSpeed: 2.5
+      ContactCooldownSeconds: 1
+    TraitIds: []
+    ThemeTags:
+    - cult
+    BiomeTags:
+    - ruins
+    SpawnRoleTags:
+    - support
+    - trash
+    CompatibilityTags:
+    - chapter1
+    - dungeon
+  - Id: phase6_monster_granite_brute
+    DisplayName: Granite Brute
+    MaxHp: 20
+    AttackPower: 5
+    Defense: 2
+    EvasionRate: 0
+    XpReward: 10
+    Boss: 0
+    Ai: Stone Crush
+    Species: Human
+    Grade: Normal
+    DefaultGroupCount: 1
+    FieldAiProfile:
+      ProfileId: field_ai_static_contact
+      DetectionRadius: 6
+      PatrolRadius: 3
+      MoveSpeed: 2.5
+      ContactCooldownSeconds: 1
+    TraitIds: []
+    ThemeTags:
+    - ruins
+    - stone
+    BiomeTags:
+    - stone
+    SpawnRoleTags:
+    - elite
+    CompatibilityTags:
+    - chapter1
+    - dungeon
+  - Id: phase6_monster_lantern_horror
+    DisplayName: Lantern Horror
+    MaxHp: 16
+    AttackPower: 4
+    Defense: 1
+    EvasionRate: 0
+    XpReward: 9
+    Boss: 0
+    Ai: Dread Gleam
+    Species: Human
+    Grade: Normal
+    DefaultGroupCount: 1
+    FieldAiProfile:
+      ProfileId: field_ai_static_contact
+      DetectionRadius: 6
+      PatrolRadius: 3
+      MoveSpeed: 2.5
+      ContactCooldownSeconds: 1
+    TraitIds: []
+    ThemeTags:
+    - horror
+    - cult
+    BiomeTags:
+    - crypt
+    SpawnRoleTags:
+    - elite
+    - ambush
+    CompatibilityTags:
+    - chapter1
+    - dungeon
+  - Id: phase6_monster_mire_stalker
+    DisplayName: Mire Stalker
+    MaxHp: 14
+    AttackPower: 3
+    Defense: 1
+    EvasionRate: 0
+    XpReward: 7
+    Boss: 0
+    Ai: Hooking Claw
+    Species: Human
+    Grade: Normal
+    DefaultGroupCount: 1
+    FieldAiProfile:
+      ProfileId: field_ai_static_contact
+      DetectionRadius: 6
+      PatrolRadius: 3
+      MoveSpeed: 2.5
+      ContactCooldownSeconds: 1
+    TraitIds: []
+    ThemeTags:
+    - beast
+    BiomeTags:
+    - mire
+    SpawnRoleTags:
+    - ambush
+    CompatibilityTags:
+    - chapter1
+    - dungeon
+  - Id: phase6_monster_ossuary_knight
+    DisplayName: Ossuary Knight
+    MaxHp: 28
+    AttackPower: 6
+    Defense: 3
+    EvasionRate: 0
+    XpReward: 16
+    Boss: 1
+    Ai: Grave Oath
+    Species: Human
+    Grade: Normal
+    DefaultGroupCount: 1
+    FieldAiProfile:
+      ProfileId: field_ai_static_contact
+      DetectionRadius: 6
+      PatrolRadius: 3
+      MoveSpeed: 2.5
+      ContactCooldownSeconds: 1
+    TraitIds: []
+    ThemeTags:
+    - undead
+    - boss
+    BiomeTags:
+    - crypt
+    SpawnRoleTags:
+    - boss
+    CompatibilityTags:
+    - chapter1
+    - dungeon
+  - Id: phase6_monster_ruin_guard
+    DisplayName: Ruin Guard
+    MaxHp: 12
+    AttackPower: 3
+    Defense: 1
+    EvasionRate: 0
+    XpReward: 5
+    Boss: 0
+    Ai: Shield Bash
+    Species: Human
+    Grade: Normal
+    DefaultGroupCount: 1
+    FieldAiProfile:
+      ProfileId: field_ai_static_contact
+      DetectionRadius: 6
+      PatrolRadius: 3
+      MoveSpeed: 2.5
+      ContactCooldownSeconds: 1
+    TraitIds: []
+    ThemeTags:
+    - ruins
+    BiomeTags:
+    - stone
+    SpawnRoleTags:
+    - trash
+    - guard
+    CompatibilityTags:
+    - chapter1
+    - dungeon
   Encounters:
   - Id: encounter_desert_rat
     DisplayName: "\uC0AC\uB9C9 \uC9D0\uC2B9 \uC870\uC6B0"
     MonsterId: desert_rat
     XpReward: 8
-    RewardId: 
+    RewardId:
     Pattern: single_primary
     EnemySlots:
     - SlotId: primary
@@ -579,7 +1126,7 @@ MonoBehaviour:
     DisplayName: "\uB3C4\uAD74\uAFBC \uC870\uC6B0"
     MonsterId: grave_robber
     XpReward: 14
-    RewardId: 
+    RewardId:
     Pattern: single_primary
     EnemySlots:
     - SlotId: primary
@@ -596,7 +1143,7 @@ MonoBehaviour:
     DisplayName: "\uBC40 \uC0AC\uC6D0 \uACBD\uBE44 \uC870\uC6B0"
     MonsterId: serpent_guard
     XpReward: 20
-    RewardId: 
+    RewardId:
     Pattern: single_primary
     EnemySlots:
     - SlotId: primary
@@ -613,7 +1160,7 @@ MonoBehaviour:
     DisplayName: "\uB3C5\uAD11 \uC57D\uD0C8\uC790 \uC870\uC6B0"
     MonsterId: poisoned_raider
     XpReward: 24
-    RewardId: 
+    RewardId:
     Pattern: single_primary
     EnemySlots:
     - SlotId: primary
@@ -630,7 +1177,7 @@ MonoBehaviour:
     DisplayName: "\uC800\uC8FC \uAC80\uD22C\uC0AC \uC870\uC6B0"
     MonsterId: cursed_gladiator
     XpReward: 34
-    RewardId: 
+    RewardId:
     Pattern: single_primary
     EnemySlots:
     - SlotId: primary
@@ -647,7 +1194,7 @@ MonoBehaviour:
     DisplayName: "\uAC80\uC740 \uBB3C\uC758 \uD30C\uCDA9\uC218 \uC870\uC6B0"
     MonsterId: black_water_beast
     XpReward: 70
-    RewardId: 
+    RewardId:
     Pattern: single_primary
     EnemySlots:
     - SlotId: primary
@@ -664,7 +1211,7 @@ MonoBehaviour:
     DisplayName: "\uBC40 \uC0AC\uC81C \uC870\uC6B0"
     MonsterId: serpent_guard
     XpReward: 20
-    RewardId: 
+    RewardId:
     Pattern: single_primary
     EnemySlots:
     - SlotId: primary
@@ -681,7 +1228,7 @@ MonoBehaviour:
     DisplayName: "\uB208\uBA3C \uC0AC\uC81C \uC870\uC6B0"
     MonsterId: blind_priest
     XpReward: 90
-    RewardId: 
+    RewardId:
     Pattern: single_primary
     EnemySlots:
     - SlotId: primary
@@ -698,7 +1245,7 @@ MonoBehaviour:
     DisplayName: "\uAE30\uC5B4\uB2E4\uB2C8\uB294 \uBB3C\uACE0\uAE30 \uC870\uC6B0"
     MonsterId: crawling_fish
     XpReward: 10
-    RewardId: 
+    RewardId:
     Pattern: single_primary
     EnemySlots:
     - SlotId: primary
@@ -715,7 +1262,7 @@ MonoBehaviour:
     DisplayName: "\uC0B0\uD638 \uAD11\uC2E0\uB3C4 \uC870\uC6B0"
     MonsterId: reef_cultist
     XpReward: 18
-    RewardId: 
+    RewardId:
     Pattern: single_primary
     EnemySlots:
     - SlotId: primary
@@ -732,7 +1279,7 @@ MonoBehaviour:
     DisplayName: "\uD3D0\uD5C8\uC758 \uBE48 \uAECD\uC9C8 \uC870\uC6B0"
     MonsterId: ruin_husk
     XpReward: 18
-    RewardId: 
+    RewardId:
     Pattern: single_primary
     EnemySlots:
     - SlotId: primary
@@ -745,6 +1292,248 @@ MonoBehaviour:
     SpawnRoleTags: []
     AllowedMapTags: []
     CompatibilityTags: []
+  - Id: mapgenv2_encounter_cinder_pack
+    DisplayName: Cinder Pack
+    MonsterId: mapgenv2_monster_cinder_husk
+    XpReward: 14
+    RewardId:
+    Pattern: multi_slot
+    EnemySlots:
+    - SlotId: primary
+      MonsterId: mapgenv2_monster_cinder_husk
+      Count: 2
+      Primary: 1
+    - SlotId: scout
+      MonsterId: mapgenv2_monster_echo_scout
+      Count: 1
+      Primary: 0
+    MinDifficulty: 2
+    MaxDifficulty: 4
+    ThemeTags:
+    - mapgenv2
+    - ash
+    SpawnRoleTags:
+    - trash
+    - ambush
+    AllowedMapTags:
+    - mapgenv2
+    - mapgenv2_playtest
+    CompatibilityTags:
+    - mapgenv2
+    - dungeon
+    - mapgenv2_playtest
+  - Id: mapgenv2_encounter_echo_scout_pair
+    DisplayName: Echo Scout Pair
+    MonsterId: mapgenv2_monster_echo_scout
+    XpReward: 10
+    RewardId:
+    Pattern: multi_slot
+    EnemySlots:
+    - SlotId: primary
+      MonsterId: mapgenv2_monster_echo_scout
+      Count: 1
+      Primary: 1
+    - SlotId: flank
+      MonsterId: mapgenv2_monster_cinder_husk
+      Count: 1
+      Primary: 0
+    MinDifficulty: 1
+    MaxDifficulty: 2
+    ThemeTags:
+    - mapgenv2
+    - starter
+    SpawnRoleTags:
+    - trash
+    AllowedMapTags:
+    - mapgenv2
+    - mapgenv2_playtest
+    CompatibilityTags:
+    - mapgenv2
+    - dungeon
+    - mapgenv2_playtest
+  - Id: mapgenv2_encounter_gate_sentinel_trial
+    DisplayName: Gate Sentinel Trial
+    MonsterId: mapgenv2_monster_gate_sentinel
+    XpReward: 24
+    RewardId:
+    Pattern: elite_primary
+    EnemySlots:
+    - SlotId: primary
+      MonsterId: mapgenv2_monster_gate_sentinel
+      Count: 1
+      Primary: 1
+    - SlotId: guard
+      MonsterId: mapgenv2_monster_cinder_husk
+      Count: 1
+      Primary: 0
+    MinDifficulty: 3
+    MaxDifficulty: 6
+    ThemeTags:
+    - mapgenv2
+    - stone
+    SpawnRoleTags:
+    - elite
+    - quest_target
+    AllowedMapTags:
+    - mapgenv2
+    - mapgenv2_playtest
+    CompatibilityTags:
+    - mapgenv2
+    - dungeon
+    - mapgenv2_playtest
+  - Id: phase6_encounter_ash_ambush
+    DisplayName: Ash Ambush
+    MonsterId: phase6_monster_ash_wisp
+    XpReward: 14
+    RewardId: reward_phase6_basic
+    Pattern: multi_slot
+    EnemySlots:
+    - SlotId: primary
+      MonsterId: phase6_monster_ash_wisp
+      Count: 1
+      Primary: 1
+    - SlotId: guard
+      MonsterId: phase6_monster_ruin_guard
+      Count: 1
+      Primary: 0
+    MinDifficulty: 1
+    MaxDifficulty: 3
+    ThemeTags:
+    - ruins
+    - fire
+    SpawnRoleTags:
+    - ambush
+    AllowedMapTags:
+    - ruins
+    CompatibilityTags:
+    - chapter1
+    - dungeon
+  - Id: phase6_encounter_bone_line
+    DisplayName: Bone Line
+    MonsterId: phase6_monster_bone_archer
+    XpReward: 16
+    RewardId: reward_phase6_bone
+    Pattern: multi_slot
+    EnemySlots:
+    - SlotId: primary
+      MonsterId: phase6_monster_bone_archer
+      Count: 2
+      Primary: 1
+    - SlotId: front
+      MonsterId: phase6_monster_mire_stalker
+      Count: 1
+      Primary: 0
+    MinDifficulty: 2
+    MaxDifficulty: 4
+    ThemeTags:
+    - undead
+    SpawnRoleTags:
+    - ranged
+    AllowedMapTags:
+    - crypt
+    CompatibilityTags:
+    - chapter1
+    - dungeon
+  - Id: phase6_encounter_cult_rite
+    DisplayName: Cult Rite
+    MonsterId: phase6_monster_cult_acolyte
+    XpReward: 18
+    RewardId: reward_phase6_cult
+    Pattern: multi_slot
+    EnemySlots:
+    - SlotId: primary
+      MonsterId: phase6_monster_cult_acolyte
+      Count: 2
+      Primary: 1
+    - SlotId: horror
+      MonsterId: phase6_monster_lantern_horror
+      Count: 1
+      Primary: 0
+    MinDifficulty: 3
+    MaxDifficulty: 5
+    ThemeTags:
+    - cult
+    SpawnRoleTags:
+    - support
+    AllowedMapTags:
+    - ruins
+    - crypt
+    CompatibilityTags:
+    - chapter1
+    - dungeon
+  - Id: phase6_encounter_granite_gate
+    DisplayName: Granite Gate
+    MonsterId: phase6_monster_granite_brute
+    XpReward: 22
+    RewardId: reward_phase6_elite
+    Pattern: single_primary
+    EnemySlots:
+    - SlotId: primary
+      MonsterId: phase6_monster_granite_brute
+      Count: 1
+      Primary: 1
+    MinDifficulty: 3
+    MaxDifficulty: 6
+    ThemeTags:
+    - ruins
+    - stone
+    SpawnRoleTags:
+    - elite
+    AllowedMapTags:
+    - ruins
+    CompatibilityTags:
+    - chapter1
+    - dungeon
+  - Id: phase6_encounter_ossuary_oath
+    DisplayName: Ossuary Oath
+    MonsterId: phase6_monster_ossuary_knight
+    XpReward: 34
+    RewardId: reward_phase6_boss
+    Pattern: boss_primary
+    EnemySlots:
+    - SlotId: primary
+      MonsterId: phase6_monster_ossuary_knight
+      Count: 1
+      Primary: 1
+    - SlotId: guard
+      MonsterId: phase6_monster_bone_archer
+      Count: 1
+      Primary: 0
+    MinDifficulty: 5
+    MaxDifficulty: 8
+    ThemeTags:
+    - undead
+    - boss
+    SpawnRoleTags:
+    - boss
+    AllowedMapTags:
+    - crypt
+    CompatibilityTags:
+    - chapter1
+    - dungeon
+  - Id: phase6_encounter_ruin_patrol
+    DisplayName: Ruin Patrol
+    MonsterId: phase6_monster_ruin_guard
+    XpReward: 12
+    RewardId: reward_phase6_basic
+    Pattern: single_primary
+    EnemySlots:
+    - SlotId: primary
+      MonsterId: phase6_monster_ruin_guard
+      Count: 1
+      Primary: 1
+    MinDifficulty: 1
+    MaxDifficulty: 2
+    ThemeTags:
+    - ruins
+    SpawnRoleTags:
+    - trash
+    - guard
+    AllowedMapTags:
+    - ruins
+    CompatibilityTags:
+    - chapter1
+    - dungeon
   Quests:
   - Id: quest_twisted_temple_clear
     DisplayName: "\uB4A4\uD2C0\uB9B0 \uC0AC\uC6D0 \uC815\uCC30"
@@ -752,7 +1541,7 @@ MonoBehaviour:
       \uB4A4\uD2C0\uB9B0 \uC0AC\uC6D0 1\uCE35\uC758 \uC704\uD611\uC744 \uC815\uB9AC\uD558\uACE0
       \uADC0\uD658\uD55C\uB2E4."
     MapKind: twisted_temple
-    MapProfileId: ch2_first_slice_ruins
+    MapProfileId: twisted_temple
     TargetMonsterId: desert_rat
     TargetEncounterId: encounter_desert_rat
     GoldReward: 18
@@ -760,6 +1549,89 @@ MonoBehaviour:
     RewardItems:
     - ItemId: bandage
       Quantity: 1
+  - Id: mapgenv2_quest_cinder_route
+    DisplayName: MapGenV2 Cinder Route
+    Description: Use the MapGenV2 branching playtest profile and fight through a
+      small mixed pack.
+    MapKind: dungeon
+    MapProfileId: mapgenv2_playtest_branching
+    TargetMonsterId: mapgenv2_monster_cinder_husk
+    TargetEncounterId: mapgenv2_encounter_cinder_pack
+    GoldReward: 16
+    XpReward: 7
+    RewardItems: []
+  - Id: mapgenv2_quest_echo_sweep
+    DisplayName: MapGenV2 Echo Sweep
+    Description: Use the MapGenV2 starter playtest profile and clear a lightweight
+      scout target.
+    MapKind: dungeon
+    MapProfileId: mapgenv2_playtest_starter
+    TargetMonsterId: mapgenv2_monster_echo_scout
+    TargetEncounterId: mapgenv2_encounter_echo_scout_pair
+    GoldReward: 12
+    XpReward: 5
+    RewardItems: []
+  - Id: mapgenv2_quest_sentinel_check
+    DisplayName: MapGenV2 Sentinel Check
+    Description: Use the MapGenV2 depths playtest profile and verify the elite target
+      path.
+    MapKind: dungeon
+    MapProfileId: mapgenv2_playtest_depths
+    TargetMonsterId: mapgenv2_monster_gate_sentinel
+    TargetEncounterId: mapgenv2_encounter_gate_sentinel_trial
+    GoldReward: 24
+    XpReward: 10
+    RewardItems: []
+  - Id: phase6_quest_ash_signal
+    DisplayName: Smother the Ash Signal
+    Description: Stop the wisps before they draw more enemies to the gate.
+    MapKind: dungeon
+    MapProfileId: ch2_first_slice_ruins
+    TargetMonsterId: phase6_monster_ash_wisp
+    TargetEncounterId: phase6_encounter_ash_ambush
+    GoldReward: 14
+    XpReward: 5
+    RewardItems: []
+  - Id: phase6_quest_bone_line
+    DisplayName: Break the Bone Line
+    Description: Remove the archers watching the crypt approach.
+    MapKind: dungeon
+    MapProfileId: ch2_first_slice_ruins
+    TargetMonsterId: phase6_monster_bone_archer
+    TargetEncounterId: phase6_encounter_bone_line
+    GoldReward: 18
+    XpReward: 6
+    RewardItems: []
+  - Id: phase6_quest_cult_rite
+    DisplayName: Interrupt the Cult Rite
+    Description: Scatter the acolytes before the rite finishes.
+    MapKind: dungeon
+    MapProfileId: ch2_first_slice_ruins
+    TargetMonsterId: phase6_monster_cult_acolyte
+    TargetEncounterId: phase6_encounter_cult_rite
+    GoldReward: 22
+    XpReward: 8
+    RewardItems: []
+  - Id: phase6_quest_ossuary_oath
+    DisplayName: Break the Ossuary Oath
+    Description: Defeat the knight binding the crypt halls.
+    MapKind: dungeon
+    MapProfileId: ch2_first_slice_ruins
+    TargetMonsterId: phase6_monster_ossuary_knight
+    TargetEncounterId: phase6_encounter_ossuary_oath
+    GoldReward: 35
+    XpReward: 12
+    RewardItems: []
+  - Id: phase6_quest_ruin_patrol
+    DisplayName: Sweep the Ruin Patrol
+    Description: Clear the first patrol holding the old road.
+    MapKind: dungeon
+    MapProfileId: ch2_first_slice_ruins
+    TargetMonsterId: phase6_monster_ruin_guard
+    TargetEncounterId: phase6_encounter_ruin_patrol
+    GoldReward: 12
+    XpReward: 4
+    RewardItems: []
   Vendors:
   - Id: vendor_inn
     ServiceType: heal_party
@@ -896,12 +1768,97 @@ MonoBehaviour:
     CatalogIds:
     - merchant_basic
     Rotations: []
+  - Id: phase6_vendor_field_apothecary
+    ServiceType: sell_bundle
+    GoldCost: 0
+    Summary: Phase 6 consumable bundle stock.
+    StockItemIds:
+    - bandage
+    - antivenom
+    StockSkillIds: []
+    CatalogIds: []
+    Rotations:
+    - MinFloor: 3
+      BossesDefeated: 0
+      GoldCost: 0
+      Summary: Adds offensive consumables after early floors.
+      StockItemIds:
+      - throwing_knife
+      - firebomb
+      StockSkillIds: []
+      CatalogIds: []
+  - Id: phase6_vendor_relic_peddler
+    ServiceType: skill_shop
+    GoldCost: 0
+    Summary: Phase 6 advanced skill stock.
+    StockItemIds: []
+    StockSkillIds:
+    - phase6_skill_bleeding_edge
+    - phase6_skill_soul_siphon
+    - phase6_skill_stonebreaker
+    CatalogIds:
+    - phase6_advanced
+    Rotations:
+    - MinFloor: 4
+      BossesDefeated: 1
+      GoldCost: 0
+      Summary: Adds rare control and recovery skills.
+      StockItemIds: []
+      StockSkillIds:
+      - phase6_skill_guardian_echo
+      - phase6_skill_last_light
+      CatalogIds:
+      - phase6_advanced
+      - phase6_support
+  - Id: phase6_vendor_tactical_trainer
+    ServiceType: skill_shop
+    GoldCost: 0
+    Summary: Phase 6 basic and support skill stock.
+    StockItemIds: []
+    StockSkillIds:
+    - phase6_skill_quick_cut
+    - phase6_skill_guard_step
+    - phase6_skill_field_mend
+    CatalogIds:
+    - phase6_basic
+    - phase6_support
+    Rotations:
+    - MinFloor: 2
+      BossesDefeated: 0
+      GoldCost: 0
+      Summary: Adds advanced tactical options.
+      StockItemIds: []
+      StockSkillIds:
+      - phase6_skill_smoke_feint
+      - phase6_skill_battle_focus
+      CatalogIds:
+      - phase6_support
+  - Id: phase6_vendor_wayfarer_smith
+    ServiceType: equipment_shop
+    GoldCost: 0
+    Summary: Phase 6 equipment stock for early ruins runs.
+    StockItemIds:
+    - iron_shield
+    - leather_cap
+    - padded_vest
+    StockSkillIds: []
+    CatalogIds: []
+    Rotations:
+    - MinFloor: 3
+      BossesDefeated: 0
+      GoldCost: 0
+      Summary: Adds two-hand option after early floors.
+      StockItemIds:
+      - great_axe
+      - reinforced_pants
+      StockSkillIds: []
+      CatalogIds: []
   Npcs:
   - Id: npc_innkeeper
     DisplayName: "\uC5EC\uAD00"
     Description: "\uAE08\uD654 5\uAC1C\uB85C \uC804\uC5F4\uACFC \uD6C4\uC5F4\uC758
       HP\uB97C \uD68C\uBCF5\uD55C\uB2E4."
-    ServiceType: 
+    ServiceType:
     VendorId: vendor_inn
     QuestIds: []
   - Id: npc_trainer
@@ -915,14 +1872,14 @@ MonoBehaviour:
     DisplayName: "\uB300\uC7A5\uAC04"
     Description: "\uAE08\uD654 12\uAC1C\uB85C \uC804\uC5F4\uC758 \uACF5\uACA9\uB825\uC744
       \uBCF4\uAC15\uD55C\uB2E4."
-    ServiceType: 
+    ServiceType:
     VendorId: vendor_smith
     QuestIds: []
   - Id: npc_apothecary
     DisplayName: "\uC57D\uC7AC\uC0C1"
     Description: "\uAE08\uD654 8\uAC1C\uB85C \uBD95\uB300\uC640 \uD574\uB3C5\uC81C\uB97C
       \uC0B0\uB2E4."
-    ServiceType: 
+    ServiceType:
     VendorId: vendor_apothecary
     QuestIds: []
   - Id: npc_skill_merchant
@@ -930,21 +1887,21 @@ MonoBehaviour:
     Description: "\uC8FC\uC0AC\uC704 \uBA74\uC5D0 \uAF42\uC744 \uAE30\uC220 \uCE74\uB4DC\uB97C
       \uC0AC\uACE0\uD310\uB2E4."
     ServiceType: skill_shop,talk
-    VendorId: 
+    VendorId:
     QuestIds: []
   - Id: npc_bulletin_board
     DisplayName: "\uAC8C\uC2DC\uD310"
     Description: "\uCD0C\uC7A5\uC774 \uB0A8\uAE34 \uC6D0\uC815 \uACF5\uACE0\uC640
       \uBCF4\uC0C1 \uC804\uD45C\uB97C \uD655\uC778\uD55C\uB2E4."
-    ServiceType: 
-    VendorId: 
+    ServiceType:
+    VendorId:
     QuestIds: []
   - Id: npc_scholar
     DisplayName: "\uD559\uC790\uC758 \uBC29"
     Description: "\uC81C\uB2E8\uACFC \uBE44\uBC00\uBB38\uC5D0 \uB300\uD55C \uB2E8\uC11C\uB97C
       \uB4E3\uB294\uB2E4."
     ServiceType: quest,talk,identify
-    VendorId: 
+    VendorId:
     QuestIds:
     - quest_seed_black_mural
   - Id: npc_gatekeeper
@@ -952,22 +1909,22 @@ MonoBehaviour:
     Description: "\uC218\uC8FC\uD55C \uC758\uB8B0 \uC804\uD45C\uAC00 \uC788\uC744
       \uB54C\uB9CC \uB358\uC804\uC73C\uB85C \uC774\uC5B4\uC9C0\uB294 \uBB38\uC774
       \uC5F4\uB9B0\uB2E4."
-    ServiceType: 
-    VendorId: 
+    ServiceType:
+    VendorId:
     QuestIds: []
   - Id: npc_exile_scout
     DisplayName: "\uCD94\uBC29\uB41C \uC815\uCC30\uBCD1"
     Description: "\uD568\uC815\uACFC \uC228\uC740 \uD1B5\uB85C\uB97C \uC544\uB294
       \uC815\uCC30\uBCD1\uC774 \uBCBD\uC5D0 \uAE30\uB300\uC5B4 \uC228\uC744 \uACE0\uB978\uB2E4."
     ServiceType: talk,recruit
-    VendorId: 
+    VendorId:
     QuestIds: []
   - Id: npc_wounded_mystic
     DisplayName: "\uC0C1\uCC98 \uC785\uC740 \uC2E0\uBE44\uAC00"
     Description: "\uAC80\uC740 \uBB3C\uC5D0 \uC816\uC740 \uC2E0\uBE44\uAC00\uAC00
       \uC800\uC8FC\uC640 \uB3C5\uC758 \uD754\uC801\uC744 \uC0B4\uD540\uB2E4."
     ServiceType: quest,talk,trade,heal,identify
-    VendorId: 
+    VendorId:
     QuestIds:
     - quest_seed_black_water_vow
   - Id: npc_deserter_captain
@@ -975,7 +1932,7 @@ MonoBehaviour:
     Description: "\uCCAD\uB3D9 \uC0AC\uC2AC\uC744 \uB450\uB978 \uACBD\uBE44\uB300\uC7A5\uC774
       \uAE38\uC744 \uB9C9\uACE0 \uAE08\uC744 \uC694\uAD6C\uD55C\uB2E4."
     ServiceType: talk,fight
-    VendorId: 
+    VendorId:
     QuestIds: []
-  StarterEquipmentId: 
-  StarterSkillId: 
+  StarterEquipmentId:
+  StarterSkillId:

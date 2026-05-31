@@ -33,8 +33,6 @@ namespace Conn.Runtime.Session
         {
             PointerUiActive = false;
             ManualReleaseActive = false;
-            Cursor.visible = true;
-            Cursor.lockState = CursorLockMode.None;
         }
 
         private static bool ShouldShowCursor(GameSceneId sceneId, GameSessionState session, bool characterPanelOpen)
@@ -44,9 +42,14 @@ namespace Conn.Runtime.Session
                 return true;
             }
 
-            if (sceneId == GameSceneId.Title || sceneId == GameSceneId.Combat || sceneId == GameSceneId.Ending)
+            if (sceneId == GameSceneId.Title || sceneId == GameSceneId.Ending)
             {
                 return true;
+            }
+
+            if (sceneId == GameSceneId.Combat)
+            {
+                return session != null && session.Combat != null && session.Combat.Active;
             }
 
             if (sceneId == GameSceneId.Town)

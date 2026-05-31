@@ -329,6 +329,38 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void DungeonRuntimeLoadsSavedChapterTwoCompiledMapWithBakedDimensions()
+        {
+            var asset = AssetDatabase.LoadAssetAtPath<CompiledMapAsset>("Assets/Conn/Core/Maps/ch2_first_slice_ruins_2001_CompiledMap.asset");
+            Assert.That(asset, Is.Not.Null);
+            var compiled = JsonUtility.FromJson<CompiledMap>(asset.Json);
+            var session = new GameSessionState();
+            session.StartNewGame();
+            QuestRuntimeService.AcceptQuest(session, QuestCatalog.TestHuntId);
+
+            try
+            {
+                CompiledMapDungeonRuntimeService.SetCompiledMapAssets(new[] { asset });
+                CompiledMapDungeonRuntimeService.SetMapGenV2BakedMaps(System.Array.Empty<Conn.MapGenV2.Core.MapGenBakedMapAsset>());
+                CompiledMapDungeonRuntimeService.SetRuntimeMapGenerationBundles(System.Array.Empty<RuntimeMapGenerationBundleAsset>());
+
+                var loaded = CompiledMapDungeonRuntimeService.BuildQuestCompiledMap(session);
+
+                Assert.That(loaded.MapId, Is.EqualTo(compiled.MapId));
+                Assert.That(loaded.ProfileId, Is.EqualTo(MapGenerationCatalog.ChapterTwoFirstSliceProfileId));
+                Assert.That(loaded.Width, Is.EqualTo(compiled.Width));
+                Assert.That(loaded.Height, Is.EqualTo(compiled.Height));
+                Assert.That(CompiledMapRuntimeLoader.FindPlacement(loaded, MapPlacementKind.QuestTarget), Is.Not.Null);
+            }
+            finally
+            {
+                CompiledMapDungeonRuntimeService.SetCompiledMapAssets(null);
+                CompiledMapDungeonRuntimeService.SetMapGenV2BakedMaps(null);
+                CompiledMapDungeonRuntimeService.SetRuntimeMapGenerationBundles(null);
+            }
+        }
+
+        [Test]
         public void CompiledValidationReportsInvalidCellsAndObjects()
         {
             var profile = MapGenerationCatalog.ChapterTwoFirstSliceProfile();

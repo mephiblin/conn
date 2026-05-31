@@ -18,6 +18,8 @@ namespace Conn.Runtime.Scenes
             GameSession.Instance.State.Mode = ToMode(sceneId);
             TownQuestBoardPanelState.Close();
             TownShopPanelState.Close();
+            RuntimeCursorService.ClearManualRelease();
+            RuntimeCursorService.Apply(sceneId, GameSession.Instance.State, characterPanelOpen: false);
 
             SceneManager.LoadScene(SceneName(sceneId));
         }

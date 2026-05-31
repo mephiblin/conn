@@ -80,8 +80,8 @@ namespace Conn.Runtime.World
 
         private static Vector3 ScaleFor(CompiledMap compiledMap, CompiledMapObjectPlacement placement)
         {
-            var cellSize = compiledMap != null ? Mathf.Max(0.1f, compiledMap.CellSize) : 1f;
-            var height = compiledMap != null ? Mathf.Max(0.1f, compiledMap.HeightStep) : 1f;
+            var cellSize = DungeonMapActorSpawner.WorldCellSize(compiledMap);
+            var height = DungeonMapActorSpawner.WorldHeightStep(compiledMap);
             switch (placement.Kind)
             {
                 case RoomChunkObjectKind.Torch:
@@ -97,14 +97,12 @@ namespace Conn.Runtime.World
 
         private static Vector3 WorldPosition(CompiledMap compiledMap, CompiledMapObjectPlacement placement)
         {
-            var cellSize = compiledMap != null ? Mathf.Max(0.1f, compiledMap.CellSize) : 1f;
-            var heightStep = compiledMap != null ? Mathf.Max(0.1f, compiledMap.HeightStep) : 1f;
-            var offsetX = compiledMap != null ? compiledMap.Width * cellSize * 0.5f : 0f;
-            var offsetZ = compiledMap != null ? compiledMap.Height * cellSize * 0.5f : 0f;
-            return new Vector3(
-                placement.X * cellSize + cellSize * 0.5f - offsetX,
-                placement.Height * heightStep + heightStep * 0.5f,
-                placement.Y * cellSize + cellSize * 0.5f - offsetZ);
+            var heightStep = DungeonMapActorSpawner.WorldHeightStep(compiledMap);
+            return DungeonMapActorSpawner.WorldPosition(
+                compiledMap,
+                placement.X,
+                placement.Y,
+                placement.Height * heightStep + heightStep * 0.5f);
         }
 
         private static bool ShouldInteract(RoomChunkObjectKind kind)

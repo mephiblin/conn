@@ -1,0 +1,68 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 133e04276904c2680a03e3e9d43c3ba7, type: 3}
+  m_Name: mapgenv2_spawn_starter_playtest
+  m_EditorClassIdentifier: Conn.Authoring::Conn.Authoring.Content.SpawnTableAsset
+  Id: mapgenv2_spawn_starter_playtest
+  DisplayName: MapGenV2 Starter Playtest Spawns
+  RequiredThemeTags:
+  - mapgenv2
+  RequiredBiomeTags: []
+  RequiredSpawnRoleTags: []
+  EncounterEntries:
+  - Encounter: {fileID: 11400000, guid: 64400841316882fa2a3ba0e88a8496a1, type: 2}
+    EncounterId: mapgenv2_encounter_echo_scout_pair
+    Weight: 4
+    MinFloor: 1
+    MaxFloor: 99
+    MinDifficulty: 1
+    MaxDifficulty: 4
+    RoomRoleConstraints: []
+  - Encounter: {fileID: 11400000, guid: 36a6aff26b4f51f9f9a7118145f96da7, type: 2}
+    EncounterId: mapgenv2_encounter_cinder_pack
+    Weight: 4
+    MinFloor: 1
+    MaxFloor: 99
+    MinDifficulty: 2
+    MaxDifficulty: 4
+    RoomRoleConstraints: []
+  - Encounter: {fileID: 11400000, guid: b399a5c7376be967785feb5fc4d51936, type: 2}
+    EncounterId: mapgenv2_encounter_gate_sentinel_trial
+    Weight: 2
+    MinFloor: 1
+    MaxFloor: 99
+    MinDifficulty: 3
+    MaxDifficulty: 6
+    RoomRoleConstraints: []
+  DirectMonsterEntries:
+  - Monster: {fileID: 11400000, guid: 1a20277293efacabdbd29d3bb5560a57, type: 2}
+    MonsterId: mapgenv2_monster_echo_scout
+    Weight: 1
+    MinFloor: 1
+    MaxFloor: 99
+    GeneratedEncounterPolicy: single_primary
+    RoomRoleConstraints: []
+  - Monster: {fileID: 11400000, guid: 6d744d20fed506a33acf6674b96a3399, type: 2}
+    MonsterId: mapgenv2_monster_cinder_husk
+    Weight: 1
+    MinFloor: 1
+    MaxFloor: 99
+    GeneratedEncounterPolicy: single_primary
+    RoomRoleConstraints: []
+  AllowedRoomRoles:
+  - MainPath
+  - SideBranch
+  - QuestTarget
+  - Boss
+  Notes: Reusable pool for MapGenV2 starter-profile field monster and encounter previews.
+    Runtime MapGenV2 currently falls back to active quest targets when baked maps
+    do not provide encounter placements.

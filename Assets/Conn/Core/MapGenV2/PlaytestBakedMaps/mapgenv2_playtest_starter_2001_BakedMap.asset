@@ -1,0 +1,765 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eb62de64067443ccb34452de4d1c5fc6, type: 3}
+  m_Name: mapgenv2_playtest_starter_2001_BakedMap
+  m_EditorClassIdentifier: Conn.MapGenV2.Core::Conn.MapGenV2.Core.MapGenBakedMapAsset
+  Version: 1
+  ProfileId: mapgenv2_playtest_starter
+  StyleId: starter_style
+  RuleSetId: StarterRuleSet
+  Seed: 2001
+  SourceSignature: 583dd1820c086a1e
+  Width: 10
+  Height: 8
+  Cells:
+  - Coord:
+      X: 7
+      Y: 2
+    State: 1
+    RegionId: 3
+    RoomCategory: 6
+  - Coord:
+      X: 8
+      Y: 2
+    State: 5
+    RegionId: 3
+    RoomCategory: 6
+  - Coord:
+      X: 9
+      Y: 2
+    State: 1
+    RegionId: 3
+    RoomCategory: 6
+  - Coord:
+      X: 7
+      Y: 3
+    State: 5
+    RegionId: 3
+    RoomCategory: 6
+  - Coord:
+      X: 8
+      Y: 3
+    State: 1
+    RegionId: 3
+    RoomCategory: 6
+  - Coord:
+      X: 9
+      Y: 3
+    State: 5
+    RegionId: 3
+    RoomCategory: 6
+  - Coord:
+      X: 1
+      Y: 4
+    State: 1
+    RegionId: 0
+    RoomCategory: 0
+  - Coord:
+      X: 2
+      Y: 4
+    State: 5
+    RegionId: 0
+    RoomCategory: 0
+  - Coord:
+      X: 3
+      Y: 4
+    State: 1
+    RegionId: 0
+    RoomCategory: 0
+  - Coord:
+      X: 4
+      Y: 4
+    State: 1
+    RegionId: 1
+    RoomCategory: 4
+  - Coord:
+      X: 5
+      Y: 4
+    State: 5
+    RegionId: 1
+    RoomCategory: 4
+  - Coord:
+      X: 6
+      Y: 4
+    State: 1
+    RegionId: 1
+    RoomCategory: 4
+  - Coord:
+      X: 7
+      Y: 4
+    State: 1
+    RegionId: 3
+    RoomCategory: 6
+  - Coord:
+      X: 8
+      Y: 4
+    State: 5
+    RegionId: 3
+    RoomCategory: 6
+  - Coord:
+      X: 9
+      Y: 4
+    State: 1
+    RegionId: 3
+    RoomCategory: 6
+  - Coord:
+      X: 1
+      Y: 5
+    State: 5
+    RegionId: 0
+    RoomCategory: 0
+  - Coord:
+      X: 2
+      Y: 5
+    State: 1
+    RegionId: 0
+    RoomCategory: 0
+  - Coord:
+      X: 3
+      Y: 5
+    State: 5
+    RegionId: 0
+    RoomCategory: 0
+  - Coord:
+      X: 4
+      Y: 5
+    State: 5
+    RegionId: 1
+    RoomCategory: 4
+  - Coord:
+      X: 5
+      Y: 5
+    State: 1
+    RegionId: 1
+    RoomCategory: 4
+  - Coord:
+      X: 6
+      Y: 5
+    State: 5
+    RegionId: 1
+    RoomCategory: 4
+  - Coord:
+      X: 7
+      Y: 5
+    State: 1
+    RegionId: 2
+    RoomCategory: 5
+  - Coord:
+      X: 8
+      Y: 5
+    State: 5
+    RegionId: 2
+    RoomCategory: 5
+  - Coord:
+      X: 9
+      Y: 5
+    State: 1
+    RegionId: 2
+    RoomCategory: 5
+  - Coord:
+      X: 1
+      Y: 6
+    State: 1
+    RegionId: 0
+    RoomCategory: 0
+  - Coord:
+      X: 2
+      Y: 6
+    State: 5
+    RegionId: 0
+    RoomCategory: 0
+  - Coord:
+      X: 3
+      Y: 6
+    State: 1
+    RegionId: 0
+    RoomCategory: 0
+  - Coord:
+      X: 4
+      Y: 6
+    State: 1
+    RegionId: 1
+    RoomCategory: 4
+  - Coord:
+      X: 5
+      Y: 6
+    State: 5
+    RegionId: 1
+    RoomCategory: 4
+  - Coord:
+      X: 6
+      Y: 6
+    State: 1
+    RegionId: 1
+    RoomCategory: 4
+  - Coord:
+      X: 7
+      Y: 6
+    State: 5
+    RegionId: 2
+    RoomCategory: 5
+  - Coord:
+      X: 8
+      Y: 6
+    State: 1
+    RegionId: 2
+    RoomCategory: 5
+  - Coord:
+      X: 9
+      Y: 6
+    State: 5
+    RegionId: 2
+    RoomCategory: 5
+  - Coord:
+      X: 7
+      Y: 7
+    State: 1
+    RegionId: 2
+    RoomCategory: 5
+  - Coord:
+      X: 8
+      Y: 7
+    State: 5
+    RegionId: 2
+    RoomCategory: 5
+  - Coord:
+      X: 9
+      Y: 7
+    State: 1
+    RegionId: 2
+    RoomCategory: 5
+  Regions:
+  - RegionId: 0
+    RoomCategory: 0
+    CellCount: 9
+    SourceTemplateId: starter_room_template_start
+    SourceShapeId:
+  - RegionId: 1
+    RoomCategory: 4
+    CellCount: 9
+    SourceTemplateId: starter_room_template_quest
+    SourceShapeId:
+  - RegionId: 2
+    RoomCategory: 5
+    CellCount: 9
+    SourceTemplateId: starter_room_template_boss
+    SourceShapeId:
+  - RegionId: 3
+    RoomCategory: 6
+    CellCount: 9
+    SourceTemplateId: starter_room_template_exit
+    SourceShapeId:
+  Connectors:
+  - Coord:
+      X: 8
+      Y: 2
+    RegionId: 3
+    SocketKind: 1
+    SocketId: main
+    SocketWidth: 1
+    SourceTemplateId: starter_room_template_exit
+  - Coord:
+      X: 7
+      Y: 3
+    RegionId: 3
+    SocketKind: 1
+    SocketId: main
+    SocketWidth: 1
+    SourceTemplateId: starter_room_template_exit
+  - Coord:
+      X: 9
+      Y: 3
+    RegionId: 3
+    SocketKind: 1
+    SocketId: main
+    SocketWidth: 1
+    SourceTemplateId: starter_room_template_exit
+  - Coord:
+      X: 2
+      Y: 4
+    RegionId: 0
+    SocketKind: 1
+    SocketId: main
+    SocketWidth: 1
+    SourceTemplateId: starter_room_template_start
+  - Coord:
+      X: 5
+      Y: 4
+    RegionId: 1
+    SocketKind: 1
+    SocketId: main
+    SocketWidth: 1
+    SourceTemplateId: starter_room_template_quest
+  - Coord:
+      X: 8
+      Y: 4
+    RegionId: 3
+    SocketKind: 1
+    SocketId: main
+    SocketWidth: 1
+    SourceTemplateId: starter_room_template_exit
+  - Coord:
+      X: 1
+      Y: 5
+    RegionId: 0
+    SocketKind: 1
+    SocketId: main
+    SocketWidth: 1
+    SourceTemplateId: starter_room_template_start
+  - Coord:
+      X: 3
+      Y: 5
+    RegionId: 0
+    SocketKind: 1
+    SocketId: main
+    SocketWidth: 1
+    SourceTemplateId: starter_room_template_start
+  - Coord:
+      X: 4
+      Y: 5
+    RegionId: 1
+    SocketKind: 1
+    SocketId: main
+    SocketWidth: 1
+    SourceTemplateId: starter_room_template_quest
+  - Coord:
+      X: 6
+      Y: 5
+    RegionId: 1
+    SocketKind: 1
+    SocketId: main
+    SocketWidth: 1
+    SourceTemplateId: starter_room_template_quest
+  - Coord:
+      X: 8
+      Y: 5
+    RegionId: 2
+    SocketKind: 1
+    SocketId: main
+    SocketWidth: 1
+    SourceTemplateId: starter_room_template_boss
+  - Coord:
+      X: 2
+      Y: 6
+    RegionId: 0
+    SocketKind: 1
+    SocketId: main
+    SocketWidth: 1
+    SourceTemplateId: starter_room_template_start
+  - Coord:
+      X: 5
+      Y: 6
+    RegionId: 1
+    SocketKind: 1
+    SocketId: main
+    SocketWidth: 1
+    SourceTemplateId: starter_room_template_quest
+  - Coord:
+      X: 7
+      Y: 6
+    RegionId: 2
+    SocketKind: 1
+    SocketId: main
+    SocketWidth: 1
+    SourceTemplateId: starter_room_template_boss
+  - Coord:
+      X: 9
+      Y: 6
+    RegionId: 2
+    SocketKind: 1
+    SocketId: main
+    SocketWidth: 1
+    SourceTemplateId: starter_room_template_boss
+  - Coord:
+      X: 8
+      Y: 7
+    RegionId: 2
+    SocketKind: 1
+    SocketId: main
+    SocketWidth: 1
+    SourceTemplateId: starter_room_template_boss
+  TraversalEdges:
+  - From:
+      X: 7
+      Y: 2
+    To:
+      X: 8
+      Y: 2
+  - From:
+      X: 7
+      Y: 2
+    To:
+      X: 7
+      Y: 3
+  - From:
+      X: 8
+      Y: 2
+    To:
+      X: 9
+      Y: 2
+  - From:
+      X: 8
+      Y: 2
+    To:
+      X: 8
+      Y: 3
+  - From:
+      X: 9
+      Y: 2
+    To:
+      X: 9
+      Y: 3
+  - From:
+      X: 7
+      Y: 3
+    To:
+      X: 8
+      Y: 3
+  - From:
+      X: 7
+      Y: 3
+    To:
+      X: 7
+      Y: 4
+  - From:
+      X: 8
+      Y: 3
+    To:
+      X: 9
+      Y: 3
+  - From:
+      X: 8
+      Y: 3
+    To:
+      X: 8
+      Y: 4
+  - From:
+      X: 9
+      Y: 3
+    To:
+      X: 9
+      Y: 4
+  - From:
+      X: 1
+      Y: 4
+    To:
+      X: 2
+      Y: 4
+  - From:
+      X: 1
+      Y: 4
+    To:
+      X: 1
+      Y: 5
+  - From:
+      X: 2
+      Y: 4
+    To:
+      X: 3
+      Y: 4
+  - From:
+      X: 2
+      Y: 4
+    To:
+      X: 2
+      Y: 5
+  - From:
+      X: 3
+      Y: 4
+    To:
+      X: 4
+      Y: 4
+  - From:
+      X: 3
+      Y: 4
+    To:
+      X: 3
+      Y: 5
+  - From:
+      X: 4
+      Y: 4
+    To:
+      X: 5
+      Y: 4
+  - From:
+      X: 4
+      Y: 4
+    To:
+      X: 4
+      Y: 5
+  - From:
+      X: 5
+      Y: 4
+    To:
+      X: 6
+      Y: 4
+  - From:
+      X: 5
+      Y: 4
+    To:
+      X: 5
+      Y: 5
+  - From:
+      X: 6
+      Y: 4
+    To:
+      X: 7
+      Y: 4
+  - From:
+      X: 6
+      Y: 4
+    To:
+      X: 6
+      Y: 5
+  - From:
+      X: 7
+      Y: 4
+    To:
+      X: 8
+      Y: 4
+  - From:
+      X: 7
+      Y: 4
+    To:
+      X: 7
+      Y: 5
+  - From:
+      X: 8
+      Y: 4
+    To:
+      X: 9
+      Y: 4
+  - From:
+      X: 8
+      Y: 4
+    To:
+      X: 8
+      Y: 5
+  - From:
+      X: 9
+      Y: 4
+    To:
+      X: 9
+      Y: 5
+  - From:
+      X: 1
+      Y: 5
+    To:
+      X: 2
+      Y: 5
+  - From:
+      X: 1
+      Y: 5
+    To:
+      X: 1
+      Y: 6
+  - From:
+      X: 2
+      Y: 5
+    To:
+      X: 3
+      Y: 5
+  - From:
+      X: 2
+      Y: 5
+    To:
+      X: 2
+      Y: 6
+  - From:
+      X: 3
+      Y: 5
+    To:
+      X: 4
+      Y: 5
+  - From:
+      X: 3
+      Y: 5
+    To:
+      X: 3
+      Y: 6
+  - From:
+      X: 4
+      Y: 5
+    To:
+      X: 5
+      Y: 5
+  - From:
+      X: 4
+      Y: 5
+    To:
+      X: 4
+      Y: 6
+  - From:
+      X: 5
+      Y: 5
+    To:
+      X: 6
+      Y: 5
+  - From:
+      X: 5
+      Y: 5
+    To:
+      X: 5
+      Y: 6
+  - From:
+      X: 6
+      Y: 5
+    To:
+      X: 7
+      Y: 5
+  - From:
+      X: 6
+      Y: 5
+    To:
+      X: 6
+      Y: 6
+  - From:
+      X: 7
+      Y: 5
+    To:
+      X: 8
+      Y: 5
+  - From:
+      X: 7
+      Y: 5
+    To:
+      X: 7
+      Y: 6
+  - From:
+      X: 8
+      Y: 5
+    To:
+      X: 9
+      Y: 5
+  - From:
+      X: 8
+      Y: 5
+    To:
+      X: 8
+      Y: 6
+  - From:
+      X: 9
+      Y: 5
+    To:
+      X: 9
+      Y: 6
+  - From:
+      X: 1
+      Y: 6
+    To:
+      X: 2
+      Y: 6
+  - From:
+      X: 2
+      Y: 6
+    To:
+      X: 3
+      Y: 6
+  - From:
+      X: 3
+      Y: 6
+    To:
+      X: 4
+      Y: 6
+  - From:
+      X: 4
+      Y: 6
+    To:
+      X: 5
+      Y: 6
+  - From:
+      X: 5
+      Y: 6
+    To:
+      X: 6
+      Y: 6
+  - From:
+      X: 6
+      Y: 6
+    To:
+      X: 7
+      Y: 6
+  - From:
+      X: 7
+      Y: 6
+    To:
+      X: 8
+      Y: 6
+  - From:
+      X: 7
+      Y: 6
+    To:
+      X: 7
+      Y: 7
+  - From:
+      X: 8
+      Y: 6
+    To:
+      X: 9
+      Y: 6
+  - From:
+      X: 8
+      Y: 6
+    To:
+      X: 8
+      Y: 7
+  - From:
+      X: 9
+      Y: 6
+    To:
+      X: 9
+      Y: 7
+  - From:
+      X: 7
+      Y: 7
+    To:
+      X: 8
+      Y: 7
+  - From:
+      X: 8
+      Y: 7
+    To:
+      X: 9
+      Y: 7
+  Props:
+  - Coord:
+      X: 4
+      Y: 4
+    Channel: objective
+    RegionId: 1
+    RoomCategory: 4
+    ChannelKind: Objective
+    DistributionMode: RequiredUnique
+    BlocksTraversal: 0
+  - Coord:
+      X: 7
+      Y: 5
+    Channel: spawn
+    RegionId: 2
+    RoomCategory: 5
+    ChannelKind: Custom
+    DistributionMode: RequiredUnique
+    BlocksTraversal: 0
+  SpawnMarkers:
+  - MarkerId: spawn_0
+    Coord:
+      X: 7
+      Y: 5
+    RegionId: 2
+    Channel: spawn
+  ObjectiveMarkers:
+  - MarkerId: objective_0
+    Coord:
+      X: 4
+      Y: 4
+    RegionId: 1
+    Channel: objective

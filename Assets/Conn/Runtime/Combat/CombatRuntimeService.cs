@@ -19,6 +19,7 @@ namespace Conn.Runtime.Combat
             session.Combat.Round = 1;
             session.Combat.PlayerDiceCount = session.Equipment.DiceCount;
             session.Combat.PlayerDefenseBonus = session.Equipment.DefenseBonus;
+            EnsureResultCooldowns(session).Clear();
             var handoff = FieldMonsterRuntimeService.FindCombatHandoff(session);
             session.Combat.FieldMonsterStateKey = handoff != null ? handoff.StateKey : string.Empty;
             var encounter = ResolveEncounter(session, handoff);
@@ -58,9 +59,11 @@ namespace Conn.Runtime.Combat
                 return;
             }
 
-            if (face.IsCoolingDown)
+            var cooldown = ResultCooldownFor(session, face);
+            if (cooldown > 0)
             {
-                session.Combat.LastMessage = $"Die {dieIndex + 1} is cooling down.";
+                face.Cooldown = cooldown;
+                session.Combat.LastMessage = $"{face.RolledValue} {face.DisplayName} is cooling down.";
                 return;
             }
 
@@ -146,7 +149,7 @@ namespace Conn.Runtime.Combat
                     }
 
                     face.Selected = false;
-                    face.Cooldown = 2;
+                    SetResultCooldown(session, face, 2);
                 }
             }
 
@@ -190,7 +193,7 @@ namespace Conn.Runtime.Combat
 
             session.Combat.Round++;
             TickCooldowns(session);
-            BeginReelSpin(session, "다음 라운드 시작. 릴 전체가 다시 회전한다.");
+            BeginReelSpin(session, $"{session.Combat.LastMessage} 다음 라운드 시작. 릴 전체가 다시 회전한다.");
         }
 
         public static void ResolveEmptySelectionTurn(GameSessionState session)
@@ -218,7 +221,7 @@ namespace Conn.Runtime.Combat
 
             session.Combat.Round++;
             TickCooldowns(session);
-            BeginReelSpin(session, "선택 없이 턴이 넘어갔다. 다음 라운드에서 릴 전체가 다시 회전한다.");
+            BeginReelSpin(session, $"{session.Combat.LastMessage} 다음 라운드에서 릴 전체가 다시 회전한다.");
         }
 
         public static void PlayerAttack(GameSessionState session)
@@ -245,7 +248,7 @@ namespace Conn.Runtime.Combat
                 return "Die: missing";
             }
 
-            var state = face.IsCoolingDown
+            var state = face.Cooldown > 0
                 ? $"cooldown {face.Cooldown}"
                 : face.Selected ? "selected" : "ready";
             var special = HasSpecialEffect(face, "bleed") ? " / effect Bleed" : string.Empty;
@@ -624,6 +627,7 @@ namespace Conn.Runtime.Combat
                 face.EffectKind = SkillEffectKind.Attack;
                 face.SpecialEffectId = string.Empty;
                 face.Power = 0;
+                face.Cooldown = 0;
                 face.ReelStopIndex = 0;
                 face.ReelSkillIds = BuildReelSkillPool(session, i);
             }
@@ -648,6 +652,7 @@ namespace Conn.Runtime.Combat
             face.EffectKind = skill != null ? skill.EffectKind : SkillEffectKind.Attack;
             face.SpecialEffectId = skill != null ? skill.SpecialEffectId : string.Empty;
             face.Power = skill != null ? skill.Power : 0;
+            face.Cooldown = ResultCooldownFor(session, face);
         }
 
         private static bool HasSpecialEffect(DiceFaceState face, string effectId)
@@ -685,14 +690,28 @@ namespace Conn.Runtime.Combat
 
         private static void TickCooldowns(GameSessionState session)
         {
-            for (var i = 0; i < session.Combat.DiceFaces.Count; i++)
+            if (session?.Combat?.DiceResultCooldowns == null)
             {
-                var face = session.Combat.DiceFaces[i];
-                if (face.Cooldown > 0)
+                return;
+            }
+
+            for (var i = session.Combat.DiceResultCooldowns.Count - 1; i >= 0; i--)
+            {
+                var cooldown = session.Combat.DiceResultCooldowns[i];
+                if (cooldown == null || string.IsNullOrWhiteSpace(cooldown.ResultKey))
                 {
-                    face.Cooldown--;
+                    session.Combat.DiceResultCooldowns.RemoveAt(i);
+                    continue;
+                }
+
+                cooldown.RemainingTurns--;
+                if (cooldown.RemainingTurns <= 0)
+                {
+                    session.Combat.DiceResultCooldowns.RemoveAt(i);
                 }
             }
+
+            RefreshFaceCooldowns(session);
         }
 
         private static void ClearDiceSelection(GameSessionState session)
@@ -701,6 +720,80 @@ namespace Conn.Runtime.Combat
             {
                 session.Combat.DiceFaces[i].Selected = false;
             }
+        }
+
+        private static void SetResultCooldown(GameSessionState session, DiceFaceState face, int turns)
+        {
+            if (session?.Combat == null || face == null || turns <= 0)
+            {
+                return;
+            }
+
+            EnsureResultCooldowns(session);
+
+            var key = ResultCooldownKey(face);
+            for (var i = 0; i < session.Combat.DiceResultCooldowns.Count; i++)
+            {
+                var cooldown = session.Combat.DiceResultCooldowns[i];
+                if (cooldown != null && cooldown.ResultKey == key)
+                {
+                    cooldown.RemainingTurns = turns;
+                    face.Cooldown = turns;
+                    return;
+                }
+            }
+
+            session.Combat.DiceResultCooldowns.Add(new DiceResultCooldownState
+            {
+                ResultKey = key,
+                RemainingTurns = turns
+            });
+            face.Cooldown = turns;
+        }
+
+        private static int ResultCooldownFor(GameSessionState session, DiceFaceState face)
+        {
+            if (session?.Combat?.DiceResultCooldowns == null || face == null)
+            {
+                return 0;
+            }
+
+            var key = ResultCooldownKey(face);
+            for (var i = 0; i < session.Combat.DiceResultCooldowns.Count; i++)
+            {
+                var cooldown = session.Combat.DiceResultCooldowns[i];
+                if (cooldown != null && cooldown.ResultKey == key)
+                {
+                    return cooldown.RemainingTurns > 0 ? cooldown.RemainingTurns : 0;
+                }
+            }
+
+            return 0;
+        }
+
+        private static void RefreshFaceCooldowns(GameSessionState session)
+        {
+            for (var i = 0; i < (session?.Combat?.DiceFaces?.Count ?? 0); i++)
+            {
+                var face = session.Combat.DiceFaces[i];
+                face.Cooldown = face.ReelStopped ? ResultCooldownFor(session, face) : 0;
+            }
+        }
+
+        private static string ResultCooldownKey(DiceFaceState face)
+        {
+            var skillId = string.IsNullOrWhiteSpace(face.SkillId) ? "basic_attack" : face.SkillId;
+            return $"{face.RolledValue}:{skillId}";
+        }
+
+        private static System.Collections.Generic.List<DiceResultCooldownState> EnsureResultCooldowns(GameSessionState session)
+        {
+            if (session.Combat.DiceResultCooldowns == null)
+            {
+                session.Combat.DiceResultCooldowns = new System.Collections.Generic.List<DiceResultCooldownState>();
+            }
+
+            return session.Combat.DiceResultCooldowns;
         }
     }
 }

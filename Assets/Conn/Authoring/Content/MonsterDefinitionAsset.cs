@@ -29,6 +29,7 @@ namespace Conn.Authoring.Content
 
         [Header("Monster Design")]
         public Texture2D VisualImage;
+        public string CombatCgResourcePath = string.Empty;
         public MonsterSpecies Species;
         public MonsterGrade Grade;
         public int DefaultGroupCount = 1;
@@ -66,6 +67,7 @@ namespace Conn.Authoring.Content
             {
                 Id = Id,
                 DisplayName = DisplayName,
+                CombatCgResourcePath = CombatCgResourcePath,
                 MaxHp = MaxHp,
                 AttackPower = AttackPower,
                 Defense = Defense,

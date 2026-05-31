@@ -79,7 +79,8 @@ namespace Conn.Runtime.Content
                 actionName,
                 contentMonster.AttackPower,
                 species,
-                contentMonster.TraitIds);
+                contentMonster.TraitIds,
+                contentMonster.CombatCgResourcePath);
         }
 
         public static FieldMonsterAiProfile FindFieldMonsterAiProfile(string monsterId)
@@ -286,72 +287,54 @@ namespace Conn.Runtime.Content
 
         public static QuestDefinition BoardQuestAt(int offerIndex)
         {
-            var catalogOffer = CatalogBoardOfferFromActiveDatabase(offerIndex);
-            if (catalogOffer != null)
-            {
-                return catalogOffer;
-            }
-
             if (activeDatabase != null && activeDatabase.Quests != null && activeDatabase.Quests.Length > 0)
             {
-                var candidateCount = 0;
+                var validQuestIds = new List<string>();
+                AppendCatalogBoardQuestIds(validQuestIds);
                 for (var i = 0; i < activeDatabase.Quests.Length; i++)
                 {
-                    if (IsValidBoardQuest(activeDatabase.Quests[i]))
+                    var quest = activeDatabase.Quests[i];
+                    if (IsValidBoardQuest(quest) && !validQuestIds.Contains(quest.Id))
                     {
-                        candidateCount++;
+                        validQuestIds.Add(quest.Id);
                     }
                 }
 
-                if (candidateCount > 0)
+                if (validQuestIds.Count > 0)
                 {
-                    var targetIndex = PositiveModulo(offerIndex, candidateCount);
-                    var current = 0;
-                    for (var i = 0; i < activeDatabase.Quests.Length; i++)
-                    {
-                        if (!IsValidBoardQuest(activeDatabase.Quests[i]))
-                        {
-                            continue;
-                        }
-
-                        if (current == targetIndex)
-                        {
-                            return FindQuest(activeDatabase.Quests[i].Id);
-                        }
-
-                        current++;
-                    }
+                    return FindQuest(validQuestIds[PositiveModulo(offerIndex, validQuestIds.Count)]);
                 }
             }
 
             return QuestCatalog.BoardOffer(offerIndex);
         }
 
-        private static QuestDefinition CatalogBoardOfferFromActiveDatabase(int offerIndex)
+        private static void AppendCatalogBoardQuestIds(List<string> ids)
         {
             var catalogQuests = QuestCatalog.AllBoardQuests;
-            if (activeDatabase == null || activeDatabase.Quests == null || catalogQuests == null || catalogQuests.Length == 0)
+            if (ids == null || activeDatabase == null || activeDatabase.Quests == null || catalogQuests == null)
             {
-                return null;
+                return;
             }
 
-            var targetIndex = PositiveModulo(offerIndex, catalogQuests.Length);
-            var targetQuest = catalogQuests[targetIndex];
-            if (targetQuest == null)
+            for (var catalogIndex = 0; catalogIndex < catalogQuests.Length; catalogIndex++)
             {
-                return null;
-            }
-
-            for (var i = 0; i < activeDatabase.Quests.Length; i++)
-            {
-                var quest = activeDatabase.Quests[i];
-                if (quest != null && quest.Id == targetQuest.QuestId && IsValidBoardQuest(quest))
+                var catalogQuest = catalogQuests[catalogIndex];
+                if (catalogQuest == null || string.IsNullOrWhiteSpace(catalogQuest.QuestId))
                 {
-                    return FindQuest(quest.Id);
+                    continue;
+                }
+
+                for (var i = 0; i < activeDatabase.Quests.Length; i++)
+                {
+                    var quest = activeDatabase.Quests[i];
+                    if (quest != null && quest.Id == catalogQuest.QuestId && IsValidBoardQuest(quest) && !ids.Contains(quest.Id))
+                    {
+                        ids.Add(quest.Id);
+                        break;
+                    }
                 }
             }
-
-            return null;
         }
 
         public static ContentVendorDefinition FindVendor(string vendorId)

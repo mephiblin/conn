@@ -2,6 +2,7 @@ using Conn.Core.Combat;
 using Conn.Core.Maps;
 using Conn.Core.Session;
 using Conn.MapGenV2.Core;
+using Conn.Runtime.Content;
 using Conn.Runtime.World;
 using System.Collections.Generic;
 
@@ -32,11 +33,19 @@ namespace Conn.Runtime.Maps
 
         public static CompiledMap BuildQuestCompiledMap(GameSessionState session)
         {
+            SyncActiveQuestDefinition(session);
+
             var profile = ResolveProfile(session);
             var compiledAsset = FindCompiledMapAsset(profile.ProfileId);
             if (compiledAsset != null)
             {
-                currentCompiledMap = CompiledMapRuntimeLoader.LoadAndValidateFromJson(compiledAsset.Json, profile);
+                // Baked editable maps are cropped to authored bounds, while the
+                // profile dimensions describe the generation canvas.
+                var compiled = CompiledMapRuntimeLoader.LoadFromJson(compiledAsset.Json);
+                MapValidationService.ThrowIfFailed(MapValidationService.ValidateCompiled(
+                    BuildCompiledAssetValidationProfile(profile, compiled),
+                    compiled));
+                currentCompiledMap = compiled;
                 return currentCompiledMap;
             }
 
@@ -69,17 +78,14 @@ namespace Conn.Runtime.Maps
             }
 
             var placement = CompiledMapRuntimeLoader.FindPlacement(compiledMap, MapPlacementKind.QuestTarget);
+            if (placement == null)
+            {
+                return false;
+            }
+
             var encounterPlacement = CompiledMapRuntimeLoader.FindEncounterPlacement(compiledMap, placement.Id);
-            var encounterId = encounterPlacement != null && !string.IsNullOrWhiteSpace(encounterPlacement.EncounterId)
-                ? encounterPlacement.EncounterId
-                : string.IsNullOrWhiteSpace(session.Quest.TargetEncounterId)
-                ? EncounterCatalog.TestGuardId
-                : session.Quest.TargetEncounterId;
-            var monsterId = encounterPlacement != null && !string.IsNullOrWhiteSpace(encounterPlacement.PrimaryMonsterId)
-                ? encounterPlacement.PrimaryMonsterId
-                : string.IsNullOrWhiteSpace(session.Quest.TargetMonsterId)
-                ? MonsterCatalog.TestGuardId
-                : session.Quest.TargetMonsterId;
+            var encounterId = ResolveQuestEncounterId(session, encounterPlacement);
+            var monsterId = ResolveQuestMonsterId(session, encounterPlacement);
             FieldMonsterRuntimeService.RegisterAt(
                 session,
                 StateKeyFor(compiledMap, placement),
@@ -121,6 +127,36 @@ namespace Conn.Runtime.Maps
             }
 
             return registered;
+        }
+
+        public static string ResolveQuestEncounterId(GameSessionState session, CompiledEncounterPlacement encounterPlacement)
+        {
+            if (session != null && !string.IsNullOrWhiteSpace(session.Quest.TargetEncounterId))
+            {
+                return session.Quest.TargetEncounterId;
+            }
+
+            if (encounterPlacement != null && !string.IsNullOrWhiteSpace(encounterPlacement.EncounterId))
+            {
+                return encounterPlacement.EncounterId;
+            }
+
+            return EncounterCatalog.TestGuardId;
+        }
+
+        public static string ResolveQuestMonsterId(GameSessionState session, CompiledEncounterPlacement encounterPlacement)
+        {
+            if (session != null && !string.IsNullOrWhiteSpace(session.Quest.TargetMonsterId))
+            {
+                return session.Quest.TargetMonsterId;
+            }
+
+            if (encounterPlacement != null && !string.IsNullOrWhiteSpace(encounterPlacement.PrimaryMonsterId))
+            {
+                return encounterPlacement.PrimaryMonsterId;
+            }
+
+            return MonsterCatalog.TestGuardId;
         }
 
         public static MapPlacement FindExitAnchor(CompiledMap compiledMap)
@@ -247,6 +283,26 @@ namespace Conn.Runtime.Maps
             return registered;
         }
 
+        private static void SyncActiveQuestDefinition(GameSessionState session)
+        {
+            if (session == null || !session.Quest.HasActiveQuest)
+            {
+                return;
+            }
+
+            var definition = RuntimeContentDatabase.FindQuest(session.Quest.ActiveQuestId);
+            if (definition == null)
+            {
+                return;
+            }
+
+            session.Quest.ActiveQuestTitle = definition.DisplayName;
+            session.Quest.TargetMonsterId = definition.TargetMonsterId;
+            session.Quest.TargetEncounterId = definition.TargetEncounterId;
+            session.Quest.MapProfileId = definition.MapProfileId;
+            session.Quest.GoldReward = definition.GoldReward;
+        }
+
         private static MapProfile ResolveProfile(GameSessionState session)
         {
             if (session == null
@@ -256,7 +312,22 @@ namespace Conn.Runtime.Maps
                 return MapGenerationCatalog.ChapterTwoFirstSliceProfile();
             }
 
-            return MapGenerationCatalog.ChapterTwoFirstSliceProfile();
+            var profile = MapGenerationCatalog.ChapterTwoFirstSliceProfile();
+            profile.ProfileId = session.Quest.MapProfileId;
+            return profile;
+        }
+
+        private static MapProfile BuildCompiledAssetValidationProfile(MapProfile profile, CompiledMap compiled)
+        {
+            return new MapProfile
+            {
+                ProfileId = profile.ProfileId,
+                MapKind = profile.MapKind,
+                Theme = profile.Theme,
+                Width = compiled.Width,
+                Height = compiled.Height,
+                RequiredAnchors = new List<MapAnchorKind>(profile.RequiredAnchors)
+            };
         }
 
         private static CompiledMapAsset FindCompiledMapAsset(string profileId)

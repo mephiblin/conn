@@ -1,4 +1,5 @@
 using Conn.Core.Scenes;
+using Conn.Core.Session;
 using Conn.Runtime.Scenes;
 using Conn.Runtime.Session;
 using UnityEngine;
@@ -11,7 +12,12 @@ namespace Conn.Runtime.World
             ? "Enter dungeon"
             : "Quest required";
 
-        public bool CanInteract => GameSession.Instance.State.Quest.HasActiveQuest;
+        public bool CanInteract => CanEnterDungeon(GameSession.Instance.State);
+
+        public static bool CanEnterDungeon(GameSessionState session)
+        {
+            return session != null && session.Quest.HasActiveQuest;
+        }
 
         public void Interact()
         {

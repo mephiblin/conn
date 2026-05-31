@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b68dd7764e74dd783d494e928012001, type: 3}
+  m_Name: mapgenv2_quest_sentinel_check
+  m_EditorClassIdentifier: Conn.Authoring::Conn.Authoring.Content.QuestDefinitionAsset
+  Id: mapgenv2_quest_sentinel_check
+  DisplayName: MapGenV2 Sentinel Check
+  Description: Use the MapGenV2 depths playtest profile and verify the elite target
+    path.
+  MapKind: dungeon
+  MapProfileId: mapgenv2_playtest_depths
+  TargetEncounter: {fileID: 11400000, guid: b399a5c7376be967785feb5fc4d51936, type: 2}
+  TargetEncounterId: mapgenv2_encounter_gate_sentinel_trial
+  TargetMonster: {fileID: 11400000, guid: 7b7b83077c75d1987a3835818a7f1d32, type: 2}
+  TargetMonsterId: mapgenv2_monster_gate_sentinel
+  GoldReward: 24
+  XpReward: 10
+  RewardItems: []

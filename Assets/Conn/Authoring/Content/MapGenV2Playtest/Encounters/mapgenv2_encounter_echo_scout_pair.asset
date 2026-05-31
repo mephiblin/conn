@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 74ea8e2b13f304f7cb9ad43c069fc1ac, type: 3}
+  m_Name: mapgenv2_encounter_echo_scout_pair
+  m_EditorClassIdentifier: Conn.Authoring::Conn.Authoring.Content.EncounterDefinitionAsset
+  Id: mapgenv2_encounter_echo_scout_pair
+  DisplayName: Echo Scout Pair
+  PrimaryMonster: {fileID: 11400000, guid: 1a20277293efacabdbd29d3bb5560a57, type: 2}
+  PrimaryMonsterId: mapgenv2_monster_echo_scout
+  XpReward: 10
+  RewardId:
+  Pattern: multi_slot
+  EnemySlots:
+  - SlotId: primary
+    Monster: {fileID: 11400000, guid: 1a20277293efacabdbd29d3bb5560a57, type: 2}
+    MonsterId: mapgenv2_monster_echo_scout
+    Count: 1
+    Primary: 1
+  - SlotId: flank
+    Monster: {fileID: 11400000, guid: 6d744d20fed506a33acf6674b96a3399, type: 2}
+    MonsterId: mapgenv2_monster_cinder_husk
+    Count: 1
+    Primary: 0
+  MinDifficulty: 1
+  MaxDifficulty: 2
+  ThemeTags:
+  - mapgenv2
+  - starter
+  SpawnRoleTags:
+  - trash
+  AllowedMapTags:
+  - mapgenv2
+  - mapgenv2_playtest
+  CompatibilityTags:
+  - mapgenv2
+  - dungeon
+  - mapgenv2_playtest

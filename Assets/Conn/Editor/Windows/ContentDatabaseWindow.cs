@@ -346,6 +346,7 @@ namespace Conn.Editor.Windows
             EditorGUI.BeginChangeCheck();
             monster.Id = EditorGUILayout.TextField("Id", monster.Id);
             monster.DisplayName = EditorGUILayout.TextField("Display Name", monster.DisplayName);
+            monster.CombatCgResourcePath = EditorGUILayout.TextField("Combat CG Resource Path", monster.CombatCgResourcePath);
             monster.MaxHp = EditorGUILayout.IntField("Max HP", monster.MaxHp);
             monster.AttackPower = EditorGUILayout.IntField("Attack Power", monster.AttackPower);
             monster.Defense = EditorGUILayout.IntField("Defense", monster.Defense);

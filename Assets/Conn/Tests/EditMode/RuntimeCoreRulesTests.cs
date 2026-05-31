@@ -87,7 +87,7 @@ namespace Conn.Tests.EditMode
             FieldMonsterRuntimeService.Register(session, "field_monster_test_guard", "placement_test_guard", "encounter_test_guard", session.Quest.TargetMonsterId);
             FieldMonsterRuntimeService.MarkCombatHandoff(session, "field_monster_test_guard");
             session.Mode = GameMode.Combat;
-            CombatRuntimeService.StartTestCombat(session);
+            StartReadyCombat(session);
 
             Assert.That(session.Combat.Active, Is.True);
             Assert.That(session.Combat.FieldMonsterStateKey, Is.EqualTo("field_monster_test_guard"));
@@ -102,6 +102,7 @@ namespace Conn.Tests.EditMode
             Assert.That(CombatRuntimeService.DescribeDiceFace(session.Combat.DiceFaces[0]), Does.Contain("ready"));
 
             session.Combat.Enemy.Setup(session.Quest.TargetMonsterId, "Loop Target", 1);
+            SetReadyFace(session, 0, SkillCatalog.SlashId, 1);
             CombatRuntimeService.ToggleDieSelection(session, 0);
             Assert.That(CombatRuntimeService.DescribeDiceFace(session.Combat.DiceFaces[0]), Does.Contain("selected"));
             CombatRuntimeService.ResolveSelectedDice(session);
@@ -129,7 +130,7 @@ namespace Conn.Tests.EditMode
             session.StartNewGame();
             QuestRuntimeService.AcceptQuest(session, QuestCatalog.TestHuntId);
             session.Mode = GameMode.Combat;
-            CombatRuntimeService.StartTestCombat(session);
+            StartReadyCombat(session);
 
             CombatRuntimeService.Die(session);
 
@@ -292,7 +293,10 @@ namespace Conn.Tests.EditMode
             session.Skills.EquippedSkillIds[2] = SkillCatalog.MendId;
             session.Player.Damage(4);
 
-            CombatRuntimeService.StartTestCombat(session);
+            StartReadyCombat(session);
+            SetReadyFace(session, 0, SkillCatalog.SlashId, 1);
+            SetReadyFace(session, 1, SkillCatalog.GuardId, 0);
+            SetReadyFace(session, 2, SkillCatalog.MendId, 0);
             CombatRuntimeService.ToggleDieSelection(session, 0);
             CombatRuntimeService.ToggleDieSelection(session, 1);
             CombatRuntimeService.ToggleDieSelection(session, 2);
@@ -302,11 +306,13 @@ namespace Conn.Tests.EditMode
             Assert.That(session.Player.Hp, Is.EqualTo(17));
             Assert.That(session.Combat.Player.Hp, Is.EqualTo(17));
             Assert.That(session.Combat.Round, Is.EqualTo(2));
-            Assert.That(session.Combat.DiceFaces[0].Cooldown, Is.EqualTo(1));
+            Assert.That(session.Combat.DiceFaces[0].Cooldown, Is.EqualTo(0));
+            Assert.That(session.Combat.DiceResultCooldowns, Has.Count.EqualTo(3));
+            Assert.That(session.Combat.DiceResultCooldowns[0].RemainingTurns, Is.EqualTo(1));
             Assert.That(session.Combat.LastMessage, Does.Contain("2 damage"));
             Assert.That(session.Combat.LastMessage, Does.Contain("2 guard"));
             Assert.That(session.Combat.LastMessage, Does.Contain("3 heal"));
-            Assert.That(session.Combat.LastMessage, Does.Contain("Die 1 Slash"));
+            Assert.That(session.Combat.LastMessage, Does.Contain("Die 1 1 Slash"));
             Assert.That(session.Combat.LastMessage, Does.Contain("Test Gate Guard uses Halberd thrust for 2 damage"));
             Assert.That(session.Combat.LastMessage, Does.Contain("4 power"));
             Assert.That(session.Combat.LastMessage, Does.Contain("2 blocked"));
@@ -319,7 +325,8 @@ namespace Conn.Tests.EditMode
             session.StartNewGame();
             var monster = MonsterCatalog.Find(MonsterCatalog.TestGuardId);
 
-            CombatRuntimeService.StartTestCombat(session);
+            StartReadyCombat(session);
+            SetReadyFace(session, 0, SkillCatalog.SlashId, 1);
             CombatRuntimeService.ToggleDieSelection(session, 0);
             CombatRuntimeService.ResolveSelectedDice(session);
 
@@ -336,7 +343,8 @@ namespace Conn.Tests.EditMode
             session.Skills.AddSkill(SkillCatalog.GuardId);
             session.Skills.EquippedSkillIds[0] = SkillCatalog.GuardId;
 
-            CombatRuntimeService.StartTestCombat(session);
+            StartReadyCombat(session);
+            SetReadyFace(session, 0, SkillCatalog.GuardId, 0);
             CombatRuntimeService.ToggleDieSelection(session, 0);
             CombatRuntimeService.ResolveSelectedDice(session);
 
@@ -355,7 +363,9 @@ namespace Conn.Tests.EditMode
             session.Skills.EquippedSkillIds[0] = SkillCatalog.GuardId;
             session.Skills.EquippedSkillIds[1] = SkillCatalog.GuardId;
 
-            CombatRuntimeService.StartTestCombat(session);
+            StartReadyCombat(session);
+            SetReadyFace(session, 0, SkillCatalog.GuardId, 0);
+            SetReadyFace(session, 1, SkillCatalog.GuardId, 0);
             CombatRuntimeService.ToggleDieSelection(session, 0);
             CombatRuntimeService.ToggleDieSelection(session, 1);
             CombatRuntimeService.ResolveSelectedDice(session);
@@ -373,7 +383,8 @@ namespace Conn.Tests.EditMode
             session.Skills.AddSkill(SkillCatalog.GuardId);
             session.Skills.EquippedSkillIds[0] = SkillCatalog.GuardId;
 
-            CombatRuntimeService.StartTestCombat(session);
+            StartReadyCombat(session);
+            SetReadyFace(session, 0, SkillCatalog.GuardId, 0);
             CombatRuntimeService.ToggleDieSelection(session, 0);
             CombatRuntimeService.ResolveSelectedDice(session);
 
@@ -390,24 +401,27 @@ namespace Conn.Tests.EditMode
             session.Skills.AddSkill(SkillCatalog.FocusStrikeId);
             session.Skills.EquippedSkillIds[0] = SkillCatalog.FocusStrikeId;
 
-            CombatRuntimeService.StartTestCombat(session);
+            StartReadyCombat(session);
+            SetReadyFace(session, 0, SkillCatalog.FocusStrikeId, 2);
             CombatRuntimeService.ToggleDieSelection(session, 0);
             CombatRuntimeService.ResolveSelectedDice(session);
 
-            Assert.That(session.Combat.Enemy.Hp, Is.EqualTo(7));
+            Assert.That(session.Combat.Enemy.Hp, Is.EqualTo(6));
             Assert.That(session.Combat.Enemy.StatusEffects, Has.Count.EqualTo(1));
             Assert.That(session.Combat.Enemy.StatusEffects[0].Kind, Is.EqualTo(CombatStatusEffectKind.Bleed));
             Assert.That(session.Combat.Enemy.StatusEffects[0].RemainingTurns, Is.EqualTo(1));
             Assert.That(session.Combat.LastMessage, Does.Contain("Focus Strike effect: applied Bleed"));
             Assert.That(session.Combat.LastMessage, Does.Contain("Test Gate Guard suffers 1 Bleed damage"));
-            Assert.That(CombatRuntimeService.DescribeDiceFace(session.Combat.DiceFaces[0]), Does.Contain("effect Bleed"));
+            SetReadyFace(session, 0, SkillCatalog.FocusStrikeId, 2);
             Assert.That(CombatRuntimeService.DescribeDiceFace(session.Combat.DiceFaces[0]), Does.Contain("cooldown"));
             Assert.That(CombatRuntimeService.DescribeCombatantStatuses(session.Combat.Enemy), Does.Contain("Bleed"));
 
+            CombatRuntimeService.StopReels(session);
+            SetReadyFace(session, 1, SkillCatalog.SlashId, 1);
             CombatRuntimeService.ToggleDieSelection(session, 1);
             CombatRuntimeService.ResolveSelectedDice(session);
 
-            Assert.That(session.Combat.Enemy.Hp, Is.EqualTo(5));
+            Assert.That(session.Combat.Enemy.Hp, Is.EqualTo(3));
             Assert.That(session.Combat.Enemy.StatusEffects, Is.Empty);
             Assert.That(session.Combat.LastMessage, Does.Contain("Bleed ended"));
         }
@@ -420,8 +434,9 @@ namespace Conn.Tests.EditMode
             session.Skills.AddSkill(SkillCatalog.FocusStrikeId);
             session.Skills.EquippedSkillIds[0] = SkillCatalog.FocusStrikeId;
 
-            CombatRuntimeService.StartTestCombat(session);
-            session.Combat.Enemy.Setup(MonsterCatalog.TestGuardId, "Bleeding Target", 5);
+            StartReadyCombat(session);
+            SetReadyFace(session, 0, SkillCatalog.FocusStrikeId, 2);
+            session.Combat.Enemy.Setup(MonsterCatalog.TestGuardId, "Bleeding Target", 6);
             CombatRuntimeService.ToggleDieSelection(session, 0);
             CombatRuntimeService.ResolveSelectedDice(session);
 
@@ -459,9 +474,10 @@ namespace Conn.Tests.EditMode
             QuestRuntimeService.AcceptQuest(session, QuestCatalog.TestHuntId);
             FieldMonsterRuntimeService.Register(session, "field_monster_alpha", "placement_alpha", EncounterCatalog.TestGuardId, session.Quest.TargetMonsterId);
             FieldMonsterRuntimeService.MarkCombatHandoff(session, "field_monster_alpha");
-            CombatRuntimeService.StartTestCombat(session);
+            StartReadyCombat(session);
             session.Combat.Enemy.Setup(session.Quest.TargetMonsterId, "Test Monster", 1);
 
+            SetReadyFace(session, 0, SkillCatalog.SlashId, 1);
             CombatRuntimeService.ToggleDieSelection(session, 0);
             CombatRuntimeService.ResolveSelectedDice(session);
 
@@ -874,6 +890,43 @@ namespace Conn.Tests.EditMode
             Assert.That(loaded.Mode, Is.EqualTo(GameMode.Ending));
             Assert.That(loaded.Player.IsDead, Is.True);
             Assert.That(SaveRuntimeService.SceneForLoadedState(loaded), Is.EqualTo(GameSceneId.Ending));
+        }
+
+        private static void StartReadyCombat(GameSessionState session)
+        {
+            CombatRuntimeService.StartTestCombat(session);
+            CombatRuntimeService.StopReels(session);
+        }
+
+        private static void SetReadyFace(GameSessionState session, int dieIndex, string skillId, int rolledValue)
+        {
+            var face = session.Combat.DiceFaces[dieIndex];
+            var skill = SkillCatalog.Find(skillId);
+            face.SkillId = skillId;
+            face.DisplayName = skill != null ? skill.DisplayName : "기본공격";
+            face.EffectKind = skill != null ? skill.EffectKind : SkillEffectKind.Attack;
+            face.SpecialEffectId = skill != null ? skill.SpecialEffectId : string.Empty;
+            face.Power = skill != null ? skill.Power : 0;
+            face.RolledValue = rolledValue;
+            face.ReelStopped = true;
+            face.Selected = false;
+            face.Cooldown = ResultCooldownForTest(session, face);
+        }
+
+        private static int ResultCooldownForTest(GameSessionState session, Conn.Core.Combat.DiceFaceState face)
+        {
+            var skillId = string.IsNullOrWhiteSpace(face.SkillId) ? "basic_attack" : face.SkillId;
+            var key = $"{face.RolledValue}:{skillId}";
+            for (var i = 0; i < (session.Combat.DiceResultCooldowns?.Count ?? 0); i++)
+            {
+                var cooldown = session.Combat.DiceResultCooldowns[i];
+                if (cooldown != null && cooldown.ResultKey == key)
+                {
+                    return cooldown.RemainingTurns > 0 ? cooldown.RemainingTurns : 0;
+                }
+            }
+
+            return 0;
         }
     }
 }

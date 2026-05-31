@@ -193,18 +193,36 @@ namespace Conn.Tests.EditMode
                     SellPrice = 1
                 }
             };
+            database.Monsters = new[]
+            {
+                new ContentMonsterDefinition
+                {
+                    Id = "monster_guard",
+                    DisplayName = "Database Guard",
+                    CombatCgResourcePath = "Combat/Monsters/desert_rat_cg",
+                    MaxHp = 10,
+                    AttackPower = 3
+                }
+            };
 
             try
             {
                 RuntimeContentDatabase.SetActive(database);
 
                 Assert.That(RuntimeContentDatabase.FindEquipment("rusty_sword").DisplayName, Is.EqualTo("Database Sword"));
+                Assert.That(RuntimeContentDatabase.FindMonster("monster_guard").CombatCgResourcePath, Is.EqualTo("Combat/Monsters/desert_rat_cg"));
                 Assert.That(RuntimeContentDatabase.FindSkill("skill_slash").DisplayName, Is.EqualTo("Slash"));
             }
             finally
             {
                 RuntimeContentDatabase.SetActive(null);
             }
+        }
+
+        [Test]
+        public void DesertRatCombatCgResourceLoadsAsSprite()
+        {
+            Assert.That(Resources.Load<Sprite>("Combat/Monsters/desert_rat_cg"), Is.Not.Null);
         }
     }
 }

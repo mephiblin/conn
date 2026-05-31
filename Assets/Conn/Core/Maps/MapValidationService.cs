@@ -172,7 +172,7 @@ namespace Conn.Core.Maps
 
             if (compiled.Width != profile.Width || compiled.Height != profile.Height)
             {
-                report.Errors.Add("Compiled map dimensions do not match profile.");
+                report.Errors.Add($"Compiled map dimensions do not match profile: expected {profile.Width}x{profile.Height}, got {compiled.Width}x{compiled.Height}.");
             }
         }
 

@@ -9,6 +9,11 @@ namespace Conn.Runtime.World
             Open(panelKind, closeNpcInteraction: true);
         }
 
+        public static void OpenForNpcInteraction(TownShopPanelKind panelKind)
+        {
+            Open(panelKind, closeNpcInteraction: false);
+        }
+
         internal static void Open(TownShopPanelKind panelKind, bool closeNpcInteraction)
         {
             TownQuestBoardPanelState.Close(closeNpcInteraction);
@@ -23,6 +28,11 @@ namespace Conn.Runtime.World
         public static void Close()
         {
             Close(closeNpcInteraction: true);
+        }
+
+        public static void CloseForNpcInteraction()
+        {
+            Close(closeNpcInteraction: false);
         }
 
         internal static void Close(bool closeNpcInteraction)

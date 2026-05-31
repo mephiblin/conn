@@ -17,6 +17,7 @@ namespace Conn.Authoring.Content
         public string CreateId = "monster_new";
         public string CreateDisplayName = "New Monster";
         public Texture2D CreateVisualImage;
+        public string CreateCombatCgResourcePath = string.Empty;
         public MonsterSpecies CreateSpecies;
         public MonsterGrade CreateGrade;
         public int CreateDefaultGroupCount = 1;
