@@ -235,6 +235,7 @@ namespace Conn.MapGenV2.Authoring
             var placements = new RoomPlacement[landmarks.Length];
             var placed = new bool[landmarks.Length];
             var rng = new MapGenRandom(attemptSeed).Fork("template_solver");
+            var routeLaneCenterY = PickRouteLaneCenterY(height, roomTemplates, ref rng);
 
             for (var step = 0; step < landmarks.Length; step++)
             {
@@ -283,7 +284,7 @@ namespace Conn.MapGenV2.Authoring
                     return Failed(width, height, seed, report, attemptCount);
                 }
 
-                if (!TryPlaceRoom(cells, width, height, template, category, i, landmarks.Length, ref rng, out var placement))
+                if (!TryPlaceRoom(cells, width, height, template, category, i, landmarks.Length, routeLaneCenterY, ref rng, out var placement))
                 {
                     report.Add(new MapGenIssue(
                         MapGenGenerationPhase.SolveMockup,
@@ -306,7 +307,7 @@ namespace Conn.MapGenV2.Authoring
             }
 
             var allPlacements = new List<RoomPlacement>(placements);
-            ApplyBranchAndDeadEndPolicy(quantityRules, cells, width, height, roomTemplates, corridorTemplates, allPlacements, report, ref rng);
+            ApplyBranchAndDeadEndPolicy(quantityRules, cells, width, height, roomTemplates, corridorTemplates, allPlacements, routeLaneCenterY, report, ref rng);
             ApplyLoopPolicy(loopRate, cells, width, height, allPlacements.ToArray(), ref rng);
 
             if (!ValidateDistanceRules(distanceRules, landmarks, placements, report))
@@ -567,6 +568,7 @@ namespace Conn.MapGenV2.Authoring
             MapGenRoomCategory category,
             int regionId,
             int regionCount,
+            int routeLaneCenterY,
             ref MapGenRandom rng,
             out RoomPlacement placement)
         {
@@ -578,29 +580,106 @@ namespace Conn.MapGenV2.Authoring
                 return false;
             }
 
-            var preferredX = regionCount <= 1
-                ? maxX / 2
-                : Mathf.Clamp((regionId * Mathf.Max(1, maxX)) / Mathf.Max(1, regionCount - 1), 0, maxX);
+            var targetX = PickRouteTargetX(regionId, regionCount, maxX, ref rng);
+            var targetY = PickRouteTargetY(routeLaneCenterY, maxY, template.Footprint.y, regionCount, ref rng);
+            var candidates = new List<RoomPlacementCandidate>();
 
-            for (var attempt = 0; attempt < 128; attempt++)
+            for (var y = 0; y <= maxY; y++)
             {
-                var x = attempt == 0 ? preferredX : rng.NextInt(0, maxX + 1);
-                var y = attempt == 0 ? Mathf.Clamp(height / 2 - template.Footprint.y / 2, 0, maxY) : rng.NextInt(0, maxY + 1);
-                var origin = new MapGenGridCoord(x, y);
-                if (!CanPlace(cells, width, template, origin))
+                for (var x = 0; x <= maxX; x++)
                 {
-                    continue;
-                }
+                    var origin = new MapGenGridCoord(x, y);
+                    if (!CanPlace(cells, width, template, origin))
+                    {
+                        continue;
+                    }
 
-                ApplyTemplate(cells, width, template, origin, category, regionId);
-                placement = new RoomPlacement(template, origin, new MapGenGridCoord(
-                    origin.X + template.Footprint.x / 2,
-                    origin.Y + template.Footprint.y / 2));
-                return true;
+                    var score = (Mathf.Abs(x - targetX) * 2) + (Mathf.Abs(y - targetY) * 3);
+                    candidates.Add(new RoomPlacementCandidate(origin, score, rng.NextInt(0, int.MaxValue)));
+                }
             }
 
-            placement = default;
-            return false;
+            if (candidates.Count == 0)
+            {
+                placement = default;
+                return false;
+            }
+
+            candidates.Sort(ComparePlacementCandidates);
+            var selected = candidates[0].Origin;
+            ApplyTemplate(cells, width, template, selected, category, regionId);
+            placement = new RoomPlacement(template, selected, new MapGenGridCoord(
+                selected.X + template.Footprint.x / 2,
+                selected.Y + template.Footprint.y / 2));
+            return true;
+        }
+
+        private static int PickRouteLaneCenterY(
+            int height,
+            MapGenRoomTemplateAsset[] roomTemplates,
+            ref MapGenRandom rng)
+        {
+            if (height <= 1)
+            {
+                return 0;
+            }
+
+            var largestFootprintHeight = 1;
+            foreach (var template in roomTemplates ?? Array.Empty<MapGenRoomTemplateAsset>())
+            {
+                if (template != null)
+                {
+                    largestFootprintHeight = Mathf.Max(largestFootprintHeight, template.Footprint.y);
+                }
+            }
+
+            var minCenter = Mathf.Clamp(largestFootprintHeight / 2, 0, height - 1);
+            var maxCenterExclusive = Mathf.Clamp(height - (largestFootprintHeight / 2), minCenter + 1, height);
+            return rng.NextInt(minCenter, maxCenterExclusive);
+        }
+
+        private static int PickRouteTargetX(
+            int regionId,
+            int regionCount,
+            int maxX,
+            ref MapGenRandom rng)
+        {
+            if (maxX <= 0)
+            {
+                return 0;
+            }
+
+            var baseX = regionCount <= 1
+                ? maxX / 2
+                : Mathf.Clamp((regionId * maxX) / Mathf.Max(1, regionCount - 1), 0, maxX);
+            var segmentWidth = regionCount <= 1
+                ? maxX
+                : Mathf.Max(1, maxX / Mathf.Max(1, regionCount - 1));
+            var jitter = Mathf.Max(1, segmentWidth / 4);
+            return Mathf.Clamp(baseX + rng.NextInt(-jitter, jitter + 1), 0, maxX);
+        }
+
+        private static int PickRouteTargetY(
+            int routeLaneCenterY,
+            int maxY,
+            int footprintHeight,
+            int regionCount,
+            ref MapGenRandom rng)
+        {
+            if (maxY <= 0)
+            {
+                return 0;
+            }
+
+            var baseY = Mathf.Clamp(routeLaneCenterY - Mathf.Max(1, footprintHeight) / 2, 0, maxY);
+            var jitter = Mathf.Max(1, maxY / Mathf.Max(6, regionCount * 2));
+            return Mathf.Clamp(baseY + rng.NextInt(-jitter, jitter + 1), 0, maxY);
+        }
+
+        private static int ComparePlacementCandidates(RoomPlacementCandidate a, RoomPlacementCandidate b)
+        {
+            var score = a.Score.CompareTo(b.Score);
+            return score != 0 ? score : a.TieBreaker.CompareTo(b.TieBreaker);
         }
 
         private static bool CanPlace(
@@ -802,6 +881,7 @@ namespace Conn.MapGenV2.Authoring
             MapGenRoomTemplateAsset[] roomTemplates,
             MapGenCorridorTemplateAsset[] corridorTemplates,
             List<RoomPlacement> placements,
+            int routeLaneCenterY,
             MapGenValidationReport report,
             ref MapGenRandom rng)
         {
@@ -834,7 +914,7 @@ namespace Conn.MapGenV2.Authoring
                 }
 
                 var regionId = placements.Count;
-                if (!TryPlaceRoom(cells, width, height, template, category, regionId, targetRoomCount, ref rng, out var branch))
+                if (!TryPlaceRoom(cells, width, height, template, category, regionId, targetRoomCount, routeLaneCenterY, ref rng, out var branch))
                 {
                     report.Add(new MapGenIssue(
                         MapGenGenerationPhase.SolveMockup,
@@ -1303,6 +1383,20 @@ namespace Conn.MapGenV2.Authoring
                 Template = template;
                 Origin = origin;
                 Center = center;
+            }
+        }
+
+        private readonly struct RoomPlacementCandidate
+        {
+            public readonly MapGenGridCoord Origin;
+            public readonly int Score;
+            public readonly int TieBreaker;
+
+            public RoomPlacementCandidate(MapGenGridCoord origin, int score, int tieBreaker)
+            {
+                Origin = origin;
+                Score = score;
+                TieBreaker = tieBreaker;
             }
         }
 

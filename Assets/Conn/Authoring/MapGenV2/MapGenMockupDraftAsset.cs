@@ -1,5 +1,6 @@
 using Conn.MapGenV2.Core;
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Conn.MapGenV2.Authoring
@@ -421,6 +422,7 @@ namespace Conn.MapGenV2.Authoring
             }
 
             MapGenMockupRegionUtility.AssignCorridorRegionIds(Width, Height, Cells, false, MaxRegionId(previousCells) + 1);
+            RemapGeneratedRegionConflicts(Cells, CollectRegionIdsExcept(previousCells, regionId));
             PreserveRegionsExcept(previousWidth, previousHeight, previousCells, regionId);
             Accepted = false;
             AcceptedSignature = string.Empty;
@@ -478,6 +480,7 @@ namespace Conn.MapGenV2.Authoring
             MapGenMockupRegionUtility.AssignCorridorRegionIds(Width, Height, Cells, false, corridorMinimumRegionId);
             if (preserveLockedRegions)
             {
+                RemapGeneratedRegionConflicts(Cells, CollectLockedRegionIds(previousOverrides));
                 PreserveLockedRegions(previousWidth, previousHeight, previousCells, previousOverrides);
             }
 
@@ -855,6 +858,66 @@ namespace Conn.MapGenV2.Authoring
 
             Array.Resize(ref copied, count);
             return copied;
+        }
+
+        private static HashSet<int> CollectLockedRegionIds(MapGenMockupRegionOverride[] source)
+        {
+            var ids = new HashSet<int>();
+            foreach (var regionOverride in source ?? Array.Empty<MapGenMockupRegionOverride>())
+            {
+                if (regionOverride.Locked && regionOverride.RegionId >= 0)
+                {
+                    ids.Add(regionOverride.RegionId);
+                }
+            }
+
+            return ids;
+        }
+
+        private static HashSet<int> CollectRegionIdsExcept(MapGenMockupCell[] cells, int excludedRegionId)
+        {
+            var ids = new HashSet<int>();
+            foreach (var cell in cells ?? Array.Empty<MapGenMockupCell>())
+            {
+                if (cell.RegionId >= 0 && cell.RegionId != excludedRegionId)
+                {
+                    ids.Add(cell.RegionId);
+                }
+            }
+
+            return ids;
+        }
+
+        private static void RemapGeneratedRegionConflicts(MapGenMockupCell[] cells, HashSet<int> reservedRegionIds)
+        {
+            if (cells == null || reservedRegionIds == null || reservedRegionIds.Count == 0)
+            {
+                return;
+            }
+
+            var remap = new Dictionary<int, int>();
+            var nextRegionId = MaxRegionId(cells) + 1;
+            for (var i = 0; i < cells.Length; i++)
+            {
+                var regionId = cells[i].RegionId;
+                if (regionId < 0 || !reservedRegionIds.Contains(regionId))
+                {
+                    continue;
+                }
+
+                if (!remap.TryGetValue(regionId, out var replacementId))
+                {
+                    while (reservedRegionIds.Contains(nextRegionId))
+                    {
+                        nextRegionId++;
+                    }
+
+                    replacementId = nextRegionId++;
+                    remap.Add(regionId, replacementId);
+                }
+
+                cells[i].RegionId = replacementId;
+            }
         }
 
         private static MapGenMockupRegionOverride[] CopyOverridesExcept(MapGenMockupRegionOverride[] source, int excludedRegionId)

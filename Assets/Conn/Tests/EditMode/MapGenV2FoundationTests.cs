@@ -2971,6 +2971,64 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void TemplateMockupSolverVariesLargeMapPlacementAcrossSeeds()
+        {
+            var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
+            var styleSet = ScriptableObject.CreateInstance<MapGenStyleSetAsset>();
+            var ruleSet = ScriptableObject.CreateInstance<MapGenRuleSetAsset>();
+            var roomShape = ScriptableObject.CreateInstance<MapGenRoomShapeAsset>();
+            var startTemplate = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();
+            var questTemplate = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();
+            var bossTemplate = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();
+            var exitTemplate = ScriptableObject.CreateInstance<MapGenRoomTemplateAsset>();
+            var profile = ScriptableObject.CreateInstance<MapGenProfileAsset>();
+            GameObject floor = null;
+            GameObject wall = null;
+
+            try
+            {
+                PopulateValidWorkflowProfile(profile, styleSet, moduleSet, ruleSet, roomShape, out floor, out wall);
+                profile.MapSize = new Vector2Int(50, 50);
+                ruleSet.RequiredRoomCategories = new[]
+                {
+                    MapGenRoomCategory.Start,
+                    MapGenRoomCategory.Quest,
+                    MapGenRoomCategory.Boss,
+                    MapGenRoomCategory.Exit
+                };
+                ruleSet.QuantityRules.RequiredCategories = ruleSet.RequiredRoomCategories;
+                ruleSet.QuantityRules.MinRooms = 4;
+                ruleSet.QuantityRules.MaxRooms = 4;
+                PopulateRoomTemplate(startTemplate, "start_template", MapGenRoomCategory.Start);
+                PopulateRoomTemplate(questTemplate, "quest_template", MapGenRoomCategory.Quest);
+                PopulateRoomTemplate(bossTemplate, "boss_template", MapGenRoomCategory.Boss);
+                PopulateRoomTemplate(exitTemplate, "exit_template", MapGenRoomCategory.Exit);
+                styleSet.RoomTemplates = new[] { startTemplate, questTemplate, bossTemplate, exitTemplate };
+
+                var first = MapGenTemplateMockupSolver.Generate(profile, 7001);
+                var second = MapGenTemplateMockupSolver.Generate(profile, 7002);
+
+                Assert.That(first.Success, Is.True);
+                Assert.That(second.Success, Is.True);
+                Assert.That(second.Signature, Is.Not.EqualTo(first.Signature));
+            }
+            finally
+            {
+                Object.DestroyImmediate(profile);
+                Object.DestroyImmediate(exitTemplate);
+                Object.DestroyImmediate(bossTemplate);
+                Object.DestroyImmediate(questTemplate);
+                Object.DestroyImmediate(startTemplate);
+                Object.DestroyImmediate(roomShape);
+                Object.DestroyImmediate(ruleSet);
+                Object.DestroyImmediate(styleSet);
+                Object.DestroyImmediate(moduleSet);
+                Object.DestroyImmediate(floor);
+                Object.DestroyImmediate(wall);
+            }
+        }
+
+        [Test]
         public void TemplateMockupSolverReportsStartExitDistanceContradiction()
         {
             var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
