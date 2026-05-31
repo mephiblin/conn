@@ -42,6 +42,9 @@ namespace Conn.UI.Runtime
         private TownShopPanelKind hoveredShopKind = TownShopPanelKind.None;
         private string hoveredShopItemId = string.Empty;
         private string hoveredShopMode = string.Empty;
+        private TownShopPanelKind selectedShopKind = TownShopPanelKind.None;
+        private string selectedShopItemId = string.Empty;
+        private string selectedShopMode = string.Empty;
         private static readonly string[] CharacterPortraitResourcePaths =
         {
             "CharacterCreation/portrait_vanguard",
@@ -122,7 +125,7 @@ namespace Conn.UI.Runtime
                 HandleEscapePressed();
             }
 
-            if (Keyboard.current != null && Keyboard.current.f3Key.wasPressedThisFrame)
+            if (RuntimeDebugPanelsAllowed() && Keyboard.current != null && Keyboard.current.f3Key.wasPressedThisFrame)
             {
                 RuntimeUiSettings.ShowRuntimeDebugPanels = !RuntimeUiSettings.ShowRuntimeDebugPanels;
                 RequestRefresh();
@@ -229,6 +232,9 @@ namespace Conn.UI.Runtime
                 .Append('|').Append(TownNpcInteractionState.Cost)
                 .Append('|').Append(TownNpcInteractionState.ItemId)
                 .Append('|').Append(selectedSkillId)
+                .Append('|').Append(selectedShopKind)
+                .Append('|').Append(selectedShopItemId)
+                .Append('|').Append(selectedShopMode)
                 .Append('|').Append(selectedQuestBoardOffset)
                 .Append('|').Append(session.Quest.HasActiveQuest)
                 .Append('|').Append(session.Quest.ActiveQuestId)
@@ -310,7 +316,7 @@ namespace Conn.UI.Runtime
 
         private void DrawRuntimeDebugPanel(GameSessionState session)
         {
-            if (!RuntimeUiSettings.ShowRuntimeDebugPanels)
+            if (!RuntimeUiSettings.ShowRuntimeDebugPanels || !RuntimeDebugPanelsAllowed())
             {
                 HidePanel("RuntimeDebugPanel");
                 return;
@@ -1043,7 +1049,7 @@ namespace Conn.UI.Runtime
             if (shopKind == TownShopPanelKind.Blacksmith)
             {
                 AddTownShopHeader(panel, $"Blacksmith  |  Gold {session.Gold}g");
-                AddText(panel, "Buy equipment, compare it against your current loadout, or sell unequipped gear.", 13);
+                AddText(panel, "장비 구매/판매  |  현재 장착품과 비교", 13);
 
                 var shopBody = AddHorizontalGroup(panel, 10f);
                 var listColumn = AddShopColumn(shopBody, 430f, 1f, "ShopListColumn");
@@ -1101,13 +1107,13 @@ namespace Conn.UI.Runtime
 
                 AddButton(listColumn, "Switch Owned Loadout", () => EquipmentRuntimeService.ToggleOwnedLoadout(session));
                 AddButton(listColumn, "Close", CloseTownInteraction);
-                DrawEquipmentShopDetail(detailColumn, session, ResolveHoveredShopItem(shopKind, firstDetailItemId), IsHoveredShopSellMode(shopKind));
+                DrawEquipmentShopDetail(detailColumn, session, ResolveFocusedShopItem(shopKind, firstDetailItemId), IsFocusedShopSellMode(shopKind));
             }
             else if (shopKind == TownShopPanelKind.SkillMerchant)
             {
                 var refreshIndex = session.Shop != null ? session.Shop.SkillMerchantRefreshIndex : 0;
                 AddTownShopHeader(panel, $"Skill Merchant  |  Gold {session.Gold}g  |  Refresh #{refreshIndex}");
-                AddText(panel, "Buy skill faces for your dice, inspect exact effects, or sell loose un-equipped copies.", 13);
+                AddText(panel, "스킬 구매/판매  |  주사위 장착 수량 확인", 13);
 
                 var shopBody = AddHorizontalGroup(panel, 10f);
                 var listColumn = AddShopColumn(shopBody, 430f, 1f, "ShopListColumn");
@@ -1165,7 +1171,7 @@ namespace Conn.UI.Runtime
                 }
 
                 AddButton(listColumn, "Close", CloseTownInteraction);
-                DrawSkillShopDetail(detailColumn, session, ResolveHoveredShopItem(shopKind, firstDetailSkillId), IsHoveredShopSellMode(shopKind));
+                DrawSkillShopDetail(detailColumn, session, ResolveFocusedShopItem(shopKind, firstDetailSkillId), IsFocusedShopSellMode(shopKind));
             }
         }
 
@@ -1224,6 +1230,7 @@ namespace Conn.UI.Runtime
             }
 
             var price = buying ? item.BuyPrice : item.SellPrice;
+            var mode = buying ? "buy" : "sell";
             var card = AddShopCard(
                 parent,
                 ShopIconSpriteResolver.EquipmentSpriteFor(itemId, item.Kind),
@@ -1231,9 +1238,14 @@ namespace Conn.UI.Runtime
                 item.DisplayName,
                 $"{(buying ? "Buy" : "Sell")} {price}g",
                 EquipmentSummary(item),
-                action,
+                () =>
+                {
+                    SelectShopDetail(TownShopPanelKind.Blacksmith, itemId, mode);
+                    action?.Invoke();
+                    RequestRefresh();
+                },
                 interactable);
-            BindShopHover(card.gameObject, session, TownShopPanelKind.Blacksmith, itemId, buying ? "buy" : "sell");
+            BindShopHover(card.gameObject, session, TownShopPanelKind.Blacksmith, itemId, mode);
         }
 
         private void AddSkillShopCard(
@@ -1253,6 +1265,7 @@ namespace Conn.UI.Runtime
             var price = buying ? skill.BuyPrice : skill.SellPrice;
             var owned = session.Skills.CountOwned(skillId);
             var equipped = session.Skills.CountEquipped(skillId);
+            var mode = buying ? "buy" : "sell";
             var card = AddShopCard(
                 parent,
                 ShopIconSpriteResolver.SkillSpriteFor(skillId, skill.EffectKind),
@@ -1260,9 +1273,14 @@ namespace Conn.UI.Runtime
                 skill.DisplayName,
                 $"{(buying ? "Buy" : "Sell")} {price}g",
                 $"{skill.EffectKind} +{skill.Power}  |  Owned {owned} / Equipped {equipped}",
-                action,
+                () =>
+                {
+                    SelectShopDetail(TownShopPanelKind.SkillMerchant, skillId, mode);
+                    action?.Invoke();
+                    RequestRefresh();
+                },
                 interactable);
-            BindShopHover(card.gameObject, session, TownShopPanelKind.SkillMerchant, skillId, buying ? "buy" : "sell");
+            BindShopHover(card.gameObject, session, TownShopPanelKind.SkillMerchant, skillId, mode);
         }
 
         private Button AddShopCard(
@@ -1337,7 +1355,7 @@ namespace Conn.UI.Runtime
             var item = RuntimeContentDatabase.FindEquipment(itemId);
             if (item == null)
             {
-                AddText(parent, "Hover an item to inspect it.");
+                AddText(parent, "상품을 선택하세요.");
                 return;
             }
 
@@ -1358,7 +1376,7 @@ namespace Conn.UI.Runtime
             var skill = RuntimeContentDatabase.FindSkill(skillId);
             if (skill == null)
             {
-                AddText(parent, "Hover a skill to inspect it.");
+                AddText(parent, "스킬을 선택하세요.");
                 return;
             }
 
@@ -1400,16 +1418,33 @@ namespace Conn.UI.Runtime
             fallback.rectTransform.offsetMax = Vector2.zero;
         }
 
-        private string ResolveHoveredShopItem(TownShopPanelKind shopKind, string fallbackId)
+        private string ResolveFocusedShopItem(TownShopPanelKind shopKind, string fallbackId)
         {
-            return hoveredShopKind == shopKind && !string.IsNullOrWhiteSpace(hoveredShopItemId)
-                ? hoveredShopItemId
+            if (hoveredShopKind == shopKind && !string.IsNullOrWhiteSpace(hoveredShopItemId))
+            {
+                return hoveredShopItemId;
+            }
+
+            return selectedShopKind == shopKind && !string.IsNullOrWhiteSpace(selectedShopItemId)
+                ? selectedShopItemId
                 : fallbackId;
         }
 
-        private bool IsHoveredShopSellMode(TownShopPanelKind shopKind)
+        private bool IsFocusedShopSellMode(TownShopPanelKind shopKind)
         {
-            return hoveredShopKind == shopKind && hoveredShopMode == "sell";
+            if (hoveredShopKind == shopKind && !string.IsNullOrWhiteSpace(hoveredShopItemId))
+            {
+                return hoveredShopMode == "sell";
+            }
+
+            return selectedShopKind == shopKind && selectedShopMode == "sell";
+        }
+
+        private void SelectShopDetail(TownShopPanelKind shopKind, string itemId, string mode)
+        {
+            selectedShopKind = shopKind;
+            selectedShopItemId = itemId;
+            selectedShopMode = mode;
         }
 
         private void BindShopHover(GameObject target, GameSessionState session, TownShopPanelKind shopKind, string itemId, string mode)
@@ -1837,7 +1872,7 @@ namespace Conn.UI.Runtime
 
             var readout = Panel("DungeonPlacementReadout");
             var compiledMap = CompiledMapDungeonRuntimeService.CurrentCompiledMap;
-            if (RuntimeUiSettings.ShowRuntimeDebugPanels)
+            if (RuntimeUiSettings.ShowRuntimeDebugPanels && RuntimeDebugPanelsAllowed())
             {
                 BuildPanel(readout, "Map Debug", false);
                 AddText(readout, compiledMap?.MapId ?? "none", 11);
@@ -2582,6 +2617,11 @@ namespace Conn.UI.Runtime
         {
             lastRenderKey = string.Empty;
             nextRefreshTime = 0f;
+        }
+
+        private static bool RuntimeDebugPanelsAllowed()
+        {
+            return Application.isEditor || Debug.isDebugBuild;
         }
 
         private static Transform ContentParent(Transform parent)
