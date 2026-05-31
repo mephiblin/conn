@@ -1891,6 +1891,12 @@ namespace Conn.UI.Runtime
         {
             if (!session.Combat.Active)
             {
+                if (session.Quest.ReturnAvailable)
+                {
+                    DrawCombatResolved(session);
+                    return;
+                }
+
                 CombatRuntimeService.StartTestCombat(session);
             }
 
@@ -1946,6 +1952,26 @@ namespace Conn.UI.Runtime
             dice.SetAsLastSibling();
             command.SetAsLastSibling();
             HidePanel("CombatLogPanel");
+        }
+
+        private void DrawCombatResolved(GameSessionState session)
+        {
+            HidePanel("CombatEnemyStagePanel");
+            HidePanel("CombatStatusPanel");
+            HidePanel("CombatDicePanel");
+            HidePanel("CombatLogPanel");
+
+            var command = Panel("CombatCommandPanel");
+            BuildPanel(command, "Victory", false);
+            AddText(command, string.IsNullOrWhiteSpace(session.Combat.LastMessage) ? session.LastNotice : session.Combat.LastMessage, 12);
+            var row = AddHorizontalGroup(command, 10f);
+            AddButton(row, "Keep Exploring", () =>
+            {
+                QuestRuntimeService.KeepExploring(session);
+                SceneFlowService.Load(GameSceneId.Dungeon);
+            });
+            AddButton(row, "Return To Town", () => QuestRuntimeService.ReturnToTown(session), session.Quest.ReturnAvailable);
+            command.SetAsLastSibling();
         }
 
         private void DrawEnding(GameSessionState session)

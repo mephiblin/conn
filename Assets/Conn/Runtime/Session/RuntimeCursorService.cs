@@ -49,7 +49,9 @@ namespace Conn.Runtime.Session
 
             if (sceneId == GameSceneId.Combat)
             {
-                return session != null && session.Combat != null && session.Combat.Active;
+                return session != null
+                    && ((session.Combat != null && session.Combat.Active)
+                        || (session.Quest != null && session.Quest.ReturnAvailable && !session.Quest.ReturnPromptSeen));
             }
 
             if (sceneId == GameSceneId.Town)

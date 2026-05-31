@@ -552,6 +552,29 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void CombatVictoryReleasesCursorForReturnChoice()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+            QuestRuntimeService.AcceptQuest(session, QuestCatalog.TestHuntId);
+            FieldMonsterRuntimeService.Register(session, "field_monster_alpha", "placement_alpha", EncounterCatalog.TestGuardId, session.Quest.TargetMonsterId);
+            FieldMonsterRuntimeService.MarkCombatHandoff(session, "field_monster_alpha");
+            StartReadyCombat(session);
+            session.Combat.Enemy.Setup(session.Quest.TargetMonsterId, "Test Monster", 1);
+
+            SetReadyFace(session, 0, SkillCatalog.SlashId, 1);
+            CombatRuntimeService.ToggleDieSelection(session, 0);
+            CombatRuntimeService.ResolveSelectedDice(session);
+
+            RuntimeCursorService.ClearManualRelease();
+            RuntimeCursorService.Apply(GameSceneId.Combat, session, characterPanelOpen: false);
+
+            Assert.That(session.Combat.Active, Is.False);
+            Assert.That(session.Quest.ReturnAvailable, Is.True);
+            Assert.That(RuntimeCursorService.PointerUiActive, Is.True);
+        }
+
+        [Test]
         public void CombatFleeReturnsToDungeonWithoutDefeatingMonster()
         {
             var session = new GameSessionState();
