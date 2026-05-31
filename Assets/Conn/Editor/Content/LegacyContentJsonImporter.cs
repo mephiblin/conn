@@ -22,6 +22,22 @@ namespace Conn.Editor.Content
             Debug.Log($"Imported legacy content database: {AssetDatabase.GetAssetPath(database)}");
         }
 
+        [MenuItem("Conn/Content Database/Generate Skills From Legacy JSON")]
+        public static void GenerateDefaultLegacySkills()
+        {
+            var database = AssetDatabase.LoadAssetAtPath<ContentDatabaseDefinition>(DefaultDatabaseAssetPath);
+            if (database == null)
+            {
+                database = ScriptableObject.CreateInstance<ContentDatabaseDefinition>();
+                AssetDatabase.CreateAsset(database, DefaultDatabaseAssetPath);
+            }
+
+            database.Skills = ImportSkills(Path.Combine(DefaultLegacyDataPath, "skills.json"));
+            EditorUtility.SetDirty(database);
+            AssetDatabase.SaveAssets();
+            Debug.Log($"Generated {database.Skills.Length} legacy skill definitions: {AssetDatabase.GetAssetPath(database)}");
+        }
+
         public static ContentDatabaseDefinition Import(string legacyDataPath, string assetPath)
         {
             var database = AssetDatabase.LoadAssetAtPath<ContentDatabaseDefinition>(assetPath);
@@ -78,6 +94,11 @@ namespace Conn.Editor.Content
                     EffectKind = Text(data, "kind", "support"),
                     TargetMode = Text(data, "targetMode", string.Empty),
                     Formula = Text(data, "formula", string.Empty),
+                    Cooldown = Int(data, "cooldown"),
+                    Duration = Int(data, "duration"),
+                    Status = Text(data, "status", string.Empty),
+                    Tags = StringArray(data, "tags"),
+                    Description = Text(data, "description", string.Empty),
                     BuyPrice = Int(data, "buyPrice"),
                     SellPrice = Int(data, "sellPrice"),
                     Power = Int(data, "effect"),

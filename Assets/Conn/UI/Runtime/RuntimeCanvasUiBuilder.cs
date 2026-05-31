@@ -114,22 +114,22 @@ namespace Conn.UI.Runtime
 
             if (panelName == "CombatEnemyStagePanel")
             {
-                return new Rect(0.58f, 0.56f, 0.38f, 0.36f);
+                return new Rect(0.50f, 0.32f, 0.46f, 0.62f);
             }
 
             if (panelName == "CombatCommandPanel")
             {
-                return new Rect(0.34f, 0.42f, 0.32f, 0.16f);
+                return new Rect(0.36f, 0.05f, 0.28f, 0.13f);
             }
 
             if (panelName == "CombatStatusPanel")
             {
-                return new Rect(0.04f, 0.5f, 0.28f, 0.34f);
+                return new Rect(0.04f, 0.18f, 0.46f, 0.50f);
             }
 
             if (panelName == "CombatDicePanel")
             {
-                return new Rect(0.16f, 0.04f, 0.68f, 0.36f);
+                return new Rect(0.30f, 0.02f, 0.40f, 0.22f);
             }
 
             if (panelName == "CombatLogPanel")
@@ -190,6 +190,11 @@ namespace Conn.UI.Runtime
             if (panelName.Contains("Bottom") || panelName.Contains("Dice") || panelName.Contains("Log"))
             {
                 return new Rect(0.02f, 0.02f, 0.96f, 0.28f);
+            }
+
+            if (panelName == "TownCharacterInventoryPanel")
+            {
+                return new Rect(0.04f, 0.08f, 0.92f, 0.82f);
             }
 
             if (panelName.Contains("Secondary") || panelName.Contains("Shop") || panelName.Contains("Inventory") || panelName.Contains("Status"))

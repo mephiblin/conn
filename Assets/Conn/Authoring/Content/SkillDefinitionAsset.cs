@@ -13,6 +13,11 @@ namespace Conn.Authoring.Content
         public string TargetMode = string.Empty;
         public string Formula = string.Empty;
         public string SpecialEffectId = string.Empty;
+        public int Cooldown = 1;
+        public int Duration;
+        public string Status = string.Empty;
+        public string[] Tags = Array.Empty<string>();
+        [TextArea] public string Description = string.Empty;
         public int BuyPrice;
         public int SellPrice;
         public int Power = 1;
@@ -29,6 +34,11 @@ namespace Conn.Authoring.Content
                 TargetMode = TargetMode,
                 Formula = Formula,
                 SpecialEffectId = SpecialEffectId,
+                Cooldown = Cooldown,
+                Duration = Duration,
+                Status = Status,
+                Tags = Tags ?? Array.Empty<string>(),
+                Description = Description,
                 BuyPrice = BuyPrice,
                 SellPrice = SellPrice,
                 Power = Power,

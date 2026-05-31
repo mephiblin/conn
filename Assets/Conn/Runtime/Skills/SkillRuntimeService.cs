@@ -1,4 +1,5 @@
 using Conn.Core.Session;
+using Conn.Core.Skills;
 using Conn.Runtime.Content;
 using Conn.Runtime.Session;
 using UnityEngine;
@@ -63,8 +64,13 @@ namespace Conn.Runtime.Skills
 
         public static bool EquipSkillToFace(GameSessionState session, string skillId, int faceIndex)
         {
+            return EquipSkillToDieFace(session, skillId, faceIndex, 0);
+        }
+
+        public static bool EquipSkillToDieFace(GameSessionState session, string skillId, int dieIndex, int faceIndex)
+        {
             var diceCount = session.Equipment.DiceCount;
-            if (faceIndex < 0 || faceIndex >= diceCount || string.IsNullOrWhiteSpace(skillId))
+            if (dieIndex < 0 || dieIndex >= diceCount || faceIndex < 0 || faceIndex >= SkillInventoryState.FacesPerDie || string.IsNullOrWhiteSpace(skillId))
             {
                 return false;
             }
@@ -80,36 +86,39 @@ namespace Conn.Runtime.Skills
                 return false;
             }
 
-            while (session.Skills.EquippedSkillIds.Count < diceCount)
-            {
-                session.Skills.EquippedSkillIds.Add(string.Empty);
-            }
+            session.Skills.EnsureDiceFaceLoadout(diceCount);
 
-            if (EquippedCountExcludingFace(session, skillId, faceIndex) >= session.Skills.CountOwned(skillId))
+            if (session.Skills.EquippedCountExcludingDieFace(skillId, dieIndex, faceIndex) >= session.Skills.CountOwned(skillId))
             {
                 RuntimeNoticeService.Set(session, $"No loose copy to equip: {skill.DisplayName}.");
                 return false;
             }
 
-            session.Skills.EquippedSkillIds[faceIndex] = skillId;
-            session.Skills.NextEditFaceIndex = faceIndex;
+            session.Skills.SetSkillForDieFace(skillId, dieIndex, faceIndex, diceCount);
+            session.Skills.NextEditFaceIndex = dieIndex;
             SaveIfPlaying();
-            RuntimeNoticeService.Set(session, $"Equipped face {faceIndex + 1}: {skill.DisplayName}.");
+            RuntimeNoticeService.Set(session, $"Equipped D{dieIndex + 1}-{faceIndex + 1}: {skill.DisplayName}.");
             return true;
         }
 
-        private static int EquippedCountExcludingFace(GameSessionState session, string skillId, int excludedFaceIndex)
+        public static bool ClearDieFace(GameSessionState session, int dieIndex, int faceIndex)
         {
-            var count = 0;
-            for (var i = 0; i < session.Skills.EquippedSkillIds.Count; i++)
+            var diceCount = session.Equipment.DiceCount;
+            if (dieIndex < 0 || dieIndex >= diceCount || faceIndex < 0 || faceIndex >= SkillInventoryState.FacesPerDie)
             {
-                if (i != excludedFaceIndex && session.Skills.EquippedSkillIds[i] == skillId)
-                {
-                    count++;
-                }
+                return false;
             }
 
-            return count;
+            var currentSkillId = session.Skills.SkillIdForDieFace(dieIndex, faceIndex);
+            if (string.IsNullOrWhiteSpace(currentSkillId))
+            {
+                return false;
+            }
+
+            session.Skills.SetSkillForDieFace(string.Empty, dieIndex, faceIndex, diceCount);
+            SaveIfPlaying();
+            RuntimeNoticeService.Set(session, $"Cleared D{dieIndex + 1}-{faceIndex + 1}.");
+            return true;
         }
 
         private static int FindOwnedIndexAfter(GameSessionState session, string skillId)

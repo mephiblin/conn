@@ -319,6 +319,51 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void NewGameCreatesSixFaceDiceSkillLoadout()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+
+            Assert.That(session.Skills.DiceFaceSkillIds, Has.Count.EqualTo(session.Equipment.DiceCount * SkillInventoryState.FacesPerDie));
+            Assert.That(session.Skills.CountEquipped(GameSessionState.StarterSkillIdResolver()), Is.EqualTo(1));
+            Assert.That(session.Skills.SkillIdForDieFace(0, 0), Is.EqualTo(GameSessionState.StarterSkillIdResolver()));
+        }
+
+        [Test]
+        public void CombatReelsReadSixFaceDiceSkillLoadout()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+            session.Skills.AddSkill(SkillCatalog.GuardId);
+            session.Skills.SetSkillForDieFace(SkillCatalog.GuardId, 0, 3, session.Equipment.DiceCount);
+
+            CombatRuntimeService.StartTestCombat(session);
+
+            Assert.That(session.Combat.DiceFaces[0].ReelSkillIds, Has.Length.EqualTo(SkillInventoryState.FacesPerDie));
+            Assert.That(session.Combat.DiceFaces[0].ReelSkillIds[3], Is.EqualTo(SkillCatalog.GuardId));
+        }
+
+        [Test]
+        public void DiceCooldownIsScopedToIndividualReel()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+
+            StartReadyCombat(session);
+            SetReadyFace(session, 0, SkillCatalog.SlashId, 4);
+            SetReadyFace(session, 1, SkillCatalog.SlashId, 4);
+            CombatRuntimeService.ToggleDieSelection(session, 0);
+            CombatRuntimeService.ResolveSelectedDice(session);
+
+            CombatRuntimeService.StopReels(session);
+            SetReadyFace(session, 1, SkillCatalog.SlashId, 4);
+
+            Assert.That(session.Combat.DiceFaces[1].Cooldown, Is.EqualTo(0));
+            CombatRuntimeService.ToggleDieSelection(session, 1);
+            Assert.That(session.Combat.DiceFaces[1].Selected, Is.True);
+        }
+
+        [Test]
         public void EnemyTurnUsesAttackPowerFromMonsterActionData()
         {
             var session = new GameSessionState();
@@ -908,6 +953,7 @@ namespace Conn.Tests.EditMode
             face.SpecialEffectId = skill != null ? skill.SpecialEffectId : string.Empty;
             face.Power = skill != null ? skill.Power : 0;
             face.RolledValue = rolledValue;
+            face.ReelStopIndex = System.Math.Max(0, rolledValue - 1);
             face.ReelStopped = true;
             face.Selected = false;
             face.Cooldown = ResultCooldownForTest(session, face);
@@ -916,7 +962,7 @@ namespace Conn.Tests.EditMode
         private static int ResultCooldownForTest(GameSessionState session, Conn.Core.Combat.DiceFaceState face)
         {
             var skillId = string.IsNullOrWhiteSpace(face.SkillId) ? "basic_attack" : face.SkillId;
-            var key = $"{face.RolledValue}:{skillId}";
+            var key = $"{face.Index}:{face.ReelStopIndex}:{skillId}";
             for (var i = 0; i < (session.Combat.DiceResultCooldowns?.Count ?? 0); i++)
             {
                 var cooldown = session.Combat.DiceResultCooldowns[i];

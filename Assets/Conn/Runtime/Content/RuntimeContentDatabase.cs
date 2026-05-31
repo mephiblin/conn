@@ -196,7 +196,14 @@ namespace Conn.Runtime.Content
                 contentSkill.SellPrice,
                 contentSkill.Power,
                 contentSkill.SpecialEffectId,
-                SkillSpeciesModifiersFor(contentSkill.SpeciesModifiers));
+                SkillSpeciesModifiersFor(contentSkill.SpeciesModifiers),
+                contentSkill.TargetMode,
+                contentSkill.Formula,
+                contentSkill.Cooldown,
+                contentSkill.Duration,
+                contentSkill.Status,
+                contentSkill.Tags,
+                contentSkill.Description);
         }
 
         public static QuestDefinition FindQuest(string questId)

@@ -581,7 +581,7 @@ namespace Conn.UI.Runtime
             GUILayout.Label($"Enemy HP: {session.Combat.Enemy.Hp}/{session.Combat.Enemy.MaxHp}");
             GUILayout.Label($"Enemy {CombatRuntimeService.DescribeCombatantStatuses(session.Combat.Enemy)}");
             GUILayout.Label(CombatRuntimeService.DescribeEnemySlots(session.Combat));
-            GUILayout.Label($"Selected: {session.Combat.SelectedDiceCount}/3 / Cooldown shown per rolled result");
+            GUILayout.Label($"Selected: {session.Combat.SelectedDiceCount}/3 / Cooldown shown per reel result");
             GUILayout.Label($"Log: {session.Combat.LastMessage}");
 
             GUI.enabled = CombatRuntimeService.CanStopReels(session);

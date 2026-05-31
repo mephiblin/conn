@@ -12,7 +12,14 @@ namespace Conn.Core.Skills
             int sellPrice,
             int power,
             string specialEffectId = "",
-            SkillSpeciesModifier[] speciesModifiers = null)
+            SkillSpeciesModifier[] speciesModifiers = null,
+            string targetMode = "",
+            string formula = "",
+            int cooldown = 1,
+            int duration = 0,
+            string status = "",
+            string[] tags = null,
+            string description = "")
         {
             SkillId = skillId;
             DisplayName = displayName;
@@ -22,6 +29,13 @@ namespace Conn.Core.Skills
             Power = power;
             SpecialEffectId = specialEffectId;
             SpeciesModifiers = speciesModifiers ?? Array.Empty<SkillSpeciesModifier>();
+            TargetMode = targetMode ?? string.Empty;
+            Formula = formula ?? string.Empty;
+            Cooldown = cooldown < 0 ? 0 : cooldown;
+            Duration = duration < 0 ? 0 : duration;
+            Status = status ?? string.Empty;
+            Tags = tags ?? Array.Empty<string>();
+            Description = description ?? string.Empty;
         }
 
         public string SkillId { get; }
@@ -32,6 +46,13 @@ namespace Conn.Core.Skills
         public int Power { get; }
         public string SpecialEffectId { get; }
         public SkillSpeciesModifier[] SpeciesModifiers { get; }
+        public string TargetMode { get; }
+        public string Formula { get; }
+        public int Cooldown { get; }
+        public int Duration { get; }
+        public string Status { get; }
+        public string[] Tags { get; }
+        public string Description { get; }
 
         public int AdjustPowerForSpecies(string species, int basePower)
         {

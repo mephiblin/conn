@@ -230,6 +230,7 @@ namespace Conn.UI.Runtime
             AppendList(key, session.Inventory.ItemIds);
             AppendList(key, session.Skills.OwnedSkillIds);
             AppendList(key, session.Skills.EquippedSkillIds);
+            AppendList(key, session.Skills.DiceFaceSkillIds);
             if (session.Combat != null)
             {
                 key.Append('|').Append(session.Combat.Active)
@@ -1532,17 +1533,44 @@ namespace Conn.UI.Runtime
 
         private static string SkillDetailText(Conn.Core.Skills.SkillDefinition skill)
         {
+            if (!string.IsNullOrWhiteSpace(skill.Description))
+            {
+                return skill.Description;
+            }
+
+            var formula = string.IsNullOrWhiteSpace(skill.Formula) ? string.Empty : $" Formula {skill.Formula}.";
             return skill.EffectKind switch
             {
-                Conn.Core.Skills.SkillEffectKind.Attack => $"Deals attack damage with +{skill.Power} skill power when this die face resolves.",
-                Conn.Core.Skills.SkillEffectKind.Guard => $"Adds guard value with +{skill.Power} power for defensive turns.",
-                Conn.Core.Skills.SkillEffectKind.Heal => $"Restores health with +{skill.Power} healing power.",
-                Conn.Core.Skills.SkillEffectKind.Support => $"Provides a support action with +{skill.Power} power.",
-                Conn.Core.Skills.SkillEffectKind.Buff => $"Applies a beneficial combat status with +{skill.Power} power.",
-                Conn.Core.Skills.SkillEffectKind.Debuff => $"Applies a weakening combat status with +{skill.Power} power.",
-                Conn.Core.Skills.SkillEffectKind.Lifesteal => $"Deals damage and converts part of the result into recovery with +{skill.Power} power.",
-                Conn.Core.Skills.SkillEffectKind.Summon => $"Creates a summoned combat effect with +{skill.Power} power.",
-                _ => $"Resolves with +{skill.Power} power."
+                Conn.Core.Skills.SkillEffectKind.Attack => $"Deals attack damage with +{skill.Power} skill power when this die face resolves.{formula}",
+                Conn.Core.Skills.SkillEffectKind.Guard => $"Adds guard value with +{skill.Power} power for defensive turns.{formula}",
+                Conn.Core.Skills.SkillEffectKind.Heal => $"Restores health with +{skill.Power} healing power.{formula}",
+                Conn.Core.Skills.SkillEffectKind.Support => $"Provides a support action with +{skill.Power} power.{formula}",
+                Conn.Core.Skills.SkillEffectKind.Buff => $"Applies a beneficial combat status with +{skill.Power} power.{formula}",
+                Conn.Core.Skills.SkillEffectKind.Debuff => $"Applies a weakening combat status with +{skill.Power} power.{formula}",
+                Conn.Core.Skills.SkillEffectKind.Lifesteal => $"Deals damage and converts part of the result into recovery with +{skill.Power} power.{formula}",
+                Conn.Core.Skills.SkillEffectKind.Summon => $"Creates a summoned combat effect with +{skill.Power} power.{formula}",
+                _ => $"Resolves with +{skill.Power} power.{formula}"
+            };
+        }
+
+        private static string SkillEffectSummary(Conn.Core.Skills.SkillDefinition skill)
+        {
+            if (skill == null)
+            {
+                return "기본공격";
+            }
+
+            return skill.EffectKind switch
+            {
+                Conn.Core.Skills.SkillEffectKind.Attack => $"공격 +{skill.Power}",
+                Conn.Core.Skills.SkillEffectKind.Guard => $"방어 +{skill.Power}",
+                Conn.Core.Skills.SkillEffectKind.Heal => $"회복 +{skill.Power}",
+                Conn.Core.Skills.SkillEffectKind.Support => $"지원 +{skill.Power}",
+                Conn.Core.Skills.SkillEffectKind.Buff => $"버프 +{skill.Power}",
+                Conn.Core.Skills.SkillEffectKind.Debuff => $"약화 +{skill.Power}",
+                Conn.Core.Skills.SkillEffectKind.Lifesteal => $"흡혈 +{skill.Power}",
+                Conn.Core.Skills.SkillEffectKind.Summon => $"소환 +{skill.Power}",
+                _ => $"효과 +{skill.Power}"
             };
         }
 
@@ -1556,53 +1584,102 @@ namespace Conn.UI.Runtime
 
             var panel = Panel("TownCharacterInventoryPanel");
             BuildPanel(panel, "Character / Inventory", true);
-            AddText(panel, $"Loadout: {session.Equipment.WeaponGrip}  Dice {session.Equipment.DiceCount}  Def {session.Equipment.DefenseBonus}");
-            AddText(panel, $"Weapon: {EquipmentName(session.Equipment.EquippedWeaponId)}");
-            AddText(panel, $"Shield: {EquipmentName(session.Equipment.EquippedShieldId)}");
-            AddText(panel, $"Armor: H {EquipmentName(session.Equipment.EquippedHeadId)} / C {EquipmentName(session.Equipment.EquippedChestId)}");
-            AddText(panel, $"Armor: A {EquipmentName(session.Equipment.EquippedArmsId)} / L {EquipmentName(session.Equipment.EquippedLegsId)} / F {EquipmentName(session.Equipment.EquippedFeetId)}");
-            AddText(panel, "Equipment");
+            session.Skills.EnsureDiceFaceLoadout(session.Equipment.DiceCount);
+
+            AddText(panel, $"Loadout: {session.Equipment.WeaponGrip}  Dice {session.Equipment.DiceCount}  Def {session.Equipment.DefenseBonus}", 14, FontStyle.Bold);
+            var equipmentRow = AddHorizontalGroup(panel, 14f);
+            var bagColumn = AddInventoryColumn(equipmentRow, "Inventory 20");
+            DrawEquipmentBagGrid(bagColumn, session);
+            var equipmentColumn = AddInventoryColumn(equipmentRow, "Equipment");
+            DrawEquipmentSlots(equipmentColumn, session);
+
+            var skillRow = AddHorizontalGroup(panel, 14f);
+            var skillColumn = AddInventoryColumn(skillRow, "Skill Cards");
+            DrawSkillInventoryCards(skillColumn, session);
+            var diceColumn = AddInventoryColumn(skillRow, string.IsNullOrWhiteSpace(selectedSkillId) ? "Dice Loadout" : $"Dice Loadout · {SkillName(selectedSkillId)}");
+            DrawSkillDiceLoadout(diceColumn, session);
+        }
+
+        private RectTransform AddInventoryColumn(Transform parent, string title)
+        {
+            var obj = new GameObject(title);
+            obj.transform.SetParent(ContentParent(parent), false);
+            var image = obj.AddComponent<Image>();
+            image.color = new Color(0.08f, 0.1f, 0.14f, 0.88f);
+            var layout = obj.AddComponent<LayoutElement>();
+            layout.minWidth = 260f;
+            layout.flexibleWidth = 1f;
+            var group = obj.AddComponent<VerticalLayoutGroup>();
+            group.padding = new RectOffset(10, 10, 8, 8);
+            group.spacing = 6f;
+            group.childControlWidth = true;
+            group.childControlHeight = false;
+            group.childForceExpandWidth = true;
+            group.childForceExpandHeight = false;
+            AddTextRaw(obj.transform, title, 15, FontStyle.Bold);
+            return obj.GetComponent<RectTransform>();
+        }
+
+        private void DrawEquipmentBagGrid(Transform parent, GameSessionState session)
+        {
+            var equipmentIds = new List<string>();
             for (var i = 0; i < session.Inventory.ItemIds.Count; i++)
             {
-                var itemId = session.Inventory.ItemIds[i];
-                var item = RuntimeContentDatabase.FindEquipment(itemId);
-                if (item == null)
+                if (RuntimeContentDatabase.FindEquipment(session.Inventory.ItemIds[i]) != null)
                 {
-                    continue;
+                    equipmentIds.Add(session.Inventory.ItemIds[i]);
                 }
-
-                AddText(panel, ChapterOneUxText.EquipmentStatus(session, itemId));
-                AddText(panel, session.Equipment.ComparisonLineFor(itemId));
-                AddButton(panel, $"Equip: {item.DisplayName}", () => EquipmentRuntimeService.TryEquip(session, itemId), !session.Equipment.IsEquipped(itemId));
             }
 
-            AddText(panel, "Consumables");
-            var consumableIds = ConsumableRuntimeService.OwnedConsumableIds(session);
-            if (consumableIds.Length == 0)
+            for (var row = 0; row < 5; row++)
             {
-                AddText(panel, "No consumables");
-            }
-
-            for (var i = 0; i < consumableIds.Length; i++)
-            {
-                var itemId = consumableIds[i];
-                var item = RuntimeContentDatabase.FindConsumable(itemId);
-                if (item == null)
+                var rowGroup = AddHorizontalGroup(parent, 6f);
+                for (var column = 0; column < 4; column++)
                 {
-                    continue;
+                    var index = row * 4 + column;
+                    AddEquipmentBagSlot(rowGroup, session, index < equipmentIds.Count ? equipmentIds[index] : string.Empty, index + 1);
                 }
-
-                AddText(panel, ChapterOneUxText.ConsumableStatus(session, itemId));
-                AddButton(panel, $"Use: {item.DisplayName}", () => ConsumableRuntimeService.Use(session, itemId), session.Player.Hp < session.Player.MaxHp);
             }
+        }
 
-            AddText(panel, "Skill Inventory");
-            if (session.Skills.OwnedSkillIds.Count == 0)
+        private void AddEquipmentBagSlot(Transform parent, GameSessionState session, string itemId, int slotNumber)
+        {
+            var item = RuntimeContentDatabase.FindEquipment(itemId);
+            var equipped = item != null && session.Equipment.IsEquipped(itemId);
+            var label = item == null
+                ? $"{slotNumber:00}\nEmpty"
+                : $"{EquipmentIconFor(item.Kind)}\n{item.DisplayName}\n{(equipped ? "장착중" : "보유")}";
+            var button = AddButton(parent, label, () => EquipmentRuntimeService.TryEquip(session, itemId), item != null && !equipped);
+            var layout = button.GetComponent<LayoutElement>();
+            if (layout != null)
             {
-                AddText(panel, "No owned skills.");
+                layout.minHeight = 74f;
+                layout.preferredHeight = 74f;
             }
+        }
 
-            var renderedSkillIds = new System.Collections.Generic.HashSet<string>();
+        private void DrawEquipmentSlots(Transform parent, GameSessionState session)
+        {
+            AddEquipmentSlot(parent, "머리", session.Equipment.EquippedHeadId);
+            AddEquipmentSlot(parent, "몸통", session.Equipment.EquippedChestId);
+            AddEquipmentSlot(parent, "다리", session.Equipment.EquippedLegsId);
+            AddEquipmentSlot(parent, "손", session.Equipment.EquippedArmsId);
+            AddEquipmentSlot(parent, "무기 1", session.Equipment.EquippedWeaponId);
+            AddEquipmentSlot(parent, "무기 2", session.Equipment.EquippedShieldId, session.Equipment.WeaponGrip == WeaponGrip.TwoHand ? "양손 무기 사용" : string.Empty);
+        }
+
+        private void AddEquipmentSlot(Transform parent, string slotName, string itemId, string fallback = "")
+        {
+            var item = RuntimeContentDatabase.FindEquipment(itemId);
+            var value = item != null
+                ? $"{slotName}: {EquipmentIconFor(item.Kind)} {item.DisplayName}"
+                : $"{slotName}: {(string.IsNullOrWhiteSpace(fallback) ? "Empty" : fallback)}";
+            AddText(parent, value, 14, item != null ? FontStyle.Bold : FontStyle.Normal);
+        }
+
+        private void DrawSkillInventoryCards(Transform parent, GameSessionState session)
+        {
+            var renderedSkillIds = new HashSet<string>();
             for (var i = 0; i < session.Skills.OwnedSkillIds.Count; i++)
             {
                 var skillId = session.Skills.OwnedSkillIds[i];
@@ -1617,38 +1694,67 @@ namespace Conn.UI.Runtime
                     continue;
                 }
 
-                var selected = skillId == selectedSkillId ? "Selected | " : string.Empty;
                 var owned = session.Skills.CountOwned(skillId);
                 var equipped = session.Skills.CountEquipped(skillId);
-                var skillButton = AddButton(
-                    panel,
-                    $"{selected}{skill.DisplayName} | {skill.EffectKind} +{skill.Power} | 보유 {owned} 장착 {equipped}",
-                    () => selectedSkillId = skillId);
-                skillButton.gameObject.AddComponent<SkillFaceDragDrop>().ConfigureDragSource(skillId);
+                var selected = skillId == selectedSkillId;
+                var button = AddButton(
+                    parent,
+                    $"{(selected ? "> " : string.Empty)}{skill.DisplayName}\n{SkillEffectSummary(skill)}\n보유 {owned} · 장착 {equipped}",
+                    () => selectedSkillId = selected ? string.Empty : skillId,
+                    true);
+                button.gameObject.AddComponent<SkillFaceDragDrop>().ConfigureDragSource(skillId);
+                var layout = button.GetComponent<LayoutElement>();
+                if (layout != null)
+                {
+                    layout.minHeight = 72f;
+                }
             }
 
-            AddText(panel, string.IsNullOrWhiteSpace(selectedSkillId) ? "Selected skill: none" : $"Selected skill: {SkillName(selectedSkillId)}");
-            AddText(panel, "Dice Faces");
-            for (var i = 0; i < session.Equipment.DiceCount; i++)
+            if (renderedSkillIds.Count == 0)
             {
-                var faceIndex = i;
-                var skillId = i < session.Skills.EquippedSkillIds.Count ? session.Skills.EquippedSkillIds[i] : string.Empty;
-                var skill = RuntimeContentDatabase.FindSkill(skillId);
-                var faceButton = AddButton(
-                    panel,
-                    $"Face {i + 1}: {(skill != null ? skill.DisplayName : "기본공격")}",
-                    () =>
+                AddText(parent, "No skill cards.");
+            }
+        }
+
+        private void DrawSkillDiceLoadout(Transform parent, GameSessionState session)
+        {
+            for (var dieIndex = 0; dieIndex < session.Equipment.DiceCount; dieIndex++)
+            {
+                AddText(parent, $"R{dieIndex + 1}", 13, FontStyle.Bold);
+                var row = AddHorizontalGroup(parent, 5f);
+                for (var faceIndex = 0; faceIndex < Conn.Core.Skills.SkillInventoryState.FacesPerDie; faceIndex++)
+                {
+                    AddSkillDieFaceSlot(row, session, dieIndex, faceIndex);
+                }
+            }
+        }
+
+        private void AddSkillDieFaceSlot(Transform parent, GameSessionState session, int dieIndex, int faceIndex)
+        {
+            var skillId = session.Skills.SkillIdForDieFace(dieIndex, faceIndex);
+            var skill = RuntimeContentDatabase.FindSkill(skillId);
+            var label = $"{faceIndex + 1}\n{(skill != null ? skill.DisplayName : "기본공격")}\n{(skill != null ? SkillEffectSummary(skill) : "피해 " + (faceIndex + 1))}";
+            var button = AddButton(
+                parent,
+                label,
+                () =>
+                {
+                    if (string.IsNullOrWhiteSpace(selectedSkillId))
                     {
-                        if (string.IsNullOrWhiteSpace(selectedSkillId))
-                        {
-                            SkillRuntimeService.CycleEquippedFace(session, faceIndex);
-                        }
-                        else
-                        {
-                            SkillRuntimeService.EquipSkillToFace(session, selectedSkillId, faceIndex);
-                        }
-                    });
-                faceButton.gameObject.AddComponent<SkillFaceDragDrop>().ConfigureDropTarget(faceIndex);
+                        SkillRuntimeService.ClearDieFace(session, dieIndex, faceIndex);
+                    }
+                    else
+                    {
+                        SkillRuntimeService.EquipSkillToDieFace(session, selectedSkillId, dieIndex, faceIndex);
+                    }
+                },
+                true);
+            button.gameObject.AddComponent<SkillFaceDragDrop>().ConfigureDropTarget(dieIndex, faceIndex);
+            var layout = button.GetComponent<LayoutElement>();
+            if (layout != null)
+            {
+                layout.minHeight = 76f;
+                layout.minWidth = 82f;
             }
         }
 
@@ -1716,40 +1822,45 @@ namespace Conn.UI.Runtime
             }
 
             var enemy = Panel("CombatEnemyStagePanel");
-            BuildPanel(enemy, session.Combat.Enemy.DisplayName, false);
-            AddCombatCgImage(enemy, MonsterCombatSprite(session), 132f);
-            AddText(enemy, $"Enemy: {session.Combat.Enemy.DisplayName}");
-            AddText(enemy, $"HP {session.Combat.Enemy.Hp}/{session.Combat.Enemy.MaxHp}");
-            AddText(enemy, $"Will attack for: {session.Combat.EnemyAttackPower} dmg");
-            AddText(enemy, CombatRuntimeService.DescribeCombatantStatuses(session.Combat.Enemy));
+            BuildCombatStagePanel(enemy);
+            AddCombatCgStageImage(enemy, MonsterCombatSprite(session), new Vector2(0.02f, 0.02f), new Vector2(0.74f, 0.92f));
+            AddCombatVitalsBlock(
+                enemy,
+                session.Combat.Enemy.DisplayName,
+                session.Combat.Enemy.Hp,
+                session.Combat.Enemy.MaxHp,
+                $"Will attack for: {session.Combat.EnemyAttackPower} dmg",
+                new Vector2(0.48f, 0.66f),
+                new Vector2(0.98f, 0.96f),
+                TextAnchor.UpperRight);
 
             var command = Panel("CombatCommandPanel");
             BuildPanel(command, $"Round {session.Combat.Round}", false);
-            AddText(command, session.Combat.LastMessage);
             AddText(
                 command,
                 session.Combat.ReelSpinActive
-                    ? $"SPINNING {session.Combat.DiceFaces.Count} REELS"
-                    : $"READY {session.Combat.SelectedDiceCount}/3");
+                    ? $"릴 회전 중 · {session.Combat.DiceFaces.Count}개"
+                    : $"선택 {session.Combat.SelectedDiceCount}/3");
             var commandRow = AddHorizontalGroup(command, 10f);
             AddButton(commandRow, "STOP", () => CombatRuntimeService.StopReels(session), CombatRuntimeService.CanStopReels(session));
             AddButton(commandRow, "Attack", () => CombatRuntimeService.ResolveSelectedDice(session), !session.Combat.ReelSpinActive);
             AddButton(commandRow, "Flee", () => CombatRuntimeService.Flee(session));
 
             var status = Panel("CombatStatusPanel");
-            BuildPanel(status, "Player", false);
-            AddCombatCgImage(status, PlayerCombatSprite(session), 124f);
-            AddText(status, $"HP {session.Combat.Player.Hp}/{session.Combat.Player.MaxHp}");
-            AddText(status, $"Defense {session.Combat.PlayerDefenseBonus}");
-            AddText(status, CombatRuntimeService.DescribeCombatantStatuses(session.Combat.Player));
+            BuildCombatStagePanel(status);
+            AddCombatVitalsBlock(
+                status,
+                session.Combat.Player.DisplayName,
+                session.Combat.Player.Hp,
+                session.Combat.Player.MaxHp,
+                $"Defense {session.Combat.PlayerDefenseBonus}",
+                new Vector2(0.02f, 0.42f),
+                new Vector2(0.44f, 0.72f),
+                TextAnchor.UpperLeft);
+            AddCombatCgStageImage(status, PlayerCombatSprite(session), new Vector2(0.34f, 0.00f), new Vector2(1.00f, 0.92f));
 
             var dice = Panel("CombatDicePanel");
             BuildPanel(dice, "Skill Roulette", false);
-            AddText(
-                dice,
-                session.Combat.ReelSpinActive
-                    ? "SPIN LOCK  STOP으로 결과를 확정한 뒤 선택한다."
-                    : "멈춘 결과 중 최대 3개를 선택한다.");
             AddText(dice, $"선택 {session.Combat.SelectedDiceCount}/3 · 릴 {session.Combat.DiceFaces.Count}개");
             var reelTray = AddHorizontalGroup(dice, 14f);
             for (var i = 0; i < session.Combat.DiceFaces.Count; i++)
@@ -1910,6 +2021,125 @@ namespace Conn.UI.Runtime
             layout.preferredHeight = minHeight;
         }
 
+        private void BuildCombatStagePanel(RectTransform panel)
+        {
+            if (panel == null)
+            {
+                return;
+            }
+
+            Clear(panel);
+            var image = panel.GetComponent<Image>();
+            if (image == null)
+            {
+                image = panel.gameObject.AddComponent<Image>();
+            }
+
+            image.color = Color.clear;
+            image.raycastTarget = false;
+            var layout = panel.GetComponent<VerticalLayoutGroup>();
+            if (layout != null)
+            {
+                layout.enabled = false;
+            }
+
+            var fitter = panel.GetComponent<ContentSizeFitter>();
+            if (fitter != null)
+            {
+                fitter.enabled = false;
+            }
+        }
+
+        private void AddCombatCgStageImage(RectTransform parent, Sprite sprite, Vector2 anchorMin, Vector2 anchorMax)
+        {
+            if (parent == null || sprite == null)
+            {
+                return;
+            }
+
+            var obj = new GameObject("CombatStageCg");
+            obj.transform.SetParent(parent, false);
+            var rect = obj.AddComponent<RectTransform>();
+            rect.anchorMin = anchorMin;
+            rect.anchorMax = anchorMax;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+            var image = obj.AddComponent<Image>();
+            image.sprite = sprite;
+            image.preserveAspect = true;
+            image.raycastTarget = false;
+            image.color = Color.white;
+        }
+
+        private void AddCombatVitalsBlock(
+            RectTransform parent,
+            string displayName,
+            int hp,
+            int maxHp,
+            string detail,
+            Vector2 anchorMin,
+            Vector2 anchorMax,
+            TextAnchor alignment)
+        {
+            if (parent == null)
+            {
+                return;
+            }
+
+            var block = new GameObject("CombatVitals");
+            block.transform.SetParent(parent, false);
+            var rect = block.AddComponent<RectTransform>();
+            rect.anchorMin = anchorMin;
+            rect.anchorMax = anchorMax;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+
+            var background = block.AddComponent<Image>();
+            background.color = new Color(0.02f, 0.02f, 0.02f, 0.36f);
+            background.raycastTarget = false;
+
+            var group = block.AddComponent<VerticalLayoutGroup>();
+            group.padding = new RectOffset(12, 12, 8, 8);
+            group.spacing = 4f;
+            group.childControlWidth = true;
+            group.childControlHeight = false;
+            group.childForceExpandWidth = true;
+            group.childForceExpandHeight = false;
+            group.childAlignment = alignment;
+
+            var nameText = AddTextRaw(block.transform, displayName, 22, FontStyle.Bold);
+            nameText.alignment = alignment;
+            var hpText = AddTextRaw(block.transform, $"{hp}/{maxHp}", 30, FontStyle.Bold);
+            hpText.alignment = alignment;
+            AddCombatHpBar(block.transform, hp, maxHp);
+            var detailText = AddTextRaw(block.transform, detail, 16, FontStyle.Bold);
+            detailText.alignment = alignment;
+        }
+
+        private void AddCombatHpBar(Transform parent, int hp, int maxHp)
+        {
+            var frame = new GameObject("HpBar");
+            frame.transform.SetParent(parent, false);
+            var frameImage = frame.AddComponent<Image>();
+            frameImage.color = new Color(0.08f, 0.04f, 0.03f, 0.92f);
+            frameImage.raycastTarget = false;
+            var frameLayout = frame.AddComponent<LayoutElement>();
+            frameLayout.minHeight = 26f;
+            frameLayout.preferredHeight = 26f;
+
+            var fill = new GameObject("Fill");
+            fill.transform.SetParent(frame.transform, false);
+            var fillRect = fill.AddComponent<RectTransform>();
+            var ratio = maxHp > 0 ? Mathf.Clamp01(hp / (float)maxHp) : 0f;
+            fillRect.anchorMin = Vector2.zero;
+            fillRect.anchorMax = new Vector2(ratio, 1f);
+            fillRect.offsetMin = new Vector2(4f, 4f);
+            fillRect.offsetMax = new Vector2(-4f, -4f);
+            var fillImage = fill.AddComponent<Image>();
+            fillImage.color = new Color(0.68f, 0.11f, 0.04f, 0.96f);
+            fillImage.raycastTarget = false;
+        }
+
         private InputField AddInputField(Transform parent, string value, UnityEngine.Events.UnityAction<string> onChanged)
         {
             var obj = new GameObject("InputField");
@@ -2028,6 +2258,16 @@ namespace Conn.UI.Runtime
             vertical.childForceExpandHeight = false;
 
             AddTextRaw(obj.transform, $"R{face.Index + 1}", 18, FontStyle.Bold);
+            AddTextRaw(
+                obj.transform,
+                face.ReelStopped ? face.DisplayName : "회전 중",
+                13,
+                FontStyle.Bold);
+            AddTextRaw(
+                obj.transform,
+                face.ReelStopped ? CombatFaceEffectText(face) : "결과 대기",
+                11,
+                FontStyle.Normal);
             if (face.IsCoolingDown)
             {
                 AddTextRaw(obj.transform, $"Cooldown {face.Cooldown}", 12, FontStyle.Bold);
@@ -2093,14 +2333,27 @@ namespace Conn.UI.Runtime
                 var animator = window.AddComponent<CombatReelSpinAnimator>();
                 animator.Configure(face.Index, face.ReelSkillIds, valueTexts, skillTexts);
             }
+        }
 
-            AddTextRaw(
-                obj.transform,
-                face.ReelStopped
-                    ? $"{face.RolledValue} · {face.DisplayName} · {face.EffectKind} +{face.Power}"
-                    : "STOP으로 결과 고정",
-                12,
-                FontStyle.Normal);
+        private static string CombatFaceEffectText(Conn.Core.Combat.DiceFaceState face)
+        {
+            if (face == null)
+            {
+                return string.Empty;
+            }
+
+            var amount = face.RolledValue + face.Power;
+            return face.EffectKind switch
+            {
+                Conn.Core.Skills.SkillEffectKind.Guard => $"방어 {amount}",
+                Conn.Core.Skills.SkillEffectKind.Heal => $"회복 {amount}",
+                Conn.Core.Skills.SkillEffectKind.Support => $"지원 {amount}",
+                Conn.Core.Skills.SkillEffectKind.Buff => $"버프 {amount}",
+                Conn.Core.Skills.SkillEffectKind.Debuff => $"약화 {amount}",
+                Conn.Core.Skills.SkillEffectKind.Lifesteal => $"흡혈 {amount}",
+                Conn.Core.Skills.SkillEffectKind.Summon => $"소환 {amount}",
+                _ => $"피해 {amount}"
+            };
         }
 
         private static int ResolveVisibleReelCenterIndex(Conn.Core.Combat.DiceFaceState face)

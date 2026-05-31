@@ -10,6 +10,7 @@ namespace Conn.Core.Skills
 
         public List<string> OwnedSkillIds = new List<string>();
         public List<string> EquippedSkillIds = new List<string>();
+        public List<string> DiceFaceSkillIds = new List<string>();
         public int NextEditFaceIndex;
 
         public int OwnedCount => OwnedSkillIds.Count;
@@ -42,9 +43,10 @@ namespace Conn.Core.Skills
         public int CountEquipped(string skillId)
         {
             var count = 0;
-            for (var i = 0; i < EquippedSkillIds.Count; i++)
+            var equipped = HasDiceFaceLoadout ? DiceFaceSkillIds : EquippedSkillIds;
+            for (var i = 0; i < equipped.Count; i++)
             {
-                if (EquippedSkillIds[i] == skillId)
+                if (equipped[i] == skillId)
                 {
                     count++;
                 }
@@ -78,23 +80,21 @@ namespace Conn.Core.Skills
                 return;
             }
 
-            while (EquippedSkillIds.Count < diceCount)
+            EnsureDiceFaceLoadout(diceCount);
+            for (var i = 0; i < DiceFaceSkillIds.Count; i++)
             {
-                EquippedSkillIds.Add(string.Empty);
-            }
-
-            for (var i = 0; i < diceCount; i++)
-            {
-                if (string.IsNullOrWhiteSpace(EquippedSkillIds[i]))
+                if (string.IsNullOrWhiteSpace(DiceFaceSkillIds[i]))
                 {
-                    EquippedSkillIds[i] = skillId;
+                    DiceFaceSkillIds[i] = skillId;
+                    SyncLegacyEquippedFaces(diceCount);
                     return;
                 }
             }
 
-            if (diceCount > 0)
+            if (DiceFaceSkillIds.Count > 0)
             {
-                EquippedSkillIds[0] = skillId;
+                DiceFaceSkillIds[0] = skillId;
+                SyncLegacyEquippedFaces(diceCount);
             }
         }
 
@@ -116,10 +116,8 @@ namespace Conn.Core.Skills
 
         public void ResizeEquippedFaces(int diceCount)
         {
-            while (EquippedSkillIds.Count > diceCount)
-            {
-                EquippedSkillIds.RemoveAt(EquippedSkillIds.Count - 1);
-            }
+            ResizeDiceFaceLoadout(diceCount);
+            SyncLegacyEquippedFaces(diceCount);
 
             if (diceCount <= 0)
             {
@@ -135,7 +133,114 @@ namespace Conn.Core.Skills
         {
             OwnedSkillIds.Clear();
             EquippedSkillIds.Clear();
+            DiceFaceSkillIds.Clear();
             NextEditFaceIndex = 0;
+        }
+
+        public const int FacesPerDie = 6;
+
+        public bool HasDiceFaceLoadout
+        {
+            get
+            {
+                for (var i = 0; i < DiceFaceSkillIds.Count; i++)
+                {
+                    if (!string.IsNullOrWhiteSpace(DiceFaceSkillIds[i]))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
+
+        public void EnsureDiceFaceLoadout(int diceCount)
+        {
+            var targetCount = Math.Max(0, diceCount) * FacesPerDie;
+            while (DiceFaceSkillIds.Count < targetCount)
+            {
+                DiceFaceSkillIds.Add(string.Empty);
+            }
+        }
+
+        public void ResizeDiceFaceLoadout(int diceCount)
+        {
+            EnsureDiceFaceLoadout(diceCount);
+            var targetCount = Math.Max(0, diceCount) * FacesPerDie;
+            while (DiceFaceSkillIds.Count > targetCount)
+            {
+                DiceFaceSkillIds.RemoveAt(DiceFaceSkillIds.Count - 1);
+            }
+        }
+
+        public string SkillIdForDieFace(int dieIndex, int faceIndex)
+        {
+            var index = DiceFaceIndex(dieIndex, faceIndex);
+            return index >= 0 && index < DiceFaceSkillIds.Count ? DiceFaceSkillIds[index] : string.Empty;
+        }
+
+        public bool SetSkillForDieFace(string skillId, int dieIndex, int faceIndex, int diceCount)
+        {
+            if (dieIndex < 0 || dieIndex >= diceCount || faceIndex < 0 || faceIndex >= FacesPerDie)
+            {
+                return false;
+            }
+
+            EnsureDiceFaceLoadout(diceCount);
+            var index = DiceFaceIndex(dieIndex, faceIndex);
+            DiceFaceSkillIds[index] = skillId ?? string.Empty;
+            SyncLegacyEquippedFaces(diceCount);
+            return true;
+        }
+
+        public int EquippedCountExcludingDieFace(string skillId, int excludedDieIndex, int excludedFaceIndex)
+        {
+            var excludedIndex = DiceFaceIndex(excludedDieIndex, excludedFaceIndex);
+            var count = 0;
+            for (var i = 0; i < DiceFaceSkillIds.Count; i++)
+            {
+                if (i != excludedIndex && DiceFaceSkillIds[i] == skillId)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        private static int DiceFaceIndex(int dieIndex, int faceIndex)
+        {
+            return dieIndex < 0 || faceIndex < 0 ? -1 : dieIndex * FacesPerDie + faceIndex;
+        }
+
+        private void SyncLegacyEquippedFaces(int diceCount)
+        {
+            while (EquippedSkillIds.Count < diceCount)
+            {
+                EquippedSkillIds.Add(string.Empty);
+            }
+
+            while (EquippedSkillIds.Count > diceCount)
+            {
+                EquippedSkillIds.RemoveAt(EquippedSkillIds.Count - 1);
+            }
+
+            for (var dieIndex = 0; dieIndex < diceCount; dieIndex++)
+            {
+                var firstSkillId = string.Empty;
+                for (var faceIndex = 0; faceIndex < FacesPerDie; faceIndex++)
+                {
+                    var skillId = SkillIdForDieFace(dieIndex, faceIndex);
+                    if (!string.IsNullOrWhiteSpace(skillId))
+                    {
+                        firstSkillId = skillId;
+                        break;
+                    }
+                }
+
+                EquippedSkillIds[dieIndex] = firstSkillId;
+            }
         }
 
         private static SkillDefinition ResolveSkill(string skillId)

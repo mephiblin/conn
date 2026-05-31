@@ -84,6 +84,11 @@ namespace Conn.Core.Content
         public string TargetMode;
         public string Formula;
         public string SpecialEffectId;
+        public int Cooldown;
+        public int Duration;
+        public string Status;
+        public string[] Tags = Array.Empty<string>();
+        public string Description;
         public int BuyPrice;
         public int SellPrice;
         public int Power;

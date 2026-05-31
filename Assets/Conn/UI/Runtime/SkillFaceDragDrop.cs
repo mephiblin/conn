@@ -10,6 +10,7 @@ namespace Conn.UI.Runtime
         private static string draggedSkillId = string.Empty;
 
         [SerializeField] private string skillId = string.Empty;
+        [SerializeField] private int dieIndex = -1;
         [SerializeField] private int faceIndex = -1;
         [SerializeField] private bool dragSource;
         [SerializeField] private bool dropTarget;
@@ -24,7 +25,13 @@ namespace Conn.UI.Runtime
 
         public void ConfigureDropTarget(int targetFaceIndex)
         {
+            ConfigureDropTarget(0, targetFaceIndex);
+        }
+
+        public void ConfigureDropTarget(int targetDieIndex, int targetFaceIndex)
+        {
             skillId = string.Empty;
+            dieIndex = targetDieIndex;
             faceIndex = targetFaceIndex;
             dragSource = false;
             dropTarget = true;
@@ -54,7 +61,7 @@ namespace Conn.UI.Runtime
                 return;
             }
 
-            SkillRuntimeService.EquipSkillToFace(GameSession.Instance.State, draggedSkillId, faceIndex);
+            SkillRuntimeService.EquipSkillToDieFace(GameSession.Instance.State, draggedSkillId, dieIndex, faceIndex);
             draggedSkillId = string.Empty;
         }
     }

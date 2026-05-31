@@ -578,6 +578,18 @@ namespace Conn.Runtime.Combat
 
         private static string[] BuildReelSkillPool(GameSessionState session, int dieIndex)
         {
+            if (session?.Skills != null)
+            {
+                session.Skills.EnsureDiceFaceLoadout(session.Combat.PlayerDiceCount);
+                var loadout = new string[SkillInventoryState.FacesPerDie];
+                for (var faceIndex = 0; faceIndex < loadout.Length; faceIndex++)
+                {
+                    loadout[faceIndex] = session.Skills.SkillIdForDieFace(dieIndex, faceIndex);
+                }
+
+                return loadout;
+            }
+
             var pool = new System.Collections.Generic.List<string>();
             var owned = session != null && session.Skills != null
                 ? session.Skills.OwnedSkillIds
@@ -639,10 +651,10 @@ namespace Conn.Runtime.Combat
         {
             face.ReelStopped = true;
             face.Selected = false;
-            face.RolledValue = Random.Range(1, 7);
             face.ReelStopIndex = face.ReelSkillIds != null && face.ReelSkillIds.Length > 0
                 ? Random.Range(0, face.ReelSkillIds.Length)
                 : 0;
+            face.RolledValue = face.ReelStopIndex + 1;
             var skillId = face.ReelSkillIds != null && face.ReelSkillIds.Length > 0
                 ? face.ReelSkillIds[face.ReelStopIndex]
                 : string.Empty;
@@ -783,7 +795,10 @@ namespace Conn.Runtime.Combat
         private static string ResultCooldownKey(DiceFaceState face)
         {
             var skillId = string.IsNullOrWhiteSpace(face.SkillId) ? "basic_attack" : face.SkillId;
-            return $"{face.RolledValue}:{skillId}";
+            var faceIndex = face.ReelStopIndex >= 0 && face.ReelStopIndex < SkillInventoryState.FacesPerDie
+                ? face.ReelStopIndex
+                : Mathf.Clamp(face.RolledValue - 1, 0, SkillInventoryState.FacesPerDie - 1);
+            return $"{face.Index}:{faceIndex}:{skillId}";
         }
 
         private static System.Collections.Generic.List<DiceResultCooldownState> EnsureResultCooldowns(GameSessionState session)
