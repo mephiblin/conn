@@ -101,7 +101,7 @@ namespace Conn.MapGenV2.Editor
                 case "mapgenv2.regenerateMockup":
                     return korean ? "같은 시드 재생성" : "Regenerate Same Seed";
                 case "mapgenv2.acceptMockup":
-                    return korean ? "드래프트 저장" : "Save Draft";
+                    return korean ? "현재 맵 저장" : "Save Current Draft";
                 case "mapgenv2.materializeToScene":
                     return korean ? "씬 생성" : "Materialize To Scene";
                 case "mapgenv2.rematerializeToScene":
@@ -185,7 +185,7 @@ namespace Conn.MapGenV2.Editor
         private const string LinkedAssetsFoldoutKey = "Conn.MapGenV2.Window.LinkedAssetsFoldout";
         private const string MockupActionsFoldoutKey = "Conn.MapGenV2.Window.MockupActionsFoldout";
         private const string MockupPreviewFoldoutKey = "Conn.MapGenV2.Window.MockupPreviewFoldout";
-        private const string DetailsFoldoutKey = "Conn.MapGenV2.Window.DetailsFoldout";
+        private const string DetailsFoldoutKey = "Conn.MapGenV2.Window.DetailsFoldoutV2";
         private const string SceneOutputFoldoutKey = "Conn.MapGenV2.Window.SceneOutputFoldout";
         private const string PrimaryActionImpactFoldoutKey = "Conn.MapGenV2.Window.PrimaryActionImpactFoldout";
         private const string RuntimeBakeFoldoutKey = "Conn.MapGenV2.Window.RuntimeBakeFoldout";
@@ -231,7 +231,7 @@ namespace Conn.MapGenV2.Editor
         private bool showLinkedAssetsFoldout = false;
         private bool showMockupActionsFoldout = true;
         private bool showMockupPreviewFoldout = true;
-        private bool showDetailsFoldout = true;
+        private bool showDetailsFoldout;
         private bool showSceneOutputFoldout = true;
         private bool showPrimaryActionImpactFoldout;
         private bool showRuntimeBakeFoldout = true;
@@ -335,7 +335,7 @@ namespace Conn.MapGenV2.Editor
 
         public static string BuildInspectorLayoutSummary()
         {
-            return "Draft-centered authoring layout: draft file create/import/save, map prefab slots, seed controls, preview/drawing, output, diagnostics, and advanced utility sections are stacked vertically with foldout sections and responsive wrapping for narrow inspector widths.";
+            return "Draft-centered authoring layout with a minimal default flow: draft file create/import, map prefab slots, seed controls, preview/drawing, save current draft, and output are stacked vertically in production order; diagnostics and recovery/compatibility tools stay collapsed in advanced foldouts with responsive wrapping for narrow inspector widths.";
         }
 
         public static string BuildEditorTechnologySummary()
@@ -345,7 +345,7 @@ namespace Conn.MapGenV2.Editor
 
         public static string BuildInlineHelpCoverageSummary()
         {
-            return "Inline help/tooltips cover the draft file, map prefab slots, seed controls, preview drawing, connectors, post-process, prop placement, draft output settings, bake settings, materialization output, and legacy compatibility details.";
+            return "Inline help/tooltips cover the draft file, map prefab slots, seed controls, preview drawing, connectors, post-process, prop placement, save/output readiness, bake settings, materialization output, and recovery tools.";
         }
 
         public static string BuildKoreanCoverageSummary()
@@ -358,22 +358,22 @@ namespace Conn.MapGenV2.Editor
             DrawFoldoutSection("드래프트 파일 / Draft File", ref showSetupAssetsFoldout, DrawDraftFileSection);
             DrawFoldoutSection("맵 에셋 / Map Assets", ref showMapAssetsFoldout, DrawMapAssetSection);
             DrawFoldoutSection("시드 / Seed", ref showMockupActionsFoldout, () => DrawSeedSection(workflow));
-            DrawFoldoutSection("프리뷰 & 드로잉 / Preview & Drawing", ref showMockupPreviewFoldout, DrawDraftSummaryAndPreview);
+            DrawFoldoutSection("프리뷰 & 드로잉 / Preview & Drawing", ref showMockupPreviewFoldout, () => DrawDraftSummaryAndPreview(workflow));
             DrawFoldoutSection("출력 / Output", ref showSceneOutputFoldout, () =>
             {
                 DrawSceneOutputControls(workflow);
                 DrawRuntimeBakeControls(workflow);
             });
-            DrawFoldoutSection("상세/진단 / Details & Diagnostics", ref showDetailsFoldout, () =>
+            DrawFoldoutSection("진단/복구 / Diagnostics & Recovery", ref showDetailsFoldout, () =>
             {
                 DrawNextAction(workflow);
                 DrawProfileValidation();
                 DrawDiagnosticsPanel();
-            });
-            DrawFoldoutSection("레거시 호환 / Legacy Compatibility", ref showOutputPathsFoldout, () =>
-            {
-                DrawLegacyReferenceFields();
-                DrawLinkedAssetShortcuts();
+                DrawFoldoutSection("복구/호환 도구 / Recovery & Compatibility Tools", ref showOutputPathsFoldout, () =>
+                {
+                    DrawLegacyReferenceFields();
+                    DrawLinkedAssetShortcuts();
+                });
             });
         }
 
@@ -435,15 +435,7 @@ namespace Conn.MapGenV2.Editor
                     }
                 }
 
-                using (new EditorGUI.DisabledScope(draft == null))
-                {
-                    if (GUILayout.Button("드래프트 저장 / Save Draft"))
-                    {
-                        SaveCurrentDraft();
-                    }
-                }
-
-                DrawFoldoutSection("레거시 설정 유틸리티 / Legacy Setup Utilities", ref showSetupUtilitiesFoldout, () =>
+                DrawFoldoutSection("폴더/정리 유틸리티 / Setup Utilities", ref showSetupUtilitiesFoldout, () =>
                 {
                     if (GUILayout.Button(MapGenV2EditorText.Get("mapgenv2.createDefaultFolders")))
                     {
@@ -483,12 +475,9 @@ namespace Conn.MapGenV2.Editor
                 DrawPrefabSlot(MapGenDraftPrefabSlot.Blocker);
                 DrawPrefabSlot(MapGenDraftPrefabSlot.Prop);
 
-                using (new EditorGUI.DisabledScope(moduleSet == null))
+                if (GUILayout.Button("에셋 매핑 새로고침 / Refresh Asset Mapping"))
                 {
-                    if (GUILayout.Button("레거시 기본값에서 빈 슬롯 채우기 / Fill Empty Slots From Legacy Defaults"))
-                    {
-                        RefreshDraftAssets(moduleSet);
-                    }
+                    RefreshDraftAssets(moduleSet);
                 }
             }
         }
@@ -812,18 +801,22 @@ namespace Conn.MapGenV2.Editor
 
         private void RefreshDraftAssets(MapGenModuleSetAsset moduleSet)
         {
-            if (draft == null || moduleSet == null)
+            if (draft == null)
             {
                 return;
             }
 
             EnsureDraftPrefabPalette(moduleSet);
             Undo.RecordObject(draft, "Refresh MapGen Draft Asset Mapping");
-            FillEmptyDraftPrefabSlotsFromModuleSet(moduleSet);
+            if (moduleSet != null)
+            {
+                FillEmptyDraftPrefabSlotsFromModuleSet(moduleSet);
+            }
+
             SyncDraftModuleDataFromPalette();
             EditorUtility.SetDirty(draft);
             AssetDatabase.SaveAssets();
-            SetLastOperationResult($"Empty draft prefab slots filled without changing seed {draft?.Seed.ToString() ?? "-"}.");
+            SetLastOperationResult($"Draft asset mapping refreshed without changing seed {draft?.Seed.ToString() ?? "-"}.");
         }
 
         private void SyncDraftModuleDataFromPalette()
@@ -968,7 +961,7 @@ namespace Conn.MapGenV2.Editor
 
         public static string BuildPrimaryMockupUxSummary()
         {
-            return "Primary mockup UX: MapGenV2 window supports Generate, Post-Process, Save Draft, selected-region inspect/edit, "
+            return "Primary mockup UX: MapGenV2 window supports Generate, Post-Process, Save Current Draft, selected-region inspect/edit, "
                 + "prop/post overlays, Materialize, Bake, and clear/frame/select output without requiring Scene View. "
                 + "Scene View remains a secondary inspection/materialization surface.";
         }
@@ -1161,7 +1154,7 @@ namespace Conn.MapGenV2.Editor
         private MapGenAuthoringValidationReport BuildDiagnosticsReport()
         {
             var report = new MapGenAuthoringValidationReport();
-            if (profile != null)
+            if (profile != null && draft == null)
             {
                 report.AddRange(profile.Validate(), profile);
                 report.AddRange(MapGenProfileGraphValidator.Validate(profile), profile);
@@ -1240,6 +1233,13 @@ namespace Conn.MapGenV2.Editor
             }
         }
 
+        private void DrawOutputSummary()
+        {
+            var root = ResolveMaterializedRoot();
+            EditorGUILayout.LabelField("씬 출력 루트 / Scene Root", root != null ? root.name : "(none)");
+            EditorGUILayout.LabelField("베이크 에셋 / Baked Asset", BuildExpectedBakedAssetPath());
+        }
+
         private void DrawLinkedAssetShortcuts()
         {
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
@@ -1288,8 +1288,8 @@ namespace Conn.MapGenV2.Editor
 
         public static string BuildLinkedAssetShortcutSummary()
         {
-            return "연결 에셋 작업: Draft, scene root, baked asset은 바로 위치 표시(Ping), 선택(Select), 열기(Open), 생성(Create), 복제(Duplicate), 검증(Validate), 누락 생성(Fix/Create Missing)을 제공합니다. "
-                + "Profile/Rule/Style/Module 링크는 내부 에셋 링크 foldout에 숨겨진 legacy compatibility 도구입니다.";
+            return "복구용 연결 에셋 작업: Draft, scene root, baked asset은 위치 표시(Ping), 선택(Select), 열기(Open), 생성(Create), 복제(Duplicate), 검증(Validate), 누락 생성(Fix/Create Missing)을 제공합니다. "
+                + "Profile/Rule/Style/Module 링크는 일반 제작 흐름 밖의 recovery compatibility 도구입니다.";
         }
 
         public static string BuildUndoCoverageSummary()
@@ -1458,29 +1458,11 @@ namespace Conn.MapGenV2.Editor
         {
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
-                DrawOutputPaths();
-                EditorGUI.BeginChangeCheck();
-                DrawOverwritePolicyField();
-                var overwriteMode = GetOverwriteMode();
-                if (overwriteMode == MapGenV2OutputOverwriteMode.UpdateSelected)
+                DrawOutputSummary();
+                if (!workflow.CanMaterialize)
                 {
-                    selectedMaterializedRoot = (GameObject)EditorGUILayout.ObjectField("Materialized Root", selectedMaterializedRoot, typeof(GameObject), true);
+                    DrawWrappingHelpBox($"씬 생성 불가 / Materialize unavailable: {workflow.MaterializeReason}", MessageType.Info);
                 }
-
-                if (EditorGUI.EndChangeCheck())
-                {
-                    SaveWindowState();
-                }
-
-                if (overwriteMode == MapGenV2OutputOverwriteMode.UpdateSelected && selectedMaterializedRoot == null)
-                {
-                    DrawWrappingHelpBox("UpdateSelected는 Materialized Root가 필요합니다. 기존 출력을 갱신하려면 root를 지정하거나 아래 유틸리티에서 Find Previous Root를 사용하세요.", MessageType.Info);
-                }
-
-            if (!workflow.CanMaterialize)
-            {
-                DrawWrappingHelpBox($"씬 생성 불가 / Materialize unavailable: {workflow.MaterializeReason}", MessageType.Info);
-            }
 
                 using (new EditorGUI.DisabledScope(!workflow.CanMaterialize))
                 {
@@ -1493,20 +1475,32 @@ namespace Conn.MapGenV2.Editor
                     }
                 }
 
-                DrawFoldoutSection("씬 출력 유틸리티 / Scene Output Utilities", ref showSceneOutputUtilitiesFoldout, () =>
+                DrawFoldoutSection("고급 출력 설정 / Advanced Output Settings", ref showSceneOutputUtilitiesFoldout, () =>
                 {
-                    DrawWrappingHelpBox(BuildOverwritePolicyHelp(GetOverwriteMode()), MessageType.Info);
-                    if (overwriteMode != MapGenV2OutputOverwriteMode.UpdateSelected)
+                    DrawOutputPaths();
+                    EditorGUI.BeginChangeCheck();
+                    DrawOverwritePolicyField();
+                    var overwriteMode = GetOverwriteMode();
+                    if (EditorGUI.EndChangeCheck())
                     {
-                        EditorGUI.BeginChangeCheck();
-                        selectedMaterializedRoot = (GameObject)EditorGUILayout.ObjectField("Materialized Root", selectedMaterializedRoot, typeof(GameObject), true);
-                        if (EditorGUI.EndChangeCheck())
-                        {
-                            SaveWindowState();
-                        }
+                        SaveWindowState();
+                    }
+
+                    DrawWrappingHelpBox(BuildOverwritePolicyHelp(overwriteMode), MessageType.Info);
+                    EditorGUI.BeginChangeCheck();
+                    selectedMaterializedRoot = (GameObject)EditorGUILayout.ObjectField("Materialized Root", selectedMaterializedRoot, typeof(GameObject), true);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        SaveWindowState();
+                    }
+
+                    if (overwriteMode == MapGenV2OutputOverwriteMode.UpdateSelected && selectedMaterializedRoot == null)
+                    {
+                        DrawWrappingHelpBox("UpdateSelected는 Materialized Root가 필요합니다. 기존 출력을 갱신하려면 root를 지정하거나 아래 Find Previous Root를 사용하세요.", MessageType.Info);
                     }
 
                     DrawMaterializedPrefabFolderField();
+                    DrawBakedAssetFolderField();
 
                     if (GUILayout.Button("Find Previous Root"))
                     {
@@ -1551,11 +1545,10 @@ namespace Conn.MapGenV2.Editor
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
                 EditorGUILayout.LabelField("베이크 에셋 / Baked Asset", BuildExpectedBakedAssetPath());
-                DrawBakedAssetFolderField();
-            if (!workflow.CanBakeRuntime)
-            {
-                DrawWrappingHelpBox($"런타임 베이크 불가 / Bake unavailable: {workflow.BakeRuntimeReason}", MessageType.Info);
-            }
+                if (!workflow.CanBakeRuntime)
+                {
+                    DrawWrappingHelpBox($"런타임 베이크 불가 / Bake unavailable: {workflow.BakeRuntimeReason}", MessageType.Info);
+                }
 
                 using (new EditorGUI.DisabledScope(!workflow.CanBakeRuntime))
                 {
@@ -2083,7 +2076,7 @@ namespace Conn.MapGenV2.Editor
             return string.IsNullOrEmpty(path) ? null : AssetDatabase.LoadAssetAtPath<T>(path);
         }
 
-        private void DrawDraftSummaryAndPreview()
+        private void DrawDraftSummaryAndPreview(MapGenV2WorkflowStatus workflow)
         {
             if (draft == null)
             {
@@ -2127,6 +2120,27 @@ namespace Conn.MapGenV2.Editor
             DrawDrawingToolbar();
             DrawMockupPreview(previewData);
             DrawCellDetails(previewData);
+            DrawSaveDraftAction(workflow);
+        }
+
+        private void DrawSaveDraftAction(MapGenV2WorkflowStatus workflow)
+        {
+            EditorGUILayout.Space(4f);
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                using (new EditorGUI.DisabledScope(!workflow.CanAccept))
+                {
+                    if (GUILayout.Button("현재 맵 저장 / Save Current Draft"))
+                    {
+                        SaveCurrentDraft();
+                    }
+                }
+
+                if (!workflow.CanAccept)
+                {
+                    DrawWrappingHelpBox($"저장 불가 / Save unavailable: {workflow.AcceptReason}", MessageType.Info);
+                }
+            }
         }
 
         private void DrawDrawingToolbar()
@@ -2537,7 +2551,7 @@ namespace Conn.MapGenV2.Editor
             selectedRegionId = nextCell.RegionId;
             EditorUtility.SetDirty(draft);
             SaveWindowState();
-            SetLastOperationResult($"Painted {state} at {coord.x},{coord.y}. Save Draft when ready.");
+            SetLastOperationResult($"Painted {state} at {coord.x},{coord.y}. Save Current Draft when ready.");
         }
 
         private static MapGenCellState StateForPaintTool(MapGenDraftPaintTool tool)

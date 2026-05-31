@@ -125,9 +125,9 @@ namespace Conn.Tests.EditMode
         {
             var result = MapGenV2Window.AppendNextStep(
                 "Generate From Seed complete.",
-                "Inspect or draw in the preview, then Save Draft.");
+                "Inspect or draw in the preview, then Save Current Draft.");
 
-            Assert.That(result, Is.EqualTo("Generate From Seed complete. Next: Inspect or draw in the preview, then Save Draft."));
+            Assert.That(result, Is.EqualTo("Generate From Seed complete. Next: Inspect or draw in the preview, then Save Current Draft."));
         }
 
         [Test]
@@ -152,13 +152,15 @@ namespace Conn.Tests.EditMode
             var help = MapGenV2Window.BuildInlineHelpCoverageSummary();
 
             Assert.That(summary, Does.Contain("Draft-centered authoring layout"));
-            Assert.That(summary, Does.Contain("draft file create/import/save"));
+            Assert.That(summary, Does.Contain("draft file create/import"));
             Assert.That(summary, Does.Contain("map prefab slots"));
             Assert.That(summary, Does.Contain("seed controls"));
             Assert.That(summary, Does.Contain("preview/drawing"));
+            Assert.That(summary, Does.Contain("save current draft"));
             Assert.That(summary, Does.Contain("output"));
             Assert.That(summary, Does.Contain("stacked vertically"));
-            Assert.That(summary, Does.Contain("foldout sections"));
+            Assert.That(summary, Does.Contain("production order"));
+            Assert.That(summary, Does.Contain("advanced foldouts"));
             Assert.That(summary, Does.Contain("responsive wrapping"));
             Assert.That(technology, Does.Contain("new Scene View overlay uses UI Toolkit"));
             Assert.That(technology, Does.Contain("existing MapGenV2 window and inspectors stay IMGUI"));
@@ -170,9 +172,9 @@ namespace Conn.Tests.EditMode
             Assert.That(help, Does.Contain("connectors"));
             Assert.That(help, Does.Contain("post-process"));
             Assert.That(help, Does.Contain("prop placement"));
-            Assert.That(help, Does.Contain("draft output settings"));
+            Assert.That(help, Does.Contain("save/output readiness"));
             Assert.That(help, Does.Contain("bake settings"));
-            Assert.That(help, Does.Contain("legacy compatibility"));
+            Assert.That(help, Does.Contain("recovery tools"));
         }
 
         [Test]
@@ -274,13 +276,13 @@ namespace Conn.Tests.EditMode
             var explanation = MapGenV2Window.BuildPrimaryActionExplanation(
                 "Materialize To Scene",
                 false,
-                "Save Draft first.",
+                "Save Current Draft first.",
                 "instantiates prefab or placeholder modules",
                 "Scene root MapGenV2_profile_2001");
 
             Assert.That(explanation, Does.Contain("Materialize To Scene"));
             Assert.That(explanation, Does.Contain("Disabled"));
-            Assert.That(explanation, Does.Contain("Save Draft first."));
+            Assert.That(explanation, Does.Contain("Save Current Draft first."));
             Assert.That(explanation, Does.Contain("Change: instantiates prefab or placeholder modules"));
             Assert.That(explanation, Does.Contain("Output: Scene root MapGenV2_profile_2001"));
         }
@@ -1941,7 +1943,7 @@ namespace Conn.Tests.EditMode
                 var generated = MapGenV2WorkflowStatus.From(profile, draft);
                 Assert.That(generated.CanAccept, Is.True);
                 Assert.That(generated.CanMaterialize, Is.False);
-                Assert.That(generated.MaterializeReason, Is.EqualTo("Save Draft first."));
+                Assert.That(generated.MaterializeReason, Is.EqualTo("Save Current Draft first."));
                 Assert.That(draft.IsGeneratedSignatureCurrent, Is.True);
 
                 profile.ProfileId = "workflow_profile_changed";
@@ -1964,7 +1966,7 @@ namespace Conn.Tests.EditMode
                 draft.Cells[0].State = MapGenCellState.Blocked;
                 var stale = MapGenV2WorkflowStatus.From(profile, draft);
                 Assert.That(stale.CanMaterialize, Is.False);
-                Assert.That(stale.MaterializeReason, Is.EqualTo("The saved draft is stale. Save the current draft."));
+                Assert.That(stale.MaterializeReason, Is.EqualTo("The saved draft is stale. Save Current Draft."));
             }
             finally
             {

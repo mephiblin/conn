@@ -94,7 +94,7 @@ namespace Conn.MapGenV2.Authoring
                 ? "Run Post-Process can update generated draft cells."
                 : BuildGeneratedReason(hasGeneratedMockup, generatedCurrent, generateReason);
             var acceptReason = canAccept
-                ? "Save Draft can mark the current draft grid as the scene output source."
+                ? "Save Current Draft can mark the current draft grid as the scene output source."
                 : BuildGeneratedReason(hasGeneratedMockup, generatedCurrent, "Generate From Seed first.");
             var materializeReason = canMaterialize
                 ? "Materialize To Scene can instantiate the saved draft."
@@ -162,12 +162,12 @@ namespace Conn.MapGenV2.Authoring
 
             if (!accepted)
             {
-                return "Save Draft first.";
+                return "Save Current Draft first.";
             }
 
             if (!acceptedCurrent)
             {
-                return "The saved draft is stale. Save the current draft.";
+                return "The saved draft is stale. Save Current Draft.";
             }
 
             return "Saved draft is not ready.";
@@ -230,7 +230,7 @@ namespace Conn.MapGenV2.Authoring
 
             if (!accepted || !acceptedCurrent)
             {
-                return "Inspect or draw in the preview, then Save Draft.";
+                return "Inspect or draw in the preview, then Save Current Draft.";
             }
 
             return "Materialize To Scene, then Bake Runtime Asset.";
