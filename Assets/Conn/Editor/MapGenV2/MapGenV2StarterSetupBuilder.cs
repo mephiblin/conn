@@ -14,6 +14,7 @@ namespace Conn.MapGenV2.Editor
     public static class MapGenV2StarterSetupBuilder
     {
         private const string Root = "Assets/Conn/Authoring/MapGenV2";
+        private static readonly Vector2Int DefaultGridSize = new Vector2Int(10, 8);
 
         [MenuItem("Conn/MapGenV2/Create Starter Setup")]
         public static void CreateStarterProfileSetupFromMenu()
@@ -32,12 +33,23 @@ namespace Conn.MapGenV2.Editor
 
         public static MapGenV2StarterSetup CreateStarterProfileSetup()
         {
-            return CreateStarterProfileSetup(Root);
+            return CreateStarterProfileSetup(Root, DefaultGridSize);
+        }
+
+        public static MapGenV2StarterSetup CreateStarterProfileSetup(Vector2Int gridSize)
+        {
+            return CreateStarterProfileSetup(Root, gridSize);
         }
 
         public static MapGenV2StarterSetup CreateStarterProfileSetup(string root)
         {
+            return CreateStarterProfileSetup(root, DefaultGridSize);
+        }
+
+        public static MapGenV2StarterSetup CreateStarterProfileSetup(string root, Vector2Int gridSize)
+        {
             EnsureStarterFolders(root);
+            var normalizedGridSize = NormalizeGridSize(gridSize);
 
             var floorPrefab = CreatePrimitivePrefab(root, "StarterFloor", PrimitiveType.Cube, new Color(0.78f, 0.16f, 0.12f), new Vector3(0.92f, 0.08f, 0.92f), new Vector3(0f, 0.04f, 0f));
             var corridorPrefab = CreatePrimitivePrefab(root, "StarterCorridorFloor", PrimitiveType.Cube, new Color(0.05f, 0.05f, 0.05f), new Vector3(0.82f, 0.06f, 0.82f), new Vector3(0f, 0.07f, 0f));
@@ -110,7 +122,7 @@ namespace Conn.MapGenV2.Editor
                 + "- Uses generated placeholder prefabs only; replace the module set with real project prefabs for production.\n"
                 + "- Red floor modules are rooms, black floor modules are corridors, blue blocks are walls/corners, pale slabs are ceilings, yellow blocks are doors, and green spheres are prop markers.\n"
                 + "- Generate From Seed is editor-only. Save the draft before Materialize To Scene or Bake Runtime Asset.";
-            profile.MapSize = new Vector2Int(10, 8);
+            profile.MapSize = normalizedGridSize;
             profile.Seed = 2001;
             profile.StyleSet = styleSet;
             profile.LayoutRules = ruleSet;
@@ -146,6 +158,11 @@ namespace Conn.MapGenV2.Editor
                 Profile = profile,
                 Draft = draft
             };
+        }
+
+        private static Vector2Int NormalizeGridSize(Vector2Int gridSize)
+        {
+            return new Vector2Int(Mathf.Max(1, gridSize.x), Mathf.Max(1, gridSize.y));
         }
 
         public static int CleanupStarterGeneratedAssets()
