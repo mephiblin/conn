@@ -96,6 +96,11 @@ namespace Conn.MapGenV2.Editor
                 }
 
                 var request = plan.Requests[i];
+                if (IsPrototypeCeiling(request.Category))
+                {
+                    continue;
+                }
+
                 if (request.Category == MapGenModuleCategory.NavigationHelper)
                 {
                     var navigationGroup = GetOrCreateGroup(root, groups, request.Category);
@@ -678,6 +683,12 @@ namespace Conn.MapGenV2.Editor
             }
 
             return placeholder;
+        }
+
+        private static bool IsPrototypeCeiling(MapGenModuleCategory category)
+        {
+            return category == MapGenModuleCategory.CeilingInterior
+                || category == MapGenModuleCategory.CeilingExterior;
         }
 
         private static Vector3 PlaceholderScaleFor(MapGenModuleCategory category)

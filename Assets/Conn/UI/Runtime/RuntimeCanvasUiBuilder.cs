@@ -180,7 +180,7 @@ namespace Conn.UI.Runtime
 
             if (panelName == "TownShopPanel")
             {
-                return new Rect(0.34f, 0.16f, 0.62f, 0.62f);
+                return new Rect(0.08f, 0.14f, 0.60f, 0.66f);
             }
 
             if (panelName == "RuntimeDebugPanel")

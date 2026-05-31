@@ -144,6 +144,16 @@ namespace Conn.UI.Runtime
         {
             if (sceneId == GameSceneId.Town)
             {
+                if (characterOpen || skillsOpen)
+                {
+                    characterOpen = false;
+                    skillsOpen = false;
+                    RuntimeCursorService.ClearManualRelease();
+                    RuntimeCursorService.Apply(sceneId, GameSession.Instance != null ? GameSession.Instance.State : null, false);
+                    RequestRefresh();
+                    return;
+                }
+
                 if (TownNpcInteractionState.IsOpen
                     || TownQuestBoardPanelState.IsOpen
                     || TownShopPanelState.Current != TownShopPanelKind.None)
@@ -440,8 +450,6 @@ namespace Conn.UI.Runtime
             AddInputField(panel, characterDraftName, value => characterDraftName = value);
             AddText(panel, "Starting Weapon");
             DrawStarterWeaponSelector(panel);
-
-            AddText(panel, " ");
             AddButton(panel, "Create Character", () =>
             {
                 var options = BuildCharacterCreationOptions();
@@ -449,6 +457,7 @@ namespace Conn.UI.Runtime
                 RuntimeCursorService.ClearManualRelease();
                 SceneFlowService.Load(GameSceneId.Town);
             });
+            AddVerticalSpacer(panel);
             AddButton(panel, "Back", () =>
             {
                 session.Mode = GameMode.Title;
@@ -461,6 +470,7 @@ namespace Conn.UI.Runtime
         {
             var panel = Panel("CharacterCreationStatsPanel");
             BuildPanel(panel, "Stats", false);
+            MakePanelTransparent(panel);
             var stats = CharacterStatsFor(characterDraftPortraitIndex);
             AddStatRow(panel, "Strength", Mathf.RoundToInt(stats.x));
             AddStatRow(panel, "Dexterity", Mathf.RoundToInt(stats.y));
@@ -484,11 +494,13 @@ namespace Conn.UI.Runtime
             AddSquareButton(quickActions, characterOpen ? "Bag -" : "Bag", () =>
             {
                 characterOpen = !characterOpen;
+                ApplyTownPanelCursorState(session);
                 RequestRefresh();
             });
             AddSquareButton(quickActions, skillsOpen ? "Skill -" : "Skill", () =>
             {
                 skillsOpen = !skillsOpen;
+                ApplyTownPanelCursorState(session);
                 RequestRefresh();
             });
             AddSquareButton(quickActions, "Title", () =>
@@ -542,13 +554,22 @@ namespace Conn.UI.Runtime
             }
             else
             {
-                DrawInteractionPrompt("TownInteractionPrompt");
+                if (characterOpen || skillsOpen)
+                {
+                    HidePanel("TownInteractionPrompt");
+                    HidePanel("TownNoticePanel");
+                }
+                else
+                {
+                    DrawInteractionPrompt("TownInteractionPrompt");
+                    DrawTownNotice(session);
+                }
+
                 HidePanel("TownNpcBackdropPanel");
                 HidePanel("TownNpcInteractionPanel");
                 HidePanel("TownNpcStandingCgPanel");
                 DrawTownQuestBoard(session);
                 DrawTownShop(session);
-                DrawTownNotice(session);
                 DrawCharacterInventory(session);
                 DrawSkillLoadoutPanel(session);
             }
@@ -664,15 +685,26 @@ namespace Conn.UI.Runtime
         private void OrderTownPanels()
         {
             canvas.transform.Find("TownNpcBackdropPanel")?.SetAsLastSibling();
+            canvas.transform.Find("TownHud")?.SetAsLastSibling();
+            canvas.transform.Find("TownQuickActionsPanel")?.SetAsLastSibling();
+            canvas.transform.Find("TownInteractionPrompt")?.SetAsLastSibling();
+            canvas.transform.Find("TownNoticePanel")?.SetAsLastSibling();
             canvas.transform.Find("TownNpcStandingCgPanel")?.SetAsLastSibling();
             canvas.transform.Find("TownNpcInteractionPanel")?.SetAsLastSibling();
             canvas.transform.Find("TownQuestBoardPanel")?.SetAsLastSibling();
             canvas.transform.Find("TownShopPanel")?.SetAsLastSibling();
             canvas.transform.Find("TownCharacterInventoryPanel")?.SetAsLastSibling();
             canvas.transform.Find("TownSkillLoadoutPanel")?.SetAsLastSibling();
-            canvas.transform.Find("TownNoticePanel")?.SetAsLastSibling();
-            canvas.transform.Find("TownQuickActionsPanel")?.SetAsLastSibling();
-            canvas.transform.Find("TownInteractionPrompt")?.SetAsLastSibling();
+        }
+
+        private void ApplyTownPanelCursorState(GameSessionState session)
+        {
+            if (!characterOpen && !skillsOpen)
+            {
+                RuntimeCursorService.ClearManualRelease();
+            }
+
+            RuntimeCursorService.Apply(sceneId, session, characterOpen || skillsOpen);
         }
 
         private void AddNpcInteractionActions(Transform panel, GameSessionState session)
@@ -1700,9 +1732,10 @@ namespace Conn.UI.Runtime
             var equipmentIds = new List<string>();
             for (var i = 0; i < session.Inventory.ItemIds.Count; i++)
             {
-                if (RuntimeContentDatabase.FindEquipment(session.Inventory.ItemIds[i]) != null)
+                var itemId = session.Inventory.ItemIds[i];
+                if (RuntimeContentDatabase.FindEquipment(itemId) != null && !session.Equipment.IsEquipped(itemId))
                 {
-                    equipmentIds.Add(session.Inventory.ItemIds[i]);
+                    equipmentIds.Add(itemId);
                 }
             }
 
@@ -1772,10 +1805,15 @@ namespace Conn.UI.Runtime
                 var owned = session.Skills.CountOwned(skillId);
                 var equipped = session.Skills.CountEquipped(skillId);
                 var available = Mathf.Max(0, owned - equipped);
+                if (available <= 0)
+                {
+                    continue;
+                }
+
                 var selected = skillId == selectedSkillId;
                 var button = AddButton(
                     parent,
-                    $"{(selected ? "> " : string.Empty)}{skill.DisplayName}\n{SkillEffectSummary(skill)}\n보유 {owned} · 장착 {equipped} · 여유 {available}",
+                    $"{(selected ? "> " : string.Empty)}{skill.DisplayName}\n{SkillEffectSummary(skill)}\n미장착 {available}",
                     () => selectedSkillId = selected ? string.Empty : skillId,
                     true);
                 button.gameObject.AddComponent<SkillFaceDragDrop>().ConfigureDragSource(skillId);
@@ -1821,7 +1859,11 @@ namespace Conn.UI.Runtime
                     }
                     else
                     {
-                        SkillRuntimeService.EquipSkillToDieFace(session, selectedSkillId, dieIndex, faceIndex);
+                        if (SkillRuntimeService.EquipSkillToDieFace(session, selectedSkillId, dieIndex, faceIndex)
+                            && session.Skills.CountOwned(selectedSkillId) <= session.Skills.CountEquipped(selectedSkillId))
+                        {
+                            selectedSkillId = string.Empty;
+                        }
                     }
                 },
                 true);
@@ -2645,6 +2687,25 @@ namespace Conn.UI.Runtime
             nextRefreshTime = 0f;
         }
 
+        private void AddVerticalSpacer(Transform parent)
+        {
+            var obj = new GameObject("Spacer");
+            obj.transform.SetParent(ContentParent(parent), false);
+            var layout = obj.AddComponent<LayoutElement>();
+            layout.minHeight = 120f;
+            layout.flexibleHeight = 1f;
+        }
+
+        private static void MakePanelTransparent(RectTransform panel)
+        {
+            var image = panel != null ? panel.GetComponent<Image>() : null;
+            if (image != null)
+            {
+                image.color = Color.clear;
+                image.raycastTarget = false;
+            }
+        }
+
         private static bool RuntimeDebugPanelsAllowed()
         {
             return Application.isEditor || Debug.isDebugBuild;
@@ -2951,7 +3012,7 @@ namespace Conn.UI.Runtime
             AddSelectionLabel(
                 weaponRow,
                 $"{EquipmentName(weaponId)}  {weaponIndex + 1}/{StarterWeaponIds.Length}",
-                item != null ? $"{PlayerEquipmentState.SlotLabelFor(item.Kind)}  Buy {item.BuyPrice}g" : "Unknown weapon");
+                item != null ? $"{PlayerEquipmentState.SlotLabelFor(item.Kind)}  {EquipmentSummary(item)}" : "Unknown weapon");
             AddSquareButton(weaponRow, ">", () => SelectStarterWeapon(characterDraftWeaponIndex + 1));
         }
 
@@ -2973,10 +3034,12 @@ namespace Conn.UI.Runtime
             var obj = new GameObject("SelectionLabel");
             obj.transform.SetParent(ContentParent(parent), false);
             var image = obj.AddComponent<Image>();
-            image.color = new Color(0.15f, 0.18f, 0.22f, 0.92f);
+            image.color = new Color(0.12f, 0.15f, 0.19f, 0.88f);
             var layout = obj.AddComponent<LayoutElement>();
-            layout.minHeight = 58f;
-            layout.minWidth = 220f;
+            layout.minHeight = 64f;
+            layout.preferredHeight = 72f;
+            layout.minWidth = 170f;
+            layout.preferredWidth = 210f;
             layout.flexibleWidth = 1f;
             var group = obj.AddComponent<VerticalLayoutGroup>();
             group.padding = new RectOffset(12, 12, 6, 6);
@@ -2985,8 +3048,8 @@ namespace Conn.UI.Runtime
             group.childControlHeight = false;
             group.childForceExpandWidth = true;
             group.childForceExpandHeight = false;
-            AddTextRaw(obj.transform, title, 16, FontStyle.Bold);
-            AddTextRaw(obj.transform, subtitle, 13);
+            AddTextRaw(obj.transform, title, 14, FontStyle.Bold);
+            AddTextRaw(obj.transform, subtitle, 11);
         }
 
         private void AddSkillLoadoutStatus(Transform parent, GameSessionState session)
