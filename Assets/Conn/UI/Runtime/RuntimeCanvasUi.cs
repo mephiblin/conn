@@ -460,7 +460,7 @@ namespace Conn.UI.Runtime
             AddStatRow(panel, "Dexterity", Mathf.RoundToInt(stats.y));
             AddStatRow(panel, "Vitality", Mathf.RoundToInt(stats.z));
             AddStatRow(panel, "Energy", Mathf.RoundToInt(stats.w));
-            AddText(panel, "Mock values only. Combat still uses current runtime rules.", 13);
+            AddText(panel, CharacterProfileSummary(characterDraftPortraitIndex), 13);
         }
 
         private void DrawTown(GameSessionState session)
@@ -1631,6 +1631,7 @@ namespace Conn.UI.Runtime
             var panel = Panel("TownSkillLoadoutPanel");
             BuildPanel(panel, "Skill Dice", true);
             session.Skills.EnsureDiceFaceLoadout(session.Equipment.DiceCount);
+            AddSkillLoadoutStatus(panel, session);
 
             var skillRow = AddHorizontalGroup(panel, 14f);
             var skillColumn = AddInventoryColumn(skillRow, "Skill Cards");
@@ -1735,10 +1736,11 @@ namespace Conn.UI.Runtime
 
                 var owned = session.Skills.CountOwned(skillId);
                 var equipped = session.Skills.CountEquipped(skillId);
+                var available = Mathf.Max(0, owned - equipped);
                 var selected = skillId == selectedSkillId;
                 var button = AddButton(
                     parent,
-                    $"{(selected ? "> " : string.Empty)}{skill.DisplayName}\n{SkillEffectSummary(skill)}\n보유 {owned} · 장착 {equipped}",
+                    $"{(selected ? "> " : string.Empty)}{skill.DisplayName}\n{SkillEffectSummary(skill)}\n보유 {owned} · 장착 {equipped} · 여유 {available}",
                     () => selectedSkillId = selected ? string.Empty : skillId,
                     true);
                 button.gameObject.AddComponent<SkillFaceDragDrop>().ConfigureDragSource(skillId);
@@ -1751,7 +1753,7 @@ namespace Conn.UI.Runtime
 
             if (renderedSkillIds.Count == 0)
             {
-                AddText(parent, "No skill cards.");
+                AddText(parent, "보유 스킬 없음");
             }
         }
 
@@ -1875,11 +1877,11 @@ namespace Conn.UI.Runtime
             AddText(
                 command,
                 session.Combat.ReelSpinActive
-                    ? $"릴 회전 중 · {session.Combat.DiceFaces.Count}개"
-                    : $"선택 {session.Combat.SelectedDiceCount}/3");
+                    ? $"릴 회전 중 · STOP으로 결과 고정"
+                    : CombatSelectionSummary(session));
             var commandRow = AddHorizontalGroup(command, 10f);
             AddButton(commandRow, "STOP", () => CombatRuntimeService.StopReels(session), CombatRuntimeService.CanStopReels(session));
-            AddButton(commandRow, "Attack", () => CombatRuntimeService.ResolveSelectedDice(session), !session.Combat.ReelSpinActive);
+            AddButton(commandRow, session.Combat.SelectedDiceCount > 0 ? "Attack" : "Select Reel", () => CombatRuntimeService.ResolveSelectedDice(session), !session.Combat.ReelSpinActive && session.Combat.SelectedDiceCount > 0);
             AddButton(commandRow, "Flee", () => CombatRuntimeService.Flee(session));
 
             var status = Panel("CombatStatusPanel");
@@ -1897,7 +1899,7 @@ namespace Conn.UI.Runtime
 
             var dice = Panel("CombatDicePanel");
             BuildPanel(dice, "Skill Roulette", false);
-            AddText(dice, $"선택 {session.Combat.SelectedDiceCount}/3 · 릴 {session.Combat.DiceFaces.Count}개");
+            AddText(dice, CombatDicePanelSummary(session));
             var reelTray = AddHorizontalGroup(dice, 14f);
             for (var i = 0; i < session.Combat.DiceFaces.Count; i++)
             {
@@ -2310,15 +2312,15 @@ namespace Conn.UI.Runtime
                 FontStyle.Normal);
             if (face.IsCoolingDown)
             {
-                AddTextRaw(obj.transform, $"Cooldown {face.Cooldown}", 12, FontStyle.Bold);
+                AddTextRaw(obj.transform, $"릴 쿨다운 {face.Cooldown}", 12, FontStyle.Bold);
             }
             else if (face.Selected)
             {
-                AddTextRaw(obj.transform, "Selected", 12, FontStyle.Bold);
+                AddTextRaw(obj.transform, "선택됨", 12, FontStyle.Bold);
             }
             else
             {
-                AddTextRaw(obj.transform, face.ReelStopped ? "Locked" : "Spinning", 12, FontStyle.Bold);
+                AddTextRaw(obj.transform, face.ReelStopped ? "선택 가능" : "회전 중", 12, FontStyle.Bold);
             }
 
             var window = new GameObject("Window");
@@ -2394,6 +2396,39 @@ namespace Conn.UI.Runtime
                 Conn.Core.Skills.SkillEffectKind.Summon => $"소환 {amount}",
                 _ => $"피해 {amount}"
             };
+        }
+
+        private static string CombatSelectionSummary(GameSessionState session)
+        {
+            var available = 0;
+            for (var i = 0; i < session.Combat.DiceFaces.Count; i++)
+            {
+                var face = session.Combat.DiceFaces[i];
+                if (face.ReelStopped && !face.IsCoolingDown)
+                {
+                    available++;
+                }
+            }
+
+            return session.Combat.SelectedDiceCount > 0
+                ? $"선택 {session.Combat.SelectedDiceCount}/3 · 사용 가능 {available}"
+                : $"릴을 선택하세요 · 사용 가능 {available}";
+        }
+
+        private static string CombatDicePanelSummary(GameSessionState session)
+        {
+            var cooling = 0;
+            for (var i = 0; i < session.Combat.DiceFaces.Count; i++)
+            {
+                if (session.Combat.DiceFaces[i].IsCoolingDown)
+                {
+                    cooling++;
+                }
+            }
+
+            return session.Combat.ReelSpinActive
+                ? $"릴 {session.Combat.DiceFaces.Count}개 회전 중"
+                : $"선택 {session.Combat.SelectedDiceCount}/3 · 쿨다운 {cooling}";
         }
 
         private static int ResolveVisibleReelCenterIndex(Conn.Core.Combat.DiceFaceState face)
@@ -2888,6 +2923,21 @@ namespace Conn.UI.Runtime
             AddTextRaw(obj.transform, subtitle, 13);
         }
 
+        private void AddSkillLoadoutStatus(Transform parent, GameSessionState session)
+        {
+            if (string.IsNullOrWhiteSpace(selectedSkillId))
+            {
+                AddText(parent, $"장착 릴 {session.Equipment.DiceCount}개 · 보유 스킬 {session.Skills.OwnedSkillIds.Count}", 13);
+                return;
+            }
+
+            var skill = RuntimeContentDatabase.FindSkill(selectedSkillId);
+            var owned = session.Skills.CountOwned(selectedSkillId);
+            var equipped = session.Skills.CountEquipped(selectedSkillId);
+            var available = Mathf.Max(0, owned - equipped);
+            AddText(parent, $"{(skill != null ? skill.DisplayName : selectedSkillId)} 선택됨 · 여유 {available}", 13, FontStyle.Bold);
+        }
+
         private static Vector4 CharacterStatsFor(int portraitIndex)
         {
             return ClampPortraitIndex(portraitIndex) switch
@@ -2896,6 +2946,17 @@ namespace Conn.UI.Runtime
                 1 => new Vector4(18, 30, 20, 14),
                 2 => new Vector4(12, 18, 22, 30),
                 _ => new Vector4(20, 20, 20, 20)
+            };
+        }
+
+        private static string CharacterProfileSummary(int portraitIndex)
+        {
+            return ClampPortraitIndex(portraitIndex) switch
+            {
+                0 => "균형 잡힌 생존형 전사",
+                1 => "빠른 공격과 회피에 강한 결투가",
+                2 => "기술 운용과 에너지 성장에 강한 술사",
+                _ => "균형형 모험가"
             };
         }
 
