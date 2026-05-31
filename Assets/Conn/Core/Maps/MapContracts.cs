@@ -261,6 +261,11 @@ namespace Conn.Core.Maps
                 return true;
             }
 
+            if (!string.IsNullOrWhiteSpace(first.SocketId) && !string.IsNullOrWhiteSpace(second.SocketId))
+            {
+                return false;
+            }
+
             if (first.SocketType == RoomChunkSocketType.Door && second.SocketType == RoomChunkSocketType.Door)
             {
                 return true;

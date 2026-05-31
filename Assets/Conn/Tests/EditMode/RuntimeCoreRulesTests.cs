@@ -1,6 +1,7 @@
 using Conn.Core.Combat;
 using Conn.Core.Equipment;
 using Conn.Core.Items;
+using Conn.Core.Maps;
 using Conn.Core.Quests;
 using Conn.Core.Scenes;
 using Conn.Core.Session;
@@ -38,6 +39,25 @@ namespace Conn.Tests.EditMode
             equipment.Equip(EquipmentCatalog.GreatAxeId);
             Assert.That(equipment.DiceCount, Is.EqualTo(5));
             Assert.That(equipment.EquippedShieldId, Is.Empty);
+        }
+
+        [Test]
+        public void DungeonRuntimeScalesCompiledCellsToPlayableCharacterSpace()
+        {
+            var smallAuthoredMap = new CompiledMap
+            {
+                CellSize = 0.28f,
+                HeightStep = 0.28f
+            };
+            var unitAuthoredMap = new CompiledMap
+            {
+                CellSize = 1f,
+                HeightStep = 1f
+            };
+
+            Assert.That(DungeonMapActorSpawner.WorldCellSize(smallAuthoredMap), Is.GreaterThanOrEqualTo(2.4f));
+            Assert.That(DungeonMapActorSpawner.WorldCellSize(unitAuthoredMap), Is.GreaterThanOrEqualTo(2.4f));
+            Assert.That(DungeonMapActorSpawner.WorldHeightStep(smallAuthoredMap), Is.GreaterThanOrEqualTo(0.8f));
         }
 
         [Test]

@@ -4,5 +4,6 @@ namespace Conn.Core.Session
     {
         public static bool UseCanvasUi = true;
         public static bool UseLegacyImguiOverlay;
+        public static bool ShowRuntimeDebugPanels;
     }
 }

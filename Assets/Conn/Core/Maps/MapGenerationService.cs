@@ -84,7 +84,9 @@ namespace Conn.Core.Maps
             int pathMax,
             Random random)
         {
-            var minimumFeasibleRoomCount = Math.Max(roomCountMin, pathMin + Math.Max(0, profile.SideBranchCount));
+            var branchRoomsRequested = Math.Max(0, profile.SideBranchCount) * 2;
+            var branchRoomsThatFit = Math.Min(branchRoomsRequested, Math.Max(0, roomCountMax - pathMin));
+            var minimumFeasibleRoomCount = Math.Max(roomCountMin, pathMin + branchRoomsThatFit);
             if (minimumFeasibleRoomCount > roomCountMax)
             {
                 throw new InvalidOperationException(
@@ -525,7 +527,9 @@ namespace Conn.Core.Maps
                 });
             }
 
-            var expectedBranchRooms = Math.Max(0, profile.SideBranchCount);
+            var expectedBranchRooms = Math.Min(
+                Math.Max(0, profile.SideBranchCount) * 2,
+                Math.Max(0, occupiedCells.Count - criticalPath.Count));
             if (sideBranchCount < expectedBranchRooms)
             {
                 throw new InvalidOperationException(
@@ -613,9 +617,79 @@ namespace Conn.Core.Maps
 
         private static void ApplyForcedPoolRoles(NodePlan plan, IReadOnlyList<RuntimeMapRoomPoolRule> roomPools, int seed)
         {
-            _ = plan;
-            _ = roomPools;
-            _ = seed;
+            if (plan == null || plan.Nodes.Count == 0)
+            {
+                return;
+            }
+
+            ForcePoolRole(plan, roomPools, MapRoomPoolRole.Hub, node => node.Role == MapRoomRole.MainPath && node.NeighborCells.Count >= 3, seed);
+            ForcePoolRole(plan, roomPools, MapRoomPoolRole.Corridor, node => node.Role == MapRoomRole.MainPath && IsOpposingSockets(node.RequiredSockets), seed);
+            ForcePoolRole(plan, roomPools, MapRoomPoolRole.HeightTransition, node => node.Role == MapRoomRole.MainPath && node.PathIndex > 1 && node.PathIndex < plan.CriticalPathLength - 2, seed);
+            ForcePoolRole(plan, roomPools, MapRoomPoolRole.DeadEnd, node => node.Role == MapRoomRole.SideBranch && node.NeighborCells.Count <= 1, seed);
+        }
+
+        private static void ForcePoolRole(
+            NodePlan plan,
+            IReadOnlyList<RuntimeMapRoomPoolRule> roomPools,
+            MapRoomPoolRole role,
+            Predicate<PlannedNode> preferredPredicate,
+            int seed)
+        {
+            if (!HasPool(roomPools, role) || CountForcedPoolRole(plan, role) > 0)
+            {
+                return;
+            }
+
+            var index = FindStableNodeIndex(plan.Nodes, node => !node.ForcedPoolRole.HasValue && preferredPredicate(node), seed, role.ToString());
+            if (index < 0 && role == MapRoomPoolRole.DeadEnd)
+            {
+                index = FindStableNodeIndex(plan.Nodes, node => !node.ForcedPoolRole.HasValue && node.Role == MapRoomRole.SideBranch, seed, role.ToString());
+            }
+            else if (index < 0)
+            {
+                index = FindStableNodeIndex(plan.Nodes, node => !node.ForcedPoolRole.HasValue && node.Role == MapRoomRole.MainPath, seed, role.ToString());
+            }
+
+            if (index >= 0)
+            {
+                plan.Nodes[index].ForcedPoolRole = role;
+            }
+        }
+
+        private static int CountForcedPoolRole(NodePlan plan, MapRoomPoolRole role)
+        {
+            var count = 0;
+            for (var i = 0; i < plan.Nodes.Count; i++)
+            {
+                if (plan.Nodes[i].ForcedPoolRole == role)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        private static int FindStableNodeIndex(List<PlannedNode> nodes, Predicate<PlannedNode> predicate, int seed, string salt)
+        {
+            var selectedIndex = -1;
+            var selectedHash = int.MaxValue;
+            for (var i = 0; i < nodes.Count; i++)
+            {
+                if (!predicate(nodes[i]))
+                {
+                    continue;
+                }
+
+                var hash = PositiveHash(seed, CellKey(nodes[i].Cell.X, nodes[i].Cell.Y), salt);
+                if (hash < selectedHash)
+                {
+                    selectedHash = hash;
+                    selectedIndex = i;
+                }
+            }
+
+            return selectedIndex;
         }
 
         private static bool HasPool(IReadOnlyList<RuntimeMapRoomPoolRule> roomPools, MapRoomPoolRole role)

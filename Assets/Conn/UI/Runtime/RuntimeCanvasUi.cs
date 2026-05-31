@@ -31,6 +31,7 @@ namespace Conn.UI.Runtime
         [SerializeField] private Sprite scholarBackgroundSprite;
         private const float RefreshIntervalSeconds = 0.15f;
         private bool characterOpen;
+        private bool skillsOpen;
         private float nextRefreshTime;
         private string lastRenderKey = string.Empty;
         private string selectedSkillId = string.Empty;
@@ -107,7 +108,7 @@ namespace Conn.UI.Runtime
                     canvas.enabled = false;
                 }
 
-                RuntimeCursorService.Apply(sceneId, GameSession.Instance != null ? GameSession.Instance.State : null, characterOpen);
+                RuntimeCursorService.Apply(sceneId, GameSession.Instance != null ? GameSession.Instance.State : null, characterOpen || skillsOpen);
                 return;
             }
 
@@ -121,13 +122,19 @@ namespace Conn.UI.Runtime
                 HandleEscapePressed();
             }
 
+            if (Keyboard.current != null && Keyboard.current.f3Key.wasPressedThisFrame)
+            {
+                RuntimeUiSettings.ShowRuntimeDebugPanels = !RuntimeUiSettings.ShowRuntimeDebugPanels;
+                RequestRefresh();
+            }
+
             if (Time.unscaledTime >= nextRefreshTime && !IsPointerPressActive())
             {
                 Refresh();
                 nextRefreshTime = Time.unscaledTime + RefreshIntervalSeconds;
             }
 
-            RuntimeCursorService.Apply(sceneId, GameSession.Instance != null ? GameSession.Instance.State : null, characterOpen);
+            RuntimeCursorService.Apply(sceneId, GameSession.Instance != null ? GameSession.Instance.State : null, characterOpen || skillsOpen);
         }
 
         private void HandleEscapePressed()
@@ -210,6 +217,8 @@ namespace Conn.UI.Runtime
                 .Append('/').Append(session.Player.MaxHp)
                 .Append('|').Append(session.LastNotice)
                 .Append('|').Append(characterOpen)
+                .Append('|').Append(skillsOpen)
+                .Append('|').Append(RuntimeUiSettings.ShowRuntimeDebugPanels)
                 .Append('|').Append(RuntimeCursorService.ManualReleaseActive)
                 .Append('|').Append(TownQuestBoardPanelState.IsOpen)
                 .Append('|').Append(TownShopPanelState.Current)
@@ -301,27 +310,30 @@ namespace Conn.UI.Runtime
 
         private void DrawRuntimeDebugPanel(GameSessionState session)
         {
+            if (!RuntimeUiSettings.ShowRuntimeDebugPanels)
+            {
+                HidePanel("RuntimeDebugPanel");
+                return;
+            }
+
             var panel = Panel("RuntimeDebugPanel");
             BuildPanel(panel, "Runtime Debug", false);
-            AddText(panel, $"Scene: {sceneId} / Mode: {session.Mode}", 12);
-            AddText(panel, $"Cursor: {(RuntimeCursorService.ManualReleaseActive ? "free" : "locked")}", 12);
+            AddText(panel, $"{sceneId} / {session.Mode}", 11);
+            AddText(panel, $"Cursor {(RuntimeCursorService.ManualReleaseActive ? "free" : "locked")}", 11);
             if (sceneId == GameSceneId.Town)
             {
-                AddText(panel, TownUiDebugSummary(), 12);
-                AddText(panel, $"Visible: npc={PanelActive("TownNpcInteractionPanel")} board={PanelActive("TownQuestBoardPanel")} shop={PanelActive("TownShopPanel")}", 12);
+                AddText(panel, TownUiDebugSummary(), 11);
             }
             else if (sceneId == GameSceneId.Dungeon)
             {
                 var compiledMap = CompiledMapDungeonRuntimeService.CurrentCompiledMap;
-                AddText(panel, $"Map: {compiledMap?.MapId ?? "none"}", 12);
-                AddText(panel, $"Cell: {(compiledMap?.CellSize ?? 0f):0.##}->{DungeonMapActorSpawner.WorldCellSize(compiledMap):0.##}", 12);
-                AddText(panel, $"Monsters: {FieldMonsterRuntimeService.CountActive(session)} active / {FieldMonsterRuntimeService.CountDefeated(session)} defeated", 12);
-                AddText(panel, $"Debug root: {GameObject.Find(DungeonVisualDebugOverlay.RootName) != null}", 12);
+                AddText(panel, compiledMap?.MapId ?? "no map", 11);
+                AddText(panel, $"M {FieldMonsterRuntimeService.CountActive(session)} / D {FieldMonsterRuntimeService.CountDefeated(session)}", 11);
             }
             else if (sceneId == GameSceneId.Combat)
             {
-                AddText(panel, $"Combat: {session.Combat.Active} round {session.Combat.Round}", 12);
-                AddText(panel, $"Dice: {session.Combat.DiceFaces.Count} spin={session.Combat.ReelSpinActive}", 12);
+                AddText(panel, $"Round {session.Combat.Round}", 11);
+                AddText(panel, $"Dice {session.Combat.DiceFaces.Count} spin={session.Combat.ReelSpinActive}", 11);
             }
 
             panel.SetAsLastSibling();
@@ -460,11 +472,19 @@ namespace Conn.UI.Runtime
             AddText(hud, $"Gold {session.Gold}  XP {session.Player.Xp}  HP {session.Player.Hp}/{session.Player.MaxHp}");
             AddText(hud, session.Quest.HasActiveQuest ? $"Quest: {session.Quest.ActiveQuestTitle}" : "Quest: none");
             AddText(hud, RuntimeCursorService.ManualReleaseActive ? "Cursor: free (Esc)" : "Cursor: locked (Esc)");
-            AddText(hud, $"UI: {TownUiDebugSummary()}");
 
             var quickActions = Panel("TownQuickActionsPanel");
             BuildPanel(quickActions, string.Empty, false);
-            AddSquareButton(quickActions, characterOpen ? "Bag -" : "Bag", () => characterOpen = !characterOpen);
+            AddSquareButton(quickActions, characterOpen ? "Bag -" : "Bag", () =>
+            {
+                characterOpen = !characterOpen;
+                RequestRefresh();
+            });
+            AddSquareButton(quickActions, skillsOpen ? "Skill -" : "Skill", () =>
+            {
+                skillsOpen = !skillsOpen;
+                RequestRefresh();
+            });
             AddSquareButton(quickActions, "Title", () =>
             {
                 RuntimeCursorService.ClearManualRelease();
@@ -478,6 +498,7 @@ namespace Conn.UI.Runtime
                 HidePanel("TownInteractionPrompt");
                 HidePanel("TownNoticePanel");
                 HidePanel("TownCharacterInventoryPanel");
+                HidePanel("TownSkillLoadoutPanel");
                 DrawTownNpcBackdrop();
                 HidePanel("TownNpcInteractionPanel");
                 HidePanel("TownNpcStandingCgPanel");
@@ -493,6 +514,7 @@ namespace Conn.UI.Runtime
                 HidePanel("TownInteractionPrompt");
                 HidePanel("TownNoticePanel");
                 HidePanel("TownCharacterInventoryPanel");
+                HidePanel("TownSkillLoadoutPanel");
                 DrawTownNpcBackdrop();
                 HidePanel("TownNpcInteractionPanel");
                 HidePanel("TownNpcStandingCgPanel");
@@ -506,6 +528,7 @@ namespace Conn.UI.Runtime
                 HidePanel("TownInteractionPrompt");
                 HidePanel("TownNoticePanel");
                 HidePanel("TownCharacterInventoryPanel");
+                HidePanel("TownSkillLoadoutPanel");
                 DrawTownNpcBackdrop();
                 DrawTownNpcInteraction(session);
                 HidePanel("TownQuestBoardPanel");
@@ -521,6 +544,7 @@ namespace Conn.UI.Runtime
                 DrawTownShop(session);
                 DrawTownNotice(session);
                 DrawCharacterInventory(session);
+                DrawSkillLoadoutPanel(session);
             }
 
             OrderTownPanels();
@@ -639,6 +663,7 @@ namespace Conn.UI.Runtime
             canvas.transform.Find("TownQuestBoardPanel")?.SetAsLastSibling();
             canvas.transform.Find("TownShopPanel")?.SetAsLastSibling();
             canvas.transform.Find("TownCharacterInventoryPanel")?.SetAsLastSibling();
+            canvas.transform.Find("TownSkillLoadoutPanel")?.SetAsLastSibling();
             canvas.transform.Find("TownNoticePanel")?.SetAsLastSibling();
             canvas.transform.Find("TownQuickActionsPanel")?.SetAsLastSibling();
             canvas.transform.Find("TownInteractionPrompt")?.SetAsLastSibling();
@@ -1154,8 +1179,10 @@ namespace Conn.UI.Runtime
         private void CloseTownInteraction()
         {
             TownNpcInteractionState.Close();
+            characterOpen = false;
+            skillsOpen = false;
             RuntimeCursorService.ClearManualRelease();
-            RuntimeCursorService.Apply(sceneId, GameSession.Instance != null ? GameSession.Instance.State : null, characterOpen);
+            RuntimeCursorService.Apply(sceneId, GameSession.Instance != null ? GameSession.Instance.State : null, false);
             RequestRefresh();
         }
 
@@ -1583,8 +1610,7 @@ namespace Conn.UI.Runtime
             }
 
             var panel = Panel("TownCharacterInventoryPanel");
-            BuildPanel(panel, "Character / Inventory", true);
-            session.Skills.EnsureDiceFaceLoadout(session.Equipment.DiceCount);
+            BuildPanel(panel, "Inventory", true);
 
             AddText(panel, $"Loadout: {session.Equipment.WeaponGrip}  Dice {session.Equipment.DiceCount}  Def {session.Equipment.DefenseBonus}", 14, FontStyle.Bold);
             var equipmentRow = AddHorizontalGroup(panel, 14f);
@@ -1592,6 +1618,19 @@ namespace Conn.UI.Runtime
             DrawEquipmentBagGrid(bagColumn, session);
             var equipmentColumn = AddInventoryColumn(equipmentRow, "Equipment");
             DrawEquipmentSlots(equipmentColumn, session);
+        }
+
+        private void DrawSkillLoadoutPanel(GameSessionState session)
+        {
+            if (!skillsOpen)
+            {
+                HidePanel("TownSkillLoadoutPanel");
+                return;
+            }
+
+            var panel = Panel("TownSkillLoadoutPanel");
+            BuildPanel(panel, "Skill Dice", true);
+            session.Skills.EnsureDiceFaceLoadout(session.Equipment.DiceCount);
 
             var skillRow = AddHorizontalGroup(panel, 14f);
             var skillColumn = AddInventoryColumn(skillRow, "Skill Cards");
@@ -1795,22 +1834,19 @@ namespace Conn.UI.Runtime
             AddButton(returns, "Return To Town", () => QuestRuntimeService.ReturnToTown(session), session.Quest.ReturnAvailable);
 
             var readout = Panel("DungeonPlacementReadout");
-            BuildPanel(readout, "CompiledMap Readout", true);
             var compiledMap = CompiledMapDungeonRuntimeService.CurrentCompiledMap;
-            AddText(readout, $"Map: {compiledMap?.MapId ?? "none"}");
-            AddText(readout, $"Profile: {compiledMap?.ProfileId ?? "none"}");
-            AddText(readout, $"Quest profile: {session.Quest.MapProfileId}");
-            AddText(readout, $"Encounter: {session.Quest.TargetEncounterId}");
-            AddText(readout, $"Snapshot: {(session.PreEncounterSnapshot.Valid ? "saved" : "none")}");
-            AddText(readout, $"Field monsters active: {FieldMonsterRuntimeService.CountActive(session)}");
-            AddText(readout, $"Field monsters defeated: {FieldMonsterRuntimeService.CountDefeated(session)}");
-            AddText(readout, $"Baked cells: {CompiledMapDungeonRuntimeService.CountBakedCells(compiledMap)}");
-            AddText(readout, $"Baked objects: {CompiledMapDungeonRuntimeService.CountBakedObjects(compiledMap)}");
-            AddText(readout, $"Interactive objects: {CompiledMapDungeonRuntimeService.CountInteractiveObjects(compiledMap)}");
-            AddText(readout, $"World cell: {DungeonMapActorSpawner.WorldCellSize(compiledMap):0.##}  authored: {(compiledMap?.CellSize ?? 0f):0.##}");
-            AddText(readout, $"Visual debug root: {DungeonVisualDebugOverlay.RootName}");
-            AddText(readout, "Markers: green start / magenta target / cyan exit / orange monster / yellow loot");
-            AddText(readout, "Placements: start / quest target / exit / monster / loot");
+            if (RuntimeUiSettings.ShowRuntimeDebugPanels)
+            {
+                BuildPanel(readout, "Map Debug", false);
+                AddText(readout, compiledMap?.MapId ?? "none", 11);
+                AddText(readout, $"Cells {CompiledMapDungeonRuntimeService.CountBakedCells(compiledMap)}  Obj {CompiledMapDungeonRuntimeService.CountBakedObjects(compiledMap)}", 11);
+                AddText(readout, $"World cell {DungeonMapActorSpawner.WorldCellSize(compiledMap):0.##}", 11);
+            }
+            else
+            {
+                HidePanel("DungeonPlacementReadout");
+            }
+
             DrawRuntimeDebugPanel(session);
         }
 
@@ -1868,6 +1904,10 @@ namespace Conn.UI.Runtime
                 AddCombatReelCard(reelTray, session, session.Combat.DiceFaces[i]);
             }
 
+            status.SetAsFirstSibling();
+            enemy.SetAsFirstSibling();
+            dice.SetAsLastSibling();
+            command.SetAsLastSibling();
             HidePanel("CombatLogPanel");
         }
 

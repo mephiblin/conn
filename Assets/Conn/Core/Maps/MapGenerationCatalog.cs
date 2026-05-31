@@ -87,7 +87,7 @@ namespace Conn.Core.Maps
 
         private static ChunkPreset MainCorridor()
         {
-            var chunk = CreateBaseChunk("ruins_main_corridor", MapRoomRole.MainPath, RoomChunkLayoutKind.Corridor, MapDirection.East | MapDirection.West);
+            var chunk = CreateBaseChunk("ruins_main_corridor", MapRoomRole.MainPath, RoomChunkLayoutKind.Corridor, MapDirection.North | MapDirection.East | MapDirection.South | MapDirection.West);
             chunk.CorridorLength = 10;
             chunk.CorridorWidth = 2;
             chunk.Anchors.Add(new ChunkAnchor { Id = "monster", Kind = MapAnchorKind.Monster, X = 6, Y = 5 });
@@ -105,7 +105,7 @@ namespace Conn.Core.Maps
 
         private static ChunkPreset MainHeightTransition()
         {
-            var chunk = CreateBaseChunk("ruins_main_transition", MapRoomRole.MainPath, RoomChunkLayoutKind.HeightTransition, MapDirection.East | MapDirection.West);
+            var chunk = CreateBaseChunk("ruins_main_transition", MapRoomRole.MainPath, RoomChunkLayoutKind.HeightTransition, MapDirection.North | MapDirection.East | MapDirection.South | MapDirection.West);
             chunk.Anchors.Add(new ChunkAnchor { Id = "monster", Kind = MapAnchorKind.Monster, X = 6, Y = 5 });
             chunk.Cells = HeightTransitionCells(12, 10, "transition_floor");
             chunk.Objects.Add(new RoomChunkObjectPlacement
@@ -150,7 +150,7 @@ namespace Conn.Core.Maps
 
         private static ChunkPreset SideDeadEnd()
         {
-            var chunk = CreateBaseChunk("ruins_side_deadend", MapRoomRole.SideBranch, RoomChunkLayoutKind.DeadEnd, MapDirection.West);
+            var chunk = CreateBaseChunk("ruins_side_deadend", MapRoomRole.SideBranch, RoomChunkLayoutKind.DeadEnd, MapDirection.North | MapDirection.East | MapDirection.South | MapDirection.West);
             chunk.DeadEndDepth = 2;
             chunk.Anchors.Add(new ChunkAnchor { Id = "loot", Kind = MapAnchorKind.Loot, X = 8, Y = 5 });
             chunk.Cells = DeadEndCells(12, 10, "side_floor");
@@ -211,12 +211,12 @@ namespace Conn.Core.Maps
                     SocketType = !isOpen
                         ? RoomChunkSocketType.Blocked
                         : layoutKind == RoomChunkLayoutKind.Corridor
-                            ? RoomChunkSocketType.Corridor
+                            ? RoomChunkSocketType.Wildcard
                             : RoomChunkSocketType.Door,
                     SocketId = !isOpen
                         ? string.Empty
                         : layoutKind == RoomChunkLayoutKind.Corridor
-                            ? "corridor"
+                            ? "*"
                             : "door"
                 });
             }

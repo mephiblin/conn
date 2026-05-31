@@ -9,6 +9,8 @@ namespace Conn.Runtime.World
         public const string RootName = "Compiled Dungeon Map";
         private const float SmallAuthoredUnit = 0.28f;
         private const float SmallAuthoredUnitCutoff = 0.75f;
+        private const float DefaultRuntimeCellSize = 2.4f;
+        private const float DefaultRuntimeHeightStep = 0.8f;
 
         public static int SpawnFromCompiledMap(CompiledMap compiledMap, Transform parent = null)
         {
@@ -119,12 +121,12 @@ namespace Conn.Runtime.World
 
         public static float WorldCellSize(CompiledMap compiledMap)
         {
-            return NormalizeMapUnit(compiledMap != null ? compiledMap.CellSize : 1f);
+            return NormalizeCellUnit(compiledMap != null ? compiledMap.CellSize : 1f);
         }
 
         public static float WorldHeightStep(CompiledMap compiledMap)
         {
-            return NormalizeMapUnit(compiledMap != null ? compiledMap.HeightStep : 1f);
+            return NormalizeHeightUnit(compiledMap != null ? compiledMap.HeightStep : 1f);
         }
 
         public static Vector3 WorldPosition(CompiledMap compiledMap, int x, int y, float worldY)
@@ -175,15 +177,26 @@ namespace Conn.Runtime.World
             return new Vector3(cellSize, 0.1f, cellSize);
         }
 
-        private static float NormalizeMapUnit(float authoredUnit)
+        private static float NormalizeCellUnit(float authoredUnit)
         {
             var unit = Mathf.Max(0.1f, authoredUnit);
             if (unit < SmallAuthoredUnitCutoff)
             {
-                return Mathf.Max(1f, unit / SmallAuthoredUnit);
+                return Mathf.Max(DefaultRuntimeCellSize, unit / SmallAuthoredUnit * DefaultRuntimeCellSize);
             }
 
-            return unit;
+            return Mathf.Max(DefaultRuntimeCellSize, unit);
+        }
+
+        private static float NormalizeHeightUnit(float authoredUnit)
+        {
+            var unit = Mathf.Max(0.1f, authoredUnit);
+            if (unit < SmallAuthoredUnitCutoff)
+            {
+                return Mathf.Max(DefaultRuntimeHeightStep, unit / SmallAuthoredUnit * DefaultRuntimeHeightStep);
+            }
+
+            return Mathf.Max(DefaultRuntimeHeightStep, unit);
         }
 
         private static Material MaterialFor(string profileId, CompiledMapCell cell)

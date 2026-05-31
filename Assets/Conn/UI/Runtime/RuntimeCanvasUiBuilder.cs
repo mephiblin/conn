@@ -42,6 +42,7 @@ namespace Conn.UI.Runtime
             "TownQuestBoardPanel",
             "TownShopPanel",
             "TownCharacterInventoryPanel",
+            "TownSkillLoadoutPanel",
             "TownNoticePanel"
         };
 
@@ -119,7 +120,7 @@ namespace Conn.UI.Runtime
 
             if (panelName == "CombatCommandPanel")
             {
-                return new Rect(0.36f, 0.05f, 0.28f, 0.13f);
+                return new Rect(0.35f, 0.25f, 0.3f, 0.13f);
             }
 
             if (panelName == "CombatStatusPanel")
@@ -144,7 +145,7 @@ namespace Conn.UI.Runtime
 
             if (panelName == "TownQuickActionsPanel")
             {
-                return new Rect(0.88f, 0.82f, 0.1f, 0.14f);
+                return new Rect(0.88f, 0.70f, 0.1f, 0.26f);
             }
 
             if (panelName == "TownNpcBackdropPanel")
@@ -184,7 +185,12 @@ namespace Conn.UI.Runtime
 
             if (panelName == "RuntimeDebugPanel")
             {
-                return new Rect(0.02f, 0.54f, 0.28f, 0.22f);
+                return new Rect(0.02f, 0.66f, 0.2f, 0.1f);
+            }
+
+            if (panelName == "DungeonPlacementReadout")
+            {
+                return new Rect(0.74f, 0.72f, 0.24f, 0.18f);
             }
 
             if (panelName.Contains("Bottom") || panelName.Contains("Dice") || panelName.Contains("Log"))
@@ -194,7 +200,12 @@ namespace Conn.UI.Runtime
 
             if (panelName == "TownCharacterInventoryPanel")
             {
-                return new Rect(0.04f, 0.08f, 0.92f, 0.82f);
+                return new Rect(0.04f, 0.08f, 0.44f, 0.82f);
+            }
+
+            if (panelName == "TownSkillLoadoutPanel")
+            {
+                return new Rect(0.50f, 0.08f, 0.46f, 0.82f);
             }
 
             if (panelName.Contains("Secondary") || panelName.Contains("Shop") || panelName.Contains("Inventory") || panelName.Contains("Status"))

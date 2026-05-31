@@ -93,7 +93,17 @@ namespace Conn.Editor.Maps
                 Tile("generated_wall", RoomChunkCellType.Wall, "generated_wall_runtime", false),
                 Tile("generated_wall_corner", RoomChunkCellType.Wall, "generated_wall_corner_runtime", false),
                 Tile("generated_wall_edge", RoomChunkCellType.Wall, "generated_wall_edge_runtime", false),
-                Tile("generated_wall_solid", RoomChunkCellType.Wall, "generated_wall_solid_runtime", false)
+                Tile("generated_wall_solid", RoomChunkCellType.Wall, "generated_wall_solid_runtime", false),
+                Tile("start_floor", RoomChunkCellType.Floor, "start_floor_runtime", true),
+                Tile("main_floor", RoomChunkCellType.Floor, "main_floor_runtime", true),
+                Tile("corridor_floor", RoomChunkCellType.Floor, "corridor_floor_runtime", true),
+                Tile("hub_floor", RoomChunkCellType.Floor, "hub_floor_runtime", true),
+                Tile("transition_floor", RoomChunkCellType.Floor, "transition_floor_runtime", true),
+                Tile("quest_floor", RoomChunkCellType.Floor, "quest_floor_runtime", true),
+                Tile("boss_floor", RoomChunkCellType.Floor, "boss_floor_runtime", true),
+                Tile("exit_floor", RoomChunkCellType.Floor, "exit_floor_runtime", true),
+                Tile("side_floor", RoomChunkCellType.Floor, "side_floor_runtime", true),
+                Tile("side_room_floor", RoomChunkCellType.Floor, "side_room_floor_runtime", true)
             };
         }
 

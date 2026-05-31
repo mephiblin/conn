@@ -105,6 +105,12 @@ namespace Conn.Core.Maps
         private static void ExpectLoopCoverage(MapProfile profile, RoomGraph graph, MapValidationReport report)
         {
             var loopEdges = 0;
+            if (profile.SideBranchCount < 2 && profile.LoopMin > 0)
+            {
+                report.Errors.Add($"Generated map has 0 loop edge(s), expected at least {profile.LoopMin}.");
+                return;
+            }
+
             foreach (var edge in graph.Edges)
             {
                 if (string.Equals(edge.Kind, "merge", StringComparison.Ordinal))
@@ -121,15 +127,18 @@ namespace Conn.Core.Maps
 
         private static int FindCriticalPathY(RoomGraph graph)
         {
+            var total = 0f;
+            var count = 0;
             foreach (var node in graph.Nodes)
             {
-                if (node.PathIndex == 0)
+                if (node.PathIndex >= 0)
                 {
-                    return node.GridY;
+                    total += node.GridY;
+                    count++;
                 }
             }
 
-            return 0;
+            return count > 0 ? (int)Math.Round(total / count, MidpointRounding.AwayFromZero) : 0;
         }
 
         private static bool HasLayoutKind(RoomGraph graph, RoomChunkLayoutKind layoutKind)
