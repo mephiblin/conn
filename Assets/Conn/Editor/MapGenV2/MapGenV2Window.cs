@@ -531,7 +531,7 @@ namespace Conn.MapGenV2.Editor
 
                     using (new EditorGUI.DisabledScope(!workflow.CanPostProcess))
                     {
-                        if (GUILayout.Button("후처리 재실행 / Repostprocess Mockup"))
+                        if (GUILayout.Button("후처리 다시 적용 / Reapply Post-Process"))
                         {
                             RunPostProcess();
                         }
@@ -1502,7 +1502,7 @@ namespace Conn.MapGenV2.Editor
                     DrawMaterializedPrefabFolderField();
                     DrawBakedAssetFolderField();
 
-                    if (GUILayout.Button("Find Previous Root"))
+                    if (GUILayout.Button("이전 루트 찾기 / Find Previous Root"))
                     {
                         var marker = MapGenMockupMaterializer.FindExistingMarker(draft);
                         selectedMaterializedRoot = marker != null ? marker.gameObject : null;
@@ -1513,25 +1513,25 @@ namespace Conn.MapGenV2.Editor
 
                     using (new EditorGUI.DisabledScope(selectedMaterializedRoot == null))
                     {
-                        if (GUILayout.Button("Select Materialized Root"))
+                        if (GUILayout.Button("씬 루트 선택 / Select Materialized Root"))
                         {
                             Selection.activeGameObject = selectedMaterializedRoot;
                             EditorGUIUtility.PingObject(selectedMaterializedRoot);
                         }
 
-                        if (GUILayout.Button("Frame Materialized Root"))
+                        if (GUILayout.Button("씬 루트 보기 / Frame Materialized Root"))
                         {
                             FrameSelectedRoot();
                         }
 
-                        if (GUILayout.Button("Clear Previous Materialization"))
+                        if (GUILayout.Button("이전 씬 출력 제거 / Clear Previous Materialization"))
                         {
                             MapGenMockupMaterializer.ClearRoot(selectedMaterializedRoot);
                             selectedMaterializedRoot = null;
                             SetLastOperationResult("Cleared selected materialized root.");
                         }
 
-                        if (GUILayout.Button("Save Materialized As Prefab"))
+                        if (GUILayout.Button("씬 출력을 프리팹으로 저장 / Save Materialized As Prefab"))
                         {
                             SaveSelectedRootAsPrefab();
                         }
@@ -1584,7 +1584,7 @@ namespace Conn.MapGenV2.Editor
                 using (new EditorGUILayout.HorizontalScope())
                 {
                     GUILayout.FlexibleSpace();
-                    if (GUILayout.Button("Ensure Prefab Folder", GUILayout.Width(170f)))
+                    if (GUILayout.Button("프리팹 폴더 보장 / Ensure Prefab Folder", GUILayout.Width(220f)))
                     {
                         MapGenV2AssetFolderUtility.EnsureAssetFolder(GetMaterializedPrefabFolder());
                         SetLastOperationResult($"Materialized prefab folder ready: {GetMaterializedPrefabFolder()}.");
@@ -1614,7 +1614,7 @@ namespace Conn.MapGenV2.Editor
                 using (new EditorGUILayout.HorizontalScope())
                 {
                     GUILayout.FlexibleSpace();
-                    if (GUILayout.Button("Ensure Baked Folder", GUILayout.Width(170f)))
+                    if (GUILayout.Button("베이크 폴더 보장 / Ensure Baked Folder", GUILayout.Width(220f)))
                     {
                         MapGenV2AssetFolderUtility.EnsureAssetFolder(GetBakedAssetFolder());
                         SetLastOperationResult($"Baked asset folder ready: {GetBakedAssetFolder()}.");
@@ -2710,9 +2710,9 @@ namespace Conn.MapGenV2.Editor
 
                 using (new EditorGUI.DisabledScope(regionOverride.Locked))
                 {
-                    if (GUILayout.Button("다른 형태로 교체 / Replace Shape"))
+                    if (GUILayout.Button("선택 리전 재생성 / Regenerate Selected Region"))
                     {
-                        RegenerateSelectedRegion("Replaced shape");
+                        RegenerateSelectedRegion("Regenerated selected region");
                     }
                 }
 
@@ -2752,7 +2752,7 @@ namespace Conn.MapGenV2.Editor
                         SetLastOperationResult($"Changed region {selectedRegionId} category to {newCategory}. Save the draft before scene output.");
                     }
 
-                    if (GUILayout.Button("Clear Region Override"))
+                    if (GUILayout.Button("리전 변경 초기화 / Clear Region Override"))
                     {
                         Undo.RecordObject(draft, "Clear MapGen Region Override");
                         draft.ClearRegionOverride(selectedRegionId);
@@ -2762,24 +2762,24 @@ namespace Conn.MapGenV2.Editor
 
                     using (new EditorGUI.DisabledScope(regionOverride.Locked || corridorCount + connectorCount <= 0))
                     {
-                        if (GUILayout.Button("Reroute Connectors / 연결 재경로"))
+                        if (GUILayout.Button("연결 리전 재생성 / Regenerate Connection Region"))
                         {
-                            RegenerateSelectedRegion("Rerouted connectors");
+                            RegenerateSelectedRegion("Regenerated connection region");
                         }
                     }
 
-                    if (GUILayout.Button("Delete Region / 삭제"))
+                    if (GUILayout.Button("리전 삭제 / Delete Region"))
                     {
                         ChangeSelectedRegionState(MapGenCellState.Empty, "Deleted");
                         ClearSelection();
                     }
 
-                    if (GUILayout.Button("Mark Blocked / 차단"))
+                    if (GUILayout.Button("차단으로 변경 / Mark Blocked"))
                     {
                         ChangeSelectedRegionState(MapGenCellState.Blocked, "Marked blocked");
                     }
 
-                    if (GUILayout.Button("Mark Reserved / 예약"))
+                    if (GUILayout.Button("예약으로 변경 / Mark Reserved"))
                     {
                         ChangeSelectedRegionState(MapGenCellState.Reserved, "Marked reserved");
                     }
