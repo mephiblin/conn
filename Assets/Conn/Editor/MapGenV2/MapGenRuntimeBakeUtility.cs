@@ -70,8 +70,8 @@ namespace Conn.MapGenV2.Editor
                 report.Add(new MapGenIssue(
                     MapGenGenerationPhase.BakeRuntime,
                     "runtime_bake_missing_draft",
-                    "Cannot validate runtime bake consistency without a draft.",
-                    "Select the draft that produced the baked map.",
+                    "Cannot validate runtime bake consistency without a current mockup.",
+                    "Select the current mockup that produced the baked map.",
                     severity: MapGenIssueSeverity.Fatal));
                 return report;
             }
@@ -82,7 +82,7 @@ namespace Conn.MapGenV2.Editor
                     MapGenGenerationPhase.BakeRuntime,
                     "runtime_bake_missing_asset",
                     "Expected baked runtime asset is missing.",
-                    "Run Bake Runtime Asset after accepting the current mockup.",
+                    "Run Bake Runtime Asset after confirming the current mockup.",
                     severity: MapGenIssueSeverity.Error));
                 return report;
             }
@@ -104,8 +104,8 @@ namespace Conn.MapGenV2.Editor
                 report.Add(new MapGenIssue(
                     MapGenGenerationPhase.BakeRuntime,
                     "runtime_bake_stale_signature",
-                    "Baked runtime asset source signature does not match the accepted draft.",
-                    "Rebake the runtime asset from the current accepted draft.",
+                    "Baked runtime asset source signature does not match the confirmed current mockup.",
+                    "Rebake the runtime asset from the current confirmed mockup.",
                     severity: MapGenIssueSeverity.Error,
                     contextPath: nameof(MapGenBakedMapAsset.SourceSignature)));
             }
@@ -115,8 +115,8 @@ namespace Conn.MapGenV2.Editor
                 report.Add(new MapGenIssue(
                     MapGenGenerationPhase.BakeRuntime,
                     "runtime_bake_dimension_mismatch",
-                    "Baked runtime asset dimensions do not match the draft.",
-                    "Rebake the runtime asset from the current accepted draft.",
+                    "Baked runtime asset dimensions do not match the current mockup.",
+                    "Rebake the runtime asset from the current confirmed mockup.",
                     severity: MapGenIssueSeverity.Error,
                     contextPath: $"{nameof(MapGenBakedMapAsset.Width)}/{nameof(MapGenBakedMapAsset.Height)}"));
             }
@@ -204,7 +204,7 @@ namespace Conn.MapGenV2.Editor
                 MapGenGenerationPhase.BakeRuntime,
                 "runtime_bake_payload_count_mismatch",
                 $"{fieldName} count is {actual}, expected {expected}.",
-                "Rebake the runtime asset from the current accepted draft.",
+                "Rebake the runtime asset from the current confirmed mockup.",
                 severity: MapGenIssueSeverity.Error,
                 contextPath: fieldName));
         }

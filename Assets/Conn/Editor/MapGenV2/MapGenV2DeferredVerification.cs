@@ -58,8 +58,8 @@ namespace Conn.MapGenV2.Editor
 
                 Require(profile.Validate().IsValid, "Persisted profile failed validation.");
                 Require(shape.Validate().IsValid, "Persisted room shape failed validation.");
-                Require(draft.Accepted, "Persisted draft lost accepted state.");
-                Require(draft.IsAcceptedSignatureCurrent, "Persisted draft accepted signature is stale.");
+                Require(draft.Accepted, "Persisted current mockup lost confirmed state.");
+                Require(draft.IsAcceptedSignatureCurrent, "Persisted current mockup confirmation signature is stale.");
                 Require(baked.Cells.Length > 0, "Persisted baked map has no cells.");
                 Require(baked.TraversalEdges.Length > 0, "Persisted baked map has no traversal edges.");
                 Require(baked.SourceSignature == draft.AcceptedSignature, "Persisted baked map signature does not match draft.");
@@ -200,7 +200,7 @@ namespace Conn.MapGenV2.Editor
             Require(profile.Validate().IsValid, "Profile failed validation after style swap.");
             Require(draft.ComputeSignature() == originalSignature, "Style swap changed abstract mockup layout signature.");
             profile.StyleSet = originalStyle;
-            log.Pass("Multiple style sets verified on the same accepted mockup without changing layout signature.");
+            log.Pass("Multiple style sets verified on the same confirmed mockup without changing layout signature.");
         }
 
         private static void VerifyPrefabModuleMaterialization(VerificationLog log, VerificationContext context)

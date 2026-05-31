@@ -918,7 +918,7 @@ Conn/MapGenV2/Map Generator
 Starter setup path:
 
 ```text
-Conn/MapGenV2/Create Starter Profile Setup
+Conn/MapGenV2/Create Starter Setup
 ```
 
 The starter setup creates a linked `MapGenProfileAsset`, `MapGenRuleSetAsset`,

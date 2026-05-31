@@ -13,7 +13,6 @@ namespace Conn.Editor.Maps
         private static readonly int[] RequiredCompiledMapSeeds = { 2001, 2112 };
         public const string DefaultCompiledMapAssetPath = "Assets/Conn/Core/Maps/ch2_first_slice_ruins_2001_CompiledMap.asset";
 
-        [MenuItem("Conn/Legacy/Maps/Debug/Build & Validate Chapter 2 All")]
         public static void BuildAndValidateChapterTwo()
         {
             var database = ImportAndValidateChapterTwoContentSlice();
@@ -22,7 +21,6 @@ namespace Conn.Editor.Maps
             Debug.Log("Conn Chapter 2 data and editor pipeline validation passed.");
         }
 
-        [MenuItem("Conn/Legacy/Maps/Debug/Build & Validate Chapter 2/Content Slice")]
         public static void BuildAndValidateChapterTwoContentSlice()
         {
             ImportAndValidateChapterTwoContentSlice();
@@ -43,7 +41,6 @@ namespace Conn.Editor.Maps
             return database;
         }
 
-        [MenuItem("Conn/Legacy/Maps/Debug/Build & Validate Chapter 2/Map Slice")]
         public static void BuildAndValidateChapterTwoMapSlice()
         {
             var database = AssetDatabase.LoadAssetAtPath<ContentDatabaseDefinition>(LegacyContentJsonImporter.DefaultDatabaseAssetPath);

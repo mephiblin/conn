@@ -267,7 +267,7 @@ namespace Conn.MapGenV2.Editor
                     MapGenGenerationPhase.Materialize,
                     "materialized_output_missing_root",
                     "No materialized output root is selected.",
-                    "Materialize the accepted mockup or find the previous root.",
+                    "Materialize the confirmed mockup or find the previous root.",
                     severity: MapGenIssueSeverity.Info));
                 return validation;
             }
@@ -289,8 +289,8 @@ namespace Conn.MapGenV2.Editor
                 validation.Add(new MapGenIssue(
                     MapGenGenerationPhase.Materialize,
                     "materialized_output_missing_draft",
-                    "Cannot compare materialized output without a selected draft.",
-                    "Select the draft that produced this materialized root.",
+                    "Cannot compare materialized output without a selected current mockup.",
+                    "Select the current mockup that produced this materialized root.",
                     contextPath: root.name,
                     severity: MapGenIssueSeverity.Warning));
                 return validation;
@@ -299,8 +299,8 @@ namespace Conn.MapGenV2.Editor
             AddMismatchIssue(
                 validation,
                 "materialized_output_stale_draft_signature",
-                "Materialized output was produced from a different accepted mockup.",
-                "Reaccept the current mockup if needed, then rematerialize the scene output.",
+                "Materialized output was produced from a different confirmed mockup.",
+                "Confirm the current mockup if needed, then rematerialize the scene output.",
                 marker.DraftSignature,
                 draft.AcceptedSignature,
                 "Root.DraftSignature");
@@ -361,7 +361,7 @@ namespace Conn.MapGenV2.Editor
                 validation.Add(new MapGenIssue(
                     MapGenGenerationPhase.Materialize,
                     "materialized_output_stale_module_markers",
-                    $"{staleModuleMarkers} materialized module markers do not match the current accepted draft or module set.",
+                    $"{staleModuleMarkers} materialized module markers do not match the current confirmed mockup or module set.",
                     "Rematerialize the root so all stamped prefab markers match current source data.",
                     contextPath: root.name,
                     severity: MapGenIssueSeverity.Warning));

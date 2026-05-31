@@ -1036,7 +1036,6 @@ namespace Conn.Editor.Maps
     {
         private const string ScenePath = "Assets/Conn/Scenes/Editor/MapGenerator.unity";
 
-        [MenuItem("Conn/Legacy/Maps/Create Legacy Map Generator Workspace Scene")]
         public static void CreateWorkspaceScene()
         {
             CreateWorkspaceSceneAsset(promptToSaveOpenScenes: true);

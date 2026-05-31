@@ -15,25 +15,29 @@ Primary implementation tracker:
 
 ## Quick User Guide
 
-Open `Conn > MapGenV2 > Open Window`.
+Open `Conn > MapGenV2 > Map Generator`.
 
-1. Click `Create Starter Setup`.
-2. Confirm the generated `Profile` and `Draft` are assigned in the MapGenV2
-   window.
-3. Click `Generate Mockup / 목업 생성`.
+When the language selector is `Auto` on a Korean editor, the window shows Korean
+button names. The English names below are only the equivalent names in English
+mode.
+
+1. Click `스타터 설정 생성` (`Create Starter Setup`).
+2. Confirm the generated `프로필 / Profile` and `현재 목업 / Current Mockup`
+   fields are assigned in the MapGenV2 window.
+3. Click `목업 생성` (`Generate Mockup`).
 4. Inspect the preview. Rooms are blue, corridors are red, blocked cells are
    black, and empty cells are gray.
 5. Optional: click a room/corridor region to inspect, lock, edit metadata, or
    regenerate that region.
-6. Click `Repostprocess Mockup / 후처리 재실행` when post-process rules should
+6. Click `후처리 재실행` (`Repostprocess Mockup`) when post-process rules should
    be applied.
-7. Click `Accept Mockup / 목업 수락`.
-8. In `Scene Output`, choose the overwrite policy:
+7. Click `목업 확정` (`Confirm Mockup`).
+8. In `씬 출력 / Scene Output`, choose the overwrite policy:
    `CreateUnique`, `ReplacePrevious`, or `UpdateSelected`.
-9. Click `Materialize To Scene / 씬 생성`.
-10. Click `Bake Runtime Asset / 런타임 베이크`.
+9. Click `씬 생성` (`Materialize To Scene`).
+10. Click `런타임 베이크` (`Bake Runtime Asset`).
 
-The accepted mockup signature is the source of materialization and runtime
+The confirmed mockup signature is the source of materialization and runtime
 bake. Materialization does not rerun the solver.
 
 ## Production Authoring
@@ -111,7 +115,7 @@ Ownership guidance:
   designer owner in the asset description or adjacent notes.
 - Module set changes require coverage validation because they affect every
   profile that references the module set.
-- Profile/rule changes that alter accepted drafts should be treated as layout
+- Profile/rule changes that alter confirmed current mockups should be treated as layout
   changes and reviewed with before/after mockup screenshots.
 
 Review checklist for shared MapGenV2 assets:
@@ -161,9 +165,9 @@ Runtime integration priority is:
   category.
 - `Generated mockup is stale`: source profile/style/rule/template/shape data
   changed. Run `Regenerate Mockup / 목업 재생성`.
-- `Accepted signature is stale`: draft cells changed after accept. Run
-  `Reaccept Mockup / 목업 재수락`.
-- `Materialized output is stale`: accepted draft or module set changed. Run
+- `Confirmed signature is stale`: current mockup cells changed after confirmation. Run
+  `목업 확정` / `Confirm Mockup`.
+- `Materialized output is stale`: confirmed current mockup or module set changed. Run
   `Rematerialize To Scene / 씬 재생성`.
 - `Baked runtime asset source signature does not match`: run
   `Rebake Runtime Asset / 런타임 재베이크`.
@@ -210,9 +214,11 @@ template, category, direction, prefab name, and cell coordinate can be traced.
 - Corridor template: production corridor candidate with connectors and length
   rules.
 - Connector: edge socket that allows room/corridor template compatibility.
-- Draft: editable mockup grid generated from a profile and seed.
-- Materialization: scene/prefab stamping from an accepted draft.
-- Bake: runtime-safe asset generation from an accepted draft.
+- Draft: internal asset for the current mockup grid generated from a profile and
+  seed. Normal authoring should use the MapGenV2 window, not the draft
+  inspector.
+- Materialization: scene/prefab stamping from a confirmed current mockup.
+- Bake: runtime-safe asset generation from a confirmed current mockup.
 
 ## Verification Commands
 

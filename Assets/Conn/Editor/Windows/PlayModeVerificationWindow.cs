@@ -1,4 +1,3 @@
-using Conn.Editor.Maps;
 using Conn.Editor.Tools;
 using UnityEditor;
 using UnityEngine;
@@ -45,18 +44,13 @@ namespace Conn.Editor.Windows
         {
             EditorGUILayout.LabelField("Manual Play Mode Verification", EditorStyles.boldLabel);
             EditorGUILayout.HelpBox(
-                "Use this after automated Chapter 1/2 validation passes. Phase 6 and Phase 8 checklist items still require actual Game view observation before changing [!] to [x].",
+                "Use this after automated Chapter 1 validation passes. Phase 6 and Phase 8 checklist items still require actual Game view observation before changing [!] to [x].",
                 MessageType.Info);
 
             EditorGUILayout.BeginHorizontal();
             if (GUILayout.Button("Build & Validate Chapter 1"))
             {
                 ChapterOneBuildValidator.BuildAndValidateChapterOne();
-            }
-
-            if (GUILayout.Button("Build & Validate Chapter 2"))
-            {
-                ChapterTwoBuildValidator.BuildAndValidateChapterTwo();
             }
 
             EditorGUILayout.EndHorizontal();

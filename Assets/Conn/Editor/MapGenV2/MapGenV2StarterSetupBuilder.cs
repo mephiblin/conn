@@ -15,7 +15,7 @@ namespace Conn.MapGenV2.Editor
     {
         private const string Root = "Assets/Conn/Authoring/MapGenV2";
 
-        [MenuItem("Conn/MapGenV2/Create Starter Profile Setup")]
+        [MenuItem("Conn/MapGenV2/Create Starter Setup")]
         public static void CreateStarterProfileSetupFromMenu()
         {
             var setup = CreateStarterProfileSetup();
@@ -111,7 +111,7 @@ namespace Conn.MapGenV2.Editor
                 "Starter MapGenV2 profile for learning the production workflow.\n"
                 + "- Uses generated placeholder prefabs only; replace the module set with real project prefabs for production.\n"
                 + "- Red floor modules are rooms, black floor modules are corridors, blue blocks are walls/corners, pale slabs are ceilings, yellow blocks are doors, and green spheres are prop markers.\n"
-                + "- Generate Mockup is editor-only. Accept the mockup before Materialize To Scene or Bake Runtime Asset.";
+                + "- Generate Mockup is editor-only. Confirm the mockup before Materialize To Scene or Bake Runtime Asset.";
             profile.MapSize = new Vector2Int(10, 8);
             profile.Seed = 2001;
             profile.StyleSet = styleSet;

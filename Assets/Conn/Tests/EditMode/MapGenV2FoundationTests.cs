@@ -93,9 +93,10 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
-        public void MapGenV2WindowDefinesMinimumSizeForLocalizedText()
+        public void MapGenV2WindowDefinesInspectorFriendlyMinimumSize()
         {
-            Assert.That(MapGenV2Window.MinimumWindowSize.x, Is.GreaterThanOrEqualTo(860f));
+            Assert.That(MapGenV2Window.MinimumWindowSize.x, Is.LessThanOrEqualTo(480f));
+            Assert.That(MapGenV2Window.MinimumWindowSize.x, Is.GreaterThanOrEqualTo(360f));
             Assert.That(MapGenV2Window.MinimumWindowSize.y, Is.GreaterThanOrEqualTo(620f));
         }
 
@@ -107,15 +108,15 @@ namespace Conn.Tests.EditMode
                 "draft_a",
                 2001,
                 "Valid",
-                "Accepted current",
+                "Confirmed current",
                 "MapGenV2_profile_a_2001",
                 "Assets/Conn/Core/Maps/profile_a_2001_BakedMap.asset");
 
             Assert.That(status, Does.Contain("Profile profile_a"));
-            Assert.That(status, Does.Contain("Draft draft_a"));
+            Assert.That(status, Does.Contain("Current Mockup draft_a"));
             Assert.That(status, Does.Contain("Seed 2001"));
             Assert.That(status, Does.Contain("Validation Valid"));
-            Assert.That(status, Does.Contain("Accepted Accepted current"));
+            Assert.That(status, Does.Contain("Mockup State Confirmed current"));
             Assert.That(status, Does.Contain("Materialized Root MapGenV2_profile_a_2001"));
             Assert.That(status, Does.Contain("Baked Asset Assets/Conn/Core/Maps/profile_a_2001_BakedMap.asset"));
         }
@@ -125,9 +126,9 @@ namespace Conn.Tests.EditMode
         {
             var result = MapGenV2Window.AppendNextStep(
                 "Generate Mockup complete.",
-                "Inspect the preview, then Accept Mockup.");
+                "Inspect the preview, then Confirm Mockup.");
 
-            Assert.That(result, Is.EqualTo("Generate Mockup complete. Next: Inspect the preview, then Accept Mockup."));
+            Assert.That(result, Is.EqualTo("Generate Mockup complete. Next: Inspect the preview, then Confirm Mockup."));
         }
 
         [Test]
@@ -145,16 +146,19 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
-        public void MapGenV2WindowDeclaresThreePaneAuthoringLayout()
+        public void MapGenV2WindowDeclaresInspectorAuthoringLayout()
         {
-            var summary = MapGenV2Window.BuildThreePaneLayoutSummary();
+            var summary = MapGenV2Window.BuildInspectorLayoutSummary();
             var technology = MapGenV2Window.BuildEditorTechnologySummary();
             var help = MapGenV2Window.BuildInlineHelpCoverageSummary();
 
-            Assert.That(summary, Does.Contain("Three-pane authoring layout"));
-            Assert.That(summary, Does.Contain("left setup/assets/output"));
-            Assert.That(summary, Does.Contain("center mockup actions and visual preview"));
-            Assert.That(summary, Does.Contain("right next action, validation, diagnostics"));
+            Assert.That(summary, Does.Contain("Inspector-style authoring layout"));
+            Assert.That(summary, Does.Contain("scene output"));
+            Assert.That(summary, Does.Contain("runtime bake"));
+            Assert.That(summary, Does.Contain("stacked vertically"));
+            Assert.That(summary, Does.Contain("foldout sections"));
+            Assert.That(summary, Does.Contain("utility sections"));
+            Assert.That(summary, Does.Contain("responsive wrapping"));
             Assert.That(technology, Does.Contain("new Scene View overlay uses UI Toolkit"));
             Assert.That(technology, Does.Contain("existing MapGenV2 window and inspectors stay IMGUI"));
             Assert.That(technology, Does.Contain("preview drawing, Undo, and serialized inspector workflows"));
@@ -225,7 +229,7 @@ namespace Conn.Tests.EditMode
 
             Assert.That(summary, Does.Contain("serialized inspector asset edits"));
             Assert.That(summary, Does.Contain("room-shape paint"));
-            Assert.That(summary, Does.Contain("draft generate"));
+            Assert.That(summary, Does.Contain("current mockup generate"));
             Assert.That(summary, Does.Contain("selected-region"));
             Assert.That(summary, Does.Contain("scene materialization"));
             Assert.That(summary, Does.Contain("Undo object creation/destruction"));
@@ -258,8 +262,8 @@ namespace Conn.Tests.EditMode
             Assert.That(corridorTemplate, Does.Contain("advanced/debug foldout"));
             Assert.That(corridorTemplate, Does.Contain("raw arrays"));
             Assert.That(draft, Does.Contain("primary UX"));
-            Assert.That(draft, Does.Contain("raw serialized draft data"));
-            Assert.That(draft, Does.Contain("advanced/debug foldout"));
+            Assert.That(draft, Does.Contain("preview-only"));
+            Assert.That(draft, Does.Contain("generation, confirmation, materialization, bake"));
         }
 
         [Test]
@@ -268,13 +272,13 @@ namespace Conn.Tests.EditMode
             var explanation = MapGenV2Window.BuildPrimaryActionExplanation(
                 "Materialize To Scene",
                 false,
-                "Accept Mockup first.",
+                "Confirm Mockup first.",
                 "instantiates prefab or placeholder modules",
                 "Scene root MapGenV2_profile_2001");
 
             Assert.That(explanation, Does.Contain("Materialize To Scene"));
             Assert.That(explanation, Does.Contain("Disabled"));
-            Assert.That(explanation, Does.Contain("Accept Mockup first."));
+            Assert.That(explanation, Does.Contain("Confirm Mockup first."));
             Assert.That(explanation, Does.Contain("Change: instantiates prefab or placeholder modules"));
             Assert.That(explanation, Does.Contain("Output: Scene root MapGenV2_profile_2001"));
         }
@@ -293,11 +297,11 @@ namespace Conn.Tests.EditMode
 
                 var summary = MapGenV2SceneViewOverlay.BuildOverlaySummary(draft, root, null, "Move");
 
-                Assert.That(summary, Does.Contain("Draft draft_a"));
+                Assert.That(summary, Does.Contain("Current Mockup draft_a"));
                 Assert.That(summary, Does.Contain("Root MapGenV2_profile_2001"));
-                Assert.That(summary, Does.Contain("accepted mockup"));
+                Assert.That(summary, Does.Contain("confirmed mockup"));
                 Assert.That(summary, Does.Contain("Tool Move"));
-                Assert.That(summary, Does.Contain("Generate/Accept/Materialize/Clear/Frame"));
+                Assert.That(summary, Does.Contain("Generate/Confirm/Materialize/Clear/Frame"));
                 Assert.That(summary, Does.Contain("Toggles Grid/Region IDs/Connectors/Sockets/Blocked/Props/Nav/Bounds/Diagnostics"));
             }
             finally
@@ -326,12 +330,12 @@ namespace Conn.Tests.EditMode
 
                 var summary = MapGenV2SceneViewOverlay.BuildSceneStateSummary(draft, root, baked);
 
-                Assert.That(summary, Does.Contain("accepted mockup"));
+                Assert.That(summary, Does.Contain("confirmed mockup"));
                 Assert.That(summary, Does.Contain("stale materialized output"));
                 Assert.That(summary, Does.Contain("stale baked runtime output"));
                 Assert.That(MapGenV2SceneViewOverlay.BuildSceneStateSummary(draft, null, null), Does.Contain("no materialized output"));
                 draft.ClearAcceptance();
-                Assert.That(MapGenV2SceneViewOverlay.BuildSceneStateSummary(draft, null, null), Does.Contain("unaccepted mockup"));
+                Assert.That(MapGenV2SceneViewOverlay.BuildSceneStateSummary(draft, null, null), Does.Contain("unconfirmed mockup"));
             }
             finally
             {
@@ -622,7 +626,7 @@ namespace Conn.Tests.EditMode
             Assert.That(MapGenV2StatusPresentation.For(MapGenV2StatusKind.Warning).Label, Is.EqualTo("Warning"));
             Assert.That(MapGenV2StatusPresentation.For(MapGenV2StatusKind.Error).IconName, Is.EqualTo("console.erroricon"));
             Assert.That(MapGenV2StatusPresentation.For(MapGenV2StatusKind.Stale).Label, Is.EqualTo("Stale"));
-            Assert.That(MapGenV2StatusPresentation.For(MapGenV2StatusKind.Accepted).Label, Is.EqualTo("Accepted"));
+            Assert.That(MapGenV2StatusPresentation.For(MapGenV2StatusKind.Accepted).Label, Is.EqualTo("Confirmed"));
             Assert.That(MapGenV2StatusPresentation.For(MapGenV2StatusKind.Generated).Label, Is.EqualTo("Generated"));
             Assert.That(MapGenV2StatusPresentation.For(MapGenV2StatusKind.ManualOverride).Label, Is.EqualTo("Manual Override"));
             Assert.That(MapGenV2StatusPresentation.For(MapGenV2StatusKind.Locked).Label, Is.EqualTo("Locked"));
@@ -715,7 +719,7 @@ namespace Conn.Tests.EditMode
                 Assert.That(summary, Does.Contain("Regions 1"));
                 Assert.That(summary, Does.Contain("Selected 7"));
                 Assert.That(summary, Does.Contain("Overrides 1"));
-                Assert.That(summary, Does.Contain("Accepted Yes"));
+                Assert.That(summary, Does.Contain("Confirmed Yes"));
                 Assert.That(summary, Does.Contain("Stale No"));
                 Assert.That(summary, Does.Contain("Materialization Ready"));
                 Assert.That(selected, Does.Contain("Selected region 7"));
@@ -1909,7 +1913,7 @@ namespace Conn.Tests.EditMode
         {
             var emptyStatus = MapGenV2WorkflowStatus.From(null, null);
             Assert.That(emptyStatus.CanGenerate, Is.False);
-            Assert.That(emptyStatus.GenerateReason, Is.EqualTo("Create or assign a draft first."));
+            Assert.That(emptyStatus.GenerateReason, Is.EqualTo("Create or assign the current mockup asset first."));
             Assert.That(emptyStatus.NextAction, Is.EqualTo("Create Starter Setup or assign a profile."));
 
             var moduleSet = ScriptableObject.CreateInstance<MapGenModuleSetAsset>();
@@ -1935,7 +1939,7 @@ namespace Conn.Tests.EditMode
                 var generated = MapGenV2WorkflowStatus.From(profile, draft);
                 Assert.That(generated.CanAccept, Is.True);
                 Assert.That(generated.CanMaterialize, Is.False);
-                Assert.That(generated.MaterializeReason, Is.EqualTo("Accept Mockup first."));
+                Assert.That(generated.MaterializeReason, Is.EqualTo("Confirm Mockup first."));
                 Assert.That(draft.IsGeneratedSignatureCurrent, Is.True);
 
                 profile.ProfileId = "workflow_profile_changed";
@@ -1954,7 +1958,7 @@ namespace Conn.Tests.EditMode
                 draft.Cells[0].State = MapGenCellState.Blocked;
                 var stale = MapGenV2WorkflowStatus.From(profile, draft);
                 Assert.That(stale.CanMaterialize, Is.False);
-                Assert.That(stale.MaterializeReason, Is.EqualTo("The accepted signature is stale. Accept the current mockup again."));
+                Assert.That(stale.MaterializeReason, Is.EqualTo("The confirmed mockup is stale. Confirm the current mockup."));
             }
             finally
             {

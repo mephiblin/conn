@@ -17,8 +17,6 @@ namespace Conn.MapGenV2.Editor
         private static readonly Color ConnectorColor = CorridorColor;
         private static readonly Color ReservedColor = BlockedColor;
         private static readonly Color GridLineColor = new Color(0f, 0f, 0f, 0.28f);
-        private static bool showRawDraftData;
-        private MapGenValidationReport lastGenerationReport;
         private int selectedRegionId = -1;
 
         public override void OnInspectorGUI()
@@ -27,73 +25,16 @@ namespace Conn.MapGenV2.Editor
             DrawPreview(draft, ref selectedRegionId);
             DrawDraftStatus(draft, selectedRegionId);
 
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                if (GUILayoutButton("Generate From Profile"))
-                {
-                    Undo.RecordObject(draft, "Generate Mockup Draft");
-                    lastGenerationReport = draft.GenerateFromProfile();
-                    EditorUtility.SetDirty(draft);
-                }
-
-                if (GUILayoutButton("Accept Mockup"))
-                {
-                    Undo.RecordObject(draft, "Accept Mockup Draft");
-                    draft.Accept();
-                    EditorUtility.SetDirty(draft);
-                }
-            }
-
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                if (GUILayoutButton("Run Post-Process"))
-                {
-                    Undo.RecordObject(draft, "Post-Process Mockup Draft");
-                    draft.ApplyPostProcessingFromProfile();
-                    EditorUtility.SetDirty(draft);
-                }
-
-                if (GUILayoutButton("Reject Mockup"))
-                {
-                    Undo.RecordObject(draft, "Reject Mockup Draft");
-                    draft.Reject();
-                    EditorUtility.SetDirty(draft);
-                }
-            }
-
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                using (new EditorGUI.DisabledScope(!draft.Accepted || !draft.IsAcceptedSignatureCurrent))
-                {
-                    if (GUILayoutButton("Materialize"))
-                    {
-                        MapGenMockupMaterializer.Materialize(draft);
-                    }
-
-                    if (GUILayoutButton("Bake Runtime"))
-                    {
-                        MapGenRuntimeBakeUtility.Bake(draft);
-                    }
-                }
-            }
-
-            if (lastGenerationReport != null)
-            {
-                MapGenValidationReportEditorGUI.Draw(lastGenerationReport, draft, "Mockup generated.");
-            }
-
             MapGenValidationReportEditorGUI.Draw(
                 MapGenPropPlacementValidator.Validate(draft.Width, draft.Height, draft.Cells),
                 draft,
                 "Prop channels are valid.");
-
-            DrawRawDraftDataFoldout();
         }
 
         public static string BuildInspectorUxSummary()
         {
-            return "Draft primary UX shows preview, status, actions, selected-region summary, and validation first; "
-                + "raw serialized draft data remains in an advanced/debug foldout.";
+            return "Draft primary UX is preview-only for normal use: preview, status, selected-region summary, and validation are shown; "
+                + "generation, confirmation, materialization, bake, and raw serialized edits stay in the MapGenV2 window or debug tooling.";
         }
 
         public static string BuildInspectorSummary(MapGenMockupDraftAsset draft, int selectedRegionId)
@@ -110,24 +51,11 @@ namespace Conn.MapGenV2.Editor
             builder.Append($", Regions {CountRegions(draft)}");
             builder.Append($", Selected {FormatSelectedRegion(draft, selectedRegionId)}");
             builder.Append($", Overrides {Count(draft.RegionOverrides)}");
-            builder.Append($", Accepted {(draft.Accepted ? "Yes" : "No")}");
+            builder.Append($", Confirmed {(draft.Accepted ? "Yes" : "No")}");
             builder.Append($", Stale {(draft.IsAcceptedSignatureCurrent ? "No" : "Yes")}");
             builder.Append($", Materialization {FormatMaterializationReadiness(draft)}");
             builder.Append($", Signature {FormatValue(draft.ComputeSignature())}");
             return builder.ToString();
-        }
-
-        private void DrawRawDraftDataFoldout()
-        {
-            EditorGUILayout.Space();
-            showRawDraftData = EditorGUILayout.Foldout(showRawDraftData, "고급/디버그 Raw Draft Data", true);
-            if (!showRawDraftData)
-            {
-                EditorGUILayout.HelpBox(BuildInspectorUxSummary(), MessageType.Info);
-                return;
-            }
-
-            DrawDefaultInspector();
         }
 
         public static string BuildSelectedRegionSummary(MapGenMockupDraftAsset draft, int selectedRegionId)
@@ -200,21 +128,16 @@ namespace Conn.MapGenV2.Editor
 
         private static void DrawDraftStatus(MapGenMockupDraftAsset draft, int selectedRegionId)
         {
-            EditorGUILayout.LabelField("드래프트 상태 / Draft Status", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("현재 목업 상태 / Current Mockup Status", EditorStyles.boldLabel);
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
                 var style = new GUIStyle(EditorStyles.label) { wordWrap = true };
                 EditorGUILayout.LabelField(BuildInspectorSummary(draft, selectedRegionId), style);
                 EditorGUILayout.LabelField(BuildSelectedRegionSummary(draft, selectedRegionId), style);
                 EditorGUILayout.HelpBox(
-                    "Preview 셀을 클릭하면 region id, category, template/shape, lock/override 상태를 확인할 수 있습니다.",
+                    "이 인스펙터는 프리뷰와 상태 확인 전용입니다. 제작 작업은 Conn > MapGenV2 > Map Generator 창에서 진행하세요.",
                     MessageType.Info);
             }
-        }
-
-        private static bool GUILayoutButton(string text)
-        {
-            return UnityEngine.GUILayout.Button(text);
         }
 
         private static void DrawPreview(MapGenMockupDraftAsset draft, ref int selectedRegionId)
@@ -341,12 +264,12 @@ namespace Conn.MapGenV2.Editor
         {
             if (!draft.Accepted)
             {
-                return "Blocked: accept mockup first";
+                return "Blocked: confirm mockup first";
             }
 
             if (!draft.IsAcceptedSignatureCurrent)
             {
-                return "Blocked: accepted mockup is stale";
+                return "Blocked: confirmed mockup is stale";
             }
 
             return "Ready";

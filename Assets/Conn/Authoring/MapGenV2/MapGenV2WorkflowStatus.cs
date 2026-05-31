@@ -85,19 +85,19 @@ namespace Conn.MapGenV2.Authoring
             var canBakeRuntime = canMaterialize;
 
             var generateReason = canGenerate
-                ? "Generate Mockup can write a new preview into the selected draft."
+                ? "Generate Mockup can write a new preview into the current mockup asset."
                 : BuildGenerateReason(hasDraft, draftHasProfile, draftProfileValid);
             var postProcessReason = canPostProcess
-                ? "Run Post-Process can update the generated draft cells."
+                ? "Run Post-Process can update the generated current mockup cells."
                 : BuildGeneratedReason(hasGeneratedMockup, generatedCurrent, generateReason);
             var acceptReason = canAccept
-                ? "Accept Mockup can mark the current draft signature as the materialization source."
+                ? "Confirm Mockup can mark the current mockup signature as the materialization source."
                 : BuildGeneratedReason(hasGeneratedMockup, generatedCurrent, "Generate Mockup first.");
             var materializeReason = canMaterialize
-                ? "Materialize To Scene can instantiate the accepted mockup."
+                ? "Materialize To Scene can instantiate the confirmed mockup."
                 : BuildAcceptedReason(hasGeneratedMockup, accepted, acceptedCurrent);
             var bakeRuntimeReason = canBakeRuntime
-                ? "Bake Runtime Asset can write runtime-safe map data from the accepted mockup."
+                ? "Bake Runtime Asset can write runtime-safe map data from the confirmed mockup."
                 : materializeReason;
 
             return new MapGenV2WorkflowStatus(
@@ -126,12 +126,12 @@ namespace Conn.MapGenV2.Authoring
         {
             if (!hasDraft)
             {
-                return "Create or assign a draft first.";
+                return "Create or assign the current mockup asset first.";
             }
 
             if (!draftHasProfile)
             {
-                return "Assign a profile to the draft first.";
+                return "Assign a profile to the current mockup first.";
             }
 
             if (!draftProfileValid)
@@ -151,15 +151,15 @@ namespace Conn.MapGenV2.Authoring
 
             if (!accepted)
             {
-                return "Accept Mockup first.";
+                return "Confirm Mockup first.";
             }
 
             if (!acceptedCurrent)
             {
-                return "The accepted signature is stale. Accept the current mockup again.";
+                return "The confirmed mockup is stale. Confirm the current mockup.";
             }
 
-            return "Accepted mockup is not ready.";
+            return "Confirmed mockup is not ready.";
         }
 
         private static string BuildGeneratedReason(bool hasGeneratedMockup, bool generatedCurrent, string fallback)
@@ -200,17 +200,17 @@ namespace Conn.MapGenV2.Authoring
 
             if (!hasDraft)
             {
-                return "Create or assign a draft.";
+                return "Create or assign the current mockup asset.";
             }
 
             if (!draftUsesSelectedProfile)
             {
-                return "Assign the selected profile to the draft.";
+                return "Assign the selected profile to the current mockup.";
             }
 
             if (!canGenerate)
             {
-                return "Fix draft/profile setup before generation.";
+                return "Fix current mockup/profile setup before generation.";
             }
 
             if (!hasGeneratedMockup)
@@ -225,7 +225,7 @@ namespace Conn.MapGenV2.Authoring
 
             if (!accepted || !acceptedCurrent)
             {
-                return "Inspect the preview, then Accept Mockup.";
+                return "Inspect the preview, then Confirm Mockup.";
             }
 
             return "Materialize To Scene, then Bake Runtime Asset.";
