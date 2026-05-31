@@ -150,6 +150,7 @@ namespace Conn.Tests.EditMode
             var summary = MapGenV2Window.BuildInspectorLayoutSummary();
             var technology = MapGenV2Window.BuildEditorTechnologySummary();
             var help = MapGenV2Window.BuildInlineHelpCoverageSummary();
+            var slotHelp = MapGenV2Window.BuildMapAssetSlotHelp();
 
             Assert.That(summary, Does.Contain("Draft-centered authoring layout"));
             Assert.That(summary, Does.Contain("draft file create/import"));
@@ -167,6 +168,7 @@ namespace Conn.Tests.EditMode
             Assert.That(technology, Does.Contain("preview drawing, Undo, and serialized inspector workflows"));
             Assert.That(help, Does.Contain("draft file"));
             Assert.That(help, Does.Contain("map prefab slots"));
+            Assert.That(help, Does.Contain("automatic wall/corner placement"));
             Assert.That(help, Does.Contain("seed controls"));
             Assert.That(help, Does.Contain("preview drawing"));
             Assert.That(help, Does.Contain("connectors"));
@@ -175,6 +177,10 @@ namespace Conn.Tests.EditMode
             Assert.That(help, Does.Contain("save/output readiness"));
             Assert.That(help, Does.Contain("bake settings"));
             Assert.That(help, Does.Contain("recovery tools"));
+            Assert.That(slotHelp, Does.Contain("안쪽 코너"));
+            Assert.That(slotHelp, Does.Contain("바깥 코너"));
+            Assert.That(slotHelp, Does.Contain("자동 배치"));
+            Assert.That(slotHelp, Does.Contain("장식 프롭"));
         }
 
         [Test]

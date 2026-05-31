@@ -190,8 +190,6 @@ namespace Conn.MapGenV2.Editor
         private const string MockupPreviewFoldoutKey = "Conn.MapGenV2.Window.MockupPreviewFoldout";
         private const string DetailsFoldoutKey = "Conn.MapGenV2.Window.DetailsFoldoutV2";
         private const string SceneOutputFoldoutKey = "Conn.MapGenV2.Window.SceneOutputFoldout";
-        private const string PrimaryActionImpactFoldoutKey = "Conn.MapGenV2.Window.PrimaryActionImpactFoldout";
-        private const string RuntimeBakeFoldoutKey = "Conn.MapGenV2.Window.RuntimeBakeFoldout";
         private const string SetupUtilitiesFoldoutKey = "Conn.MapGenV2.Window.SetupUtilitiesFoldout";
         private const string DraftUtilitiesFoldoutKey = "Conn.MapGenV2.Window.DraftUtilitiesFoldout";
         private const string SceneOutputUtilitiesFoldoutKey = "Conn.MapGenV2.Window.SceneOutputUtilitiesFoldout";
@@ -258,8 +256,6 @@ namespace Conn.MapGenV2.Editor
         private bool showMockupPreviewFoldout = true;
         private bool showDetailsFoldout;
         private bool showSceneOutputFoldout = true;
-        private bool showPrimaryActionImpactFoldout;
-        private bool showRuntimeBakeFoldout = true;
         private bool showSetupUtilitiesFoldout;
         private bool showDraftUtilitiesFoldout;
         private bool showSceneOutputUtilitiesFoldout;
@@ -329,8 +325,6 @@ namespace Conn.MapGenV2.Editor
             showMockupPreviewFoldout = EditorPrefs.GetBool(MockupPreviewFoldoutKey, showMockupPreviewFoldout);
             showDetailsFoldout = EditorPrefs.GetBool(DetailsFoldoutKey, showDetailsFoldout);
             showSceneOutputFoldout = EditorPrefs.GetBool(SceneOutputFoldoutKey, showSceneOutputFoldout);
-            showPrimaryActionImpactFoldout = EditorPrefs.GetBool(PrimaryActionImpactFoldoutKey, showPrimaryActionImpactFoldout);
-            showRuntimeBakeFoldout = EditorPrefs.GetBool(RuntimeBakeFoldoutKey, showRuntimeBakeFoldout);
             showSetupUtilitiesFoldout = EditorPrefs.GetBool(SetupUtilitiesFoldoutKey, showSetupUtilitiesFoldout);
             showDraftUtilitiesFoldout = EditorPrefs.GetBool(DraftUtilitiesFoldoutKey, showDraftUtilitiesFoldout);
             showSceneOutputUtilitiesFoldout = EditorPrefs.GetBool(SceneOutputUtilitiesFoldoutKey, showSceneOutputUtilitiesFoldout);
@@ -364,7 +358,7 @@ namespace Conn.MapGenV2.Editor
 
         public static string BuildInspectorLayoutSummary()
         {
-            return "Draft-centered authoring layout with a minimal default flow: draft file create/import, grid size, cell size, map prefab slots, seed controls, preview/drawing, save current draft, and output are stacked vertically in production order; diagnostics and recovery/compatibility tools stay collapsed in advanced foldouts with responsive wrapping for narrow inspector widths.";
+            return "Draft-centered authoring layout with a minimal default flow: draft file create/import, map prefab slots, grid size, cell size, seed controls, preview/drawing, save current draft, and output are stacked vertically in production order; diagnostics, post-process details, prop debug overlays, and recovery/compatibility tools stay collapsed in advanced foldouts with responsive wrapping for narrow inspector widths.";
         }
 
         public static string BuildEditorTechnologySummary()
@@ -374,7 +368,7 @@ namespace Conn.MapGenV2.Editor
 
         public static string BuildInlineHelpCoverageSummary()
         {
-            return "Inline help/tooltips cover the draft file, grid size, cell size, map prefab slots, seed controls, preview drawing, connectors, post-process, prop placement, save/output readiness, bake settings, materialization output, and recovery tools.";
+            return "Inline help/tooltips cover the draft file, grid size, cell size, map prefab slots, automatic wall/corner placement, seed controls, preview drawing, connectors, post-process, prop placement, save/output readiness, bake settings, materialization output, and recovery tools.";
         }
 
         public static string BuildKoreanCoverageSummary()
@@ -386,7 +380,7 @@ namespace Conn.MapGenV2.Editor
         {
             DrawFoldoutSection("드래프트 파일 / Draft File", ref showSetupAssetsFoldout, DrawDraftFileSection);
             DrawFoldoutSection("맵 에셋 / Map Assets", ref showMapAssetsFoldout, DrawMapAssetSection);
-            DrawFoldoutSection("크기와 시드 / Size & Seed", ref showMockupActionsFoldout, () => DrawSeedSection(workflow));
+            DrawFoldoutSection("맵 크기와 생성 / Size & Generation", ref showMockupActionsFoldout, () => DrawSeedSection(workflow));
             DrawFoldoutSection("프리뷰 & 드로잉 / Preview & Drawing", ref showMockupPreviewFoldout, () => DrawDraftSummaryAndPreview(workflow));
             DrawFoldoutSection("출력 / Output", ref showSceneOutputFoldout, () =>
             {
@@ -516,6 +510,7 @@ namespace Conn.MapGenV2.Editor
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
                 EditorGUILayout.LabelField("프리팹 슬롯 / Prefab Slots", EditorStyles.boldLabel);
+                DrawWrappingHelpBox(BuildMapAssetSlotHelp(), MessageType.Info);
                 DrawPrefabSlot(MapGenDraftPrefabSlot.RoomFloor);
                 DrawPrefabSlot(MapGenDraftPrefabSlot.CorridorFloor);
                 DrawPrefabSlot(MapGenDraftPrefabSlot.Wall);
@@ -576,7 +571,7 @@ namespace Conn.MapGenV2.Editor
                 {
                     using (new EditorGUI.DisabledScope(!workflow.CanGenerate))
                     {
-                        if (GUILayout.Button("같은 시드 재생성 / Regenerate Same Seed"))
+                        if (GUILayout.Button("현재 시드로 다시 생성 / Regenerate Same Seed"))
                         {
                             GenerateMockup("Regenerate Same Seed", preserveLockedRegions: true);
                         }
@@ -616,6 +611,12 @@ namespace Conn.MapGenV2.Editor
             DrawWrappingHelpBox(
                 "그리드 크기는 전체 가로/세로 칸 수, 셀 크기는 실제 씬에서 한 칸의 Unity unit입니다. 큰 방을 만들려고 칸 수만 늘리지 말고 프리팹 크기에 맞춰 셀 크기를 먼저 맞추세요.",
                 MessageType.Info);
+        }
+
+        public static string BuildMapAssetSlotHelp()
+        {
+            return "방/복도 바닥은 셀 내부에 배치되고, 벽/안쪽 코너/바깥 코너는 생성된 방·복도 외곽을 분석해 자동 배치됩니다. "
+                + "문은 연결부에, 차단물은 회색 차단 셀에, 장식 프롭은 내부 배치 규칙에 따라 씬 생성 단계에서 사용됩니다.";
         }
 
         private static Vector2Int DrawGridSizeField(string label, Vector2Int value)
@@ -1090,7 +1091,7 @@ namespace Conn.MapGenV2.Editor
         public static string BuildPrimaryMockupUxSummary()
         {
             return "Primary mockup UX: MapGenV2 window supports Generate, Post-Process, Save Current Draft, selected-region inspect/edit, "
-                + "post overlay, technical-only prop debug overlay, Materialize, Bake, and clear/frame/select output without requiring Scene View. "
+                + "advanced-only post overlay, technical-only prop debug overlay, Materialize, Bake, and clear/frame/select output without requiring Scene View. "
                 + "Scene View remains a secondary inspection/materialization surface.";
         }
 
@@ -1129,15 +1130,15 @@ namespace Conn.MapGenV2.Editor
             var materializedRoot = ResolveMaterializedRoot();
             var badges = new[]
             {
-                new StepBadge("Draft", workflow.HasDraft && workflow.ProfileValid, !workflow.HasDraft || !workflow.ProfileValid),
-                new StepBadge("Generate", workflow.HasGeneratedMockup, workflow.CanGenerate && !workflow.HasGeneratedMockup),
-                new StepBadge("Edit", workflow.HasGeneratedMockup, workflow.CanPostProcess && !workflow.Accepted),
-                new StepBadge("Save", workflow.Accepted && workflow.AcceptedCurrent, workflow.CanAccept && (!workflow.Accepted || !workflow.AcceptedCurrent)),
-                new StepBadge("Scene", materializedRoot != null, workflow.CanMaterialize),
-                new StepBadge("Bake", LoadExpectedBakedAsset() != null, workflow.CanBakeRuntime)
+                new StepBadge("1 Draft", workflow.HasDraft && workflow.ProfileValid, !workflow.HasDraft || !workflow.ProfileValid),
+                new StepBadge("2 Generate", workflow.HasGeneratedMockup, workflow.CanGenerate && !workflow.HasGeneratedMockup),
+                new StepBadge("3 Edit", workflow.HasGeneratedMockup, workflow.CanPostProcess && !workflow.Accepted),
+                new StepBadge("4 Save", workflow.Accepted && workflow.AcceptedCurrent, workflow.CanAccept && (!workflow.Accepted || !workflow.AcceptedCurrent)),
+                new StepBadge("5 Scene", materializedRoot != null, workflow.CanMaterialize),
+                new StepBadge("6 Bake", LoadExpectedBakedAsset() != null, workflow.CanBakeRuntime)
             };
             var availableWidth = Mathf.Max(180f, EditorGUIUtility.currentViewWidth - 36f);
-            var badgeWidth = availableWidth < 520f ? 118f : 96f;
+            var badgeWidth = availableWidth < 520f ? 164f : 142f;
             var columns = Mathf.Clamp(Mathf.FloorToInt(availableWidth / badgeWidth), 1, badges.Length);
 
             for (var index = 0; index < badges.Length; index += columns)
@@ -1163,8 +1164,18 @@ namespace Conn.MapGenV2.Editor
                 ? MapGenV2StatusKind.Accepted
                 : active ? MapGenV2StatusKind.Stale : MapGenV2StatusKind.Pending;
             GUI.backgroundColor = MapGenV2StatusPresentation.For(status).Color;
-            GUILayout.Label(label, EditorStyles.miniButton, GUILayout.Width(width));
+            GUILayout.Label($"{label}: {WorkflowStepStateLabel(complete, active)}", EditorStyles.helpBox, GUILayout.Width(width));
             GUI.backgroundColor = previousColor;
+        }
+
+        private static string WorkflowStepStateLabel(bool complete, bool active)
+        {
+            if (complete)
+            {
+                return "완료 / Done";
+            }
+
+            return active ? "진행 / Next" : "대기 / Waiting";
         }
 
         private void DrawLanguageSelector()
@@ -2215,8 +2226,6 @@ namespace Conn.MapGenV2.Editor
             EditorPrefs.SetBool(MockupPreviewFoldoutKey, showMockupPreviewFoldout);
             EditorPrefs.SetBool(DetailsFoldoutKey, showDetailsFoldout);
             EditorPrefs.SetBool(SceneOutputFoldoutKey, showSceneOutputFoldout);
-            EditorPrefs.SetBool(PrimaryActionImpactFoldoutKey, showPrimaryActionImpactFoldout);
-            EditorPrefs.SetBool(RuntimeBakeFoldoutKey, showRuntimeBakeFoldout);
             EditorPrefs.SetBool(SetupUtilitiesFoldoutKey, showSetupUtilitiesFoldout);
             EditorPrefs.SetBool(DraftUtilitiesFoldoutKey, showDraftUtilitiesFoldout);
             EditorPrefs.SetBool(SceneOutputUtilitiesFoldoutKey, showSceneOutputUtilitiesFoldout);
@@ -2289,9 +2298,10 @@ namespace Conn.MapGenV2.Editor
                         DrawPropPlacementPreviewSummary(MapGenPropPlacementPlanner.BuildForDraft(draft));
                     }
                 }
+
+                DrawPostProcessPassSummary();
             });
 
-            DrawPostProcessPassSummary();
             DrawDrawingToolbar();
             DrawMockupPreview(previewData);
             DrawCellDetails(previewData);
@@ -2398,12 +2408,13 @@ namespace Conn.MapGenV2.Editor
         {
             EditorGUILayout.Space(4f);
             EditorGUILayout.LabelField("목업 미리보기 / Mockup Preview", EditorStyles.boldLabel);
+            var hasPostProcessOverlay = HasPostProcessPassOverlay();
             if (EditorGUIUtility.currentViewWidth < 620f)
             {
                 previewCellSize = EditorGUILayout.Slider("확대 / Zoom", previewCellSize, 6f, 32f);
-                using (new EditorGUI.DisabledScope(!HasPostProcessPassOverlay()))
+                if (hasPostProcessOverlay)
                 {
-                    showPostProcessOverlay = EditorGUILayout.ToggleLeft("후처리 오버레이 / Post", showPostProcessOverlay);
+                    showPostProcessOverlay = EditorGUILayout.ToggleLeft("후처리 변경 표시 / Show Post Changes", showPostProcessOverlay);
                 }
             }
             else
@@ -2412,9 +2423,9 @@ namespace Conn.MapGenV2.Editor
                 {
                     EditorGUILayout.LabelField("확대 / Zoom", GUILayout.Width(72f));
                     previewCellSize = EditorGUILayout.Slider(previewCellSize, 6f, 32f, GUILayout.Width(180f));
-                    using (new EditorGUI.DisabledScope(!HasPostProcessPassOverlay()))
+                    if (hasPostProcessOverlay)
                     {
-                        showPostProcessOverlay = EditorGUILayout.ToggleLeft("후처리 오버레이 / Post", showPostProcessOverlay, GUILayout.Width(170f));
+                        showPostProcessOverlay = EditorGUILayout.ToggleLeft("후처리 변경 표시 / Show Post Changes", showPostProcessOverlay, GUILayout.Width(230f));
                     }
                 }
             }
@@ -2467,7 +2478,7 @@ namespace Conn.MapGenV2.Editor
             if (previewData.Summary.ReservedCells > 0 || showMockupTechnicalDetailsFoldout)
             {
                 colors.Add(ReservedColor);
-                labels.Add("청록 예약(고급) / Reserved");
+                labels.Add("청록 예약(고급 보호영역) / Reserved");
             }
 
             if (includePropDebugOverlay)
@@ -2949,7 +2960,7 @@ namespace Conn.MapGenV2.Editor
 
                 using (new EditorGUI.DisabledScope(regionOverride.Locked))
                 {
-                    if (GUILayout.Button("선택 리전 재생성 / Regenerate Selected Region"))
+                    if (GUILayout.Button("선택 리전만 새 시드로 재생성 / Regenerate Selected Region"))
                     {
                         RegenerateSelectedRegion("Regenerated selected region");
                     }
@@ -3001,7 +3012,7 @@ namespace Conn.MapGenV2.Editor
 
                     using (new EditorGUI.DisabledScope(regionOverride.Locked || corridorCount + connectorCount <= 0))
                     {
-                        if (GUILayout.Button("연결 리전 재생성 / Regenerate Connection Region"))
+                        if (GUILayout.Button("연결 리전만 새 시드로 재생성 / Regenerate Connection Region"))
                         {
                             RegenerateSelectedRegion("Regenerated connection region");
                         }
