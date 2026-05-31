@@ -1,6 +1,6 @@
 # UI/UX Scorecard
 
-Last updated: 2026-05-31
+Last updated: 2026-06-01
 
 ## 기준
 
@@ -58,6 +58,7 @@ Last updated: 2026-05-31
 - 검증:
   - `RuntimeCoreRulesTests`: 43/43 통과
   - `GameFlowPlaytestTests`: 9/9 통과
+  - 전체 `EditMode`: 262/262 통과
   - `MapGenV2FoundationTests`: 134/134 통과
 
 ### 2026-05-31 스크린샷 루프 2
@@ -66,6 +67,17 @@ Last updated: 2026-05-31
   - 마을 HUD의 `Cursor: free/locked (Esc)` 디버그성 안내 문구를 제거해 정상 플레이 화면의 잡음을 줄임.
 - 점수 변경:
   - 인벤토리/스킬창 닫은 뒤 커서가 남음: 9.0 -> 9.5
+
+### 2026-06-01 유지보수 루프 1
+
+- 적용:
+  - 최근 UI 작업 파일을 점검해 Unity obsolete API 경고를 제거함.
+  - 스킬 드래그 고스트 cleanup을 보강해 드래그 도중 UI가 비활성화되어도 원래 투명도와 고스트 상태가 남지 않게 함.
+- 점수 변경:
+  - 없음. 플레이 UX/UI 동작 변경 없이 안정성만 보강함.
+- 검증:
+  - `RuntimeCoreRulesTests`: 43/43 통과
+  - `GameFlowPlaytestTests`: 9/9 통과
 
 ### 2026-05-31 기준점
 

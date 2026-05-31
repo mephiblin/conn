@@ -256,7 +256,7 @@ namespace Conn.UI.Runtime
 
         private static void EnsureEventSystem()
         {
-            var existing = Object.FindFirstObjectByType<EventSystem>();
+            var existing = Object.FindAnyObjectByType<EventSystem>();
             if (existing != null)
             {
                 EnsureInputSystemModule(existing.gameObject);

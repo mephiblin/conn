@@ -18,6 +18,8 @@ namespace Conn.UI.Runtime
         [SerializeField] private bool dragSource;
         [SerializeField] private bool dropTarget;
         private CanvasGroup sourceCanvasGroup;
+        private float sourceOriginalAlpha = 1f;
+        private bool sourceDragActive;
 
         public void ConfigureDragSource(string sourceSkillId)
         {
@@ -52,7 +54,9 @@ namespace Conn.UI.Runtime
                     sourceCanvasGroup = gameObject.AddComponent<CanvasGroup>();
                 }
 
+                sourceOriginalAlpha = sourceCanvasGroup.alpha;
                 sourceCanvasGroup.alpha = 0.45f;
+                sourceDragActive = true;
                 CreateDragGhost(eventData);
             }
         }
@@ -67,21 +71,39 @@ namespace Conn.UI.Runtime
             draggedSkillId = string.Empty;
             if (sourceCanvasGroup != null)
             {
-                sourceCanvasGroup.alpha = 1f;
+                sourceCanvasGroup.alpha = sourceOriginalAlpha;
             }
 
+            sourceDragActive = false;
             DestroyDragGhost();
         }
 
         public void OnDrop(PointerEventData eventData)
         {
-            if (!dropTarget || string.IsNullOrWhiteSpace(draggedSkillId))
+            if (!dropTarget || string.IsNullOrWhiteSpace(draggedSkillId) || GameSession.Instance == null)
             {
                 return;
             }
 
             SkillRuntimeService.EquipSkillToDieFace(GameSession.Instance.State, draggedSkillId, dieIndex, faceIndex);
             draggedSkillId = string.Empty;
+            DestroyDragGhost();
+        }
+
+        private void OnDisable()
+        {
+            if (!sourceDragActive)
+            {
+                return;
+            }
+
+            draggedSkillId = string.Empty;
+            if (sourceCanvasGroup != null)
+            {
+                sourceCanvasGroup.alpha = sourceOriginalAlpha;
+            }
+
+            sourceDragActive = false;
             DestroyDragGhost();
         }
 
