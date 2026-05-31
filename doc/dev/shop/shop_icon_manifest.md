@@ -1,6 +1,9 @@
 # Shop Icon Manifest
 
-Generated shop icons should be placed in `Assets/Conn/UI/Art/ShopIcons` using the filenames below.
+Generated shop icons should be placed in
+`Assets/Conn/UI/Art/Resources/Conn/UI/Art/ShopIcons` using the filenames below.
+Runtime code loads them through `Resources.Load<Sprite>` with the root
+`Conn/UI/Art/ShopIcons`.
 
 Sources inspected:
 - Runtime equipment shop: `EquipmentShopRuntimeService.BlacksmithStockItemIds()` -> `vendor_smith`
@@ -11,6 +14,7 @@ Sources inspected:
 
 | id | desired filename | source | visual concept |
 | --- | --- | --- | --- |
+| `rusty_sword` | `shop_icon_rusty_sword.png` | starter/fallback equipment | Rusty one-handed sword, worn steel blade, readable weapon fallback. |
 | `iron_shield` | `shop_icon_iron_shield.png` | runtime `vendor_smith`, phase6 wayfarer smith | Round iron shield, worn rim, cool steel face with a small defensive gleam. |
 | `leather_cap` | `shop_icon_leather_cap.png` | runtime `vendor_smith`, phase6 wayfarer smith | Soft brown leather cap with stitched panels and a small adventurer scuff. |
 | `padded_vest` | `shop_icon_padded_vest.png` | runtime `vendor_smith`, phase6 wayfarer smith | Quilted cloth vest with reinforced seams, front-facing and readable at small size. |

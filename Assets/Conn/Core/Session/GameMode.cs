@@ -4,6 +4,7 @@ namespace Conn.Core.Session
     {
         None,
         Title,
+        CharacterCreation,
         Town,
         Dungeon,
         Combat,

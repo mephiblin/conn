@@ -24,7 +24,10 @@ namespace Conn.UI.Runtime
         public static readonly string[] TitlePanelNames =
         {
             "TitleRoot",
-            "TitleButtons"
+            "TitleButtons",
+            "CharacterCreationPortraitPanel",
+            "CharacterCreationFormPanel",
+            "CharacterCreationStatsPanel"
         };
 
         public static readonly string[] TownPanelNames =
@@ -93,6 +96,21 @@ namespace Conn.UI.Runtime
                 return new Rect(0.62f, 0.26f, 0.24f, 0.34f);
             }
 
+            if (panelName == "CharacterCreationPortraitPanel")
+            {
+                return new Rect(0.04f, 0.08f, 0.44f, 0.84f);
+            }
+
+            if (panelName == "CharacterCreationFormPanel")
+            {
+                return new Rect(0.5f, 0.08f, 0.24f, 0.84f);
+            }
+
+            if (panelName == "CharacterCreationStatsPanel")
+            {
+                return new Rect(0.76f, 0.16f, 0.2f, 0.68f);
+            }
+
             if (panelName == "CombatEnemyStagePanel")
             {
                 return new Rect(0.64f, 0.62f, 0.32f, 0.22f);
@@ -150,12 +168,17 @@ namespace Conn.UI.Runtime
 
             if (panelName == "TownNpcInteractionPanel")
             {
-                return new Rect(0.04f, 0.12f, 0.42f, 0.7f);
+                return new Rect(0.04f, 0.1f, 0.58f, 0.72f);
             }
 
             if (panelName == "TownNpcStandingCgPanel")
             {
-                return new Rect(0.5f, 0.08f, 0.44f, 0.74f);
+                return new Rect(0.64f, 0.08f, 0.32f, 0.74f);
+            }
+
+            if (panelName == "TownShopPanel")
+            {
+                return new Rect(0.34f, 0.16f, 0.62f, 0.62f);
             }
 
             if (panelName.Contains("Bottom") || panelName.Contains("Dice") || panelName.Contains("Log"))

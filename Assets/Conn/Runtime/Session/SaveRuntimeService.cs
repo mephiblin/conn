@@ -51,6 +51,7 @@ namespace Conn.Runtime.Session
         {
             return session.Mode switch
             {
+                GameMode.CharacterCreation => GameSceneId.Title,
                 GameMode.Town => GameSceneId.Town,
                 GameMode.Dungeon => GameSceneId.Dungeon,
                 GameMode.Combat => GameSceneId.Dungeon,

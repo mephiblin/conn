@@ -171,6 +171,75 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void NewGameDefaultsPopulateMockCharacterCreationState()
+        {
+            var session = new GameSessionState();
+
+            session.StartNewGame();
+
+            Assert.That(session.Mode, Is.EqualTo(GameMode.Town));
+            Assert.That(session.Character.CharacterName, Is.EqualTo("Adventurer"));
+            Assert.That(session.Character.SelectedPortraitIndex, Is.EqualTo(0));
+            Assert.That(session.Character.SelectedPortraitId, Is.EqualTo("portrait_0"));
+            Assert.That(session.Character.Strength, Is.EqualTo(5));
+            Assert.That(session.Character.Dexterity, Is.EqualTo(5));
+            Assert.That(session.Character.Vitality, Is.EqualTo(5));
+            Assert.That(session.Character.Energy, Is.EqualTo(5));
+            Assert.That(session.Character.StarterWeaponId, Is.EqualTo(EquipmentCatalog.RustySwordId));
+            Assert.That(session.Equipment.EquippedWeaponId, Is.EqualTo(EquipmentCatalog.RustySwordId));
+        }
+
+        [Test]
+        public void BeginCharacterCreationEntersPreTownModeWithoutStartingGame()
+        {
+            var session = new GameSessionState
+            {
+                Gold = 99,
+                LastNotice = "stale notice"
+            };
+
+            session.BeginCharacterCreation();
+
+            Assert.That(session.Mode, Is.EqualTo(GameMode.CharacterCreation));
+            Assert.That(session.Gold, Is.EqualTo(99));
+            Assert.That(session.LastNotice, Is.Empty);
+            Assert.That(session.Character.CharacterName, Is.EqualTo("Adventurer"));
+            Assert.That(session.Character.StarterWeaponId, Is.EqualTo(EquipmentCatalog.RustySwordId));
+            Assert.That(SaveRuntimeService.SceneForLoadedState(session), Is.EqualTo(GameSceneId.Title));
+        }
+
+        [Test]
+        public void NewGameCanApplyMockCharacterCreationOptions()
+        {
+            var session = new GameSessionState();
+            var options = new CharacterCreationOptions
+            {
+                CharacterName = "Mara",
+                SelectedPortraitIndex = 2,
+                SelectedPortraitId = "portrait_scout",
+                Strength = 7,
+                Dexterity = 8,
+                Vitality = 6,
+                Energy = 4,
+                StarterWeaponId = EquipmentCatalog.GreatAxeId
+            };
+
+            session.StartNewGame(options);
+
+            Assert.That(session.Mode, Is.EqualTo(GameMode.Town));
+            Assert.That(session.Character.CharacterName, Is.EqualTo("Mara"));
+            Assert.That(session.Character.SelectedPortraitIndex, Is.EqualTo(2));
+            Assert.That(session.Character.SelectedPortraitId, Is.EqualTo("portrait_scout"));
+            Assert.That(session.Character.Strength, Is.EqualTo(7));
+            Assert.That(session.Character.Dexterity, Is.EqualTo(8));
+            Assert.That(session.Character.Vitality, Is.EqualTo(6));
+            Assert.That(session.Character.Energy, Is.EqualTo(4));
+            Assert.That(session.Character.StarterWeaponId, Is.EqualTo(EquipmentCatalog.GreatAxeId));
+            Assert.That(session.Inventory.HasItem(EquipmentCatalog.GreatAxeId), Is.True);
+            Assert.That(session.Equipment.EquippedWeaponId, Is.EqualTo(EquipmentCatalog.GreatAxeId));
+        }
+
+        [Test]
         public void OwnedLoadoutToggleSwitchesDiceRules()
         {
             var session = new GameSessionState();
@@ -734,6 +803,14 @@ namespace Conn.Tests.EditMode
             var source = new GameSessionState();
             source.StartNewGame();
             source.Mode = GameMode.Combat;
+            source.Character.CharacterName = "Saved Mara";
+            source.Character.SelectedPortraitIndex = 3;
+            source.Character.SelectedPortraitId = "portrait_saved";
+            source.Character.Strength = 9;
+            source.Character.Dexterity = 8;
+            source.Character.Vitality = 7;
+            source.Character.Energy = 6;
+            source.Character.StarterWeaponId = EquipmentCatalog.GreatAxeId;
             source.Player.GainXp(7);
             source.Gold = 42;
             source.Inventory.AddItem(EquipmentCatalog.IronShieldId);
@@ -761,6 +838,14 @@ namespace Conn.Tests.EditMode
             loaded.Combat.Clear();
 
             Assert.That(loaded.Mode, Is.EqualTo(GameMode.Combat));
+            Assert.That(loaded.Character.CharacterName, Is.EqualTo("Saved Mara"));
+            Assert.That(loaded.Character.SelectedPortraitIndex, Is.EqualTo(3));
+            Assert.That(loaded.Character.SelectedPortraitId, Is.EqualTo("portrait_saved"));
+            Assert.That(loaded.Character.Strength, Is.EqualTo(9));
+            Assert.That(loaded.Character.Dexterity, Is.EqualTo(8));
+            Assert.That(loaded.Character.Vitality, Is.EqualTo(7));
+            Assert.That(loaded.Character.Energy, Is.EqualTo(6));
+            Assert.That(loaded.Character.StarterWeaponId, Is.EqualTo(EquipmentCatalog.GreatAxeId));
             Assert.That(loaded.Player.Xp, Is.EqualTo(7));
             Assert.That(loaded.Gold, Is.EqualTo(42));
             Assert.That(loaded.LastNotice, Is.EqualTo("saved notice"));

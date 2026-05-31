@@ -46,9 +46,20 @@ namespace Conn.Runtime.Session
             DontDestroyOnLoad(gameObject);
         }
 
+        public void BeginCharacterCreation()
+        {
+            state.BeginCharacterCreation();
+        }
+
         public void StartNewGame()
         {
             state.StartNewGame();
+            SaveGame();
+        }
+
+        public void StartNewGame(CharacterCreationOptions characterOptions)
+        {
+            state.StartNewGame(characterOptions);
             SaveGame();
         }
 

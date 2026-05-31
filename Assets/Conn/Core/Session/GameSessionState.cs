@@ -16,6 +16,7 @@ namespace Conn.Core.Session
         public GameMode Mode = GameMode.Title;
         public int Gold;
         public string LastNotice = string.Empty;
+        public CharacterCreationState Character = new CharacterCreationState();
         public PlayerRuntimeState Player = new PlayerRuntimeState();
         public QuestRuntimeState Quest = new QuestRuntimeState();
         public PlayerPoseSnapshot PreEncounterSnapshot = new PlayerPoseSnapshot();
@@ -26,7 +27,24 @@ namespace Conn.Core.Session
         public WorldRuntimeState World = new WorldRuntimeState();
         public ShopRuntimeState Shop = new ShopRuntimeState();
 
+        public void BeginCharacterCreation()
+        {
+            Mode = GameMode.CharacterCreation;
+            LastNotice = string.Empty;
+            if (Character == null)
+            {
+                Character = new CharacterCreationState();
+            }
+
+            Character.ResetToDefaults(StarterEquipmentIdResolver());
+        }
+
         public void StartNewGame()
+        {
+            StartNewGame(null);
+        }
+
+        public void StartNewGame(CharacterCreationOptions characterOptions)
         {
             Mode = GameMode.Town;
             Gold = 25;
@@ -37,7 +55,16 @@ namespace Conn.Core.Session
             Quest.BoardOfferIndex = 0;
             Quest.BoardRerollCount = 0;
             PreEncounterSnapshot.Clear();
-            var starterEquipmentId = StarterEquipmentIdResolver();
+            var defaultStarterEquipmentId = StarterEquipmentIdResolver();
+            if (Character == null)
+            {
+                Character = new CharacterCreationState();
+            }
+
+            Character.Apply(characterOptions, defaultStarterEquipmentId);
+            var starterEquipmentId = string.IsNullOrWhiteSpace(Character.StarterWeaponId)
+                ? defaultStarterEquipmentId
+                : Character.StarterWeaponId;
             var starterSkillId = StarterSkillIdResolver();
             Inventory.Clear();
             Inventory.AddItem(starterEquipmentId);
