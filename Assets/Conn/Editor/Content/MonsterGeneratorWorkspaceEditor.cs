@@ -10,12 +10,21 @@ namespace Conn.Editor.Content
     [CustomEditor(typeof(MonsterGeneratorWorkspace))]
     public sealed class MonsterGeneratorWorkspaceEditor : UnityEditor.Editor
     {
+        private const float ButtonHeight = 28f;
+        private const string AssetFolderHelp = "생성된 MonsterDefinitionAsset 저장 위치입니다.";
+        private const string PrefabFolderHelp = "자동 생성되는 프리팹과 머티리얼 저장 위치입니다.";
+
         private int seed = 2001;
 
         public override void OnInspectorGUI()
         {
             var workspace = (MonsterGeneratorWorkspace)target;
             serializedObject.Update();
+
+            EditorGUILayout.HelpBox(
+                "몬스터 생성, 에셋 프리뷰, 조우/스폰 테이블 테스트를 한 곳에서 처리합니다. 위에서 새 몬스터를 만들고, 아래에서 기존 에셋을 배치해 바로 확인하세요.",
+                MessageType.Info);
+
             DrawCreateMonsterSection(workspace);
             EditorGUILayout.Space();
             DrawExistingPreviewSection(workspace);
@@ -24,87 +33,256 @@ namespace Conn.Editor.Content
 
         private void DrawCreateMonsterSection(MonsterGeneratorWorkspace workspace)
         {
-            EditorGUILayout.LabelField("Create Monster", EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MonsterGeneratorWorkspace.CreateId)), new GUIContent("Id"));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MonsterGeneratorWorkspace.CreateDisplayName)), new GUIContent("Display Name"));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MonsterGeneratorWorkspace.CreateVisualImage)), new GUIContent("Visual Image"));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MonsterGeneratorWorkspace.CreateSpecies)), new GUIContent("Species"));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MonsterGeneratorWorkspace.CreateGrade)), new GUIContent("Grade"));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MonsterGeneratorWorkspace.CreateDefaultGroupCount)), new GUIContent("Default Group Count"));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MonsterGeneratorWorkspace.CreateMaxHp)), new GUIContent("HP"));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MonsterGeneratorWorkspace.CreateAttackPower)), new GUIContent("Attack"));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MonsterGeneratorWorkspace.CreateDefense)), new GUIContent("Defense"));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MonsterGeneratorWorkspace.CreateEvasionRate)), new GUIContent("Evasion Rate"));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MonsterGeneratorWorkspace.CreateXpReward)), new GUIContent("XP Reward"));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MonsterGeneratorWorkspace.CreateAi)), new GUIContent("AI"));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MonsterGeneratorWorkspace.CreateAssetFolder)), new GUIContent("Asset Folder"));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MonsterGeneratorWorkspace.CreatePrefabFolder)), new GUIContent("Prefab Folder"));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MonsterGeneratorWorkspace.LastCreatedMonster)), new GUIContent("Last Created"));
+            DrawSectionHeader("새 몬스터 만들기");
+            EditorGUILayout.HelpBox("필수값은 ID와 이름입니다. 이미지는 없어도 만들 수 있지만, 등록하면 프리팹 평면에 바로 적용됩니다.", MessageType.None);
 
-            using (new EditorGUI.DisabledScope(string.IsNullOrWhiteSpace(workspace.CreateId)))
+            EditorGUILayout.PropertyField(Prop(nameof(MonsterGeneratorWorkspace.CreateId)), new GUIContent("몬스터 ID", "소문자/숫자/밑줄 기준으로 정규화되어 저장됩니다."));
+            EditorGUILayout.PropertyField(Prop(nameof(MonsterGeneratorWorkspace.CreateDisplayName)), new GUIContent("표시 이름", "게임 UI에 노출되는 이름입니다."));
+            EditorGUILayout.PropertyField(Prop(nameof(MonsterGeneratorWorkspace.CreateVisualImage)), new GUIContent("비주얼 이미지", "프리팹의 투명 쿼드 머티리얼에 적용할 이미지입니다."));
+
+            using (new EditorGUILayout.HorizontalScope())
             {
-                if (GUILayout.Button("Create Monster"))
+                DrawEnumPopup(Prop(nameof(MonsterGeneratorWorkspace.CreateSpecies)), new GUIContent("종족"), new[] { "인간", "야수", "이형", "언데드" });
+                DrawEnumPopup(Prop(nameof(MonsterGeneratorWorkspace.CreateGrade)), new GUIContent("등급"), new[] { "일반", "정예", "보스" });
+            }
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUILayout.PropertyField(Prop(nameof(MonsterGeneratorWorkspace.CreateDefaultGroupCount)), new GUIContent("기본 무리 수"));
+                EditorGUILayout.PropertyField(Prop(nameof(MonsterGeneratorWorkspace.CreateMaxHp)), new GUIContent("최대 HP"));
+            }
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUILayout.PropertyField(Prop(nameof(MonsterGeneratorWorkspace.CreateAttackPower)), new GUIContent("공격력"));
+                EditorGUILayout.PropertyField(Prop(nameof(MonsterGeneratorWorkspace.CreateDefense)), new GUIContent("방어력"));
+            }
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUILayout.PropertyField(Prop(nameof(MonsterGeneratorWorkspace.CreateEvasionRate)), new GUIContent("회피율"));
+                EditorGUILayout.PropertyField(Prop(nameof(MonsterGeneratorWorkspace.CreateXpReward)), new GUIContent("경험치 보상"));
+            }
+
+            EditorGUILayout.PropertyField(Prop(nameof(MonsterGeneratorWorkspace.CreateAi)), new GUIContent("AI 패턴", "기본값은 Attack입니다."));
+            EditorGUILayout.PropertyField(Prop(nameof(MonsterGeneratorWorkspace.CreateAssetFolder)), new GUIContent("에셋 저장 폴더", AssetFolderHelp));
+            EditorGUILayout.PropertyField(Prop(nameof(MonsterGeneratorWorkspace.CreatePrefabFolder)), new GUIContent("프리팹 저장 폴더", PrefabFolderHelp));
+
+            DrawCreateReadiness(workspace);
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                using (new EditorGUI.DisabledScope(string.IsNullOrWhiteSpace(workspace.CreateId)))
                 {
-                    serializedObject.ApplyModifiedProperties();
-                    CreateMonster(workspace);
-                    MarkSceneDirty(workspace);
+                    if (GUILayout.Button(new GUIContent("몬스터 생성 + 미리보기", "에셋, 프리팹, 머티리얼을 만들고 프리뷰 씬에 배치합니다."), GUILayout.Height(ButtonHeight)))
+                    {
+                        serializedObject.ApplyModifiedProperties();
+                        CreateMonster(workspace);
+                        MarkSceneDirty(workspace);
+                    }
                 }
+
+                using (new EditorGUI.DisabledScope(workspace.LastCreatedMonster == null))
+                {
+                    if (GUILayout.Button(new GUIContent("마지막 생성 선택", "마지막으로 만든 몬스터 에셋을 Project 창에서 선택합니다."), GUILayout.Height(ButtonHeight)))
+                    {
+                        Selection.activeObject = workspace.LastCreatedMonster;
+                        EditorGUIUtility.PingObject(workspace.LastCreatedMonster);
+                    }
+                }
+            }
+
+            using (new EditorGUI.DisabledScope(true))
+            {
+                EditorGUILayout.PropertyField(Prop(nameof(MonsterGeneratorWorkspace.LastCreatedMonster)), new GUIContent("마지막 생성 몬스터"));
             }
         }
 
         private void DrawExistingPreviewSection(MonsterGeneratorWorkspace workspace)
         {
-            EditorGUILayout.LabelField("Preview Existing Assets", EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MonsterGeneratorWorkspace.Monster)));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MonsterGeneratorWorkspace.Encounter)));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MonsterGeneratorWorkspace.SpawnTable)));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MonsterGeneratorWorkspace.PreviewRoot)));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MonsterGeneratorWorkspace.SpawnPoints)));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MonsterGeneratorWorkspace.EncounterSpacing)));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(MonsterGeneratorWorkspace.ClearBeforePreview)));
+            DrawSectionHeader("기존 에셋 프리뷰");
+            EditorGUILayout.PropertyField(Prop(nameof(MonsterGeneratorWorkspace.Monster)), new GUIContent("몬스터", "단일 몬스터 프리뷰 대상입니다."));
+            EditorGUILayout.PropertyField(Prop(nameof(MonsterGeneratorWorkspace.Encounter)), new GUIContent("조우", "PrimaryMonster와 EnemySlots를 함께 배치합니다."));
+            EditorGUILayout.PropertyField(Prop(nameof(MonsterGeneratorWorkspace.SpawnTable)), new GUIContent("스폰 테이블", "시드 기반으로 조우 또는 직접 몬스터 항목을 선택합니다."));
+
+            DrawPreviewSummary(workspace);
+
+            EditorGUILayout.Space(4f);
+            DrawSectionHeader("프리뷰 배치 설정");
+            EditorGUILayout.PropertyField(Prop(nameof(MonsterGeneratorWorkspace.PreviewRoot)), new GUIContent("프리뷰 루트"));
+            EditorGUILayout.PropertyField(Prop(nameof(MonsterGeneratorWorkspace.SpawnPoints)), new GUIContent("스폰 위치 목록"), true);
+            EditorGUILayout.PropertyField(Prop(nameof(MonsterGeneratorWorkspace.EncounterSpacing)), new GUIContent("자동 배치 간격"));
+            EditorGUILayout.PropertyField(Prop(nameof(MonsterGeneratorWorkspace.ClearBeforePreview)), new GUIContent("실행 전 프리뷰 비우기"));
 
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Preview", EditorStyles.boldLabel);
-            seed = EditorGUILayout.IntField("Spawn Table Seed", seed);
+            DrawSectionHeader("프리뷰 실행");
+            seed = EditorGUILayout.IntField(new GUIContent("스폰 테이블 시드", "같은 시드는 같은 항목을 선택합니다."), seed);
 
             using (new EditorGUILayout.HorizontalScope())
             {
-                if (GUILayout.Button("Preview Monster"))
+                using (new EditorGUI.DisabledScope(workspace.Monster == null))
                 {
-                    serializedObject.ApplyModifiedProperties();
-                    PreviewWithUndo(workspace, "Preview Monster", workspace.PreviewMonster);
-                    MarkSceneDirty(workspace);
+                    if (GUILayout.Button(new GUIContent("몬스터 보기", "선택한 단일 몬스터를 프리뷰합니다."), GUILayout.Height(ButtonHeight)))
+                    {
+                        serializedObject.ApplyModifiedProperties();
+                        PreviewWithUndo(workspace, "몬스터 프리뷰", workspace.PreviewMonster);
+                        MarkSceneDirty(workspace);
+                    }
                 }
 
-                if (GUILayout.Button("Preview Encounter"))
+                using (new EditorGUI.DisabledScope(workspace.Encounter == null))
                 {
-                    serializedObject.ApplyModifiedProperties();
-                    PreviewWithUndo(workspace, "Preview Encounter", workspace.PreviewEncounter);
-                    MarkSceneDirty(workspace);
+                    if (GUILayout.Button(new GUIContent("조우 보기", "선택한 조우의 몬스터 구성을 프리뷰합니다."), GUILayout.Height(ButtonHeight)))
+                    {
+                        serializedObject.ApplyModifiedProperties();
+                        PreviewWithUndo(workspace, "조우 프리뷰", workspace.PreviewEncounter);
+                        MarkSceneDirty(workspace);
+                    }
                 }
             }
 
             using (new EditorGUILayout.HorizontalScope())
             {
-                if (GUILayout.Button("Preview Spawn Table"))
+                using (new EditorGUI.DisabledScope(workspace.SpawnTable == null))
                 {
-                    serializedObject.ApplyModifiedProperties();
-                    PreviewWithUndo(workspace, "Preview Spawn Table", () => workspace.PreviewSpawnTable(seed));
-                    MarkSceneDirty(workspace);
+                    if (GUILayout.Button(new GUIContent("스폰 테이블 보기", "시드로 스폰 테이블 항목을 뽑아 프리뷰합니다."), GUILayout.Height(ButtonHeight)))
+                    {
+                        serializedObject.ApplyModifiedProperties();
+                        PreviewWithUndo(workspace, "스폰 테이블 프리뷰", () => workspace.PreviewSpawnTable(seed));
+                        MarkSceneDirty(workspace);
+                    }
                 }
 
-                if (GUILayout.Button("Clear Preview"))
+                using (new EditorGUI.DisabledScope(ResolvePreviewRoot(workspace).childCount == 0))
                 {
-                    serializedObject.ApplyModifiedProperties();
-                    ClearPreviewWithUndo(workspace, "Clear Preview");
-                    MarkSceneDirty(workspace);
+                    if (GUILayout.Button(new GUIContent("프리뷰 비우기", "현재 프리뷰 루트 아래의 생성 오브젝트를 삭제합니다."), GUILayout.Height(ButtonHeight)))
+                    {
+                        serializedObject.ApplyModifiedProperties();
+                        ClearPreviewWithUndo(workspace, "프리뷰 비우기");
+                        MarkSceneDirty(workspace);
+                    }
                 }
             }
         }
 
+        private SerializedProperty Prop(string propertyName)
+        {
+            return serializedObject.FindProperty(propertyName);
+        }
+
+        private static void DrawSectionHeader(string title)
+        {
+            EditorGUILayout.Space(3f);
+            EditorGUILayout.LabelField(title, EditorStyles.boldLabel);
+        }
+
+        private static void DrawEnumPopup(SerializedProperty property, GUIContent label, string[] displayNames)
+        {
+            var index = Mathf.Clamp(property.enumValueIndex, 0, displayNames.Length - 1);
+            property.enumValueIndex = EditorGUILayout.Popup(label, index, displayNames);
+        }
+
+        private static void DrawCreateReadiness(MonsterGeneratorWorkspace workspace)
+        {
+            var normalizedId = NormalizeId(workspace.CreateId);
+            var assetPath = $"{workspace.CreateAssetFolder}/{normalizedId}.asset";
+            var prefabPath = $"{workspace.CreatePrefabFolder}/{normalizedId}.prefab";
+            var hasExistingAsset = AssetDatabase.LoadAssetAtPath<MonsterDefinitionAsset>(assetPath) != null;
+            var hasExistingPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath) != null;
+
+            var status = $"저장 예정 ID: {normalizedId}\n에셋: {assetPath}\n프리팹: {prefabPath}";
+            EditorGUILayout.HelpBox(status, hasExistingAsset || hasExistingPrefab ? MessageType.Warning : MessageType.None);
+
+            if (string.IsNullOrWhiteSpace(workspace.CreateId))
+            {
+                EditorGUILayout.HelpBox("몬스터 ID를 입력해야 생성할 수 있습니다.", MessageType.Warning);
+            }
+            else if (hasExistingAsset || hasExistingPrefab)
+            {
+                EditorGUILayout.HelpBox("같은 이름의 파일이 있어도 Unity가 자동으로 고유 경로를 생성합니다. 덮어쓰지는 않습니다.", MessageType.Info);
+            }
+        }
+
+        private static void DrawPreviewSummary(MonsterGeneratorWorkspace workspace)
+        {
+            var root = ResolvePreviewRoot(workspace);
+            var monsterText = workspace.Monster != null ? FormatMonster(workspace.Monster) : "몬스터 미선택";
+            var encounterText = workspace.Encounter != null ? FormatEncounter(workspace.Encounter) : "조우 미선택";
+            var spawnTableText = workspace.SpawnTable != null ? FormatSpawnTable(workspace.SpawnTable) : "스폰 테이블 미선택";
+            var previewText = $"프리뷰 루트: {root.name} / 현재 배치 수: {root.childCount}";
+
+            EditorGUILayout.HelpBox($"{monsterText}\n{encounterText}\n{spawnTableText}\n{previewText}", MessageType.None);
+        }
+
+        private static string FormatMonster(MonsterDefinitionAsset monster)
+        {
+            return $"몬스터: {DisplayNameOrId(monster)} / HP {monster.MaxHp}, 공격 {monster.AttackPower}, 방어 {monster.Defense}, 등급 {monster.Grade}";
+        }
+
+        private static string FormatEncounter(EncounterDefinitionAsset encounter)
+        {
+            var slotCount = encounter.EnemySlots != null ? encounter.EnemySlots.Length : 0;
+            var primary = encounter.PrimaryMonster != null ? DisplayNameOrId(encounter.PrimaryMonster) : encounter.PrimaryMonsterId;
+            return $"조우: {DisplayNameOrId(encounter.DisplayName, encounter.Id)} / 주 대상 {Fallback(primary, "없음")}, 슬롯 {slotCount}개";
+        }
+
+        private static string FormatSpawnTable(SpawnTableAsset spawnTable)
+        {
+            var encounterCount = spawnTable.EncounterEntries != null ? spawnTable.EncounterEntries.Length : 0;
+            var monsterCount = spawnTable.DirectMonsterEntries != null ? spawnTable.DirectMonsterEntries.Length : 0;
+            return $"스폰 테이블: {DisplayNameOrId(spawnTable.DisplayName, spawnTable.Id)} / 조우 {encounterCount}개, 직접 몬스터 {monsterCount}개, 총 가중치 {SpawnTableWeight(spawnTable)}";
+        }
+
+        private static int SpawnTableWeight(SpawnTableAsset spawnTable)
+        {
+            var total = 0;
+            foreach (var entry in spawnTable.EncounterEntries ?? System.Array.Empty<SpawnEncounterEntry>())
+            {
+                if (entry != null && entry.Weight > 0)
+                {
+                    total += entry.Weight;
+                }
+            }
+
+            foreach (var entry in spawnTable.DirectMonsterEntries ?? System.Array.Empty<SpawnMonsterEntry>())
+            {
+                if (entry != null && entry.Weight > 0)
+                {
+                    total += entry.Weight;
+                }
+            }
+
+            return total;
+        }
+
+        private static string DisplayNameOrId(string displayName, string id)
+        {
+            return !string.IsNullOrWhiteSpace(displayName) ? displayName : Fallback(id, "(id 없음)");
+        }
+
+        private static string DisplayNameOrId(MonsterDefinitionAsset monster)
+        {
+            if (monster == null)
+            {
+                return "없음";
+            }
+
+            if (!string.IsNullOrWhiteSpace(monster.DisplayName))
+            {
+                return monster.DisplayName;
+            }
+
+            return !string.IsNullOrWhiteSpace(monster.Id) ? monster.Id : monster.name;
+        }
+
+        private static string Fallback(string value, string fallback)
+        {
+            return string.IsNullOrWhiteSpace(value) ? fallback : value;
+        }
+
         private static void CreateMonster(MonsterGeneratorWorkspace workspace)
         {
-            Undo.RecordObject(workspace, "Create Monster");
+            Undo.RecordObject(workspace, "몬스터 생성");
             EnsureFolder(workspace.CreateAssetFolder);
             EnsureFolder(workspace.CreatePrefabFolder);
 
@@ -139,7 +317,7 @@ namespace Conn.Editor.Content
 
             workspace.Monster = monster;
             workspace.LastCreatedMonster = monster;
-            PreviewWithUndo(workspace, "Create Monster", workspace.PreviewMonster);
+            PreviewWithUndo(workspace, "몬스터 생성", workspace.PreviewMonster);
             EditorUtility.SetDirty(workspace);
             Selection.activeObject = monster;
             EditorGUIUtility.PingObject(monster);

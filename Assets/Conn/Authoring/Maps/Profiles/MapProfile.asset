@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1b96da214f719fad59177df19d74dcea, type: 3}
+  m_Name: MapProfile
+  m_EditorClassIdentifier: Conn.Authoring::Conn.Authoring.Maps.MapProfileAsset
+  Id: new_map_profile
+  DisplayName: New Map Profile
+  MapKind: dungeon
+  ThemeId: default
+  GridSize: {x: 5, y: 5}
+  RoomSize: {x: 8, y: 8}
+  RoomCountMin: 6
+  RoomCountMax: 12
+  TargetModuleCount: 6
+  CriticalPathMin: 3
+  CriticalPathMax: 5
+  SideBranchCount: 1
+  LoopMin: 0
+  LoopMax: 1
+  MergeChancePer1000: 0
+  LockedDoorKeyId: 
+  RequiredAnchors: 
+  ResourceSet: {fileID: 0}
+  RequiredLandmarkRooms: []
+  RoomPools: []
+  OptionalChunks: []
+  OptionalLandmarks: []
+  AllowedSpawnTables: []
+  SpawnTagFilters: []
+  DirectEncounterOverrides: []
+  GenerationWeightProfile: {fileID: 0}
+  CompatibilityTags: []

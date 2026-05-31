@@ -13,7 +13,7 @@ namespace Conn.Authoring.Content
         public float EncounterSpacing = 2f;
         public bool ClearBeforePreview = true;
 
-        [Header("Create Monster")]
+        [Header("몬스터 생성")]
         public string CreateId = "monster_new";
         public string CreateDisplayName = "New Monster";
         public Texture2D CreateVisualImage;

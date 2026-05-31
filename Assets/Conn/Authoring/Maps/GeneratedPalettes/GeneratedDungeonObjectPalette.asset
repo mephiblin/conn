@@ -1,0 +1,66 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1604a58a87949079ac1d4962aa48022, type: 3}
+  m_Name: GeneratedDungeonObjectPalette
+  m_EditorClassIdentifier: Conn.Authoring::Conn.Authoring.Maps.MapObjectPaletteAsset
+  Id: generated_dungeon_objects
+  DisplayName: Generated Dungeon Object Palette
+  ThemeId: generated_dungeon
+  Objects:
+  - Id: door
+    Kind: 0
+    Prefab: {fileID: 0}
+    PreviewMaterial: {fileID: 0}
+    FootprintWidth: 1
+    FootprintDepth: 1
+    BlocksMovement: 0
+    RuntimeReferenceId: door
+  - Id: treasure_chest
+    Kind: 1
+    Prefab: {fileID: 0}
+    PreviewMaterial: {fileID: 0}
+    FootprintWidth: 1
+    FootprintDepth: 1
+    BlocksMovement: 0
+    RuntimeReferenceId: treasure_chest
+  - Id: spawn_hint
+    Kind: 4
+    Prefab: {fileID: 0}
+    PreviewMaterial: {fileID: 0}
+    FootprintWidth: 1
+    FootprintDepth: 1
+    BlocksMovement: 0
+    RuntimeReferenceId: spawn_hint
+  - Id: torch_wall
+    Kind: 3
+    Prefab: {fileID: 0}
+    PreviewMaterial: {fileID: 0}
+    FootprintWidth: 1
+    FootprintDepth: 1
+    BlocksMovement: 0
+    RuntimeReferenceId: torch_wall
+  - Id: barrel
+    Kind: 2
+    Prefab: {fileID: 0}
+    PreviewMaterial: {fileID: 0}
+    FootprintWidth: 1
+    FootprintDepth: 1
+    BlocksMovement: 0
+    RuntimeReferenceId: barrel
+  - Id: rubble_blocker
+    Kind: 5
+    Prefab: {fileID: 0}
+    PreviewMaterial: {fileID: 0}
+    FootprintWidth: 1
+    FootprintDepth: 1
+    BlocksMovement: 1
+    RuntimeReferenceId: rubble_blocker

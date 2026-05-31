@@ -1,0 +1,78 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6d55de6eb2894dad8db8fdabf650f4d1, type: 3}
+  m_Name: GeneratedDungeonTilePalette
+  m_EditorClassIdentifier: Conn.Authoring::Conn.Authoring.Maps.MapTilePaletteAsset
+  Id: generated_dungeon_tiles
+  DisplayName: Generated Dungeon Tile Palette
+  ThemeId: generated_dungeon
+  Tiles:
+  - Id: generated_floor
+    TerrainType: 0
+    EditorMaterial: {fileID: 0}
+    RuntimeMaterialId: generated_floor_runtime
+    DefaultWalkable: 1
+    DefaultHeightCost: 1
+  - Id: generated_corridor
+    TerrainType: 0
+    EditorMaterial: {fileID: 0}
+    RuntimeMaterialId: generated_corridor_runtime
+    DefaultWalkable: 1
+    DefaultHeightCost: 1
+  - Id: generated_upper_floor
+    TerrainType: 0
+    EditorMaterial: {fileID: 0}
+    RuntimeMaterialId: generated_upper_floor_runtime
+    DefaultWalkable: 1
+    DefaultHeightCost: 1
+  - Id: generated_slope
+    TerrainType: 2
+    EditorMaterial: {fileID: 0}
+    RuntimeMaterialId: generated_slope_runtime
+    DefaultWalkable: 1
+    DefaultHeightCost: 1
+  - Id: generated_stair
+    TerrainType: 3
+    EditorMaterial: {fileID: 0}
+    RuntimeMaterialId: generated_stair_runtime
+    DefaultWalkable: 1
+    DefaultHeightCost: 1
+  - Id: generated_door
+    TerrainType: 0
+    EditorMaterial: {fileID: 0}
+    RuntimeMaterialId: generated_door_runtime
+    DefaultWalkable: 1
+    DefaultHeightCost: 1
+  - Id: generated_wall
+    TerrainType: 1
+    EditorMaterial: {fileID: 0}
+    RuntimeMaterialId: generated_wall_runtime
+    DefaultWalkable: 0
+    DefaultHeightCost: 0
+  - Id: generated_wall_corner
+    TerrainType: 1
+    EditorMaterial: {fileID: 0}
+    RuntimeMaterialId: generated_wall_corner_runtime
+    DefaultWalkable: 0
+    DefaultHeightCost: 0
+  - Id: generated_wall_edge
+    TerrainType: 1
+    EditorMaterial: {fileID: 0}
+    RuntimeMaterialId: generated_wall_edge_runtime
+    DefaultWalkable: 0
+    DefaultHeightCost: 0
+  - Id: generated_wall_solid
+    TerrainType: 1
+    EditorMaterial: {fileID: 0}
+    RuntimeMaterialId: generated_wall_solid_runtime
+    DefaultWalkable: 0
+    DefaultHeightCost: 0
