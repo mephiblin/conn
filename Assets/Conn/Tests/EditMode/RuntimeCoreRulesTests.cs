@@ -898,6 +898,58 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void DungeonLootPersistsAndGainsRiskRewardAfterObjectiveClear()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+            QuestRuntimeService.AcceptQuest(session, QuestCatalog.TestHuntId);
+            var goldBeforeFirstChest = session.Gold;
+
+            Assert.That(DungeonObjectRuntimeService.TryResolveLoot(
+                session,
+                "dungeon_object:chest_before",
+                "chest_before",
+                RoomChunkObjectKind.Chest,
+                out var firstNotice), Is.True);
+            Assert.That(session.Gold, Is.EqualTo(goldBeforeFirstChest + 10));
+            Assert.That(session.Player.Hp, Is.EqualTo(session.Player.MaxHp));
+            Assert.That(firstNotice, Does.Contain("Found 10g"));
+            Assert.That(DungeonObjectRuntimeService.IsOpened(session, "dungeon_object:chest_before"), Is.True);
+            Assert.That(DungeonObjectRuntimeService.TryResolveLoot(
+                session,
+                "dungeon_object:chest_before",
+                "chest_before",
+                RoomChunkObjectKind.Chest,
+                out _), Is.False);
+
+            QuestRuntimeService.CompleteTarget(session, "field_monster_alpha");
+            QuestRuntimeService.KeepExploring(session);
+            var goldBeforeAfterClearChest = session.Gold;
+            var hpBeforeAfterClearChest = session.Player.Hp;
+
+            Assert.That(DungeonObjectRuntimeService.TryResolveLoot(
+                session,
+                "dungeon_object:chest_after",
+                "chest_after",
+                RoomChunkObjectKind.Chest,
+                out var afterClearNotice), Is.True);
+            Assert.That(session.Gold, Is.EqualTo(goldBeforeAfterClearChest + 15));
+            Assert.That(session.Player.Hp, Is.EqualTo(hpBeforeAfterClearChest - 2));
+            Assert.That(afterClearNotice, Does.Contain("+5g bonus"));
+            Assert.That(afterClearNotice, Does.Contain("took 2 damage"));
+            Assert.That(DungeonObjectRuntimeService.ExpeditionLootStatus(session), Does.Contain("2 opened"));
+            Assert.That(DungeonObjectRuntimeService.ExpeditionLootStatus(session), Does.Contain("+25g"));
+            Assert.That(DungeonObjectRuntimeService.ExpeditionLootStatus(session), Does.Contain("2 risk damage"));
+
+            var loaded = new GameSessionState();
+            SaveRuntimeService.OverwriteFromJson(SaveRuntimeService.ToJson(session), loaded);
+
+            Assert.That(DungeonObjectRuntimeService.IsOpened(loaded, "dungeon_object:chest_after"), Is.True);
+            Assert.That(loaded.World.FindDungeonObject("dungeon_object:chest_after").GoldCollected, Is.EqualTo(15));
+            Assert.That(loaded.World.FindDungeonObject("dungeon_object:chest_after").RiskDamageTaken, Is.EqualTo(2));
+        }
+
+        [Test]
         public void TrainerAndScholarProvideTownServices()
         {
             var session = new GameSessionState();

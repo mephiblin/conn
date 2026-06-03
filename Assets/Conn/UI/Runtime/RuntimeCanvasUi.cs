@@ -1896,6 +1896,7 @@ namespace Conn.UI.Runtime
             AddText(hud, session.Quest.HasActiveQuest ? $"Quest: {session.Quest.ActiveQuestTitle}" : "Quest: none");
             AddText(hud, $"Target: {session.Quest.TargetMonsterId}");
             AddText(hud, $"Expedition: {FieldMonsterRuntimeService.ExpeditionStatus(session)}");
+            AddText(hud, DungeonObjectRuntimeService.ExpeditionLootStatus(session));
             AddText(hud, $"Return: {(session.Quest.ReturnAvailable ? "available" : "locked")}");
             DrawInteractionPrompt("DungeonInteractionPrompt");
 

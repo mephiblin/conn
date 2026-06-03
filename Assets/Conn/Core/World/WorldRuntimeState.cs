@@ -6,6 +6,7 @@ namespace Conn.Core.World
     public sealed class WorldRuntimeState
     {
         public List<FieldMonsterState> FieldMonsters = new List<FieldMonsterState>();
+        public List<DungeonObjectState> DungeonObjects = new List<DungeonObjectState>();
 
         public FieldMonsterState GetOrCreateFieldMonster(string stateKey, string placementId, string encounterId, string monsterId)
         {
@@ -42,9 +43,40 @@ namespace Conn.Core.World
             return null;
         }
 
+        public DungeonObjectState GetOrCreateDungeonObject(string stateKey, string placementId)
+        {
+            for (var i = 0; i < DungeonObjects.Count; i++)
+            {
+                if (DungeonObjects[i].StateKey == stateKey)
+                {
+                    DungeonObjects[i].Setup(stateKey, placementId);
+                    return DungeonObjects[i];
+                }
+            }
+
+            var state = new DungeonObjectState();
+            state.Setup(stateKey, placementId);
+            DungeonObjects.Add(state);
+            return state;
+        }
+
+        public DungeonObjectState FindDungeonObject(string stateKey)
+        {
+            for (var i = 0; i < DungeonObjects.Count; i++)
+            {
+                if (DungeonObjects[i].StateKey == stateKey)
+                {
+                    return DungeonObjects[i];
+                }
+            }
+
+            return null;
+        }
+
         public void Clear()
         {
             FieldMonsters.Clear();
+            DungeonObjects.Clear();
         }
     }
 }

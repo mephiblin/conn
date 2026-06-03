@@ -8,14 +8,14 @@ namespace Conn.Runtime.World
     {
         private string placementId = string.Empty;
         private string runtimeReferenceId = string.Empty;
+        private string stateKey = string.Empty;
         private RoomChunkObjectKind kind;
-        private bool opened;
-        private int goldReward;
 
         public string Prompt
         {
             get
             {
+                var opened = IsOpened();
                 if (kind == RoomChunkObjectKind.Chest)
                 {
                     return opened ? "Chest is empty" : "Open Chest";
@@ -36,9 +36,8 @@ namespace Conn.Runtime.World
         {
             placementId = placement?.PlacementId ?? string.Empty;
             runtimeReferenceId = placement?.RuntimeReferenceId ?? string.Empty;
+            stateKey = DungeonObjectRuntimeService.StateKeyFor(placementId, runtimeReferenceId);
             kind = placement?.Kind ?? RoomChunkObjectKind.Decor;
-            opened = false;
-            goldReward = kind == RoomChunkObjectKind.Chest ? 10 : kind == RoomChunkObjectKind.Barrel ? 3 : 0;
         }
 
         public void Interact()
@@ -55,17 +54,13 @@ namespace Conn.Runtime.World
                 return;
             }
 
-            if (opened)
-            {
-                RuntimeNoticeService.Set(session, kind == RoomChunkObjectKind.Chest ? "Chest already opened." : "Barrel already broken.");
-                return;
-            }
+            DungeonObjectRuntimeService.TryResolveLoot(session, stateKey, placementId, kind, out _);
+        }
 
-            opened = true;
-            session.Gold += goldReward;
-            RuntimeNoticeService.Set(session, kind == RoomChunkObjectKind.Chest
-                ? $"Opened chest {placementId}. Found {goldReward}g."
-                : $"Broke barrel {placementId}. Found {goldReward}g.");
+        private bool IsOpened()
+        {
+            var session = GameSession.Instance != null ? GameSession.Instance.State : null;
+            return session != null && DungeonObjectRuntimeService.IsOpened(session, stateKey);
         }
     }
 }
