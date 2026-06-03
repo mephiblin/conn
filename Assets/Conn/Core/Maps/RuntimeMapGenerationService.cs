@@ -14,6 +14,11 @@ namespace Conn.Core.Maps
             var compiled = MapGenerationService.Compile(entry.Profile, draft);
             ApplyEncounterPlacements(entry, compiled);
             MapValidationService.ThrowIfFailed(MapValidationService.ValidateCompiled(entry.Profile, compiled));
+            if (compiled.Cells != null && compiled.Cells.Count > 0)
+            {
+                MapValidationService.ThrowIfFailed(MapGenerationQualityService.ValidateCompiledExplorationRhythm(entry.Profile, compiled));
+            }
+
             return compiled;
         }
 

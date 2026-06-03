@@ -200,6 +200,27 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void TwistedTempleCompiledMapMaintainsReadableExplorationRoute()
+        {
+            var asset = AssetDatabase.LoadAssetAtPath<CompiledMapAsset>("Assets/Conn/Core/Maps/twisted_temple_2001_CompiledMap.asset");
+            Assert.That(asset, Is.Not.Null);
+            var compiled = JsonUtility.FromJson<CompiledMap>(asset.Json);
+            var profile = new MapProfile
+            {
+                ProfileId = asset.ProfileId,
+                Width = compiled.Width,
+                Height = compiled.Height,
+                RoomWidth = 12,
+                RoomHeight = 10,
+                RequiredAnchors = MapGenerationCatalog.ChapterTwoFirstSliceProfile().RequiredAnchors
+            };
+
+            var rhythmReport = MapGenerationQualityService.ValidateCompiledExplorationRhythm(profile, compiled);
+
+            Assert.That(rhythmReport.Passed, Is.True, string.Join("\n", rhythmReport.Errors.ToArray()));
+        }
+
+        [Test]
         public void GeneratedDraftAlwaysIncludesRequiredRoomRoles()
         {
             var profile = MapGenerationCatalog.ChapterTwoFirstSliceProfile();
@@ -320,8 +341,11 @@ namespace Conn.Tests.EditMode
                 RequiredAnchors = MapGenerationCatalog.ChapterTwoFirstSliceProfile().RequiredAnchors
             };
             var report = MapValidationService.ValidateCompiled(profile, compiled);
+            var rhythmReport = MapGenerationQualityService.ValidateCompiledExplorationRhythm(profile, compiled);
 
             Assert.That(report.Passed, Is.True, string.Join("\n", report.Errors.ToArray()));
+            Assert.That(rhythmReport.Passed, Is.True, string.Join("\n", rhythmReport.Errors.ToArray()));
+            Assert.That(rhythmReport.Warnings.Count, Is.EqualTo(0), string.Join("\n", rhythmReport.Warnings.ToArray()));
             Assert.That(compiled.Cells.Count, Is.EqualTo(compiled.Width * compiled.Height));
             Assert.That(compiled.RoomRecords.Count, Is.GreaterThan(0));
             Assert.That(compiled.Sockets.Count, Is.GreaterThan(0));
