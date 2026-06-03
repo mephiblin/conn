@@ -93,6 +93,7 @@ Last updated: 2026-06-03
   - 로컬 parser/BFS 확인: start -> quest target -> boss -> exit flat floor route 통과.
   - `git diff --check` 통과.
   - Unity `RuntimeCoreRulesTests`/`GameFlowPlaytestTests` batchmode 실행은 같은 프로젝트를 열고 있는 다른 Unity 인스턴스 때문에 차단됨.
+  - 커밋: `5d2bfc6`
 
 ### 2026-05-31 기준점
 
