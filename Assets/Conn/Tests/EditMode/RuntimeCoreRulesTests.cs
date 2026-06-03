@@ -1084,6 +1084,30 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void InventoryAndSkillCardsExposeReadableBadgesAndColors()
+        {
+            var sword = EquipmentCatalog.Find(EquipmentCatalog.RustySwordId);
+            var shield = EquipmentCatalog.Find(EquipmentCatalog.IronShieldId);
+            var slash = SkillCatalog.Find(SkillCatalog.SlashId);
+            var guard = SkillCatalog.Find(SkillCatalog.GuardId);
+
+            Assert.That(RuntimeCanvasUi.EquipmentCardStatusLabel(sword, false), Is.EqualTo("1H | Weapon | In Bag"));
+            Assert.That(RuntimeCanvasUi.EquipmentCardStatusLabel(shield, true), Is.EqualTo("SH | Shield | Equipped"));
+            Assert.That(RuntimeCanvasUi.SkillCardStatusLabel(slash, 2, false), Is.EqualTo("ATK | 공격 +1 | Free 2"));
+            Assert.That(RuntimeCanvasUi.SkillCardStatusLabel(guard, 1, true), Is.EqualTo("GRD | 방어 +2 | Selected"));
+
+            Assert.That(
+                RuntimeCanvasUi.EquipmentCardBackgroundColor(EquipmentKind.OneHandWeapon, false),
+                Is.Not.EqualTo(RuntimeCanvasUi.EquipmentCardBackgroundColor(EquipmentKind.Shield, false)));
+            Assert.That(
+                RuntimeCanvasUi.SkillCardBackgroundColor(SkillEffectKind.Attack, false),
+                Is.Not.EqualTo(RuntimeCanvasUi.SkillCardBackgroundColor(SkillEffectKind.Guard, false)));
+            Assert.That(
+                RuntimeCanvasUi.SkillCardBackgroundColor(SkillEffectKind.Guard, true),
+                Is.Not.EqualTo(RuntimeCanvasUi.SkillCardBackgroundColor(SkillEffectKind.Guard, false)));
+        }
+
+        [Test]
         public void SkillShopSupportsDuplicateBuyAndLooseSale()
         {
             var session = new GameSessionState();

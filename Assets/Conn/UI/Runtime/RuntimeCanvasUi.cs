@@ -1551,6 +1551,70 @@ namespace Conn.UI.Runtime
             return interactable ? new Color(0.13f, 0.16f, 0.2f, 0.96f) : new Color(0.08f, 0.085f, 0.095f, 0.86f);
         }
 
+        public static string EquipmentCardStatusLabel(EquipmentItemDefinition item, bool equipped)
+        {
+            if (item == null)
+            {
+                return "EMPTY | Empty";
+            }
+
+            var state = equipped ? "Equipped" : "In Bag";
+            return $"{EquipmentIconFor(item.Kind)} | {EquipmentKindLabel(item.Kind)} | {state}";
+        }
+
+        public static Color EquipmentCardBackgroundColor(EquipmentKind kind, bool equipped)
+        {
+            if (equipped)
+            {
+                return new Color(0.22f, 0.18f, 0.1f, 0.96f);
+            }
+
+            return kind switch
+            {
+                EquipmentKind.OneHandWeapon => new Color(0.15f, 0.18f, 0.23f, 0.94f),
+                EquipmentKind.TwoHandWeapon => new Color(0.20f, 0.14f, 0.12f, 0.94f),
+                EquipmentKind.Shield => new Color(0.11f, 0.19f, 0.16f, 0.94f),
+                EquipmentKind.HeadArmor => new Color(0.12f, 0.15f, 0.20f, 0.92f),
+                EquipmentKind.ChestArmor => new Color(0.12f, 0.16f, 0.22f, 0.92f),
+                EquipmentKind.ArmsArmor => new Color(0.13f, 0.16f, 0.20f, 0.92f),
+                EquipmentKind.LegsArmor => new Color(0.12f, 0.14f, 0.19f, 0.92f),
+                EquipmentKind.FeetArmor => new Color(0.10f, 0.13f, 0.17f, 0.92f),
+                _ => new Color(0.12f, 0.13f, 0.15f, 0.9f)
+            };
+        }
+
+        public static string SkillCardStatusLabel(Conn.Core.Skills.SkillDefinition skill, int available, bool selected)
+        {
+            if (skill == null)
+            {
+                return "SKL | Unknown | Free 0";
+            }
+
+            var state = selected ? "Selected" : $"Free {Mathf.Max(0, available)}";
+            return $"{SkillIconFor(skill.EffectKind)} | {SkillEffectSummary(skill)} | {state}";
+        }
+
+        public static Color SkillCardBackgroundColor(Conn.Core.Skills.SkillEffectKind kind, bool selected)
+        {
+            if (selected)
+            {
+                return new Color(0.25f, 0.21f, 0.11f, 0.98f);
+            }
+
+            return kind switch
+            {
+                Conn.Core.Skills.SkillEffectKind.Attack => new Color(0.20f, 0.12f, 0.12f, 0.94f),
+                Conn.Core.Skills.SkillEffectKind.Guard => new Color(0.10f, 0.18f, 0.20f, 0.94f),
+                Conn.Core.Skills.SkillEffectKind.Heal => new Color(0.10f, 0.19f, 0.13f, 0.94f),
+                Conn.Core.Skills.SkillEffectKind.Support => new Color(0.14f, 0.15f, 0.22f, 0.94f),
+                Conn.Core.Skills.SkillEffectKind.Buff => new Color(0.18f, 0.16f, 0.10f, 0.94f),
+                Conn.Core.Skills.SkillEffectKind.Debuff => new Color(0.17f, 0.12f, 0.20f, 0.94f),
+                Conn.Core.Skills.SkillEffectKind.Lifesteal => new Color(0.19f, 0.10f, 0.16f, 0.94f),
+                Conn.Core.Skills.SkillEffectKind.Summon => new Color(0.12f, 0.17f, 0.18f, 0.94f),
+                _ => new Color(0.12f, 0.13f, 0.16f, 0.9f)
+            };
+        }
+
         private void SelectShopDetail(TownShopPanelKind shopKind, string itemId, string mode)
         {
             selectedShopKind = shopKind;
@@ -1643,6 +1707,22 @@ namespace Conn.UI.Runtime
             };
         }
 
+        private static string EquipmentKindLabel(EquipmentKind kind)
+        {
+            return kind switch
+            {
+                EquipmentKind.OneHandWeapon => "Weapon",
+                EquipmentKind.TwoHandWeapon => "Heavy",
+                EquipmentKind.Shield => "Shield",
+                EquipmentKind.HeadArmor => "Head",
+                EquipmentKind.ChestArmor => "Chest",
+                EquipmentKind.ArmsArmor => "Arms",
+                EquipmentKind.LegsArmor => "Legs",
+                EquipmentKind.FeetArmor => "Feet",
+                _ => "Gear"
+            };
+        }
+
         private static string SkillIconFor(Conn.Core.Skills.SkillEffectKind kind)
         {
             return kind switch
@@ -1682,6 +1762,31 @@ namespace Conn.UI.Runtime
             }
 
             return $"Armor +{item.ArmorValue}  |  Defense +{item.ArmorValue}";
+        }
+
+        private static string EquipmentSlotSummary(EquipmentItemDefinition item)
+        {
+            if (item == null)
+            {
+                return string.Empty;
+            }
+
+            if (item.Kind == EquipmentKind.TwoHandWeapon)
+            {
+                return "Dice 5";
+            }
+
+            if (item.Kind == EquipmentKind.OneHandWeapon)
+            {
+                return "Dice 4";
+            }
+
+            if (item.Kind == EquipmentKind.Shield)
+            {
+                return "Defense +1";
+            }
+
+            return $"Armor +{item.ArmorValue}";
         }
 
         private static string EquipmentDetailText(EquipmentItemDefinition item)
@@ -1814,7 +1919,7 @@ namespace Conn.UI.Runtime
             for (var i = 0; i < session.Inventory.ItemIds.Count; i++)
             {
                 var itemId = session.Inventory.ItemIds[i];
-                if (RuntimeContentDatabase.FindEquipment(itemId) != null && !session.Equipment.IsEquipped(itemId))
+                if ((RuntimeContentDatabase.FindEquipment(itemId) ?? EquipmentCatalog.Find(itemId)) != null && !session.Equipment.IsEquipped(itemId))
                 {
                     equipmentIds.Add(itemId);
                 }
@@ -1833,12 +1938,20 @@ namespace Conn.UI.Runtime
 
         private void AddEquipmentBagSlot(Transform parent, GameSessionState session, string itemId, int slotNumber)
         {
-            var item = RuntimeContentDatabase.FindEquipment(itemId);
+            var item = RuntimeContentDatabase.FindEquipment(itemId) ?? EquipmentCatalog.Find(itemId);
             var equipped = item != null && session.Equipment.IsEquipped(itemId);
             var label = item == null
                 ? $"{slotNumber:00}\nEmpty"
-                : $"{EquipmentIconFor(item.Kind)}\n{item.DisplayName}\n{(equipped ? "장착중" : "보유")}";
+                : $"{EquipmentCardStatusLabel(item, equipped)}\n{item.DisplayName}\n{EquipmentSlotSummary(item)}";
             var button = AddButton(parent, label, () => EquipmentRuntimeService.TryEquip(session, itemId), item != null && !equipped);
+            var image = button.GetComponent<Image>();
+            if (image != null)
+            {
+                image.color = item == null
+                    ? new Color(0.07f, 0.08f, 0.1f, 0.68f)
+                    : EquipmentCardBackgroundColor(item.Kind, equipped);
+            }
+
             var layout = button.GetComponent<LayoutElement>();
             if (layout != null)
             {
@@ -1859,9 +1972,9 @@ namespace Conn.UI.Runtime
 
         private void AddEquipmentSlot(Transform parent, string slotName, string itemId, string fallback = "")
         {
-            var item = RuntimeContentDatabase.FindEquipment(itemId);
+            var item = RuntimeContentDatabase.FindEquipment(itemId) ?? EquipmentCatalog.Find(itemId);
             var value = item != null
-                ? $"{slotName}: {EquipmentIconFor(item.Kind)} {item.DisplayName}"
+                ? $"{slotName}: {EquipmentCardStatusLabel(item, true)} | {item.DisplayName} | {EquipmentSlotSummary(item)}"
                 : $"{slotName}: {(string.IsNullOrWhiteSpace(fallback) ? "Empty" : fallback)}";
             AddText(parent, value, 14, item != null ? FontStyle.Bold : FontStyle.Normal);
         }
@@ -1877,7 +1990,7 @@ namespace Conn.UI.Runtime
                     continue;
                 }
 
-                var skill = RuntimeContentDatabase.FindSkill(skillId);
+                var skill = RuntimeContentDatabase.FindSkill(skillId) ?? SkillCatalog.Find(skillId);
                 if (skill == null)
                 {
                     continue;
@@ -1894,9 +2007,15 @@ namespace Conn.UI.Runtime
                 var selected = skillId == selectedSkillId;
                 var button = AddButton(
                     parent,
-                    $"{(selected ? "> " : string.Empty)}{skill.DisplayName}\n{SkillEffectSummary(skill)}\n미장착 {available}",
+                    $"{(selected ? "> " : string.Empty)}{SkillCardStatusLabel(skill, available, selected)}\n{skill.DisplayName}",
                     () => selectedSkillId = selected ? string.Empty : skillId,
                     true);
+                var image = button.GetComponent<Image>();
+                if (image != null)
+                {
+                    image.color = SkillCardBackgroundColor(skill.EffectKind, selected);
+                }
+
                 button.gameObject.AddComponent<SkillFaceDragDrop>().ConfigureDragSource(skillId);
                 var layout = button.GetComponent<LayoutElement>();
                 if (layout != null)
@@ -1927,8 +2046,10 @@ namespace Conn.UI.Runtime
         private void AddSkillDieFaceSlot(Transform parent, GameSessionState session, int dieIndex, int faceIndex)
         {
             var skillId = session.Skills.SkillIdForDieFace(dieIndex, faceIndex);
-            var skill = RuntimeContentDatabase.FindSkill(skillId);
-            var label = $"{faceIndex + 1}\n{(skill != null ? skill.DisplayName : "기본공격")}\n{(skill != null ? SkillEffectSummary(skill) : "피해 " + (faceIndex + 1))}";
+            var skill = RuntimeContentDatabase.FindSkill(skillId) ?? SkillCatalog.Find(skillId);
+            var label = skill != null
+                ? $"{faceIndex + 1}  {SkillIconFor(skill.EffectKind)}\n{skill.DisplayName}\n{SkillEffectSummary(skill)}"
+                : $"{faceIndex + 1}  ATK\n기본공격\n피해 {faceIndex + 1}";
             var button = AddButton(
                 parent,
                 label,
@@ -1948,6 +2069,14 @@ namespace Conn.UI.Runtime
                     }
                 },
                 true);
+            var image = button.GetComponent<Image>();
+            if (image != null)
+            {
+                image.color = skill != null
+                    ? SkillCardBackgroundColor(skill.EffectKind, skill.SkillId == selectedSkillId)
+                    : new Color(0.11f, 0.13f, 0.16f, 0.92f);
+            }
+
             button.gameObject.AddComponent<SkillFaceDragDrop>().ConfigureDropTarget(dieIndex, faceIndex);
             var layout = button.GetComponent<LayoutElement>();
             if (layout != null)
