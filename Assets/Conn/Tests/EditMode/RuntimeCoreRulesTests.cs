@@ -63,6 +63,34 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void DungeonRuntimeFramesPlayerTowardFirstObjectiveOnSpawn()
+        {
+            var compiled = new CompiledMap
+            {
+                Width = 5,
+                Height = 3,
+                CellSize = 0.28f,
+                HeightStep = 0.28f
+            };
+            compiled.Placements.Add(new MapPlacement { Kind = MapPlacementKind.Start, X = 0, Y = 1 });
+            compiled.Placements.Add(new MapPlacement { Kind = MapPlacementKind.QuestTarget, X = 3, Y = 1 });
+            compiled.Placements.Add(new MapPlacement { Kind = MapPlacementKind.Boss, X = 4, Y = 1 });
+
+            var startPosition = DungeonMapActorSpawner.InitialPlayerPosition(compiled);
+            var targetPosition = DungeonMapActorSpawner.WorldPosition(compiled, 3, 1, 0f);
+            var expectedDirection = targetPosition - DungeonMapActorSpawner.WorldPosition(compiled, 0, 1, 0f);
+            expectedDirection.y = 0f;
+            expectedDirection.Normalize();
+            var forward = DungeonMapActorSpawner.InitialPlayerRotation(compiled) * Vector3.forward;
+            forward.y = 0f;
+            forward.Normalize();
+
+            Assert.That(startPosition, Is.EqualTo(DungeonMapActorSpawner.WorldPosition(compiled, 0, 1, 1.15f)));
+            Assert.That(DungeonMapActorSpawner.InitialFramingTarget(compiled)?.Kind, Is.EqualTo(MapPlacementKind.QuestTarget));
+            Assert.That(Vector3.Dot(forward, expectedDirection), Is.GreaterThan(0.99f));
+        }
+
+        [Test]
         public void DungeonRuntimeSpawnsHeightTransitionsWithWalkableCollision()
         {
             var compiled = new CompiledMap

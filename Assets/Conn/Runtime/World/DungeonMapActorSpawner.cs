@@ -50,10 +50,8 @@ namespace Conn.Runtime.World
                 return false;
             }
 
-            var start = CompiledMapDungeonRuntimeService.FindStartAnchor(compiledMap);
-            var position = start != null
-                ? WorldPosition(compiledMap, start.X, start.Y, 1.15f)
-                : FallbackPlayerPosition(compiledMap);
+            var position = InitialPlayerPosition(compiledMap);
+            var rotation = InitialPlayerRotation(compiledMap);
 
             var controller = player.GetComponent<CharacterController>();
             if (controller != null)
@@ -61,7 +59,7 @@ namespace Conn.Runtime.World
                 controller.enabled = false;
             }
 
-            player.transform.SetPositionAndRotation(position, Quaternion.identity);
+            player.transform.SetPositionAndRotation(position, rotation);
 
             if (controller != null)
             {
@@ -69,6 +67,57 @@ namespace Conn.Runtime.World
             }
 
             return true;
+        }
+
+        public static Vector3 InitialPlayerPosition(CompiledMap compiledMap)
+        {
+            if (compiledMap == null)
+            {
+                return Vector3.up * 1.15f;
+            }
+
+            var start = TryFindPlacement(compiledMap, MapPlacementKind.Start);
+            return start != null
+                ? WorldPosition(compiledMap, start.X, start.Y, 1.15f)
+                : FallbackPlayerPosition(compiledMap);
+        }
+
+        public static Quaternion InitialPlayerRotation(CompiledMap compiledMap)
+        {
+            if (compiledMap == null)
+            {
+                return Quaternion.identity;
+            }
+
+            var start = TryFindPlacement(compiledMap, MapPlacementKind.Start);
+            var target = InitialFramingTarget(compiledMap);
+            if (start == null || target == null)
+            {
+                return Quaternion.identity;
+            }
+
+            var startPosition = WorldPosition(compiledMap, start.X, start.Y, 0f);
+            var targetPosition = WorldPosition(compiledMap, target.X, target.Y, 0f);
+            var direction = targetPosition - startPosition;
+            direction.y = 0f;
+            if (direction.sqrMagnitude < 0.001f)
+            {
+                return Quaternion.identity;
+            }
+
+            return Quaternion.LookRotation(direction.normalized, Vector3.up);
+        }
+
+        public static MapPlacement InitialFramingTarget(CompiledMap compiledMap)
+        {
+            if (compiledMap == null)
+            {
+                return null;
+            }
+
+            return TryFindPlacement(compiledMap, MapPlacementKind.QuestTarget)
+                ?? TryFindPlacement(compiledMap, MapPlacementKind.Boss)
+                ?? TryFindPlacement(compiledMap, MapPlacementKind.Exit);
         }
 
         private static Transform RecreateRoot()
@@ -175,6 +224,20 @@ namespace Conn.Runtime.World
             }
 
             return Vector3.up * 1.15f;
+        }
+
+        private static MapPlacement TryFindPlacement(CompiledMap compiledMap, MapPlacementKind kind)
+        {
+            for (var i = 0; i < (compiledMap?.Placements?.Count ?? 0); i++)
+            {
+                var placement = compiledMap.Placements[i];
+                if (placement != null && placement.Kind == kind)
+                {
+                    return placement;
+                }
+            }
+
+            return null;
         }
 
         private static float CellCenterY(CompiledMap compiledMap, CompiledMapCell cell)
