@@ -1050,6 +1050,23 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void ShopCardSelectionStateLabelsAndColorsAreDistinct()
+        {
+            Assert.That(RuntimeCanvasUi.ShopCardStateLabel(true, true, "buy"), Is.EqualTo("Selected · Buy ready"));
+            Assert.That(RuntimeCanvasUi.ShopCardStateLabel(true, false, "sell"), Is.EqualTo("Selected · Sell locked"));
+            Assert.That(RuntimeCanvasUi.ShopCardStateLabel(false, true, "sell"), Is.EqualTo("Sell ready"));
+            Assert.That(RuntimeCanvasUi.ShopCardStateLabel(false, false, "buy"), Is.EqualTo("Buy locked"));
+
+            var selected = RuntimeCanvasUi.ShopCardBackgroundColor(true, true);
+            var normal = RuntimeCanvasUi.ShopCardBackgroundColor(false, true);
+            var locked = RuntimeCanvasUi.ShopCardBackgroundColor(false, false);
+
+            Assert.That(selected, Is.Not.EqualTo(normal));
+            Assert.That(normal, Is.Not.EqualTo(locked));
+            Assert.That(selected.a, Is.GreaterThanOrEqualTo(normal.a));
+        }
+
+        [Test]
         public void SkillShopSupportsDuplicateBuyAndLooseSale()
         {
             var session = new GameSessionState();

@@ -1271,6 +1271,7 @@ namespace Conn.UI.Runtime
 
             var price = buying ? item.BuyPrice : item.SellPrice;
             var mode = buying ? "buy" : "sell";
+            var selected = IsFocusedShopCard(TownShopPanelKind.Blacksmith, itemId, mode);
             var card = AddShopCard(
                 parent,
                 ShopIconSpriteResolver.EquipmentSpriteFor(itemId, item.Kind),
@@ -1284,7 +1285,9 @@ namespace Conn.UI.Runtime
                     action?.Invoke();
                     RequestRefresh();
                 },
-                interactable);
+                interactable,
+                selected,
+                ShopCardStateLabel(selected, interactable, mode));
             BindShopHover(card.gameObject, session, TownShopPanelKind.Blacksmith, itemId, mode);
         }
 
@@ -1306,6 +1309,7 @@ namespace Conn.UI.Runtime
             var owned = session.Skills.CountOwned(skillId);
             var equipped = session.Skills.CountEquipped(skillId);
             var mode = buying ? "buy" : "sell";
+            var selected = IsFocusedShopCard(TownShopPanelKind.SkillMerchant, skillId, mode);
             var card = AddShopCard(
                 parent,
                 ShopIconSpriteResolver.SkillSpriteFor(skillId, skill.EffectKind),
@@ -1319,7 +1323,9 @@ namespace Conn.UI.Runtime
                     action?.Invoke();
                     RequestRefresh();
                 },
-                interactable);
+                interactable,
+                selected,
+                ShopCardStateLabel(selected, interactable, mode));
             BindShopHover(card.gameObject, session, TownShopPanelKind.SkillMerchant, skillId, mode);
         }
 
@@ -1331,16 +1337,23 @@ namespace Conn.UI.Runtime
             string price,
             string summary,
             UnityEngine.Events.UnityAction action,
-            bool interactable)
+            bool interactable,
+            bool selected,
+            string stateLabel)
         {
             var obj = new GameObject("ShopItemCard");
             obj.transform.SetParent(ContentParent(parent), false);
             var image = obj.AddComponent<Image>();
-            image.color = interactable ? new Color(0.13f, 0.16f, 0.2f, 0.96f) : new Color(0.08f, 0.085f, 0.095f, 0.86f);
+            image.color = ShopCardBackgroundColor(selected, interactable);
+            var outline = obj.AddComponent<Outline>();
+            outline.effectColor = selected ? new Color(0.95f, 0.72f, 0.28f, 0.95f) : new Color(0f, 0f, 0f, 0.35f);
+            outline.effectDistance = selected ? new Vector2(2f, -2f) : new Vector2(1f, -1f);
             var button = obj.AddComponent<Button>();
+            button.targetGraphic = image;
             button.interactable = interactable;
             button.onClick.AddListener(action);
             var colors = button.colors;
+            colors.normalColor = image.color;
             colors.highlightedColor = new Color(0.27f, 0.31f, 0.37f, 0.98f);
             colors.pressedColor = new Color(0.35f, 0.28f, 0.18f, 0.98f);
             colors.disabledColor = new Color(0.08f, 0.085f, 0.095f, 0.72f);
@@ -1385,6 +1398,7 @@ namespace Conn.UI.Runtime
             textElement.flexibleWidth = 1f;
             AddTextRaw(textColumn.transform, name, 14, FontStyle.Bold);
             AddTextRaw(textColumn.transform, price, 13, FontStyle.Bold);
+            AddTextRaw(textColumn.transform, stateLabel, 12, FontStyle.Bold, selected ? new Color(1f, 0.84f, 0.38f, 1f) : new Color(0.78f, 0.82f, 0.88f, 1f));
             AddTextRaw(textColumn.transform, summary, 12, FontStyle.Normal);
             return button;
         }
@@ -1478,6 +1492,47 @@ namespace Conn.UI.Runtime
             }
 
             return selectedShopKind == shopKind && selectedShopMode == "sell";
+        }
+
+        private bool IsFocusedShopCard(TownShopPanelKind shopKind, string itemId, string mode)
+        {
+            if (hoveredShopKind == shopKind && hoveredShopItemId == itemId && hoveredShopMode == mode)
+            {
+                return true;
+            }
+
+            return selectedShopKind == shopKind && selectedShopItemId == itemId && selectedShopMode == mode;
+        }
+
+        public static string ShopCardStateLabel(bool selected, bool interactable, string mode)
+        {
+            var action = mode == "sell" ? "Sell" : "Buy";
+            if (selected && interactable)
+            {
+                return $"Selected · {action} ready";
+            }
+
+            if (selected)
+            {
+                return $"Selected · {action} locked";
+            }
+
+            return interactable ? $"{action} ready" : $"{action} locked";
+        }
+
+        public static Color ShopCardBackgroundColor(bool selected, bool interactable)
+        {
+            if (selected && interactable)
+            {
+                return new Color(0.24f, 0.20f, 0.12f, 0.98f);
+            }
+
+            if (selected)
+            {
+                return new Color(0.18f, 0.15f, 0.11f, 0.94f);
+            }
+
+            return interactable ? new Color(0.13f, 0.16f, 0.2f, 0.96f) : new Color(0.08f, 0.085f, 0.095f, 0.86f);
         }
 
         private void SelectShopDetail(TownShopPanelKind shopKind, string itemId, string mode)
