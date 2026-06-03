@@ -1073,6 +1073,12 @@ namespace Conn.Tests.EditMode
             Assert.That(RuntimeCanvasUi.ShopCardStateLabel(true, false, "sell"), Is.EqualTo("Selected · Sell locked"));
             Assert.That(RuntimeCanvasUi.ShopCardStateLabel(false, true, "sell"), Is.EqualTo("Sell ready"));
             Assert.That(RuntimeCanvasUi.ShopCardStateLabel(false, false, "buy"), Is.EqualTo("Buy locked"));
+            Assert.That(RuntimeCanvasUi.ShopCardStateLabel(true, true, "buy", true), Is.EqualTo("Confirm · Buy ready"));
+            Assert.That(RuntimeCanvasUi.ShopCardStateLabel(true, false, "sell", true), Is.EqualTo("Confirm · Sell locked"));
+            Assert.That(RuntimeCanvasUi.ShopConfirmationPrompt("Iron Shield", 6, "buy"), Is.EqualTo("Confirm buy: Iron Shield for 6g"));
+            Assert.That(RuntimeCanvasUi.ShopConfirmationPrompt("Guard", 2, "sell"), Is.EqualTo("Confirm sell: Guard for 2g"));
+            Assert.That(RuntimeCanvasUi.ShopConfirmationHint("buy"), Does.Contain("구매 확인"));
+            Assert.That(RuntimeCanvasUi.ShopConfirmationHint("sell"), Does.Contain("판매 확인"));
 
             var selected = RuntimeCanvasUi.ShopCardBackgroundColor(true, true);
             var normal = RuntimeCanvasUi.ShopCardBackgroundColor(false, true);

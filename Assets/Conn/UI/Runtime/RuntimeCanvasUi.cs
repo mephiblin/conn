@@ -47,6 +47,9 @@ namespace Conn.UI.Runtime
         private TownShopPanelKind selectedShopKind = TownShopPanelKind.None;
         private string selectedShopItemId = string.Empty;
         private string selectedShopMode = string.Empty;
+        private TownShopPanelKind pendingShopKind = TownShopPanelKind.None;
+        private string pendingShopItemId = string.Empty;
+        private string pendingShopMode = string.Empty;
         private static readonly string[] CharacterPortraitResourcePaths =
         {
             "CharacterCreation/portrait_vanguard",
@@ -259,6 +262,9 @@ namespace Conn.UI.Runtime
                 .Append('|').Append(selectedShopKind)
                 .Append('|').Append(selectedShopItemId)
                 .Append('|').Append(selectedShopMode)
+                .Append('|').Append(pendingShopKind)
+                .Append('|').Append(pendingShopItemId)
+                .Append('|').Append(pendingShopMode)
                 .Append('|').Append(selectedQuestBoardOffset)
                 .Append('|').Append(session.Quest.HasActiveQuest)
                 .Append('|').Append(session.Quest.ActiveQuestId)
@@ -1133,7 +1139,6 @@ namespace Conn.UI.Runtime
                         session,
                         itemId,
                         true,
-                        () => EquipmentShopRuntimeService.BuyAndEquip(session, itemId),
                         EquipmentShopRuntimeService.CanBuy(session, itemId));
                 }
 
@@ -1157,7 +1162,6 @@ namespace Conn.UI.Runtime
                         session,
                         itemId,
                         false,
-                        () => EquipmentShopRuntimeService.Sell(session, itemId),
                         EquipmentShopRuntimeService.CanSell(session, itemId));
                 }
 
@@ -1197,7 +1201,6 @@ namespace Conn.UI.Runtime
                         session,
                         skillId,
                         true,
-                        () => SkillShopRuntimeService.BuyAndEquip(session, skillId),
                         SkillShopRuntimeService.CanBuy(session, skillId));
                 }
 
@@ -1222,7 +1225,6 @@ namespace Conn.UI.Runtime
                         session,
                         skillId,
                         false,
-                        () => SkillShopRuntimeService.SellLoose(session, skillId),
                         SkillShopRuntimeService.CanSellLoose(session, skillId));
                 }
 
@@ -1243,6 +1245,7 @@ namespace Conn.UI.Runtime
             TownNpcInteractionState.Close();
             characterOpen = false;
             skillsOpen = false;
+            ClearShopConfirmation();
             RuntimeCursorService.ClearManualRelease();
             RuntimeCursorService.Apply(sceneId, GameSession.Instance != null ? GameSession.Instance.State : null, false);
             RequestRefresh();
@@ -1276,7 +1279,6 @@ namespace Conn.UI.Runtime
             GameSessionState session,
             string itemId,
             bool buying,
-            UnityEngine.Events.UnityAction action,
             bool interactable)
         {
             var item = RuntimeContentDatabase.FindEquipment(itemId);
@@ -1288,6 +1290,7 @@ namespace Conn.UI.Runtime
             var price = buying ? item.BuyPrice : item.SellPrice;
             var mode = buying ? "buy" : "sell";
             var selected = IsFocusedShopCard(TownShopPanelKind.Blacksmith, itemId, mode);
+            var pending = IsPendingShopAction(TownShopPanelKind.Blacksmith, itemId, mode);
             var card = AddShopCard(
                 parent,
                 ShopIconSpriteResolver.EquipmentSpriteFor(itemId, item.Kind),
@@ -1297,13 +1300,12 @@ namespace Conn.UI.Runtime
                 EquipmentSummary(item),
                 () =>
                 {
-                    SelectShopDetail(TownShopPanelKind.Blacksmith, itemId, mode);
-                    action?.Invoke();
+                    BeginShopConfirmation(TownShopPanelKind.Blacksmith, itemId, mode);
                     RequestRefresh();
                 },
                 interactable,
                 selected,
-                ShopCardStateLabel(selected, interactable, mode));
+                ShopCardStateLabel(selected, interactable, mode, pending));
             BindShopHover(card.gameObject, session, TownShopPanelKind.Blacksmith, itemId, mode);
         }
 
@@ -1312,7 +1314,6 @@ namespace Conn.UI.Runtime
             GameSessionState session,
             string skillId,
             bool buying,
-            UnityEngine.Events.UnityAction action,
             bool interactable)
         {
             var skill = RuntimeContentDatabase.FindSkill(skillId);
@@ -1326,6 +1327,7 @@ namespace Conn.UI.Runtime
             var equipped = session.Skills.CountEquipped(skillId);
             var mode = buying ? "buy" : "sell";
             var selected = IsFocusedShopCard(TownShopPanelKind.SkillMerchant, skillId, mode);
+            var pending = IsPendingShopAction(TownShopPanelKind.SkillMerchant, skillId, mode);
             var card = AddShopCard(
                 parent,
                 ShopIconSpriteResolver.SkillSpriteFor(skillId, skill.EffectKind),
@@ -1335,13 +1337,12 @@ namespace Conn.UI.Runtime
                 $"{skill.EffectKind} +{skill.Power}  |  Owned {owned} / Equipped {equipped}",
                 () =>
                 {
-                    SelectShopDetail(TownShopPanelKind.SkillMerchant, skillId, mode);
-                    action?.Invoke();
+                    BeginShopConfirmation(TownShopPanelKind.SkillMerchant, skillId, mode);
                     RequestRefresh();
                 },
                 interactable,
                 selected,
-                ShopCardStateLabel(selected, interactable, mode));
+                ShopCardStateLabel(selected, interactable, mode, pending));
             BindShopHover(card.gameObject, session, TownShopPanelKind.SkillMerchant, skillId, mode);
         }
 
@@ -1438,6 +1439,15 @@ namespace Conn.UI.Runtime
             AddText(parent, selling ? ChapterOneUxText.EquipmentStatus(session, item.ItemId) : ChapterOneUxText.EquipmentBuyStatus(session, item.ItemId));
             AddText(parent, "Detailed effect", 14, FontStyle.Bold);
             AddText(parent, EquipmentDetailText(item));
+            AddShopConfirmationPanel(
+                parent,
+                session,
+                TownShopPanelKind.Blacksmith,
+                item.ItemId,
+                selling ? "sell" : "buy",
+                item.DisplayName,
+                selling ? item.SellPrice : item.BuyPrice,
+                selling ? EquipmentShopRuntimeService.CanSell(session, item.ItemId) : EquipmentShopRuntimeService.CanBuy(session, item.ItemId));
         }
 
         private void DrawSkillShopDetail(Transform parent, GameSessionState session, string skillId, bool selling)
@@ -1461,6 +1471,46 @@ namespace Conn.UI.Runtime
             {
                 AddText(parent, $"Special: {skill.SpecialEffectId}");
             }
+
+            AddShopConfirmationPanel(
+                parent,
+                session,
+                TownShopPanelKind.SkillMerchant,
+                skill.SkillId,
+                selling ? "sell" : "buy",
+                skill.DisplayName,
+                selling ? skill.SellPrice : skill.BuyPrice,
+                selling ? SkillShopRuntimeService.CanSellLoose(session, skill.SkillId) : SkillShopRuntimeService.CanBuy(session, skill.SkillId));
+        }
+
+        private void AddShopConfirmationPanel(
+            Transform parent,
+            GameSessionState session,
+            TownShopPanelKind shopKind,
+            string itemId,
+            string mode,
+            string displayName,
+            int price,
+            bool interactable)
+        {
+            if (!IsPendingShopAction(shopKind, itemId, mode))
+            {
+                AddText(parent, ShopConfirmationHint(mode), 12);
+                return;
+            }
+
+            AddText(parent, ShopConfirmationPrompt(displayName, price, mode), 14, FontStyle.Bold);
+            var row = AddHorizontalGroup(parent, 8f);
+            AddButton(row, mode == "sell" ? "Confirm Sell" : "Confirm Buy", () =>
+            {
+                ConfirmShopAction(session);
+                RequestRefresh();
+            }, interactable);
+            AddButton(row, "Cancel", () =>
+            {
+                ClearShopConfirmation();
+                RequestRefresh();
+            });
         }
 
         private void AddShopDetailIcon(Transform parent, Sprite sprite, string fallbackText)
@@ -1490,6 +1540,11 @@ namespace Conn.UI.Runtime
 
         private string ResolveFocusedShopItem(TownShopPanelKind shopKind, string fallbackId)
         {
+            if (pendingShopKind == shopKind && !string.IsNullOrWhiteSpace(pendingShopItemId))
+            {
+                return pendingShopItemId;
+            }
+
             if (hoveredShopKind == shopKind && !string.IsNullOrWhiteSpace(hoveredShopItemId))
             {
                 return hoveredShopItemId;
@@ -1502,6 +1557,11 @@ namespace Conn.UI.Runtime
 
         private bool IsFocusedShopSellMode(TownShopPanelKind shopKind)
         {
+            if (pendingShopKind == shopKind && !string.IsNullOrWhiteSpace(pendingShopItemId))
+            {
+                return pendingShopMode == "sell";
+            }
+
             if (hoveredShopKind == shopKind && !string.IsNullOrWhiteSpace(hoveredShopItemId))
             {
                 return hoveredShopMode == "sell";
@@ -1512,6 +1572,11 @@ namespace Conn.UI.Runtime
 
         private bool IsFocusedShopCard(TownShopPanelKind shopKind, string itemId, string mode)
         {
+            if (IsPendingShopAction(shopKind, itemId, mode))
+            {
+                return true;
+            }
+
             if (hoveredShopKind == shopKind && hoveredShopItemId == itemId && hoveredShopMode == mode)
             {
                 return true;
@@ -1520,9 +1585,29 @@ namespace Conn.UI.Runtime
             return selectedShopKind == shopKind && selectedShopItemId == itemId && selectedShopMode == mode;
         }
 
+        private bool IsPendingShopAction(TownShopPanelKind shopKind, string itemId, string mode)
+        {
+            return pendingShopKind == shopKind && pendingShopItemId == itemId && pendingShopMode == mode;
+        }
+
         public static string ShopCardStateLabel(bool selected, bool interactable, string mode)
         {
+            return ShopCardStateLabel(selected, interactable, mode, pending: false);
+        }
+
+        public static string ShopCardStateLabel(bool selected, bool interactable, string mode, bool pending)
+        {
             var action = mode == "sell" ? "Sell" : "Buy";
+            if (pending && interactable)
+            {
+                return $"Confirm · {action} ready";
+            }
+
+            if (pending)
+            {
+                return $"Confirm · {action} locked";
+            }
+
             if (selected && interactable)
             {
                 return $"Selected · {action} ready";
@@ -1534,6 +1619,20 @@ namespace Conn.UI.Runtime
             }
 
             return interactable ? $"{action} ready" : $"{action} locked";
+        }
+
+        public static string ShopConfirmationPrompt(string displayName, int price, string mode)
+        {
+            var action = mode == "sell" ? "sell" : "buy";
+            var direction = mode == "sell" ? "for" : "for";
+            return $"Confirm {action}: {displayName} {direction} {price}g";
+        }
+
+        public static string ShopConfirmationHint(string mode)
+        {
+            return mode == "sell"
+                ? "카드를 선택하면 판매 확인 버튼이 표시됩니다."
+                : "카드를 선택하면 구매 확인 버튼이 표시됩니다.";
         }
 
         public static Color ShopCardBackgroundColor(bool selected, bool interactable)
@@ -1622,6 +1721,49 @@ namespace Conn.UI.Runtime
             selectedShopMode = mode;
         }
 
+        private void BeginShopConfirmation(TownShopPanelKind shopKind, string itemId, string mode)
+        {
+            SelectShopDetail(shopKind, itemId, mode);
+            pendingShopKind = shopKind;
+            pendingShopItemId = itemId;
+            pendingShopMode = mode;
+        }
+
+        private void ClearShopConfirmation()
+        {
+            pendingShopKind = TownShopPanelKind.None;
+            pendingShopItemId = string.Empty;
+            pendingShopMode = string.Empty;
+        }
+
+        private void ConfirmShopAction(GameSessionState session)
+        {
+            if (pendingShopKind == TownShopPanelKind.Blacksmith)
+            {
+                if (pendingShopMode == "sell")
+                {
+                    EquipmentShopRuntimeService.Sell(session, pendingShopItemId);
+                }
+                else
+                {
+                    EquipmentShopRuntimeService.BuyAndEquip(session, pendingShopItemId);
+                }
+            }
+            else if (pendingShopKind == TownShopPanelKind.SkillMerchant)
+            {
+                if (pendingShopMode == "sell")
+                {
+                    SkillShopRuntimeService.SellLoose(session, pendingShopItemId);
+                }
+                else
+                {
+                    SkillShopRuntimeService.BuyAndEquip(session, pendingShopItemId);
+                }
+            }
+
+            ClearShopConfirmation();
+        }
+
         private void BindShopHover(GameObject target, GameSessionState session, TownShopPanelKind shopKind, string itemId, string mode)
         {
             var trigger = target.AddComponent<EventTrigger>();
@@ -1636,6 +1778,11 @@ namespace Conn.UI.Runtime
                 hoveredShopKind = shopKind;
                 hoveredShopItemId = itemId;
                 hoveredShopMode = mode;
+                if (pendingShopKind == shopKind)
+                {
+                    return;
+                }
+
                 RefreshShopDetailColumn(session, shopKind, itemId, mode == "sell");
             });
             trigger.triggers.Add(enter);
