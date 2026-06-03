@@ -16,6 +16,10 @@ namespace Conn.Core.Session
         public int BoardRerollCount;
         public string LastCompletedQuestTitle = string.Empty;
         public int LastGoldReward;
+        public int LastLootGold;
+        public int LastRiskDamage;
+        public int LastDefeatedMonsters;
+        public int LastBoardRerollCount;
 
         public bool HasActiveQuest => !string.IsNullOrWhiteSpace(ActiveQuestId);
 
@@ -36,6 +40,10 @@ namespace Conn.Core.Session
         {
             LastCompletedQuestTitle = string.Empty;
             LastGoldReward = 0;
+            LastLootGold = 0;
+            LastRiskDamage = 0;
+            LastDefeatedMonsters = 0;
+            LastBoardRerollCount = 0;
         }
     }
 }

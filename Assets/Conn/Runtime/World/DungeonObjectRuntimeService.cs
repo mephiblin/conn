@@ -94,6 +94,36 @@ namespace Conn.Runtime.World
             return opened > 0 ? $"Loot: {opened} opened, +{gold}g, {risk} risk damage" : "Loot: none opened";
         }
 
+        public static int TotalGoldCollected(GameSessionState session)
+        {
+            var total = 0;
+            for (var i = 0; i < (session?.World?.DungeonObjects?.Count ?? 0); i++)
+            {
+                var state = session.World.DungeonObjects[i];
+                if (state.Opened)
+                {
+                    total += state.GoldCollected;
+                }
+            }
+
+            return total;
+        }
+
+        public static int TotalRiskDamageTaken(GameSessionState session)
+        {
+            var total = 0;
+            for (var i = 0; i < (session?.World?.DungeonObjects?.Count ?? 0); i++)
+            {
+                var state = session.World.DungeonObjects[i];
+                if (state.Opened)
+                {
+                    total += state.RiskDamageTaken;
+                }
+            }
+
+            return total;
+        }
+
         private static bool CanLoot(RoomChunkObjectKind kind)
         {
             return kind == RoomChunkObjectKind.Chest || kind == RoomChunkObjectKind.Barrel;

@@ -890,13 +890,28 @@ namespace Conn.Tests.EditMode
             var title = session.Quest.ActiveQuestTitle;
             var reward = session.Quest.GoldReward;
             var goldBefore = session.Gold;
+            QuestRuntimeService.CompleteTarget(session, "field_monster_alpha");
+            QuestRuntimeService.KeepExploring(session);
+            Assert.That(DungeonObjectRuntimeService.TryResolveLoot(
+                session,
+                "dungeon_object:settlement_chest",
+                "settlement_chest",
+                RoomChunkObjectKind.Chest,
+                out _), Is.True);
 
             QuestRuntimeService.CompleteReturn(session);
 
             Assert.That(session.Quest.HasActiveQuest, Is.False);
-            Assert.That(session.Gold, Is.EqualTo(goldBefore + reward));
+            Assert.That(session.Gold, Is.EqualTo(goldBefore + reward + 15));
             Assert.That(session.Quest.LastCompletedQuestTitle, Is.EqualTo(title));
             Assert.That(session.Quest.LastGoldReward, Is.EqualTo(reward));
+            Assert.That(session.Quest.LastLootGold, Is.EqualTo(15));
+            Assert.That(session.Quest.LastRiskDamage, Is.EqualTo(2));
+            Assert.That(session.Quest.LastDefeatedMonsters, Is.EqualTo(1));
+            Assert.That(session.Quest.LastBoardRerollCount, Is.EqualTo(session.Quest.BoardRerollCount));
+            Assert.That(session.LastNotice, Does.Contain("Returned:"));
+            Assert.That(session.LastNotice, Does.Contain("loot +15g"));
+            Assert.That(QuestRuntimeService.ReturnSettlementSummary(session), Does.Contain("risk damage 2"));
         }
 
         [Test]
@@ -1145,6 +1160,12 @@ namespace Conn.Tests.EditMode
             SkillRuntimeService.CycleNextEditFace(source);
             SkillShopRuntimeService.RefreshSkillMerchantStock(source);
             QuestRuntimeService.AcceptQuest(source, QuestCatalog.TestHuntId);
+            source.Quest.LastCompletedQuestTitle = "Saved Expedition";
+            source.Quest.LastGoldReward = 12;
+            source.Quest.LastLootGold = 7;
+            source.Quest.LastRiskDamage = 3;
+            source.Quest.LastDefeatedMonsters = 2;
+            source.Quest.LastBoardRerollCount = 4;
             source.LastNotice = "saved notice";
             source.Combat.Active = true;
 
@@ -1177,6 +1198,12 @@ namespace Conn.Tests.EditMode
             Assert.That(loaded.Shop.SkillMerchantRefreshIndex, Is.EqualTo(1));
             Assert.That(loaded.Shop.SkillMerchantStockSkillIds, Is.EqualTo(source.Shop.SkillMerchantStockSkillIds));
             Assert.That(loaded.Quest.ActiveQuestId, Is.EqualTo(QuestCatalog.TestHuntId));
+            Assert.That(loaded.Quest.LastCompletedQuestTitle, Is.EqualTo("Saved Expedition"));
+            Assert.That(loaded.Quest.LastGoldReward, Is.EqualTo(12));
+            Assert.That(loaded.Quest.LastLootGold, Is.EqualTo(7));
+            Assert.That(loaded.Quest.LastRiskDamage, Is.EqualTo(3));
+            Assert.That(loaded.Quest.LastDefeatedMonsters, Is.EqualTo(2));
+            Assert.That(loaded.Quest.LastBoardRerollCount, Is.EqualTo(4));
             Assert.That(loaded.Combat.Active, Is.False);
             Assert.That(SaveRuntimeService.SceneForLoadedState(loaded), Is.EqualTo(GameSceneId.Dungeon));
 

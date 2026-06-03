@@ -138,13 +138,31 @@ namespace Conn.Runtime.Session
         {
             var completedTitle = session.Quest.ActiveQuestTitle;
             var goldReward = session.Quest.GoldReward;
+            var lootGold = DungeonObjectRuntimeService.TotalGoldCollected(session);
+            var riskDamage = DungeonObjectRuntimeService.TotalRiskDamageTaken(session);
+            var defeatedMonsters = FieldMonsterRuntimeService.CountDefeated(session);
             session.Gold += goldReward;
             session.Quest.Clear();
             session.Quest.LastCompletedQuestTitle = completedTitle;
             session.Quest.LastGoldReward = goldReward;
+            session.Quest.LastLootGold = lootGold;
+            session.Quest.LastRiskDamage = riskDamage;
+            session.Quest.LastDefeatedMonsters = defeatedMonsters;
             RerollBoard(session);
+            session.Quest.LastBoardRerollCount = session.Quest.BoardRerollCount;
             session.PreEncounterSnapshot.Clear();
+            RuntimeNoticeService.Set(session, ReturnSettlementSummary(session));
             SaveIfPlaying();
+        }
+
+        public static string ReturnSettlementSummary(GameSessionState session)
+        {
+            if (session == null || string.IsNullOrWhiteSpace(session.Quest.LastCompletedQuestTitle))
+            {
+                return "No completed expedition.";
+            }
+
+            return $"Returned: {session.Quest.LastCompletedQuestTitle}. Quest +{session.Quest.LastGoldReward}g, loot +{session.Quest.LastLootGold}g, defeats {session.Quest.LastDefeatedMonsters}, risk damage {session.Quest.LastRiskDamage}. Board rerolled #{session.Quest.LastBoardRerollCount}.";
         }
 
         private static void SaveIfPlaying()

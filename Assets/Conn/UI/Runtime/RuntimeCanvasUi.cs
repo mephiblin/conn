@@ -251,6 +251,12 @@ namespace Conn.UI.Runtime
                 .Append('|').Append(session.Quest.ActiveQuestId)
                 .Append('|').Append(session.Quest.BoardOfferIndex)
                 .Append('|').Append(session.Quest.BoardRerollCount)
+                .Append('|').Append(session.Quest.LastCompletedQuestTitle)
+                .Append('|').Append(session.Quest.LastGoldReward)
+                .Append('|').Append(session.Quest.LastLootGold)
+                .Append('|').Append(session.Quest.LastRiskDamage)
+                .Append('|').Append(session.Quest.LastDefeatedMonsters)
+                .Append('|').Append(session.Quest.LastBoardRerollCount)
                 .Append('|').Append(session.Shop != null ? session.Shop.SkillMerchantRefreshIndex : 0);
 
             AppendList(key, session.Inventory.ItemIds);
@@ -1887,7 +1893,9 @@ namespace Conn.UI.Runtime
             AddText(panel, string.IsNullOrWhiteSpace(session.LastNotice) ? "No notice." : session.LastNotice);
             if (!string.IsNullOrWhiteSpace(session.Quest.LastCompletedQuestTitle))
             {
-                AddText(panel, $"Last reward: {session.Quest.LastCompletedQuestTitle} +{session.Quest.LastGoldReward}g");
+                AddText(panel, QuestRuntimeService.ReturnSettlementSummary(session), 14, FontStyle.Bold);
+                AddText(panel, $"Gold: quest +{session.Quest.LastGoldReward}g / loot +{session.Quest.LastLootGold}g");
+                AddText(panel, $"Run: defeats {session.Quest.LastDefeatedMonsters} / risk damage {session.Quest.LastRiskDamage} / board #{session.Quest.LastBoardRerollCount}");
             }
         }
 

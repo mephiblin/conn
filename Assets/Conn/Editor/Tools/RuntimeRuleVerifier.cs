@@ -1718,13 +1718,25 @@ namespace Conn.Editor.Tools
             var title = session.Quest.ActiveQuestTitle;
             var reward = session.Quest.GoldReward;
             var goldBefore = session.Gold;
+            QuestRuntimeService.CompleteTarget(session, "field_monster_alpha");
+            QuestRuntimeService.KeepExploring(session);
+            DungeonObjectRuntimeService.TryResolveLoot(
+                session,
+                "dungeon_object:settlement_chest",
+                "settlement_chest",
+                Conn.Core.Maps.RoomChunkObjectKind.Chest,
+                out _);
 
             QuestRuntimeService.CompleteReturn(session);
 
             Expect(!session.Quest.HasActiveQuest, "Returning to town must clear active quest.");
-            Expect(session.Gold == goldBefore + reward, "Returning to town must grant quest gold reward.");
+            Expect(session.Gold == goldBefore + reward + 15, "Returning to town must preserve quest reward plus expedition loot.");
             Expect(session.Quest.LastCompletedQuestTitle == title, "Returning to town must record completed quest title.");
             Expect(session.Quest.LastGoldReward == reward, "Returning to town must record gold reward summary.");
+            Expect(session.Quest.LastLootGold == 15, "Returning to town must record expedition loot gold.");
+            Expect(session.Quest.LastRiskDamage == 2, "Returning to town must record expedition risk damage.");
+            Expect(session.Quest.LastDefeatedMonsters == 1, "Returning to town must record defeated field monsters.");
+            Expect(QuestRuntimeService.ReturnSettlementSummary(session).Contains("loot +15g"), "Return settlement summary must mention loot gold.");
         }
 
         private static void VerifyKeepExploringReturnPrompt()

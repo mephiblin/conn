@@ -332,7 +332,7 @@ namespace Conn.UI.Runtime
                 : "Quest: none");
             if (!string.IsNullOrWhiteSpace(session.Quest.LastCompletedQuestTitle))
             {
-                GUILayout.Label($"Last reward: {session.Quest.LastCompletedQuestTitle} +{session.Quest.LastGoldReward}g");
+                GUILayout.Label(QuestRuntimeService.ReturnSettlementSummary(session));
             }
 
             var offer = QuestRuntimeService.CurrentBoardOffer(session);
