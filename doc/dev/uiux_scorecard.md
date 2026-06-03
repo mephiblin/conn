@@ -18,7 +18,7 @@ Last updated: 2026-06-03
 | --- | ---: | ---: | --- | --- |
 | 인벤토리/스킬창 분리 | 8.0 | 9.0 | `Bag`과 `Skill` 버튼 및 패널이 분리되어 같은 공간 충돌은 해소됨. 장비 카드에는 장비 부위/상태 배지와 종류별 색상, 스킬 카드와 릴 face에는 효과 배지/색상 계층이 추가되어 한눈에 구분 가능해짐. | 최종 아이콘 아트와 해상도별 실제 화면 확인이 들어가야 10점. |
 | 스킬 주사위 장착 UX | 7.5 | 9.5 | 스킬 카드 드래그/드롭과 클릭 장착은 동작함. 보유/장착/여유 수량과 선택된 스킬 상태가 표시되고, 한손/방패/양손 장비별 스킬군 보정이 전투와 UI에 연결됨. 주사위 face 슬롯이 선택 스킬 기준으로 `Drop`/`Replace`/`Same`/`Clear` 상태와 색상을 구분해 장착 결과를 더 즉시 읽을 수 있음. | 실제 Game view에서 드래그 중 커서 위치/슬롯 hover 하이라이트가 안정적으로 보이는지 확인해야 10점. |
-| 캐릭터 생성 | 7.0 | 9.0 | 개발 문구를 제거하고 초상화별 플레이어용 프로필 설명으로 교체함. 초상화별 시작 무기/스킬 프리셋과 추천 빌드 설명이 실제 새 게임 장비/스킬 장착 상태에 연결됨. | 직업별 성장/밸런스와 Game view 기준 선택 피드백 검증이 필요. |
+| 캐릭터 생성 | 7.0 | 9.5 | 개발 문구를 제거하고 초상화별 플레이어용 프로필 설명으로 교체함. 초상화별 시작 무기/스킬 프리셋과 추천 빌드 설명이 실제 새 게임 장비/스킬 장착 상태에 연결됨. Vitality가 실제 시작 Max HP에 반영되고, 캐릭터 생성 스탯 패널에 같은 규칙의 Starting HP가 표시됨. | Game view 기준 선택 피드백, 직업별 장기 성장 곡선, 최종 밸런스 플레이테스트가 필요. |
 | 상점 상호작용 | 8.0 | 9.5 | 구매/판매/비교/상세 패널이 있고, 호버뿐 아니라 클릭으로도 상세 대상이 고정됨. 선택된 카드의 배경/테두리/상태 배지가 분리되어 현재 상품과 실행 가능 여부가 더 분명해짐. 카드 클릭 후 상세 패널의 Confirm/Cancel로 구매/판매를 확정하게 되어 오입력 결제를 줄임. | 최종 상점 아이콘/카드 아트와 실제 Game view 확인이 들어가면 10점. |
 | 퀘스트 후 던전 진입/맵 크기 | 8.5 | 9.0 | 런타임 셀 크기 보정과 맵 제너레이터 소켓/브랜치 수정으로 끊김과 작음 문제를 완화함. 던전 입장 시 플레이어 yaw가 시작점에서 첫 주요 목표 방향을 향하도록 보정되어 진입 직후 진행 방향을 읽기 쉬워짐. | 실제 Game view 캡처 기반 프레이밍 확인과 선호 카메라 거리 조정이 들어가면 10점. |
 | 던전 맵 구조/제너레이터 | 8.0 | 9.0 | MapGenerationTests 65개 통과. 허브/분기/데드엔드 강제 배치와 잔류 탐험 보상/위험에 더해, baked compiled map 기준 시작점-퀘스트-보스-출구 walkable route, 목표까지 최소 거리, 선택점, reachable 보상/몬스터를 검증하는 탐험 리듬 게이트를 추가함. 뒤틀린 사원 compiled map도 같은 route 검증을 통과함. | 실제 Game view 캡처 기반으로 공간 스케일, 조명/랜드마크 가독성, 분기 선택 체감을 확인해야 10점. |
@@ -26,7 +26,7 @@ Last updated: 2026-06-03
 | 전투 종료 후 커서/복귀 흐름 | 8.0 | 9.5 | 전투 승리 직후 복귀 선택 커서 해제와, 던전에 남은 뒤 남은 필드 몬스터 접촉 전투 재진입 규칙을 코드/회귀 테스트로 보강함. | Unity 에디터가 프로젝트를 점유 중이라 `KeepExploringAllowsRemainingFieldMonsterCombat` batchmode 실행 확인이 필요. |
 | 디버그 패널 노출/크기 | 9.0 | 10.0 | 기본 숨김, F3 토글, 축소 표시, 에디터/디버그 빌드 한정 토글로 정상 플레이 방해를 제거함. | 없음. |
 
-평균: 9.33 / 10
+평균: 9.39 / 10
 
 ## 반복 개선 로그
 
@@ -210,6 +210,21 @@ Last updated: 2026-06-03
   - `git diff --check` 통과.
   - Unity `RuntimeCoreRulesTests`: 51/51 통과 (`tmp/runtimecore-character-preset-results.xml`, failed=0).
   - 커밋: `42e76e8`
+
+### 2026-06-03 캐릭터 생성 Vitality 시작 HP 루프
+
+- 적용:
+  - `PlayerRuntimeState.StartingMaxHpForVitality`와 `ApplyCharacterCreation`을 추가해 캐릭터 생성 Vitality가 실제 시작 Max HP에 반영되도록 함.
+  - `GameSessionState.StartNewGame`이 캐릭터 생성 옵션 적용 직후 플레이어 시작 HP를 같은 규칙으로 초기화하게 함.
+  - 캐릭터 생성 스탯 패널에 `Starting HP`를 표시해 UI 프리셋과 실제 런타임 HP 규칙이 같은 값을 보여주게 함.
+  - `CharacterCreationVitalityChangesStartingPlayerHp` 회귀 테스트를 추가하고, 기본 새 게임 HP 20 계약과 초상화별 시작 HP helper를 고정함.
+- 점수 변경:
+  - 캐릭터 생성: 9.0 -> 9.5
+- 검증:
+  - `git diff --check` 통과.
+  - Unity `RuntimeCoreRulesTests`: 55/55 통과 (`tmp/runtimecore-character-hp-results.xml`, failed=0).
+  - Unity `GameFlowPlaytestTests`: 10/10 통과 (`tmp/gameflow-character-hp-results.xml`, failed=0).
+  - 커밋: `889b48a`
 
 ### 2026-06-03 인벤토리/스킬 카드 배지 루프
 
