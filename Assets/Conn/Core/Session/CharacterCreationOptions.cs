@@ -11,5 +11,6 @@ namespace Conn.Core.Session
         public int Vitality = 5;
         public int Energy = 5;
         public string StarterWeaponId = string.Empty;
+        public string StarterSkillId = string.Empty;
     }
 }

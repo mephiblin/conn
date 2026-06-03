@@ -299,6 +299,7 @@ namespace Conn.Tests.EditMode
             Assert.That(session.Character.Vitality, Is.EqualTo(5));
             Assert.That(session.Character.Energy, Is.EqualTo(5));
             Assert.That(session.Character.StarterWeaponId, Is.EqualTo(EquipmentCatalog.RustySwordId));
+            Assert.That(session.Character.StarterSkillId, Is.EqualTo(GameSessionState.StarterSkillIdResolver()));
             Assert.That(session.Equipment.EquippedWeaponId, Is.EqualTo(EquipmentCatalog.RustySwordId));
         }
 
@@ -318,6 +319,7 @@ namespace Conn.Tests.EditMode
             Assert.That(session.LastNotice, Is.Empty);
             Assert.That(session.Character.CharacterName, Is.EqualTo("Adventurer"));
             Assert.That(session.Character.StarterWeaponId, Is.EqualTo(EquipmentCatalog.RustySwordId));
+            Assert.That(session.Character.StarterSkillId, Is.EqualTo(GameSessionState.StarterSkillIdResolver()));
             Assert.That(SaveRuntimeService.SceneForLoadedState(session), Is.EqualTo(GameSceneId.Title));
         }
 
@@ -334,7 +336,8 @@ namespace Conn.Tests.EditMode
                 Dexterity = 8,
                 Vitality = 6,
                 Energy = 4,
-                StarterWeaponId = EquipmentCatalog.GreatAxeId
+                StarterWeaponId = EquipmentCatalog.GreatAxeId,
+                StarterSkillId = SkillCatalog.MendId
             };
 
             session.StartNewGame(options);
@@ -348,8 +351,22 @@ namespace Conn.Tests.EditMode
             Assert.That(session.Character.Vitality, Is.EqualTo(6));
             Assert.That(session.Character.Energy, Is.EqualTo(4));
             Assert.That(session.Character.StarterWeaponId, Is.EqualTo(EquipmentCatalog.GreatAxeId));
+            Assert.That(session.Character.StarterSkillId, Is.EqualTo(SkillCatalog.MendId));
             Assert.That(session.Inventory.HasItem(EquipmentCatalog.GreatAxeId), Is.True);
             Assert.That(session.Equipment.EquippedWeaponId, Is.EqualTo(EquipmentCatalog.GreatAxeId));
+            Assert.That(session.Skills.HasSkill(SkillCatalog.MendId), Is.True);
+            Assert.That(session.Skills.SkillIdForDieFace(0, 0), Is.EqualTo(SkillCatalog.MendId));
+        }
+
+        [Test]
+        public void CharacterCreationPortraitPresetsExposeStarterBuilds()
+        {
+            Assert.That(RuntimeCanvasUi.CharacterPresetWeaponId(0), Is.EqualTo(EquipmentCatalog.RustySwordId));
+            Assert.That(RuntimeCanvasUi.CharacterPresetSkillId(0), Is.EqualTo(SkillCatalog.GuardId));
+            Assert.That(RuntimeCanvasUi.CharacterPresetSkillId(1), Is.EqualTo(SkillCatalog.FocusStrikeId));
+            Assert.That(RuntimeCanvasUi.CharacterPresetWeaponId(2), Is.EqualTo(EquipmentCatalog.GreatAxeId));
+            Assert.That(RuntimeCanvasUi.CharacterPresetSkillId(2), Is.EqualTo(SkillCatalog.MendId));
+            Assert.That(RuntimeCanvasUi.CharacterPresetSummary(2), Does.Contain("Mend"));
         }
 
         [Test]
@@ -1159,6 +1176,7 @@ namespace Conn.Tests.EditMode
             source.Character.Vitality = 7;
             source.Character.Energy = 6;
             source.Character.StarterWeaponId = EquipmentCatalog.GreatAxeId;
+            source.Character.StarterSkillId = SkillCatalog.MendId;
             source.Player.GainXp(7);
             source.Gold = 42;
             source.Inventory.AddItem(EquipmentCatalog.IronShieldId);
@@ -1200,6 +1218,7 @@ namespace Conn.Tests.EditMode
             Assert.That(loaded.Character.Vitality, Is.EqualTo(7));
             Assert.That(loaded.Character.Energy, Is.EqualTo(6));
             Assert.That(loaded.Character.StarterWeaponId, Is.EqualTo(EquipmentCatalog.GreatAxeId));
+            Assert.That(loaded.Character.StarterSkillId, Is.EqualTo(SkillCatalog.MendId));
             Assert.That(loaded.Player.Xp, Is.EqualTo(7));
             Assert.That(loaded.Gold, Is.EqualTo(42));
             Assert.That(loaded.LastNotice, Is.EqualTo("saved notice"));

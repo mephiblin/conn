@@ -2,6 +2,7 @@ using Conn.Core.Equipment;
 using Conn.Core.Quests;
 using Conn.Core.Scenes;
 using Conn.Core.Session;
+using Conn.Core.Skills;
 using Conn.Runtime.Combat;
 using Conn.Runtime.Content;
 using Conn.Runtime.Equipment;
@@ -68,6 +69,18 @@ namespace Conn.UI.Runtime
         {
             EquipmentCatalog.RustySwordId,
             EquipmentCatalog.GreatAxeId
+        };
+        private static readonly string[] CharacterPresetWeaponIds =
+        {
+            EquipmentCatalog.RustySwordId,
+            EquipmentCatalog.RustySwordId,
+            EquipmentCatalog.GreatAxeId
+        };
+        private static readonly string[] CharacterPresetSkillIds =
+        {
+            SkillCatalog.GuardId,
+            SkillCatalog.FocusStrikeId,
+            SkillCatalog.MendId
         };
         private static readonly Dictionary<string, Sprite> CombatSpriteCache = new Dictionary<string, Sprite>();
 
@@ -449,6 +462,7 @@ namespace Conn.UI.Runtime
             AddSquareButton(portraitRow, ">", () => SelectCharacterPortrait(characterDraftPortraitIndex + 1));
             var portraitIndex = ClampPortraitIndex(characterDraftPortraitIndex);
             AddText(panel, $"{CharacterPortraitNames[portraitIndex]}  {portraitIndex + 1}/{CharacterPortraitResourcePaths.Length}", 24, FontStyle.Bold);
+            AddText(panel, CharacterPresetSummary(portraitIndex), 13, FontStyle.Bold);
         }
 
         private void DrawCharacterCreationForm(GameSessionState session)
@@ -459,6 +473,8 @@ namespace Conn.UI.Runtime
             AddInputField(panel, characterDraftName, value => characterDraftName = value);
             AddText(panel, "Starting Weapon");
             DrawStarterWeaponSelector(panel);
+            AddText(panel, $"Starter Skill: {SkillName(CharacterPresetSkillId(characterDraftPortraitIndex))}", 13, FontStyle.Bold);
+            AddText(panel, CharacterPresetLoadoutHint(characterDraftPortraitIndex), 12);
             AddButton(panel, "Create Character", () =>
             {
                 var options = BuildCharacterCreationOptions();
@@ -2964,6 +2980,7 @@ namespace Conn.UI.Runtime
         private void SelectCharacterPortrait(int index)
         {
             characterDraftPortraitIndex = ClampPortraitIndex(index);
+            characterDraftWeaponIndex = StarterWeaponIndex(CharacterPresetWeaponId(characterDraftPortraitIndex));
             lastRenderKey = string.Empty;
             Refresh();
         }
@@ -2989,7 +3006,8 @@ namespace Conn.UI.Runtime
                 Dexterity = Mathf.RoundToInt(stats.y),
                 Vitality = Mathf.RoundToInt(stats.z),
                 Energy = Mathf.RoundToInt(stats.w),
-                StarterWeaponId = StarterWeaponIds[weaponIndex]
+                StarterWeaponId = StarterWeaponIds[weaponIndex],
+                StarterSkillId = CharacterPresetSkillId(portraitIndex)
             };
         }
 
@@ -3194,15 +3212,42 @@ namespace Conn.UI.Runtime
             };
         }
 
+        public static string CharacterPresetWeaponId(int portraitIndex)
+        {
+            return CharacterPresetWeaponIds[ClampPortraitIndex(portraitIndex)];
+        }
+
+        public static string CharacterPresetSkillId(int portraitIndex)
+        {
+            return CharacterPresetSkillIds[ClampPortraitIndex(portraitIndex)];
+        }
+
+        public static string CharacterPresetSummary(int portraitIndex)
+        {
+            var safeIndex = ClampPortraitIndex(portraitIndex);
+            return $"{CharacterProfileSummary(safeIndex)} · {EquipmentName(CharacterPresetWeaponId(safeIndex))} · {SkillName(CharacterPresetSkillId(safeIndex))}";
+        }
+
+        private static string CharacterPresetLoadoutHint(int portraitIndex)
+        {
+            return ClampPortraitIndex(portraitIndex) switch
+            {
+                0 => "추천 빌드: Guard로 초반 피해를 줄이고 안정적으로 귀환한다.",
+                1 => "추천 빌드: Focus Strike로 출혈을 걸어 짧은 전투를 노린다.",
+                2 => "추천 빌드: Mend로 잔류 탐험의 위험 피해를 회복하며 버틴다.",
+                _ => "추천 빌드: 기본 장비와 스킬로 균형 있게 시작한다."
+            };
+        }
+
         private static string EquipmentName(string itemId)
         {
-            var item = RuntimeContentDatabase.FindEquipment(itemId);
+            var item = RuntimeContentDatabase.FindEquipment(itemId) ?? EquipmentCatalog.Find(itemId);
             return item != null ? item.DisplayName : "None";
         }
 
         private static string SkillName(string skillId)
         {
-            var skill = RuntimeContentDatabase.FindSkill(skillId);
+            var skill = RuntimeContentDatabase.FindSkill(skillId) ?? SkillCatalog.Find(skillId);
             return skill != null ? skill.DisplayName : "Unknown";
         }
 

@@ -40,6 +40,18 @@ namespace Conn.UI.Runtime
             EquipmentCatalog.RustySwordId,
             EquipmentCatalog.GreatAxeId
         };
+        private static readonly string[] CharacterPresetWeaponIds =
+        {
+            EquipmentCatalog.RustySwordId,
+            EquipmentCatalog.RustySwordId,
+            EquipmentCatalog.GreatAxeId
+        };
+        private static readonly string[] CharacterPresetSkillIds =
+        {
+            SkillCatalog.GuardId,
+            SkillCatalog.FocusStrikeId,
+            SkillCatalog.MendId
+        };
 
         public GameSceneId SceneId
         {
@@ -113,7 +125,8 @@ namespace Conn.UI.Runtime
                             Dexterity = session.Character.Dexterity,
                             Vitality = session.Character.Vitality,
                             Energy = session.Character.Energy,
-                            StarterWeaponId = session.Character.StarterWeaponId
+                            StarterWeaponId = session.Character.StarterWeaponId,
+                            StarterSkillId = session.Character.StarterSkillId
                         });
                         SceneFlowService.Load(GameSceneId.Town);
                     }
@@ -321,8 +334,14 @@ namespace Conn.UI.Runtime
 
         private static string EquipmentName(string itemId)
         {
-            var item = RuntimeContentDatabase.FindEquipment(itemId);
+            var item = RuntimeContentDatabase.FindEquipment(itemId) ?? EquipmentCatalog.Find(itemId);
             return item != null ? item.DisplayName : "None";
+        }
+
+        private static string SkillName(string skillId)
+        {
+            var skill = RuntimeContentDatabase.FindSkill(skillId) ?? SkillCatalog.Find(skillId);
+            return skill != null ? skill.DisplayName : "Unknown";
         }
 
         private static void TownControls(GameSessionState session)
@@ -632,6 +651,7 @@ namespace Conn.UI.Runtime
             }
 
             GUILayout.EndHorizontal();
+            GUILayout.Label($"Starter Skill: {SkillName(CharacterPresetSkillIds[portraitIndex])}");
 
             var starterIndex = StarterWeaponIndex(session.Character.StarterWeaponId);
             if (session.Character.StarterWeaponId != StarterWeaponIds[starterIndex])
@@ -687,6 +707,8 @@ namespace Conn.UI.Runtime
                 2 => 30,
                 _ => 20
             };
+            session.Character.StarterWeaponId = CharacterPresetWeaponIds[portraitIndex];
+            session.Character.StarterSkillId = CharacterPresetSkillIds[portraitIndex];
         }
 
         private static void ApplyStarterWeapon(GameSessionState session, int index)

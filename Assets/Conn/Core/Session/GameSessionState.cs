@@ -36,7 +36,7 @@ namespace Conn.Core.Session
                 Character = new CharacterCreationState();
             }
 
-            Character.ResetToDefaults(StarterEquipmentIdResolver());
+            Character.ResetToDefaults(StarterEquipmentIdResolver(), StarterSkillIdResolver());
         }
 
         public void StartNewGame()
@@ -61,11 +61,14 @@ namespace Conn.Core.Session
                 Character = new CharacterCreationState();
             }
 
-            Character.Apply(characterOptions, defaultStarterEquipmentId);
+            var defaultStarterSkillId = StarterSkillIdResolver();
+            Character.Apply(characterOptions, defaultStarterEquipmentId, defaultStarterSkillId);
             var starterEquipmentId = string.IsNullOrWhiteSpace(Character.StarterWeaponId)
                 ? defaultStarterEquipmentId
                 : Character.StarterWeaponId;
-            var starterSkillId = StarterSkillIdResolver();
+            var starterSkillId = string.IsNullOrWhiteSpace(Character.StarterSkillId)
+                ? defaultStarterSkillId
+                : Character.StarterSkillId;
             Inventory.Clear();
             Inventory.AddItem(starterEquipmentId);
             Equipment.EquippedWeaponId = starterEquipmentId;

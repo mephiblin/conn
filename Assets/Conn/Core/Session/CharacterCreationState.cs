@@ -11,8 +11,9 @@ namespace Conn.Core.Session
         public int Vitality = 5;
         public int Energy = 5;
         public string StarterWeaponId = string.Empty;
+        public string StarterSkillId = string.Empty;
 
-        public void ResetToDefaults(string starterWeaponId)
+        public void ResetToDefaults(string starterWeaponId, string starterSkillId = "")
         {
             CharacterName = "Adventurer";
             SelectedPortraitIndex = 0;
@@ -22,13 +23,14 @@ namespace Conn.Core.Session
             Vitality = 5;
             Energy = 5;
             StarterWeaponId = starterWeaponId ?? string.Empty;
+            StarterSkillId = starterSkillId ?? string.Empty;
         }
 
-        public void Apply(CharacterCreationOptions options, string fallbackStarterWeaponId)
+        public void Apply(CharacterCreationOptions options, string fallbackStarterWeaponId, string fallbackStarterSkillId = "")
         {
             if (options == null)
             {
-                ResetToDefaults(fallbackStarterWeaponId);
+                ResetToDefaults(fallbackStarterWeaponId, fallbackStarterSkillId);
                 return;
             }
 
@@ -44,6 +46,9 @@ namespace Conn.Core.Session
             StarterWeaponId = string.IsNullOrWhiteSpace(options.StarterWeaponId)
                 ? fallbackStarterWeaponId ?? string.Empty
                 : options.StarterWeaponId.Trim();
+            StarterSkillId = string.IsNullOrWhiteSpace(options.StarterSkillId)
+                ? fallbackStarterSkillId ?? string.Empty
+                : options.StarterSkillId.Trim();
         }
     }
 }
