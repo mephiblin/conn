@@ -30,6 +30,7 @@ namespace Conn.UI.Runtime
         [SerializeField] private Sprite apothecaryBackgroundSprite;
         [SerializeField] private Sprite scholarBackgroundSprite;
         private const float RefreshIntervalSeconds = 0.15f;
+        private const float ReelCellHeight = 38f;
         private bool characterOpen;
         private bool skillsOpen;
         private float nextRefreshTime;
@@ -2390,12 +2391,12 @@ namespace Conn.UI.Runtime
 
             var layout = obj.AddComponent<LayoutElement>();
             layout.minWidth = 128f;
-            layout.preferredWidth = 146f;
-            layout.minHeight = 220f;
+            layout.preferredWidth = 142f;
+            layout.minHeight = 196f;
 
             var vertical = obj.AddComponent<VerticalLayoutGroup>();
-            vertical.padding = new RectOffset(10, 10, 9, 9);
-            vertical.spacing = 5f;
+            vertical.padding = new RectOffset(9, 9, 8, 8);
+            vertical.spacing = 4f;
             vertical.childAlignment = TextAnchor.UpperCenter;
             vertical.childControlWidth = true;
             vertical.childControlHeight = false;
@@ -2427,34 +2428,47 @@ namespace Conn.UI.Runtime
 
             var window = new GameObject("Window");
             window.transform.SetParent(obj.transform, false);
+            var windowRect = window.AddComponent<RectTransform>();
             var windowImage = window.AddComponent<Image>();
             windowImage.color = new Color(0.82f, 0.85f, 0.92f, 0.98f);
+            var mask = window.AddComponent<Mask>();
+            mask.showMaskGraphic = true;
             var windowLayout = window.AddComponent<LayoutElement>();
-            windowLayout.minHeight = 134f;
-            var windowVertical = window.AddComponent<VerticalLayoutGroup>();
-            windowVertical.padding = new RectOffset(7, 7, 5, 5);
-            windowVertical.spacing = 3f;
-            windowVertical.childControlWidth = true;
-            windowVertical.childControlHeight = true;
-            windowVertical.childForceExpandHeight = false;
+            windowLayout.minHeight = 112f;
 
             var centerIndex = ResolveVisibleReelCenterIndex(face);
-            var valueTexts = new Text[3];
-            var skillTexts = new Text[3];
-            for (var offset = -1; offset <= 1; offset++)
+            var spinning = !face.ReelStopped;
+            var tickerCells = spinning ? 5 : 3;
+            var valueTexts = new Text[tickerCells];
+            var skillTexts = new Text[tickerCells];
+            var strip = new GameObject("ReelStrip");
+            strip.transform.SetParent(window.transform, false);
+            var stripRect = strip.AddComponent<RectTransform>();
+            stripRect.anchorMin = new Vector2(0f, 1f);
+            stripRect.anchorMax = new Vector2(1f, 1f);
+            stripRect.pivot = new Vector2(0.5f, 1f);
+            stripRect.offsetMin = new Vector2(7f, -ReelCellHeight * tickerCells);
+            stripRect.offsetMax = new Vector2(-7f, 0f);
+
+            for (var i = 0; i < tickerCells; i++)
             {
-                var cellIndex = offset + 1;
+                var offset = spinning ? i - 2 : i - 1;
+                var rowOffset = spinning ? i - 1 : i;
                 var cellSkillId = ResolveReelSkillId(face, centerIndex + offset);
                 var skill = RuntimeContentDatabase.FindSkill(cellSkillId);
                 var cell = new GameObject("Cell");
-                cell.transform.SetParent(window.transform, false);
+                cell.transform.SetParent(strip.transform, false);
+                var cellRect = cell.AddComponent<RectTransform>();
+                cellRect.anchorMin = new Vector2(0f, 1f);
+                cellRect.anchorMax = new Vector2(1f, 1f);
+                cellRect.pivot = new Vector2(0.5f, 1f);
+                cellRect.sizeDelta = new Vector2(0f, ReelCellHeight - 3f);
+                cellRect.anchoredPosition = new Vector2(0f, -rowOffset * ReelCellHeight);
                 var cellImage = cell.AddComponent<Image>();
-                var isFocus = offset == 0;
+                var isFocus = spinning ? i == 2 : offset == 0;
                 cellImage.color = isFocus
                     ? new Color(0.96f, 0.88f, 0.70f, 0.98f)
                     : new Color(0.74f, 0.78f, 0.87f, 0.58f);
-                var cellLayout = cell.AddComponent<LayoutElement>();
-                cellLayout.minHeight = isFocus ? 46f : 38f;
                 var cellVertical = cell.AddComponent<VerticalLayoutGroup>();
                 cellVertical.padding = new RectOffset(6, 6, 4, 4);
                 cellVertical.spacing = 0f;
@@ -2468,14 +2482,18 @@ namespace Conn.UI.Runtime
                 var textColor = isFocus
                     ? new Color(0.13f, 0.12f, 0.11f, 1f)
                     : new Color(0.18f, 0.2f, 0.24f, 0.72f);
-                valueTexts[cellIndex] = AddTextRaw(cell.transform, rolledValue.ToString(), isFocus ? 17 : 14, FontStyle.Bold, textColor);
-                skillTexts[cellIndex] = AddTextRaw(cell.transform, skillName, isFocus ? 11 : 9, isFocus ? FontStyle.Bold : FontStyle.Normal, textColor);
+                valueTexts[i] = AddTextRaw(cell.transform, rolledValue.ToString(), isFocus ? 17 : 14, FontStyle.Bold, textColor);
+                skillTexts[i] = AddTextRaw(cell.transform, skillName, isFocus ? 11 : 9, isFocus ? FontStyle.Bold : FontStyle.Normal, textColor);
             }
 
-            if (!face.ReelStopped)
+            if (spinning)
             {
-                var animator = window.AddComponent<CombatReelSpinAnimator>();
-                animator.Configure(face.Index, face.ReelSkillIds, valueTexts, skillTexts);
+                var animator = strip.AddComponent<CombatReelSpinAnimator>();
+                animator.Configure(face.Index, face.ReelSkillIds, stripRect, valueTexts, skillTexts);
+            }
+            else
+            {
+                stripRect.anchoredPosition = Vector2.zero;
             }
         }
 
@@ -3140,13 +3158,15 @@ namespace Conn.UI.Runtime
             private int faceIndex;
             private int lastTick = -1;
             private string[] skillIds = System.Array.Empty<string>();
+            private RectTransform strip;
             private Text[] valueTexts = System.Array.Empty<Text>();
             private Text[] skillTexts = System.Array.Empty<Text>();
 
-            public void Configure(int index, string[] reelSkillIds, Text[] values, Text[] skills)
+            public void Configure(int index, string[] reelSkillIds, RectTransform stripTransform, Text[] values, Text[] skills)
             {
                 faceIndex = index;
                 skillIds = reelSkillIds != null && reelSkillIds.Length > 0 ? reelSkillIds : System.Array.Empty<string>();
+                strip = stripTransform;
                 valueTexts = values ?? System.Array.Empty<Text>();
                 skillTexts = skills ?? System.Array.Empty<Text>();
                 UpdateCells(force: true);
@@ -3164,29 +3184,51 @@ namespace Conn.UI.Runtime
                     return;
                 }
 
-                var tick = SpinningReelTick(faceIndex);
+                var exactTick = Time.unscaledTime * 10f + faceIndex * 1.7f;
+                var tick = Mathf.FloorToInt(exactTick);
                 if (!force && tick == lastTick)
                 {
+                    MoveStrip(exactTick - tick);
                     return;
                 }
 
                 lastTick = tick;
+                MoveStrip(exactTick - tick);
                 for (var i = 0; i < 3; i++)
                 {
-                    var offset = i - 1;
-                    var skillId = skillIds[Wrap(tick + offset, skillIds.Length)];
-                    var skill = RuntimeContentDatabase.FindSkill(skillId);
-                    var rolledValue = Mathf.Abs(tick + faceIndex * 2 + offset) % 6 + 1;
-                    if (i < valueTexts.Length && valueTexts[i] != null)
-                    {
-                        valueTexts[i].text = rolledValue.ToString();
-                    }
-
-                    if (i < skillTexts.Length && skillTexts[i] != null)
-                    {
-                        skillTexts[i].text = skill != null ? skill.DisplayName : "기본공격";
-                    }
+                    UpdateCell(i, tick + i - 2);
                 }
+
+                for (var i = 3; i < valueTexts.Length; i++)
+                {
+                    UpdateCell(i, tick + i - 2);
+                }
+            }
+
+            private void UpdateCell(int textIndex, int rawIndex)
+            {
+                var skillId = skillIds[Wrap(rawIndex, skillIds.Length)];
+                var skill = RuntimeContentDatabase.FindSkill(skillId);
+                var rolledValue = Mathf.Abs(rawIndex + faceIndex * 2) % 6 + 1;
+                if (textIndex < valueTexts.Length && valueTexts[textIndex] != null)
+                {
+                    valueTexts[textIndex].text = rolledValue.ToString();
+                }
+
+                if (textIndex < skillTexts.Length && skillTexts[textIndex] != null)
+                {
+                    skillTexts[textIndex].text = skill != null ? skill.DisplayName : "기본공격";
+                }
+            }
+
+            private void MoveStrip(float progress)
+            {
+                if (strip == null)
+                {
+                    return;
+                }
+
+                strip.anchoredPosition = new Vector2(0f, ReelCellHeight * progress);
             }
 
             private static int Wrap(int value, int length)
