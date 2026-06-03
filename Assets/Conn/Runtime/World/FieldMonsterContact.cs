@@ -44,7 +44,7 @@ namespace Conn.Runtime.World
             }
 
             var session = GameSession.Instance.State;
-            if (!session.Quest.HasActiveQuest || session.Quest.TargetDefeated)
+            if (!FieldMonsterRuntimeService.CanStartContactCombat(session, stateKey))
             {
                 return;
             }

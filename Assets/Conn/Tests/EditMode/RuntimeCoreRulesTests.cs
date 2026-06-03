@@ -864,6 +864,28 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void KeepExploringAllowsRemainingFieldMonsterCombat()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+            QuestRuntimeService.AcceptQuest(session, QuestCatalog.TestHuntId);
+            FieldMonsterRuntimeService.Register(session, "field_monster_alpha", "placement_alpha", EncounterCatalog.TestGuardId, session.Quest.TargetMonsterId);
+            FieldMonsterRuntimeService.Register(session, "field_monster_beta", "placement_beta", EncounterCatalog.TestGuardId, session.Quest.TargetMonsterId);
+            Assert.That(FieldMonsterRuntimeService.TryBeginCombatHandoff(session, "field_monster_alpha", 0f), Is.True);
+
+            QuestRuntimeService.CompleteTarget(session, "field_monster_alpha");
+            QuestRuntimeService.KeepExploring(session);
+
+            Assert.That(session.Quest.TargetDefeated, Is.True);
+            Assert.That(session.Quest.ReturnPromptSeen, Is.True);
+            Assert.That(FieldMonsterRuntimeService.FindCombatHandoff(session), Is.Null);
+            Assert.That(FieldMonsterRuntimeService.CanStartContactCombat(session, "field_monster_alpha"), Is.False);
+            Assert.That(FieldMonsterRuntimeService.CanStartContactCombat(session, "field_monster_beta"), Is.True);
+            Assert.That(FieldMonsterRuntimeService.TryBeginCombatHandoff(session, "field_monster_beta", 10f), Is.True);
+            Assert.That(FieldMonsterRuntimeService.FindCombatHandoff(session)?.StateKey, Is.EqualTo("field_monster_beta"));
+        }
+
+        [Test]
         public void TrainerAndScholarProvideTownServices()
         {
             var session = new GameSessionState();

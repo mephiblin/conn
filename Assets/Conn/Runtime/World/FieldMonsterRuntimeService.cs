@@ -29,6 +29,17 @@ namespace Conn.Runtime.World
             return state != null && state.Defeated;
         }
 
+        public static bool CanStartContactCombat(GameSessionState session, string stateKey)
+        {
+            if (session == null || !session.Quest.HasActiveQuest)
+            {
+                return false;
+            }
+
+            var state = session.World.FindFieldMonster(stateKey);
+            return state != null && !state.Defeated;
+        }
+
         public static void MarkCombatHandoff(GameSessionState session, string stateKey)
         {
             var state = session.World.FindFieldMonster(stateKey);
