@@ -1714,6 +1714,49 @@ namespace Conn.UI.Runtime
             };
         }
 
+        public static string SkillDropSlotStateLabel(string selectedSkillId, string equippedSkillId)
+        {
+            var hasSelected = !string.IsNullOrWhiteSpace(selectedSkillId);
+            var hasEquipped = !string.IsNullOrWhiteSpace(equippedSkillId);
+            if (!hasSelected)
+            {
+                return hasEquipped ? "Clear" : "Empty";
+            }
+
+            if (!hasEquipped)
+            {
+                return "Drop";
+            }
+
+            return string.Equals(selectedSkillId, equippedSkillId, System.StringComparison.Ordinal) ? "Same" : "Replace";
+        }
+
+        public static Color SkillDropSlotBackgroundColor(Conn.Core.Skills.SkillDefinition equippedSkill, string selectedSkillId)
+        {
+            var state = SkillDropSlotStateLabel(selectedSkillId, equippedSkill != null ? equippedSkill.SkillId : string.Empty);
+            if (state == "Drop")
+            {
+                return new Color(0.12f, 0.24f, 0.18f, 0.98f);
+            }
+
+            if (state == "Replace")
+            {
+                return new Color(0.25f, 0.20f, 0.10f, 0.98f);
+            }
+
+            if (state == "Same")
+            {
+                return new Color(0.18f, 0.22f, 0.30f, 0.98f);
+            }
+
+            if (equippedSkill != null)
+            {
+                return SkillCardBackgroundColor(equippedSkill.EffectKind, false);
+            }
+
+            return new Color(0.11f, 0.13f, 0.16f, 0.92f);
+        }
+
         private void SelectShopDetail(TownShopPanelKind shopKind, string itemId, string mode)
         {
             selectedShopKind = shopKind;
@@ -2194,9 +2237,10 @@ namespace Conn.UI.Runtime
         {
             var skillId = session.Skills.SkillIdForDieFace(dieIndex, faceIndex);
             var skill = RuntimeContentDatabase.FindSkill(skillId) ?? SkillCatalog.Find(skillId);
+            var slotState = SkillDropSlotStateLabel(selectedSkillId, skillId);
             var label = skill != null
-                ? $"{faceIndex + 1}  {SkillIconFor(skill.EffectKind)}\n{skill.DisplayName}\n{SkillEffectSummary(skill)}"
-                : $"{faceIndex + 1}  ATK\n기본공격\n피해 {faceIndex + 1}";
+                ? $"{faceIndex + 1}  {SkillIconFor(skill.EffectKind)} · {slotState}\n{skill.DisplayName}\n{SkillEffectSummary(skill)}"
+                : $"{faceIndex + 1}  ATK · {slotState}\n기본공격\n피해 {faceIndex + 1}";
             var button = AddButton(
                 parent,
                 label,
@@ -2219,9 +2263,7 @@ namespace Conn.UI.Runtime
             var image = button.GetComponent<Image>();
             if (image != null)
             {
-                image.color = skill != null
-                    ? SkillCardBackgroundColor(skill.EffectKind, skill.SkillId == selectedSkillId)
-                    : new Color(0.11f, 0.13f, 0.16f, 0.92f);
+                image.color = SkillDropSlotBackgroundColor(skill, selectedSkillId);
             }
 
             button.gameObject.AddComponent<SkillFaceDragDrop>().ConfigureDropTarget(dieIndex, faceIndex);

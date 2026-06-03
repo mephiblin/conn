@@ -1142,6 +1142,28 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void SkillDropSlotsExposeActionStateAndColors()
+        {
+            var slash = SkillCatalog.Find(SkillCatalog.SlashId);
+            var guard = SkillCatalog.Find(SkillCatalog.GuardId);
+
+            Assert.That(RuntimeCanvasUi.SkillDropSlotStateLabel(string.Empty, SkillCatalog.SlashId), Is.EqualTo("Clear"));
+            Assert.That(RuntimeCanvasUi.SkillDropSlotStateLabel(SkillCatalog.GuardId, string.Empty), Is.EqualTo("Drop"));
+            Assert.That(RuntimeCanvasUi.SkillDropSlotStateLabel(SkillCatalog.GuardId, SkillCatalog.SlashId), Is.EqualTo("Replace"));
+            Assert.That(RuntimeCanvasUi.SkillDropSlotStateLabel(SkillCatalog.SlashId, SkillCatalog.SlashId), Is.EqualTo("Same"));
+
+            Assert.That(
+                RuntimeCanvasUi.SkillDropSlotBackgroundColor(null, SkillCatalog.GuardId),
+                Is.Not.EqualTo(RuntimeCanvasUi.SkillDropSlotBackgroundColor(slash, SkillCatalog.GuardId)));
+            Assert.That(
+                RuntimeCanvasUi.SkillDropSlotBackgroundColor(guard, SkillCatalog.GuardId),
+                Is.Not.EqualTo(RuntimeCanvasUi.SkillDropSlotBackgroundColor(slash, SkillCatalog.GuardId)));
+            Assert.That(
+                RuntimeCanvasUi.SkillDropSlotBackgroundColor(slash, string.Empty),
+                Is.EqualTo(RuntimeCanvasUi.SkillCardBackgroundColor(SkillEffectKind.Attack, false)));
+        }
+
+        [Test]
         public void SkillShopSupportsDuplicateBuyAndLooseSale()
         {
             var session = new GameSessionState();
