@@ -63,6 +63,7 @@ namespace Conn.Core.Session
 
             var defaultStarterSkillId = StarterSkillIdResolver();
             Character.Apply(characterOptions, defaultStarterEquipmentId, defaultStarterSkillId);
+            Player.ApplyCharacterCreation(Character);
             var starterEquipmentId = string.IsNullOrWhiteSpace(Character.StarterWeaponId)
                 ? defaultStarterEquipmentId
                 : Character.StarterWeaponId;

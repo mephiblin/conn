@@ -329,6 +329,8 @@ namespace Conn.Tests.EditMode
             Assert.That(session.Character.StarterWeaponId, Is.EqualTo(EquipmentCatalog.RustySwordId));
             Assert.That(session.Character.StarterSkillId, Is.EqualTo(GameSessionState.StarterSkillIdResolver()));
             Assert.That(session.Equipment.EquippedWeaponId, Is.EqualTo(EquipmentCatalog.RustySwordId));
+            Assert.That(session.Player.MaxHp, Is.EqualTo(20));
+            Assert.That(session.Player.Hp, Is.EqualTo(session.Player.MaxHp));
         }
 
         [Test]
@@ -384,6 +386,8 @@ namespace Conn.Tests.EditMode
             Assert.That(session.Equipment.EquippedWeaponId, Is.EqualTo(EquipmentCatalog.GreatAxeId));
             Assert.That(session.Skills.HasSkill(SkillCatalog.MendId), Is.True);
             Assert.That(session.Skills.SkillIdForDieFace(0, 0), Is.EqualTo(SkillCatalog.MendId));
+            Assert.That(session.Player.MaxHp, Is.EqualTo(PlayerRuntimeState.StartingMaxHpForVitality(6)));
+            Assert.That(session.Player.Hp, Is.EqualTo(session.Player.MaxHp));
         }
 
         [Test]
@@ -395,6 +399,29 @@ namespace Conn.Tests.EditMode
             Assert.That(RuntimeCanvasUi.CharacterPresetWeaponId(2), Is.EqualTo(EquipmentCatalog.GreatAxeId));
             Assert.That(RuntimeCanvasUi.CharacterPresetSkillId(2), Is.EqualTo(SkillCatalog.MendId));
             Assert.That(RuntimeCanvasUi.CharacterPresetSummary(2), Does.Contain("Mend"));
+            Assert.That(RuntimeCanvasUi.CharacterPresetStartingMaxHp(0), Is.EqualTo(PlayerRuntimeState.StartingMaxHpForVitality(26)));
+            Assert.That(RuntimeCanvasUi.CharacterPresetStartingMaxHp(2), Is.EqualTo(PlayerRuntimeState.StartingMaxHpForVitality(22)));
+        }
+
+        [Test]
+        public void CharacterCreationVitalityChangesStartingPlayerHp()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame(new CharacterCreationOptions
+            {
+                CharacterName = "Vanguard",
+                SelectedPortraitIndex = 0,
+                SelectedPortraitId = "portrait_vanguard",
+                Strength = 30,
+                Dexterity = 18,
+                Vitality = 26,
+                Energy = 10,
+                StarterWeaponId = EquipmentCatalog.RustySwordId,
+                StarterSkillId = SkillCatalog.GuardId
+            });
+
+            Assert.That(session.Player.MaxHp, Is.EqualTo(25));
+            Assert.That(session.Player.Hp, Is.EqualTo(25));
         }
 
         [Test]

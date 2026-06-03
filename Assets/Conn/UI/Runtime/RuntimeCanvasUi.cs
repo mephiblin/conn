@@ -507,6 +507,7 @@ namespace Conn.UI.Runtime
             AddStatRow(panel, "Dexterity", Mathf.RoundToInt(stats.y));
             AddStatRow(panel, "Vitality", Mathf.RoundToInt(stats.z));
             AddStatRow(panel, "Energy", Mathf.RoundToInt(stats.w));
+            AddText(panel, $"Starting HP {CharacterPresetStartingMaxHp(characterDraftPortraitIndex)}", 13, FontStyle.Bold);
             AddText(panel, CharacterProfileSummary(characterDraftPortraitIndex), 13);
         }
 
@@ -3544,6 +3545,12 @@ namespace Conn.UI.Runtime
         {
             var safeIndex = ClampPortraitIndex(portraitIndex);
             return $"{CharacterProfileSummary(safeIndex)} · {EquipmentName(CharacterPresetWeaponId(safeIndex))} · {SkillName(CharacterPresetSkillId(safeIndex))}";
+        }
+
+        public static int CharacterPresetStartingMaxHp(int portraitIndex)
+        {
+            var stats = CharacterStatsFor(portraitIndex);
+            return PlayerRuntimeState.StartingMaxHpForVitality(Mathf.RoundToInt(stats.z));
         }
 
         private static string CharacterPresetLoadoutHint(int portraitIndex)

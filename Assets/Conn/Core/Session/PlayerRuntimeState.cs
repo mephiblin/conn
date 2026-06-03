@@ -16,6 +16,18 @@ namespace Conn.Core.Session
             Xp = 0;
         }
 
+        public void ApplyCharacterCreation(CharacterCreationState character)
+        {
+            MaxHp = StartingMaxHpForVitality(character != null ? character.Vitality : 5);
+            Hp = MaxHp;
+            Xp = 0;
+        }
+
+        public static int StartingMaxHpForVitality(int vitality)
+        {
+            return 20 + System.Math.Max(0, vitality - 5) / 4;
+        }
+
         public void Damage(int amount)
         {
             Hp -= amount;
