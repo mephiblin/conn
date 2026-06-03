@@ -1355,6 +1355,11 @@ namespace Conn.Tests.EditMode
             Assert.That(RuntimeCanvasUi.SkillDropSlotStateLabel(SkillCatalog.GuardId, string.Empty), Is.EqualTo("Drop"));
             Assert.That(RuntimeCanvasUi.SkillDropSlotStateLabel(SkillCatalog.GuardId, SkillCatalog.SlashId), Is.EqualTo("Replace"));
             Assert.That(RuntimeCanvasUi.SkillDropSlotStateLabel(SkillCatalog.SlashId, SkillCatalog.SlashId), Is.EqualTo("Same"));
+            Assert.That(RuntimeCanvasUi.SkillDropSlotActionHint(string.Empty, SkillCatalog.SlashId), Is.EqualTo("Click clears"));
+            Assert.That(RuntimeCanvasUi.SkillDropSlotActionHint(string.Empty, string.Empty), Is.EqualTo("Choose a skill"));
+            Assert.That(RuntimeCanvasUi.SkillDropSlotActionHint(SkillCatalog.GuardId, string.Empty), Is.EqualTo("Drop here"));
+            Assert.That(RuntimeCanvasUi.SkillDropSlotActionHint(SkillCatalog.GuardId, SkillCatalog.SlashId), Is.EqualTo("Would replace"));
+            Assert.That(RuntimeCanvasUi.SkillDropSlotActionHint(SkillCatalog.SlashId, SkillCatalog.SlashId), Is.EqualTo("Already placed"));
 
             Assert.That(
                 RuntimeCanvasUi.SkillDropSlotBackgroundColor(null, SkillCatalog.GuardId),

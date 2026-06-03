@@ -1794,6 +1794,19 @@ namespace Conn.UI.Runtime
             return string.Equals(selectedSkillId, equippedSkillId, System.StringComparison.Ordinal) ? "Same" : "Replace";
         }
 
+        public static string SkillDropSlotActionHint(string selectedSkillId, string equippedSkillId)
+        {
+            return SkillDropSlotStateLabel(selectedSkillId, equippedSkillId) switch
+            {
+                "Clear" => "Click clears",
+                "Empty" => "Choose a skill",
+                "Drop" => "Drop here",
+                "Replace" => "Would replace",
+                "Same" => "Already placed",
+                _ => "Slot"
+            };
+        }
+
         public static Color SkillDropSlotBackgroundColor(Conn.Core.Skills.SkillDefinition equippedSkill, string selectedSkillId)
         {
             var state = SkillDropSlotStateLabel(selectedSkillId, equippedSkill != null ? equippedSkill.SkillId : string.Empty);
@@ -2314,9 +2327,10 @@ namespace Conn.UI.Runtime
             var skillId = session.Skills.SkillIdForDieFace(dieIndex, faceIndex);
             var skill = RuntimeContentDatabase.FindSkill(skillId) ?? SkillCatalog.Find(skillId);
             var slotState = SkillDropSlotStateLabel(selectedSkillId, skillId);
+            var actionHint = SkillDropSlotActionHint(selectedSkillId, skillId);
             var label = skill != null
-                ? $"{faceIndex + 1}  {SkillIconFor(skill.EffectKind)} · {slotState}\n{skill.DisplayName}\n{SkillEffectSummary(skill)}"
-                : $"{faceIndex + 1}  ATK · {slotState}\n기본공격\n피해 {faceIndex + 1}";
+                ? $"{faceIndex + 1}  {SkillIconFor(skill.EffectKind)} · {slotState}\n{actionHint}\n{skill.DisplayName} · {SkillEffectSummary(skill)}"
+                : $"{faceIndex + 1}  ATK · {slotState}\n{actionHint}\n기본공격 · 피해 {faceIndex + 1}";
             var button = AddButton(
                 parent,
                 label,
