@@ -466,6 +466,31 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void EquippedArmorAndShieldCanBeUnequippedFromSlots()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+            session.Inventory.AddItem(EquipmentCatalog.IronShieldId);
+            session.Inventory.AddItem(EquipmentCatalog.PaddedVestId);
+
+            Assert.That(EquipmentRuntimeService.TryEquip(session, EquipmentCatalog.IronShieldId), Is.True);
+            Assert.That(EquipmentRuntimeService.TryEquip(session, EquipmentCatalog.PaddedVestId), Is.True);
+            Assert.That(session.Equipment.WeaponGrip, Is.EqualTo(WeaponGrip.OneHandAndShield));
+            Assert.That(session.Equipment.DefenseBonus, Is.EqualTo(1 + EquipmentCatalog.Find(EquipmentCatalog.PaddedVestId).ArmorValue));
+
+            Assert.That(EquipmentRuntimeService.TryUnequip(session, EquipmentCatalog.IronShieldId), Is.True);
+            Assert.That(session.Equipment.EquippedShieldId, Is.Empty);
+            Assert.That(session.Equipment.WeaponGrip, Is.EqualTo(WeaponGrip.OneHand));
+            Assert.That(session.Skills.EquippedSkillIds.Count, Is.EqualTo(session.Equipment.DiceCount));
+
+            Assert.That(EquipmentRuntimeService.TryUnequip(session, EquipmentCatalog.PaddedVestId), Is.True);
+            Assert.That(session.Equipment.EquippedChestId, Is.Empty);
+            Assert.That(session.Equipment.DefenseBonus, Is.EqualTo(0));
+            Assert.That(EquipmentRuntimeService.TryUnequip(session, EquipmentCatalog.RustySwordId), Is.False);
+            Assert.That(session.Equipment.EquippedWeaponId, Is.EqualTo(EquipmentCatalog.RustySwordId));
+        }
+
+        [Test]
         public void DiceResolutionAppliesAttackGuardAndHealEffects()
         {
             var session = new GameSessionState();
@@ -1154,12 +1179,18 @@ namespace Conn.Tests.EditMode
 
             Assert.That(RuntimeCanvasUi.EquipmentCardStatusLabel(sword, false), Is.EqualTo("1H | Weapon | In Bag"));
             Assert.That(RuntimeCanvasUi.EquipmentCardStatusLabel(shield, true), Is.EqualTo("SH | Shield | Equipped"));
+            Assert.That(RuntimeCanvasUi.EquipmentSlotStateLabel(sword, false), Is.EqualTo("Equipped | Locked"));
+            Assert.That(RuntimeCanvasUi.EquipmentSlotStateLabel(shield, true), Is.EqualTo("Equipped | Unequip"));
+            Assert.That(RuntimeCanvasUi.EquipmentSlotStateLabel(null, false), Is.EqualTo("Empty"));
             Assert.That(RuntimeCanvasUi.SkillCardStatusLabel(slash, 2, false), Is.EqualTo("ATK | 공격 +1 | Free 2"));
             Assert.That(RuntimeCanvasUi.SkillCardStatusLabel(guard, 1, true), Is.EqualTo("GRD | 방어 +2 | Selected"));
 
             Assert.That(
                 RuntimeCanvasUi.EquipmentCardBackgroundColor(EquipmentKind.OneHandWeapon, false),
                 Is.Not.EqualTo(RuntimeCanvasUi.EquipmentCardBackgroundColor(EquipmentKind.Shield, false)));
+            Assert.That(
+                RuntimeCanvasUi.EquipmentSlotBackgroundColor(shield, true),
+                Is.Not.EqualTo(RuntimeCanvasUi.EquipmentSlotBackgroundColor(sword, false)));
             Assert.That(
                 RuntimeCanvasUi.SkillCardBackgroundColor(SkillEffectKind.Attack, false),
                 Is.Not.EqualTo(RuntimeCanvasUi.SkillCardBackgroundColor(SkillEffectKind.Guard, false)));

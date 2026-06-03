@@ -1683,6 +1683,28 @@ namespace Conn.UI.Runtime
             };
         }
 
+        public static string EquipmentSlotStateLabel(EquipmentItemDefinition item, bool canUnequip, string fallback = "")
+        {
+            if (item != null)
+            {
+                return canUnequip ? "Equipped | Unequip" : "Equipped | Locked";
+            }
+
+            return string.IsNullOrWhiteSpace(fallback) ? "Empty" : fallback;
+        }
+
+        public static Color EquipmentSlotBackgroundColor(EquipmentItemDefinition item, bool canUnequip)
+        {
+            if (item == null)
+            {
+                return new Color(0.07f, 0.08f, 0.1f, 0.68f);
+            }
+
+            return canUnequip
+                ? new Color(0.18f, 0.22f, 0.17f, 0.96f)
+                : EquipmentCardBackgroundColor(item.Kind, true);
+        }
+
         public static string SkillCardStatusLabel(Conn.Core.Skills.SkillDefinition skill, int available, bool selected)
         {
             if (skill == null)
@@ -2153,21 +2175,34 @@ namespace Conn.UI.Runtime
 
         private void DrawEquipmentSlots(Transform parent, GameSessionState session)
         {
-            AddEquipmentSlot(parent, "머리", session.Equipment.EquippedHeadId);
-            AddEquipmentSlot(parent, "몸통", session.Equipment.EquippedChestId);
-            AddEquipmentSlot(parent, "다리", session.Equipment.EquippedLegsId);
-            AddEquipmentSlot(parent, "손", session.Equipment.EquippedArmsId);
-            AddEquipmentSlot(parent, "무기 1", session.Equipment.EquippedWeaponId);
-            AddEquipmentSlot(parent, "무기 2", session.Equipment.EquippedShieldId, session.Equipment.WeaponGrip == WeaponGrip.TwoHand ? "양손 무기 사용" : string.Empty);
+            AddEquipmentSlot(parent, session, "머리", session.Equipment.EquippedHeadId);
+            AddEquipmentSlot(parent, session, "몸통", session.Equipment.EquippedChestId);
+            AddEquipmentSlot(parent, session, "다리", session.Equipment.EquippedLegsId);
+            AddEquipmentSlot(parent, session, "손", session.Equipment.EquippedArmsId);
+            AddEquipmentSlot(parent, session, "무기 1", session.Equipment.EquippedWeaponId);
+            AddEquipmentSlot(parent, session, "무기 2", session.Equipment.EquippedShieldId, session.Equipment.WeaponGrip == WeaponGrip.TwoHand ? "양손 무기 사용" : string.Empty);
         }
 
-        private void AddEquipmentSlot(Transform parent, string slotName, string itemId, string fallback = "")
+        private void AddEquipmentSlot(Transform parent, GameSessionState session, string slotName, string itemId, string fallback = "")
         {
             var item = RuntimeContentDatabase.FindEquipment(itemId) ?? EquipmentCatalog.Find(itemId);
+            var canUnequip = item != null && item.Kind != EquipmentKind.OneHandWeapon && item.Kind != EquipmentKind.TwoHandWeapon;
             var value = item != null
-                ? $"{slotName}: {EquipmentCardStatusLabel(item, true)} | {item.DisplayName} | {EquipmentSlotSummary(item)}"
-                : $"{slotName}: {(string.IsNullOrWhiteSpace(fallback) ? "Empty" : fallback)}";
-            AddText(parent, value, 14, item != null ? FontStyle.Bold : FontStyle.Normal);
+                ? $"{slotName}: {EquipmentIconFor(item.Kind)} | {EquipmentSlotStateLabel(item, canUnequip)}\n{item.DisplayName}\n{EquipmentSlotSummary(item)}"
+                : $"{slotName}: {EquipmentSlotStateLabel(null, false, fallback)}";
+            var button = AddButton(parent, value, () => EquipmentRuntimeService.TryUnequip(session, itemId), canUnequip);
+            var image = button.GetComponent<Image>();
+            if (image != null)
+            {
+                image.color = EquipmentSlotBackgroundColor(item, canUnequip);
+            }
+
+            var layout = button.GetComponent<LayoutElement>();
+            if (layout != null)
+            {
+                layout.minHeight = item != null ? 72f : 48f;
+                layout.preferredHeight = layout.minHeight;
+            }
         }
 
         private void DrawSkillInventoryCards(Transform parent, GameSessionState session)

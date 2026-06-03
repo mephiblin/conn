@@ -150,6 +150,53 @@ namespace Conn.Core.Equipment
             }
         }
 
+        public bool Unequip(string itemId)
+        {
+            var item = ResolveEquipment(itemId);
+            if (item == null || string.IsNullOrWhiteSpace(itemId) || !IsEquipped(itemId))
+            {
+                return false;
+            }
+
+            if (item.Kind == EquipmentKind.Shield)
+            {
+                EquippedShieldId = string.Empty;
+                return true;
+            }
+
+            if (item.Kind == EquipmentKind.HeadArmor)
+            {
+                EquippedHeadId = string.Empty;
+                return true;
+            }
+
+            if (item.Kind == EquipmentKind.ChestArmor)
+            {
+                EquippedChestId = string.Empty;
+                return true;
+            }
+
+            if (item.Kind == EquipmentKind.ArmsArmor)
+            {
+                EquippedArmsId = string.Empty;
+                return true;
+            }
+
+            if (item.Kind == EquipmentKind.LegsArmor)
+            {
+                EquippedLegsId = string.Empty;
+                return true;
+            }
+
+            if (item.Kind == EquipmentKind.FeetArmor)
+            {
+                EquippedFeetId = string.Empty;
+                return true;
+            }
+
+            return false;
+        }
+
         public string EquippedItemIdForKind(EquipmentKind kind)
         {
             return kind switch

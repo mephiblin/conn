@@ -76,6 +76,20 @@ namespace Conn.Runtime.Equipment
             return false;
         }
 
+        public static bool TryUnequip(GameSessionState session, string itemId)
+        {
+            var item = RuntimeContentDatabase.FindEquipment(itemId);
+            if (session == null || item == null || !session.Equipment.Unequip(itemId))
+            {
+                return false;
+            }
+
+            session.Skills.ResizeEquippedFaces(session.Equipment.DiceCount);
+            SaveIfPlaying();
+            RuntimeNoticeService.Set(session, $"Unequipped {item.DisplayName}.");
+            return true;
+        }
+
         private static string FirstOwnedOneHandWeaponId(GameSessionState session)
         {
             var starterId = GameSessionState.StarterEquipmentIdResolver();
