@@ -542,6 +542,11 @@ namespace Conn.Tests.EditMode
             Assert.That(RuntimeCanvasUi.CharacterPresetSummary(2), Does.Contain("Mend"));
             Assert.That(RuntimeCanvasUi.CharacterPresetStartingMaxHp(0), Is.EqualTo(PlayerRuntimeState.StartingMaxHpForVitality(26)));
             Assert.That(RuntimeCanvasUi.CharacterPresetStartingMaxHp(2), Is.EqualTo(PlayerRuntimeState.StartingMaxHpForVitality(22)));
+            Assert.That(RuntimeCanvasUi.CharacterPresetSelectionLabel(0), Does.Contain("Selected preset | Vanguard"));
+            Assert.That(RuntimeCanvasUi.CharacterPresetSelectionLabel(2), Does.Contain("Starting HP"));
+            Assert.That(
+                RuntimeCanvasUi.CharacterPresetFrameColor(0),
+                Is.Not.EqualTo(RuntimeCanvasUi.CharacterPresetFrameColor(1)));
         }
 
         [Test]

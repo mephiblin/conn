@@ -442,7 +442,8 @@ namespace Conn.UI.Runtime
             var portraitFrame = new GameObject("PortraitFrame");
             portraitFrame.transform.SetParent(ContentParent(portraitRow), false);
             var frameImage = portraitFrame.AddComponent<Image>();
-            frameImage.color = new Color(0.72f, 0.68f, 0.58f, 0.96f);
+            var portraitIndex = ClampPortraitIndex(characterDraftPortraitIndex);
+            frameImage.color = CharacterPresetFrameColor(portraitIndex);
             var frameLayout = portraitFrame.AddComponent<LayoutElement>();
             frameLayout.minWidth = 480f;
             frameLayout.preferredWidth = 560f;
@@ -466,8 +467,8 @@ namespace Conn.UI.Runtime
             portraitLayout.flexibleHeight = 1f;
 
             AddSquareButton(portraitRow, ">", () => SelectCharacterPortrait(characterDraftPortraitIndex + 1));
-            var portraitIndex = ClampPortraitIndex(characterDraftPortraitIndex);
             AddText(panel, $"{CharacterPortraitNames[portraitIndex]}  {portraitIndex + 1}/{CharacterPortraitResourcePaths.Length}", 24, FontStyle.Bold);
+            AddText(panel, CharacterPresetSelectionLabel(portraitIndex), 14, FontStyle.Bold);
             AddText(panel, CharacterPresetSummary(portraitIndex), 13, FontStyle.Bold);
         }
 
@@ -3647,6 +3648,23 @@ namespace Conn.UI.Runtime
         {
             var safeIndex = ClampPortraitIndex(portraitIndex);
             return $"{CharacterProfileSummary(safeIndex)} · {EquipmentName(CharacterPresetWeaponId(safeIndex))} · {SkillName(CharacterPresetSkillId(safeIndex))}";
+        }
+
+        public static string CharacterPresetSelectionLabel(int portraitIndex)
+        {
+            var safeIndex = ClampPortraitIndex(portraitIndex);
+            return $"Selected preset | {CharacterPortraitNames[safeIndex]} | Starting HP {CharacterPresetStartingMaxHp(safeIndex)}";
+        }
+
+        public static Color CharacterPresetFrameColor(int portraitIndex)
+        {
+            return ClampPortraitIndex(portraitIndex) switch
+            {
+                0 => new Color(0.48f, 0.43f, 0.28f, 0.98f),
+                1 => new Color(0.32f, 0.38f, 0.50f, 0.98f),
+                2 => new Color(0.42f, 0.31f, 0.48f, 0.98f),
+                _ => new Color(0.42f, 0.42f, 0.42f, 0.98f)
+            };
         }
 
         public static int CharacterPresetStartingMaxHp(int portraitIndex)
