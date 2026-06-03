@@ -108,6 +108,7 @@ Last updated: 2026-06-03
 - 검증:
   - `git diff --check` 통과.
   - Unity `RuntimeCoreRulesTests` batchmode 실행은 같은 프로젝트를 열고 있는 다른 Unity 인스턴스 때문에 차단됨.
+  - 커밋: `866369f`
 
 ### 2026-05-31 기준점
 
