@@ -115,22 +115,22 @@ namespace Conn.UI.Runtime
 
             if (panelName == "CombatEnemyStagePanel")
             {
-                return new Rect(0.50f, 0.32f, 0.46f, 0.62f);
+                return new Rect(0.46f, 0.42f, 0.50f, 0.52f);
             }
 
             if (panelName == "CombatCommandPanel")
             {
-                return new Rect(0.35f, 0.25f, 0.3f, 0.13f);
+                return new Rect(0.14f, 0.37f, 0.72f, 0.11f);
             }
 
             if (panelName == "CombatStatusPanel")
             {
-                return new Rect(0.04f, 0.18f, 0.46f, 0.50f);
+                return new Rect(0.04f, 0.42f, 0.40f, 0.40f);
             }
 
             if (panelName == "CombatDicePanel")
             {
-                return new Rect(0.30f, 0.02f, 0.40f, 0.22f);
+                return new Rect(0.12f, 0.02f, 0.76f, 0.34f);
             }
 
             if (panelName == "CombatLogPanel")

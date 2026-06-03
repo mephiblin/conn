@@ -1955,7 +1955,7 @@ namespace Conn.UI.Runtime
                 TextAnchor.UpperRight);
 
             var command = Panel("CombatCommandPanel");
-            BuildPanel(command, $"Round {session.Combat.Round}", false);
+            BuildPanel(command, $"Round {session.Combat.Round} · 주사위 릴", false);
             AddText(
                 command,
                 session.Combat.ReelSpinActive
@@ -1963,8 +1963,8 @@ namespace Conn.UI.Runtime
                     : CombatSelectionSummary(session));
             var commandRow = AddHorizontalGroup(command, 10f);
             AddButton(commandRow, "STOP", () => CombatRuntimeService.StopReels(session), CombatRuntimeService.CanStopReels(session));
-            AddButton(commandRow, session.Combat.SelectedDiceCount > 0 ? "Attack" : "Select Reel", () => CombatRuntimeService.ResolveSelectedDice(session), !session.Combat.ReelSpinActive && session.Combat.SelectedDiceCount > 0);
-            AddButton(commandRow, "Flee", () => CombatRuntimeService.Flee(session));
+            AddButton(commandRow, session.Combat.SelectedDiceCount > 0 ? "선택 적용" : "릴 선택", () => CombatRuntimeService.ResolveSelectedDice(session), !session.Combat.ReelSpinActive && session.Combat.SelectedDiceCount > 0);
+            AddButton(commandRow, "도주", () => CombatRuntimeService.Flee(session));
 
             var status = Panel("CombatStatusPanel");
             BuildCombatStagePanel(status);
@@ -2389,28 +2389,28 @@ namespace Conn.UI.Runtime
             button.onClick.AddListener(() => CombatRuntimeService.ToggleDieSelection(session, faceIndex));
 
             var layout = obj.AddComponent<LayoutElement>();
-            layout.minWidth = 132f;
-            layout.preferredWidth = 154f;
-            layout.minHeight = 250f;
+            layout.minWidth = 128f;
+            layout.preferredWidth = 146f;
+            layout.minHeight = 220f;
 
             var vertical = obj.AddComponent<VerticalLayoutGroup>();
-            vertical.padding = new RectOffset(12, 12, 12, 12);
-            vertical.spacing = 8f;
+            vertical.padding = new RectOffset(10, 10, 9, 9);
+            vertical.spacing = 5f;
             vertical.childAlignment = TextAnchor.UpperCenter;
             vertical.childControlWidth = true;
             vertical.childControlHeight = false;
             vertical.childForceExpandHeight = false;
 
-            AddTextRaw(obj.transform, $"R{face.Index + 1}", 18, FontStyle.Bold);
+            AddTextRaw(obj.transform, $"R{face.Index + 1}", 17, FontStyle.Bold);
             AddTextRaw(
                 obj.transform,
                 face.ReelStopped ? face.DisplayName : "회전 중",
-                13,
+                12,
                 FontStyle.Bold);
             AddTextRaw(
                 obj.transform,
                 face.ReelStopped ? CombatFaceEffectText(face) : "결과 대기",
-                11,
+                10,
                 FontStyle.Normal);
             if (face.IsCoolingDown)
             {
@@ -2428,12 +2428,12 @@ namespace Conn.UI.Runtime
             var window = new GameObject("Window");
             window.transform.SetParent(obj.transform, false);
             var windowImage = window.AddComponent<Image>();
-            windowImage.color = new Color(0.87f, 0.88f, 0.93f, 0.96f);
+            windowImage.color = new Color(0.82f, 0.85f, 0.92f, 0.98f);
             var windowLayout = window.AddComponent<LayoutElement>();
-            windowLayout.minHeight = 164f;
+            windowLayout.minHeight = 134f;
             var windowVertical = window.AddComponent<VerticalLayoutGroup>();
-            windowVertical.padding = new RectOffset(8, 8, 6, 6);
-            windowVertical.spacing = 4f;
+            windowVertical.padding = new RectOffset(7, 7, 5, 5);
+            windowVertical.spacing = 3f;
             windowVertical.childControlWidth = true;
             windowVertical.childControlHeight = true;
             windowVertical.childForceExpandHeight = false;
@@ -2451,10 +2451,10 @@ namespace Conn.UI.Runtime
                 var cellImage = cell.AddComponent<Image>();
                 var isFocus = offset == 0;
                 cellImage.color = isFocus
-                    ? new Color(0.95f, 0.87f, 0.72f, 0.95f)
-                    : new Color(0.79f, 0.82f, 0.9f, 0.62f);
+                    ? new Color(0.96f, 0.88f, 0.70f, 0.98f)
+                    : new Color(0.74f, 0.78f, 0.87f, 0.58f);
                 var cellLayout = cell.AddComponent<LayoutElement>();
-                cellLayout.minHeight = isFocus ? 56f : 48f;
+                cellLayout.minHeight = isFocus ? 46f : 38f;
                 var cellVertical = cell.AddComponent<VerticalLayoutGroup>();
                 cellVertical.padding = new RectOffset(6, 6, 4, 4);
                 cellVertical.spacing = 0f;
@@ -2463,13 +2463,13 @@ namespace Conn.UI.Runtime
                 cellVertical.childControlHeight = true;
                 cellVertical.childForceExpandHeight = false;
 
-                var rolledValue = isFocus && face.ReelStopped ? face.RolledValue : ResolvePreviewValue(face, offset);
+                var rolledValue = isFocus && face.ReelStopped ? face.RolledValue : ResolvePreviewValue(face, centerIndex + offset);
                 var skillName = skill != null ? skill.DisplayName : "기본공격";
                 var textColor = isFocus
                     ? new Color(0.13f, 0.12f, 0.11f, 1f)
                     : new Color(0.18f, 0.2f, 0.24f, 0.72f);
-                valueTexts[cellIndex] = AddTextRaw(cell.transform, rolledValue.ToString(), isFocus ? 18 : 15, FontStyle.Bold, textColor);
-                skillTexts[cellIndex] = AddTextRaw(cell.transform, skillName, isFocus ? 12 : 10, isFocus ? FontStyle.Bold : FontStyle.Normal, textColor);
+                valueTexts[cellIndex] = AddTextRaw(cell.transform, rolledValue.ToString(), isFocus ? 17 : 14, FontStyle.Bold, textColor);
+                skillTexts[cellIndex] = AddTextRaw(cell.transform, skillName, isFocus ? 11 : 9, isFocus ? FontStyle.Bold : FontStyle.Normal, textColor);
             }
 
             if (!face.ReelStopped)
@@ -2541,7 +2541,7 @@ namespace Conn.UI.Runtime
                 return Mathf.Abs(face.ReelStopIndex) % length;
             }
 
-            return Mathf.Abs(face.Index * 2) % length;
+            return Mathf.Abs(SpinningReelTick(face)) % length;
         }
 
         private static string ResolveReelSkillId(Conn.Core.Combat.DiceFaceState face, int rawIndex)
@@ -2561,10 +2561,15 @@ namespace Conn.UI.Runtime
             return face.ReelSkillIds[index];
         }
 
-        private static int ResolvePreviewValue(Conn.Core.Combat.DiceFaceState face, int offset)
+        private static int ResolvePreviewValue(Conn.Core.Combat.DiceFaceState face, int rawIndex)
         {
-            var value = Mathf.Abs(face.Index * 2 + offset) % 6;
+            var value = Mathf.Abs(rawIndex + face.Index * 2) % 6;
             return value + 1;
+        }
+
+        private static int SpinningReelTick(Conn.Core.Combat.DiceFaceState face)
+        {
+            return Mathf.FloorToInt(Time.unscaledTime * 10f + face.Index * 1.7f);
         }
 
         private Button AddSquareButton(Transform parent, string label, UnityEngine.Events.UnityAction action, bool interactable = true)
@@ -3159,7 +3164,7 @@ namespace Conn.UI.Runtime
                     return;
                 }
 
-                var tick = Mathf.FloorToInt(Time.unscaledTime * 8f + faceIndex * 1.7f);
+                var tick = SpinningReelTick(faceIndex);
                 if (!force && tick == lastTick)
                 {
                     return;
@@ -3189,6 +3194,11 @@ namespace Conn.UI.Runtime
                 var wrapped = value % length;
                 return wrapped < 0 ? wrapped + length : wrapped;
             }
+        }
+
+        private static int SpinningReelTick(int faceIndex)
+        {
+            return Mathf.FloorToInt(Time.unscaledTime * 10f + faceIndex * 1.7f);
         }
     }
 }

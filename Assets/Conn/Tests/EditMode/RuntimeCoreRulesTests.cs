@@ -12,6 +12,7 @@ using Conn.Runtime.Inventory;
 using Conn.Runtime.Session;
 using Conn.Runtime.Skills;
 using Conn.Runtime.World;
+using Conn.UI.Runtime;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -91,6 +92,48 @@ namespace Conn.Tests.EditMode
             {
                 UnityEngine.Object.DestroyImmediate(parent.gameObject);
             }
+        }
+
+        [Test]
+        public void CombatStartsWithRouletteReelsSpinningUntilStop()
+        {
+            var session = new GameSessionState();
+            session.StartNewGame();
+
+            CombatRuntimeService.StartTestCombat(session);
+
+            Assert.That(session.Combat.ReelSpinActive, Is.True);
+            Assert.That(CombatRuntimeService.CanStopReels(session), Is.True);
+            Assert.That(session.Combat.DiceFaces, Has.Count.EqualTo(session.Equipment.DiceCount));
+            for (var i = 0; i < session.Combat.DiceFaces.Count; i++)
+            {
+                Assert.That(session.Combat.DiceFaces[i].ReelStopped, Is.False);
+                Assert.That(session.Combat.DiceFaces[i].ReelSkillIds, Has.Length.EqualTo(SkillInventoryState.FacesPerDie));
+            }
+
+            CombatRuntimeService.StopReels(session);
+
+            Assert.That(session.Combat.ReelSpinActive, Is.False);
+            Assert.That(session.Combat.ReelStopCount, Is.EqualTo(session.Combat.DiceFaces.Count));
+            for (var i = 0; i < session.Combat.DiceFaces.Count; i++)
+            {
+                Assert.That(session.Combat.DiceFaces[i].ReelStopped, Is.True);
+            }
+        }
+
+        [Test]
+        public void CombatRuntimeLayoutKeepsRouletteInBottomTray()
+        {
+            var dice = RuntimeCanvasUiBuilder.NormalizedSafeRectForPanel("CombatDicePanel");
+            var command = RuntimeCanvasUiBuilder.NormalizedSafeRectForPanel("CombatCommandPanel");
+            var status = RuntimeCanvasUiBuilder.NormalizedSafeRectForPanel("CombatStatusPanel");
+            var enemy = RuntimeCanvasUiBuilder.NormalizedSafeRectForPanel("CombatEnemyStagePanel");
+
+            Assert.That(dice.width, Is.GreaterThanOrEqualTo(0.72f));
+            Assert.That(dice.y, Is.LessThanOrEqualTo(0.04f));
+            Assert.That(command.y, Is.GreaterThanOrEqualTo(dice.yMax));
+            Assert.That(status.y, Is.GreaterThanOrEqualTo(command.y));
+            Assert.That(enemy.y, Is.GreaterThanOrEqualTo(command.y));
         }
 
         [Test]
