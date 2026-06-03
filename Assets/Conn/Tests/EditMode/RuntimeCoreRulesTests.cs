@@ -169,6 +169,44 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void DungeonRuntimeMarksReadableChoicePointsWithoutBlockingMovement()
+        {
+            var compiled = new CompiledMap
+            {
+                MapId = "choice_marker_test",
+                ProfileId = "twisted_temple",
+                Width = 5,
+                Height = 5,
+                CellSize = 0.28f,
+                HeightStep = 0.28f
+            };
+            compiled.Cells.Add(new CompiledMapCell { X = 2, Y = 2, RoomId = "hub", Terrain = RoomChunkCellType.Floor });
+            compiled.Cells.Add(new CompiledMapCell { X = 3, Y = 2, RoomId = "quest_path", Terrain = RoomChunkCellType.Floor });
+            compiled.Cells.Add(new CompiledMapCell { X = 1, Y = 2, RoomId = "start_path", Terrain = RoomChunkCellType.Floor });
+            compiled.Cells.Add(new CompiledMapCell { X = 2, Y = 3, RoomId = "side_branch", Terrain = RoomChunkCellType.Floor });
+            compiled.Cells.Add(new CompiledMapCell { X = 2, Y = 1, RoomId = "boss_path", Terrain = RoomChunkCellType.Floor });
+            compiled.Cells.Add(new CompiledMapCell { X = 0, Y = 0, RoomId = "dead_end", Terrain = RoomChunkCellType.Floor });
+
+            var parent = new GameObject("Choice Marker Runtime Test").transform;
+            try
+            {
+                Assert.That(DungeonMapActorSpawner.SpawnFromCompiledMap(compiled, parent), Is.EqualTo(6));
+                var markerRoot = parent.Find(DungeonMapActorSpawner.ChoiceMarkerRootName);
+                Assert.That(markerRoot, Is.Not.Null);
+                Assert.That(markerRoot.childCount, Is.EqualTo(1));
+
+                var center = compiled.Cells[0];
+                Assert.That(DungeonMapActorSpawner.IsReadableChoicePoint(compiled, center), Is.True);
+                Assert.That(DungeonMapActorSpawner.IsReadableChoicePoint(compiled, compiled.Cells[1]), Is.False);
+                AssertChoiceMarker(markerRoot, compiled, center);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(parent.gameObject);
+            }
+        }
+
+        [Test]
         public void CombatStartsWithRouletteReelsSpinningUntilStop()
         {
             var session = new GameSessionState();
@@ -267,6 +305,20 @@ namespace Conn.Tests.EditMode
             Assert.That(light, Is.Not.Null);
             Assert.That(light.color, Is.EqualTo(DungeonMapActorSpawner.ObjectiveMarkerColor(kind)));
             Assert.That(markerRoot.Find($"Objective Label - {kind} {x},{y}"), Is.Not.Null);
+        }
+
+        private static void AssertChoiceMarker(
+            Transform markerRoot,
+            CompiledMap compiled,
+            CompiledMapCell cell)
+        {
+            var marker = markerRoot.Find(DungeonMapActorSpawner.ChoiceMarkerName(cell));
+            Assert.That(marker, Is.Not.Null);
+            Assert.That(marker.position, Is.EqualTo(DungeonMapActorSpawner.ChoiceMarkerWorldPosition(compiled, cell)));
+
+            var collider = marker.GetComponent<Collider>();
+            Assert.That(collider, Is.Not.Null);
+            Assert.That(collider.enabled, Is.False);
         }
 
         [Test]

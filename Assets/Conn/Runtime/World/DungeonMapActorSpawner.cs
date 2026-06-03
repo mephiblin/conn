@@ -8,11 +8,13 @@ namespace Conn.Runtime.World
     {
         public const string RootName = "Compiled Dungeon Map";
         public const string ObjectiveMarkerRootName = "Objective Markers";
+        public const string ChoiceMarkerRootName = "Choice Point Markers";
         private const float SmallAuthoredUnit = 0.28f;
         private const float SmallAuthoredUnitCutoff = 0.75f;
         private const float DefaultRuntimeCellSize = 2.4f;
         private const float DefaultRuntimeHeightStep = 0.8f;
         private const float ObjectiveMarkerHeight = 1.45f;
+        private const float ChoiceMarkerHeight = 0.28f;
 
         public static int SpawnFromCompiledMap(CompiledMap compiledMap, Transform parent = null)
         {
@@ -37,6 +39,7 @@ namespace Conn.Runtime.World
             }
 
             SpawnObjectiveMarkers(compiledMap, root);
+            SpawnChoicePointMarkers(compiledMap, root);
             return spawned;
         }
 
@@ -185,6 +188,62 @@ namespace Conn.Runtime.World
             return WorldPosition(compiledMap, placement.X, placement.Y, surfaceY + ObjectiveMarkerHeight);
         }
 
+        public static int SpawnChoicePointMarkers(CompiledMap compiledMap, Transform root)
+        {
+            if (compiledMap == null || root == null)
+            {
+                return 0;
+            }
+
+            var markerRoot = new GameObject(ChoiceMarkerRootName).transform;
+            markerRoot.SetParent(root, false);
+            var spawned = 0;
+            for (var i = 0; i < (compiledMap.Cells?.Count ?? 0); i++)
+            {
+                var cell = compiledMap.Cells[i];
+                if (!IsReadableChoicePoint(compiledMap, cell))
+                {
+                    continue;
+                }
+
+                CreateChoicePointMarker(markerRoot, compiledMap, cell);
+                spawned++;
+            }
+
+            return spawned;
+        }
+
+        public static bool IsReadableChoicePoint(CompiledMap compiledMap, CompiledMapCell cell)
+        {
+            if (!IsWalkableCell(cell))
+            {
+                return false;
+            }
+
+            return CountWalkableNeighbors(compiledMap, cell) >= 3 && TouchesOtherRoom(compiledMap, cell);
+        }
+
+        public static string ChoiceMarkerName(CompiledMapCell cell)
+        {
+            if (cell == null)
+            {
+                return "Choice Marker - Unknown";
+            }
+
+            return $"Choice Marker - {cell.X},{cell.Y}";
+        }
+
+        public static Vector3 ChoiceMarkerWorldPosition(CompiledMap compiledMap, CompiledMapCell cell)
+        {
+            if (compiledMap == null || cell == null)
+            {
+                return Vector3.up * ChoiceMarkerHeight;
+            }
+
+            var surfaceY = cell.Height * WorldHeightStep(compiledMap);
+            return WorldPosition(compiledMap, cell.X, cell.Y, surfaceY + ChoiceMarkerHeight);
+        }
+
         private static Transform RecreateRoot()
         {
             var existing = GameObject.Find(RootName);
@@ -279,6 +338,28 @@ namespace Conn.Runtime.World
                     return "EXIT";
                 default:
                     return "GOAL";
+            }
+        }
+
+        private static void CreateChoicePointMarker(Transform root, CompiledMap compiledMap, CompiledMapCell cell)
+        {
+            var marker = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            marker.name = ChoiceMarkerName(cell);
+            marker.transform.SetParent(root, false);
+            marker.transform.position = ChoiceMarkerWorldPosition(compiledMap, cell);
+            var cellSize = WorldCellSize(compiledMap);
+            marker.transform.localScale = new Vector3(cellSize * 0.22f, 0.04f, cellSize * 0.22f);
+
+            var collider = marker.GetComponent<Collider>();
+            if (collider != null)
+            {
+                collider.enabled = false;
+            }
+
+            var renderer = marker.GetComponent<MeshRenderer>();
+            if (renderer != null)
+            {
+                renderer.sharedMaterial = ChoiceMarkerMaterial();
             }
         }
 
@@ -387,6 +468,56 @@ namespace Conn.Runtime.World
             }
 
             return null;
+        }
+
+        private static int CountWalkableNeighbors(CompiledMap compiledMap, CompiledMapCell cell)
+        {
+            var count = 0;
+            if (IsWalkableCell(FindCell(compiledMap, cell.X + 1, cell.Y)))
+            {
+                count++;
+            }
+
+            if (IsWalkableCell(FindCell(compiledMap, cell.X - 1, cell.Y)))
+            {
+                count++;
+            }
+
+            if (IsWalkableCell(FindCell(compiledMap, cell.X, cell.Y + 1)))
+            {
+                count++;
+            }
+
+            if (IsWalkableCell(FindCell(compiledMap, cell.X, cell.Y - 1)))
+            {
+                count++;
+            }
+
+            return count;
+        }
+
+        private static bool TouchesOtherRoom(CompiledMap compiledMap, CompiledMapCell cell)
+        {
+            return IsDifferentRoom(cell, FindCell(compiledMap, cell.X + 1, cell.Y))
+                || IsDifferentRoom(cell, FindCell(compiledMap, cell.X - 1, cell.Y))
+                || IsDifferentRoom(cell, FindCell(compiledMap, cell.X, cell.Y + 1))
+                || IsDifferentRoom(cell, FindCell(compiledMap, cell.X, cell.Y - 1));
+        }
+
+        private static bool IsDifferentRoom(CompiledMapCell center, CompiledMapCell neighbor)
+        {
+            return IsWalkableCell(neighbor)
+                && !string.IsNullOrWhiteSpace(center.RoomId)
+                && !string.IsNullOrWhiteSpace(neighbor.RoomId)
+                && center.RoomId != neighbor.RoomId;
+        }
+
+        private static bool IsWalkableCell(CompiledMapCell cell)
+        {
+            return cell != null
+                && (cell.Terrain == RoomChunkCellType.Floor
+                    || cell.Terrain == RoomChunkCellType.Slope
+                    || cell.Terrain == RoomChunkCellType.Stair);
         }
 
         private static float CellCenterY(CompiledMap compiledMap, CompiledMapCell cell)
@@ -531,6 +662,16 @@ namespace Conn.Runtime.World
                 color = ObjectiveMarkerColor(kind)
             };
             material.name = $"Dungeon Objective Marker {kind}";
+            return material;
+        }
+
+        private static Material ChoiceMarkerMaterial()
+        {
+            var material = new Material(Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard"))
+            {
+                color = new Color(0.38f, 0.9f, 0.58f, 0.92f)
+            };
+            material.name = "Dungeon Choice Point Marker";
             return material;
         }
 
