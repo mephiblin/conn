@@ -262,6 +262,8 @@ namespace Conn.UI.Runtime
                 key.Append('|').Append(session.Combat.Active)
                     .Append('|').Append(session.Combat.Enemy.Hp)
                     .Append('|').Append(session.Combat.LastMessage)
+                    .Append('|').Append(session.Combat.LastTacticalSummary)
+                    .Append('|').Append(session.Combat.LastFeedbackKind)
                     .Append('|').Append(session.Combat.SelectedDiceCount)
                     .Append('|').Append(session.Combat.ReelSpinActive)
                     .Append('|').Append(session.Combat.ReelStopCount);
@@ -1957,6 +1959,7 @@ namespace Conn.UI.Runtime
 
             var command = Panel("CombatCommandPanel");
             BuildPanel(command, $"Round {session.Combat.Round} · 주사위 릴", false);
+            AddText(command, CombatTacticalSummary(session), 16, FontStyle.Bold);
             AddText(
                 command,
                 session.Combat.ReelSpinActive
@@ -2005,6 +2008,7 @@ namespace Conn.UI.Runtime
 
             var command = Panel("CombatCommandPanel");
             BuildPanel(command, "Victory", false);
+            AddText(command, CombatTacticalSummary(session), 16, FontStyle.Bold);
             AddText(command, string.IsNullOrWhiteSpace(session.Combat.LastMessage) ? session.LastNotice : session.Combat.LastMessage, 12);
             var row = AddHorizontalGroup(command, 10f);
             AddButton(row, "Keep Exploring", () =>
@@ -2533,6 +2537,18 @@ namespace Conn.UI.Runtime
             return session.Combat.SelectedDiceCount > 0
                 ? $"선택 {session.Combat.SelectedDiceCount}/3 · 사용 가능 {available}"
                 : $"릴을 선택하세요 · 사용 가능 {available}";
+        }
+
+        private static string CombatTacticalSummary(GameSessionState session)
+        {
+            if (!string.IsNullOrWhiteSpace(session.Combat.LastTacticalSummary))
+            {
+                return session.Combat.LastTacticalSummary;
+            }
+
+            return session.Combat.ReelSpinActive
+                ? $"릴 {session.Combat.DiceFaces.Count}개 회전 중 · STOP으로 결과 고정"
+                : CombatSelectionSummary(session);
         }
 
         private static string CombatDicePanelSummary(GameSessionState session)

@@ -161,6 +161,7 @@ namespace Conn.Runtime.Combat
 
             session.Combat.Enemy.Damage(attack);
             session.Combat.LastMessage = $"Resolved {selected} face(s): {selectedFaces}. Result: {attack} damage, {guard} guard, {healing} heal.";
+            var playerImpactSummary = CombatImpactSummary(attack, guard, healing, appliedBleed);
             if (appliedBleed)
             {
                 session.Combat.Enemy.AddOrRefreshStatus(CombatStatusEffectKind.Bleed, 2, 1);
@@ -173,7 +174,7 @@ namespace Conn.Runtime.Combat
                 return;
             }
 
-            EnemyAttack(session, guard);
+            var enemyImpact = EnemyAttack(session, guard);
             if (!session.Combat.Active)
             {
                 return;
@@ -193,6 +194,7 @@ namespace Conn.Runtime.Combat
 
             session.Combat.Round++;
             TickCooldowns(session);
+            SetCombatFeedback(session, "exchange", $"{playerImpactSummary} · 적 반격 {enemyImpact.Damage} 피해 ({enemyImpact.Blocked} 차단)");
             BeginReelSpin(session, $"{session.Combat.LastMessage} 다음 라운드 시작. 릴 전체가 다시 회전한다.");
         }
 
@@ -207,7 +209,7 @@ namespace Conn.Runtime.Combat
 
             ClearDiceSelection(session);
             session.Combat.LastMessage = "No dice selected. Advanced turn.";
-            EnemyAttack(session, 0);
+            var enemyImpact = EnemyAttack(session, 0);
             if (!session.Combat.Active)
             {
                 return;
@@ -221,6 +223,7 @@ namespace Conn.Runtime.Combat
 
             session.Combat.Round++;
             TickCooldowns(session);
+            SetCombatFeedback(session, "enemy", $"행동 없음 · 적 반격 {enemyImpact.Damage} 피해 ({enemyImpact.Blocked} 차단)");
             BeginReelSpin(session, $"{session.Combat.LastMessage} 다음 라운드에서 릴 전체가 다시 회전한다.");
         }
 
@@ -281,6 +284,7 @@ namespace Conn.Runtime.Combat
             session.Combat.ReelSpinActive = false;
             session.Combat.ReelStopCount = session.Combat.DiceFaces.Count;
             session.Combat.LastMessage = $"모든 릴이 동시에 멈췄다. {session.Combat.SelectedDiceCount}/3 선택 후 Attack을 실행한다.";
+            SetCombatFeedback(session, "ready", $"결과 확정 · {AvailableStoppedDiceCount(session)}개 릴 선택 가능 · 최대 3개 적용");
         }
 
         public static string DescribeCombatantStatuses(CombatantState combatant)
@@ -343,7 +347,7 @@ namespace Conn.Runtime.Combat
             }
         }
 
-        private static void EnemyAttack(GameSessionState session, int guard)
+        private static EnemyAttackFeedback EnemyAttack(GameSessionState session, int guard)
         {
             var attackPower = session.Combat.EnemyAttackPower > 0 ? session.Combat.EnemyAttackPower : 4;
             var damage = attackPower - session.Combat.PlayerDefenseBonus - guard;
@@ -376,6 +380,8 @@ namespace Conn.Runtime.Combat
             {
                 Die(session);
             }
+
+            return new EnemyAttackFeedback(damage, blocked);
         }
 
         private static void TickStatuses(GameSessionState session)
@@ -445,6 +451,7 @@ namespace Conn.Runtime.Combat
             }
 
             RuntimeNoticeService.Set(session, $"Victory: Enemy defeated. Gained {xpReward} XP.");
+            SetCombatFeedback(session, "victory", $"승리 · XP +{xpReward} · 귀환 또는 계속 탐험 선택");
             var stateKey = string.IsNullOrWhiteSpace(session.Combat.FieldMonsterStateKey)
                 ? "field_monster_test_guard"
                 : session.Combat.FieldMonsterStateKey;
@@ -645,6 +652,12 @@ namespace Conn.Runtime.Combat
             }
 
             session.Combat.LastMessage = message;
+            if (string.IsNullOrWhiteSpace(session.Combat.LastTacticalSummary)
+                || session.Combat.LastFeedbackKind == "ready"
+                || session.Combat.LastFeedbackKind == "spin")
+            {
+                SetCombatFeedback(session, "spin", $"릴 {session.Combat.DiceFaces.Count}개 회전 중 · STOP으로 결과 고정");
+            }
         }
 
         private static void ApplyStoppedRoll(GameSessionState session, DiceFaceState face)
@@ -698,6 +711,64 @@ namespace Conn.Runtime.Combat
 
             session.Combat.Enemy.Heal(profile.TurnRegenHp);
             session.Combat.LastMessage += $" {session.Combat.Enemy.DisplayName} regenerates {profile.TurnRegenHp} HP.";
+            if (!string.IsNullOrWhiteSpace(session.Combat.LastTacticalSummary))
+            {
+                session.Combat.LastTacticalSummary += $" · 적 회복 {profile.TurnRegenHp}";
+            }
+        }
+
+        private static string CombatImpactSummary(int attack, int guard, int healing, bool appliedBleed)
+        {
+            var builder = new StringBuilder($"플레이어 {attack} 피해");
+            if (guard > 0)
+            {
+                builder.Append($" / {guard} 방어");
+            }
+
+            if (healing > 0)
+            {
+                builder.Append($" / {healing} 회복");
+            }
+
+            if (appliedBleed)
+            {
+                builder.Append(" / 출혈");
+            }
+
+            return builder.ToString();
+        }
+
+        private static int AvailableStoppedDiceCount(GameSessionState session)
+        {
+            var count = 0;
+            for (var i = 0; i < session.Combat.DiceFaces.Count; i++)
+            {
+                var face = session.Combat.DiceFaces[i];
+                if (face.ReelStopped && !face.IsCoolingDown)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        private static void SetCombatFeedback(GameSessionState session, string kind, string summary)
+        {
+            session.Combat.LastFeedbackKind = kind ?? string.Empty;
+            session.Combat.LastTacticalSummary = summary ?? string.Empty;
+        }
+
+        private readonly struct EnemyAttackFeedback
+        {
+            public EnemyAttackFeedback(int damage, int blocked)
+            {
+                Damage = damage;
+                Blocked = blocked;
+            }
+
+            public int Damage { get; }
+            public int Blocked { get; }
         }
 
         private static void TickCooldowns(GameSessionState session)

@@ -24,6 +24,8 @@ namespace Conn.Core.Combat
         public List<DiceFaceState> DiceFaces = new List<DiceFaceState>();
         public List<DiceResultCooldownState> DiceResultCooldowns = new List<DiceResultCooldownState>();
         public string LastMessage = string.Empty;
+        public string LastTacticalSummary = string.Empty;
+        public string LastFeedbackKind = string.Empty;
         public bool ReelSpinActive;
         public int ReelStopCount;
 
@@ -67,6 +69,8 @@ namespace Conn.Core.Combat
             DiceFaces.Clear();
             DiceResultCooldowns.Clear();
             LastMessage = string.Empty;
+            LastTacticalSummary = string.Empty;
+            LastFeedbackKind = string.Empty;
             ReelSpinActive = false;
             ReelStopCount = 0;
         }

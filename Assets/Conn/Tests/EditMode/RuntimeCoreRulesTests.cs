@@ -103,6 +103,8 @@ namespace Conn.Tests.EditMode
             CombatRuntimeService.StartTestCombat(session);
 
             Assert.That(session.Combat.ReelSpinActive, Is.True);
+            Assert.That(session.Combat.LastFeedbackKind, Is.EqualTo("spin"));
+            Assert.That(session.Combat.LastTacticalSummary, Does.Contain("릴"));
             Assert.That(CombatRuntimeService.CanStopReels(session), Is.True);
             Assert.That(session.Combat.DiceFaces, Has.Count.EqualTo(session.Equipment.DiceCount));
             for (var i = 0; i < session.Combat.DiceFaces.Count; i++)
@@ -114,6 +116,8 @@ namespace Conn.Tests.EditMode
             CombatRuntimeService.StopReels(session);
 
             Assert.That(session.Combat.ReelSpinActive, Is.False);
+            Assert.That(session.Combat.LastFeedbackKind, Is.EqualTo("ready"));
+            Assert.That(session.Combat.LastTacticalSummary, Does.Contain("결과 확정"));
             Assert.That(session.Combat.ReelStopCount, Is.EqualTo(session.Combat.DiceFaces.Count));
             for (var i = 0; i < session.Combat.DiceFaces.Count; i++)
             {
@@ -424,6 +428,11 @@ namespace Conn.Tests.EditMode
             Assert.That(session.Combat.LastMessage, Does.Contain("Test Gate Guard uses Halberd thrust for 2 damage"));
             Assert.That(session.Combat.LastMessage, Does.Contain("4 power"));
             Assert.That(session.Combat.LastMessage, Does.Contain("2 blocked"));
+            Assert.That(session.Combat.LastFeedbackKind, Is.EqualTo("exchange"));
+            Assert.That(session.Combat.LastTacticalSummary, Does.Contain("플레이어 2 피해"));
+            Assert.That(session.Combat.LastTacticalSummary, Does.Contain("2 방어"));
+            Assert.That(session.Combat.LastTacticalSummary, Does.Contain("3 회복"));
+            Assert.That(session.Combat.LastTacticalSummary, Does.Contain("적 반격 2 피해"));
         }
 
         [Test]
@@ -637,6 +646,9 @@ namespace Conn.Tests.EditMode
             Assert.That(session.Player.Xp, Is.EqualTo(EncounterCatalog.Find(EncounterCatalog.TestGuardId).XpReward));
             Assert.That(session.Quest.TargetDefeated, Is.True);
             Assert.That(session.LastNotice, Does.Contain($"Gained {EncounterCatalog.Find(EncounterCatalog.TestGuardId).XpReward} XP"));
+            Assert.That(session.Combat.LastFeedbackKind, Is.EqualTo("victory"));
+            Assert.That(session.Combat.LastTacticalSummary, Does.Contain("승리"));
+            Assert.That(session.Combat.LastTacticalSummary, Does.Contain($"XP +{EncounterCatalog.Find(EncounterCatalog.TestGuardId).XpReward}"));
         }
 
         [Test]
