@@ -7,10 +7,12 @@ namespace Conn.Runtime.World
     public static class DungeonMapActorSpawner
     {
         public const string RootName = "Compiled Dungeon Map";
+        public const string ObjectiveMarkerRootName = "Objective Markers";
         private const float SmallAuthoredUnit = 0.28f;
         private const float SmallAuthoredUnitCutoff = 0.75f;
         private const float DefaultRuntimeCellSize = 2.4f;
         private const float DefaultRuntimeHeightStep = 0.8f;
+        private const float ObjectiveMarkerHeight = 1.45f;
 
         public static int SpawnFromCompiledMap(CompiledMap compiledMap, Transform parent = null)
         {
@@ -34,6 +36,7 @@ namespace Conn.Runtime.World
                 spawned++;
             }
 
+            SpawnObjectiveMarkers(compiledMap, root);
             return spawned;
         }
 
@@ -120,6 +123,68 @@ namespace Conn.Runtime.World
                 ?? TryFindPlacement(compiledMap, MapPlacementKind.Exit);
         }
 
+        public static int SpawnObjectiveMarkers(CompiledMap compiledMap, Transform root)
+        {
+            if (compiledMap == null || root == null)
+            {
+                return 0;
+            }
+
+            var markerRoot = new GameObject(ObjectiveMarkerRootName).transform;
+            markerRoot.SetParent(root, false);
+            var spawned = 0;
+            for (var i = 0; i < (compiledMap.Placements?.Count ?? 0); i++)
+            {
+                var placement = compiledMap.Placements[i];
+                if (!IsObjectiveMarkerPlacement(placement))
+                {
+                    continue;
+                }
+
+                CreateObjectiveMarker(markerRoot, compiledMap, placement);
+                spawned++;
+            }
+
+            return spawned;
+        }
+
+        public static string ObjectiveMarkerName(MapPlacement placement)
+        {
+            if (placement == null)
+            {
+                return "Objective Marker - Unknown";
+            }
+
+            return $"Objective Marker - {placement.Kind} {placement.X},{placement.Y}";
+        }
+
+        public static Color ObjectiveMarkerColor(MapPlacementKind kind)
+        {
+            switch (kind)
+            {
+                case MapPlacementKind.QuestTarget:
+                    return new Color(0.95f, 0.74f, 0.25f);
+                case MapPlacementKind.Boss:
+                    return new Color(0.82f, 0.22f, 0.16f);
+                case MapPlacementKind.Exit:
+                    return new Color(0.32f, 0.72f, 0.92f);
+                default:
+                    return new Color(0.72f, 0.72f, 0.72f);
+            }
+        }
+
+        public static Vector3 ObjectiveMarkerWorldPosition(CompiledMap compiledMap, MapPlacement placement)
+        {
+            if (compiledMap == null || placement == null)
+            {
+                return Vector3.up * ObjectiveMarkerHeight;
+            }
+
+            var cell = FindCell(compiledMap, placement.X, placement.Y);
+            var surfaceY = cell != null ? cell.Height * WorldHeightStep(compiledMap) : 0f;
+            return WorldPosition(compiledMap, placement.X, placement.Y, surfaceY + ObjectiveMarkerHeight);
+        }
+
         private static Transform RecreateRoot()
         {
             var existing = GameObject.Find(RootName);
@@ -144,6 +209,76 @@ namespace Conn.Runtime.World
             if (legacy != null)
             {
                 legacy.SetActive(false);
+            }
+        }
+
+        private static bool IsObjectiveMarkerPlacement(MapPlacement placement)
+        {
+            return placement != null
+                && (placement.Kind == MapPlacementKind.QuestTarget
+                    || placement.Kind == MapPlacementKind.Boss
+                    || placement.Kind == MapPlacementKind.Exit);
+        }
+
+        private static void CreateObjectiveMarker(Transform root, CompiledMap compiledMap, MapPlacement placement)
+        {
+            var marker = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            marker.name = ObjectiveMarkerName(placement);
+            marker.transform.SetParent(root, false);
+            marker.transform.position = ObjectiveMarkerWorldPosition(compiledMap, placement);
+            var cellSize = WorldCellSize(compiledMap);
+            marker.transform.localScale = new Vector3(cellSize * 0.16f, cellSize * 0.32f, cellSize * 0.16f);
+
+            var collider = marker.GetComponent<Collider>();
+            if (collider != null)
+            {
+                collider.enabled = false;
+            }
+
+            var renderer = marker.GetComponent<MeshRenderer>();
+            if (renderer != null)
+            {
+                renderer.sharedMaterial = ObjectiveMarkerMaterial(placement.Kind);
+            }
+
+            var light = marker.AddComponent<Light>();
+            light.type = LightType.Point;
+            light.color = ObjectiveMarkerColor(placement.Kind);
+            light.range = Mathf.Max(2.5f, cellSize * 1.6f);
+            light.intensity = 1.4f;
+
+            CreateObjectiveLabel(root, compiledMap, placement);
+        }
+
+        private static void CreateObjectiveLabel(Transform root, CompiledMap compiledMap, MapPlacement placement)
+        {
+            var label = new GameObject($"Objective Label - {placement.Kind} {placement.X},{placement.Y}");
+            label.transform.SetParent(root, false);
+            var position = ObjectiveMarkerWorldPosition(compiledMap, placement);
+            label.transform.position = position + Vector3.up * 0.9f;
+            label.transform.rotation = Quaternion.Euler(65f, 0f, 0f);
+
+            var text = label.AddComponent<TextMesh>();
+            text.text = ObjectiveMarkerLabel(placement.Kind);
+            text.anchor = TextAnchor.MiddleCenter;
+            text.alignment = TextAlignment.Center;
+            text.characterSize = 0.18f;
+            text.fontSize = 32;
+            text.color = ObjectiveMarkerColor(placement.Kind);
+        }
+
+        private static string ObjectiveMarkerLabel(MapPlacementKind kind)
+        {
+            switch (kind)
+            {
+                case MapPlacementKind.QuestTarget:
+                    return "QUEST";
+                case MapPlacementKind.Boss:
+                    return "BOSS";
+                case MapPlacementKind.Exit:
+                    return "EXIT";
+                default:
+                    return "GOAL";
             }
         }
 
@@ -234,6 +369,20 @@ namespace Conn.Runtime.World
                 if (placement != null && placement.Kind == kind)
                 {
                     return placement;
+                }
+            }
+
+            return null;
+        }
+
+        private static CompiledMapCell FindCell(CompiledMap compiledMap, int x, int y)
+        {
+            for (var i = 0; i < (compiledMap?.Cells?.Count ?? 0); i++)
+            {
+                var cell = compiledMap.Cells[i];
+                if (cell != null && cell.X == x && cell.Y == y)
+                {
+                    return cell;
                 }
             }
 
@@ -372,6 +521,16 @@ namespace Conn.Runtime.World
                 color = ColorFor(profileId, cell)
             };
             material.name = $"Dungeon Map {profileId} {cell.Terrain}";
+            return material;
+        }
+
+        private static Material ObjectiveMarkerMaterial(MapPlacementKind kind)
+        {
+            var material = new Material(Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard"))
+            {
+                color = ObjectiveMarkerColor(kind)
+            };
+            material.name = $"Dungeon Objective Marker {kind}";
             return material;
         }
 

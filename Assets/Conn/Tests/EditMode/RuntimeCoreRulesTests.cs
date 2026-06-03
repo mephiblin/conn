@@ -123,6 +123,52 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void DungeonRuntimeSpawnsReadableNonBlockingObjectiveMarkers()
+        {
+            var compiled = new CompiledMap
+            {
+                MapId = "objective_marker_test",
+                ProfileId = "twisted_temple",
+                Width = 5,
+                Height = 3,
+                CellSize = 0.28f,
+                HeightStep = 0.28f
+            };
+            for (var x = 0; x < 5; x++)
+            {
+                compiled.Cells.Add(new CompiledMapCell { X = x, Y = 1, Terrain = RoomChunkCellType.Floor, Height = x == 4 ? 1 : 0 });
+            }
+
+            compiled.Placements.Add(new MapPlacement { Kind = MapPlacementKind.Start, X = 0, Y = 1 });
+            compiled.Placements.Add(new MapPlacement { Kind = MapPlacementKind.QuestTarget, X = 2, Y = 1 });
+            compiled.Placements.Add(new MapPlacement { Kind = MapPlacementKind.Boss, X = 3, Y = 1 });
+            compiled.Placements.Add(new MapPlacement { Kind = MapPlacementKind.Exit, X = 4, Y = 1 });
+            compiled.Placements.Add(new MapPlacement { Kind = MapPlacementKind.Monster, X = 1, Y = 1 });
+
+            var parent = new GameObject("Objective Marker Runtime Test").transform;
+            try
+            {
+                Assert.That(DungeonMapActorSpawner.SpawnFromCompiledMap(compiled, parent), Is.EqualTo(5));
+                var markerRoot = parent.Find(DungeonMapActorSpawner.ObjectiveMarkerRootName);
+                Assert.That(markerRoot, Is.Not.Null);
+                Assert.That(markerRoot.childCount, Is.EqualTo(6));
+
+                AssertObjectiveMarker(markerRoot, compiled, MapPlacementKind.QuestTarget, 2, 1);
+                AssertObjectiveMarker(markerRoot, compiled, MapPlacementKind.Boss, 3, 1);
+                AssertObjectiveMarker(markerRoot, compiled, MapPlacementKind.Exit, 4, 1);
+                Assert.That(markerRoot.Find("Objective Marker - Start 0,1"), Is.Null);
+                Assert.That(markerRoot.Find("Objective Marker - Monster 1,1"), Is.Null);
+                Assert.That(
+                    DungeonMapActorSpawner.ObjectiveMarkerColor(MapPlacementKind.QuestTarget),
+                    Is.Not.EqualTo(DungeonMapActorSpawner.ObjectiveMarkerColor(MapPlacementKind.Boss)));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(parent.gameObject);
+            }
+        }
+
+        [Test]
         public void CombatStartsWithRouletteReelsSpinningUntilStop()
         {
             var session = new GameSessionState();
@@ -199,6 +245,28 @@ namespace Conn.Tests.EditMode
             Assert.That(collider, Is.Not.Null, $"{childName} must have a collider.");
             Assert.That(collider.enabled, Is.True, $"{childName} must be walkable by the CharacterController.");
             Assert.That(collider.bounds.size.y, Is.GreaterThanOrEqualTo(DungeonMapActorSpawner.WorldHeightStep(compiled) * 0.9f));
+        }
+
+        private static void AssertObjectiveMarker(
+            Transform markerRoot,
+            CompiledMap compiled,
+            MapPlacementKind kind,
+            int x,
+            int y)
+        {
+            var placement = new MapPlacement { Kind = kind, X = x, Y = y };
+            var marker = markerRoot.Find(DungeonMapActorSpawner.ObjectiveMarkerName(placement));
+            Assert.That(marker, Is.Not.Null);
+            Assert.That(marker.position, Is.EqualTo(DungeonMapActorSpawner.ObjectiveMarkerWorldPosition(compiled, placement)));
+
+            var collider = marker.GetComponent<Collider>();
+            Assert.That(collider, Is.Not.Null);
+            Assert.That(collider.enabled, Is.False);
+
+            var light = marker.GetComponent<Light>();
+            Assert.That(light, Is.Not.Null);
+            Assert.That(light.color, Is.EqualTo(DungeonMapActorSpawner.ObjectiveMarkerColor(kind)));
+            Assert.That(markerRoot.Find($"Objective Label - {kind} {x},{y}"), Is.Not.Null);
         }
 
         [Test]
