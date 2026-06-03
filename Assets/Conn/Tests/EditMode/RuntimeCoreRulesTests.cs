@@ -271,6 +271,14 @@ namespace Conn.Tests.EditMode
             Assert.That(
                 RuntimeCanvasUi.CombatFeedbackTextColor("exchange"),
                 Is.Not.EqualTo(RuntimeCanvasUi.CombatFeedbackTextColor("enemy")));
+
+            Assert.That(RuntimeCanvasUi.CombatFeedbackPulseScale("enemy"), Is.GreaterThan(RuntimeCanvasUi.CombatFeedbackPulseScale("ready")));
+            Assert.That(RuntimeCanvasUi.CombatFeedbackPulseScale("victory"), Is.GreaterThan(1f));
+            Assert.That(RuntimeCanvasUi.CombatFeedbackPulseScale(string.Empty), Is.EqualTo(1f));
+            Assert.That(RuntimeCanvasUi.CombatFeedbackAudioCue("exchange"), Is.EqualTo("combat_impact"));
+            Assert.That(RuntimeCanvasUi.CombatFeedbackAudioCue("enemy"), Is.EqualTo("combat_danger"));
+            Assert.That(RuntimeCanvasUi.CombatFeedbackAudioCue("victory"), Is.EqualTo("combat_victory"));
+            Assert.That(RuntimeCanvasUi.CombatFeedbackAudioCue(string.Empty), Is.EqualTo("ui_status"));
         }
 
         [Test]

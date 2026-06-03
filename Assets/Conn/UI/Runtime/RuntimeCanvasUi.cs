@@ -1777,6 +1777,32 @@ namespace Conn.UI.Runtime
             };
         }
 
+        public static float CombatFeedbackPulseScale(string feedbackKind)
+        {
+            return feedbackKind switch
+            {
+                "spin" => 1.025f,
+                "ready" => 1.015f,
+                "exchange" => 1.06f,
+                "enemy" => 1.08f,
+                "victory" => 1.07f,
+                _ => 1f
+            };
+        }
+
+        public static string CombatFeedbackAudioCue(string feedbackKind)
+        {
+            return feedbackKind switch
+            {
+                "spin" => "ui_reel_spin",
+                "ready" => "ui_ready",
+                "exchange" => "combat_impact",
+                "enemy" => "combat_danger",
+                "victory" => "combat_victory",
+                _ => "ui_status"
+            };
+        }
+
         public static string SkillDropSlotStateLabel(string selectedSkillId, string equippedSkillId)
         {
             var hasSelected = !string.IsNullOrWhiteSpace(selectedSkillId);
@@ -2649,6 +2675,7 @@ namespace Conn.UI.Runtime
             var image = obj.AddComponent<Image>();
             image.color = CombatFeedbackBackgroundColor(feedbackKind);
             image.raycastTarget = false;
+            obj.AddComponent<CombatFeedbackPulseAnimator>().Configure(image, feedbackKind);
 
             var layout = obj.AddComponent<VerticalLayoutGroup>();
             layout.padding = new RectOffset(8, 8, 6, 7);
@@ -3738,6 +3765,47 @@ namespace Conn.UI.Runtime
             }
 
             return !string.IsNullOrWhiteSpace(second) ? second : fallback;
+        }
+
+        private sealed class CombatFeedbackPulseAnimator : MonoBehaviour
+        {
+            private Image target;
+            private Color baseColor;
+            private float pulseScale = 1f;
+            private float phaseOffset;
+
+            public void Configure(Image targetImage, string feedbackKind)
+            {
+                target = targetImage;
+                baseColor = targetImage != null ? targetImage.color : Color.white;
+                pulseScale = CombatFeedbackPulseScale(feedbackKind);
+                phaseOffset = feedbackKind != null ? Mathf.Abs(feedbackKind.GetHashCode() % 1000) * 0.01f : 0f;
+                ApplyPulse(0f);
+            }
+
+            private void Update()
+            {
+                if (pulseScale <= 1f)
+                {
+                    return;
+                }
+
+                var wave = Mathf.Sin(Time.unscaledTime * 7.5f + phaseOffset) * 0.5f + 0.5f;
+                ApplyPulse(wave);
+            }
+
+            private void ApplyPulse(float wave)
+            {
+                transform.localScale = Vector3.one * Mathf.Lerp(1f, pulseScale, wave);
+                if (target == null)
+                {
+                    return;
+                }
+
+                var color = baseColor;
+                color.a = baseColor.a * Mathf.Lerp(0.88f, 1f, wave);
+                target.color = color;
+            }
         }
 
         private sealed class CombatReelSpinAnimator : MonoBehaviour
