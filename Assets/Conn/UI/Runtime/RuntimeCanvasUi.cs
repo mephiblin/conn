@@ -1737,6 +1737,45 @@ namespace Conn.UI.Runtime
             };
         }
 
+        public static string CombatFeedbackBadgeLabel(string feedbackKind)
+        {
+            return feedbackKind switch
+            {
+                "spin" => "SPIN",
+                "ready" => "READY",
+                "exchange" => "IMPACT",
+                "enemy" => "DANGER",
+                "victory" => "VICTORY",
+                _ => "STATUS"
+            };
+        }
+
+        public static Color CombatFeedbackBackgroundColor(string feedbackKind)
+        {
+            return feedbackKind switch
+            {
+                "spin" => new Color(0.10f, 0.14f, 0.20f, 0.92f),
+                "ready" => new Color(0.13f, 0.17f, 0.13f, 0.94f),
+                "exchange" => new Color(0.22f, 0.13f, 0.10f, 0.95f),
+                "enemy" => new Color(0.26f, 0.08f, 0.08f, 0.96f),
+                "victory" => new Color(0.22f, 0.18f, 0.08f, 0.96f),
+                _ => new Color(0.10f, 0.11f, 0.13f, 0.9f)
+            };
+        }
+
+        public static Color CombatFeedbackTextColor(string feedbackKind)
+        {
+            return feedbackKind switch
+            {
+                "spin" => new Color(0.72f, 0.86f, 1f),
+                "ready" => new Color(0.78f, 1f, 0.74f),
+                "exchange" => new Color(1f, 0.82f, 0.62f),
+                "enemy" => new Color(1f, 0.58f, 0.54f),
+                "victory" => new Color(1f, 0.92f, 0.56f),
+                _ => Color.white
+            };
+        }
+
         public static string SkillDropSlotStateLabel(string selectedSkillId, string equippedSkillId)
         {
             var hasSelected = !string.IsNullOrWhiteSpace(selectedSkillId);
@@ -2395,7 +2434,7 @@ namespace Conn.UI.Runtime
 
             var command = Panel("CombatCommandPanel");
             BuildPanel(command, $"Round {session.Combat.Round} · 주사위 릴", false);
-            AddText(command, CombatTacticalSummary(session), 16, FontStyle.Bold);
+            AddCombatFeedbackBanner(command, session.Combat.LastFeedbackKind, CombatTacticalSummary(session));
             AddText(command, session.Equipment.CombatLoadoutSummary(), 12);
             AddText(
                 command,
@@ -2445,7 +2484,7 @@ namespace Conn.UI.Runtime
 
             var command = Panel("CombatCommandPanel");
             BuildPanel(command, "Victory", false);
-            AddText(command, CombatTacticalSummary(session), 16, FontStyle.Bold);
+            AddCombatFeedbackBanner(command, session.Combat.LastFeedbackKind, CombatTacticalSummary(session));
             AddText(command, string.IsNullOrWhiteSpace(session.Combat.LastMessage) ? session.LastNotice : session.Combat.LastMessage, 12);
             var row = AddHorizontalGroup(command, 10f);
             AddButton(row, "Keep Exploring", () =>
@@ -2586,6 +2625,34 @@ namespace Conn.UI.Runtime
             var layout = obj.AddComponent<LayoutElement>();
             layout.minHeight = Mathf.Max(22f, size + 8f);
             return textComponent;
+        }
+
+        private void AddCombatFeedbackBanner(Transform parent, string feedbackKind, string summary)
+        {
+            var obj = new GameObject("CombatFeedbackBanner");
+            obj.transform.SetParent(ContentParent(parent), false);
+            var image = obj.AddComponent<Image>();
+            image.color = CombatFeedbackBackgroundColor(feedbackKind);
+            image.raycastTarget = false;
+
+            var layout = obj.AddComponent<VerticalLayoutGroup>();
+            layout.padding = new RectOffset(8, 8, 6, 7);
+            layout.spacing = 2f;
+            layout.childControlWidth = true;
+            layout.childControlHeight = true;
+            layout.childForceExpandWidth = true;
+            layout.childForceExpandHeight = false;
+
+            var element = obj.AddComponent<LayoutElement>();
+            element.minHeight = 54f;
+            element.preferredHeight = 58f;
+
+            AddTextRaw(
+                obj.transform,
+                $"{CombatFeedbackBadgeLabel(feedbackKind)} · {summary}",
+                16,
+                FontStyle.Bold,
+                CombatFeedbackTextColor(feedbackKind));
         }
 
         private void AddCombatCgImage(Transform parent, Sprite sprite, float minHeight)

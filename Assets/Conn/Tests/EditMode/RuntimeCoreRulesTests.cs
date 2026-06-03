@@ -253,6 +253,27 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void CombatFeedbackKindsExposeDistinctImpactBadgesAndColors()
+        {
+            Assert.That(RuntimeCanvasUi.CombatFeedbackBadgeLabel("spin"), Is.EqualTo("SPIN"));
+            Assert.That(RuntimeCanvasUi.CombatFeedbackBadgeLabel("ready"), Is.EqualTo("READY"));
+            Assert.That(RuntimeCanvasUi.CombatFeedbackBadgeLabel("exchange"), Is.EqualTo("IMPACT"));
+            Assert.That(RuntimeCanvasUi.CombatFeedbackBadgeLabel("enemy"), Is.EqualTo("DANGER"));
+            Assert.That(RuntimeCanvasUi.CombatFeedbackBadgeLabel("victory"), Is.EqualTo("VICTORY"));
+            Assert.That(RuntimeCanvasUi.CombatFeedbackBadgeLabel(string.Empty), Is.EqualTo("STATUS"));
+
+            Assert.That(
+                RuntimeCanvasUi.CombatFeedbackBackgroundColor("exchange"),
+                Is.Not.EqualTo(RuntimeCanvasUi.CombatFeedbackBackgroundColor("enemy")));
+            Assert.That(
+                RuntimeCanvasUi.CombatFeedbackBackgroundColor("victory"),
+                Is.Not.EqualTo(RuntimeCanvasUi.CombatFeedbackBackgroundColor("ready")));
+            Assert.That(
+                RuntimeCanvasUi.CombatFeedbackTextColor("exchange"),
+                Is.Not.EqualTo(RuntimeCanvasUi.CombatFeedbackTextColor("enemy")));
+        }
+
+        [Test]
         public void ArmorPiecesEquipIntoDocumentedSlots()
         {
             var equipment = new PlayerEquipmentState();
