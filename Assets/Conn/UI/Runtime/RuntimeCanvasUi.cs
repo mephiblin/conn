@@ -1682,6 +1682,7 @@ namespace Conn.UI.Runtime
             BuildPanel(panel, "Inventory", true);
 
             AddText(panel, $"Loadout: {session.Equipment.WeaponGrip}  Dice {session.Equipment.DiceCount}  Def {session.Equipment.DefenseBonus}", 14, FontStyle.Bold);
+            AddText(panel, session.Equipment.CombatLoadoutSummary(), 13);
             var equipmentRow = AddHorizontalGroup(panel, 14f);
             var bagColumn = AddInventoryColumn(equipmentRow, "Inventory 20");
             DrawEquipmentBagGrid(bagColumn, session);
@@ -1700,6 +1701,7 @@ namespace Conn.UI.Runtime
             var panel = Panel("TownSkillLoadoutPanel");
             BuildPanel(panel, "Skill Dice", true);
             session.Skills.EnsureDiceFaceLoadout(session.Equipment.DiceCount);
+            AddText(panel, session.Equipment.CombatLoadoutSummary(), 13);
             AddSkillLoadoutStatus(panel, session);
 
             var skillRow = AddHorizontalGroup(panel, 14f);
@@ -1961,6 +1963,7 @@ namespace Conn.UI.Runtime
             var command = Panel("CombatCommandPanel");
             BuildPanel(command, $"Round {session.Combat.Round} · 주사위 릴", false);
             AddText(command, CombatTacticalSummary(session), 16, FontStyle.Bold);
+            AddText(command, session.Equipment.CombatLoadoutSummary(), 12);
             AddText(
                 command,
                 session.Combat.ReelSpinActive

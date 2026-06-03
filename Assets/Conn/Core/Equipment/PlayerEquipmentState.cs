@@ -1,5 +1,6 @@
 namespace Conn.Core.Equipment
 {
+    using Conn.Core.Skills;
     using System;
 
     [System.Serializable]
@@ -58,6 +59,34 @@ namespace Conn.Core.Equipment
             + ArmorValueFor(EquippedFeetId);
 
         public int DefenseBonus => (WeaponGrip == WeaponGrip.OneHandAndShield ? 1 : 0) + ArmorValue;
+
+        public int SkillPowerBonusFor(SkillEffectKind effectKind)
+        {
+            return WeaponGrip switch
+            {
+                WeaponGrip.TwoHand when effectKind == SkillEffectKind.Attack
+                    || effectKind == SkillEffectKind.Debuff
+                    || effectKind == SkillEffectKind.Lifesteal => 1,
+                WeaponGrip.OneHandAndShield when effectKind == SkillEffectKind.Guard
+                    || effectKind == SkillEffectKind.Support
+                    || effectKind == SkillEffectKind.Buff => 1,
+                WeaponGrip.OneHand when effectKind == SkillEffectKind.Heal
+                    || effectKind == SkillEffectKind.Support
+                    || effectKind == SkillEffectKind.Buff => 1,
+                _ => 0
+            };
+        }
+
+        public string CombatLoadoutSummary()
+        {
+            return WeaponGrip switch
+            {
+                WeaponGrip.TwoHand => "Two-hand: attack, debuff, and lifesteal faces gain +1 power.",
+                WeaponGrip.OneHandAndShield => "Shield: guard, support, and buff faces gain +1 power.",
+                WeaponGrip.OneHand => "One-hand: heal, support, and buff faces gain +1 power.",
+                _ => "Unarmed: no loadout power bonus."
+            };
+        }
 
         public bool IsEquipped(string itemId)
         {

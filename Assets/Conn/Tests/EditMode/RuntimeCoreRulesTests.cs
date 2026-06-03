@@ -415,15 +415,16 @@ namespace Conn.Tests.EditMode
             CombatRuntimeService.ResolveSelectedDice(session);
 
             Assert.That(session.Combat.Enemy.Hp, Is.EqualTo(10));
-            Assert.That(session.Player.Hp, Is.EqualTo(17));
-            Assert.That(session.Combat.Player.Hp, Is.EqualTo(17));
+            Assert.That(session.Player.Hp, Is.EqualTo(18));
+            Assert.That(session.Combat.Player.Hp, Is.EqualTo(18));
             Assert.That(session.Combat.Round, Is.EqualTo(2));
             Assert.That(session.Combat.DiceFaces[0].Cooldown, Is.EqualTo(0));
             Assert.That(session.Combat.DiceResultCooldowns, Has.Count.EqualTo(3));
             Assert.That(session.Combat.DiceResultCooldowns[0].RemainingTurns, Is.EqualTo(1));
             Assert.That(session.Combat.LastMessage, Does.Contain("2 damage"));
             Assert.That(session.Combat.LastMessage, Does.Contain("2 guard"));
-            Assert.That(session.Combat.LastMessage, Does.Contain("3 heal"));
+            Assert.That(session.Combat.LastMessage, Does.Contain("4 heal"));
+            Assert.That(session.Combat.LastMessage, Does.Contain("loadout +1"));
             Assert.That(session.Combat.LastMessage, Does.Contain("Die 1 1 Slash"));
             Assert.That(session.Combat.LastMessage, Does.Contain("Test Gate Guard uses Halberd thrust for 2 damage"));
             Assert.That(session.Combat.LastMessage, Does.Contain("4 power"));
@@ -431,8 +432,9 @@ namespace Conn.Tests.EditMode
             Assert.That(session.Combat.LastFeedbackKind, Is.EqualTo("exchange"));
             Assert.That(session.Combat.LastTacticalSummary, Does.Contain("플레이어 2 피해"));
             Assert.That(session.Combat.LastTacticalSummary, Does.Contain("2 방어"));
-            Assert.That(session.Combat.LastTacticalSummary, Does.Contain("3 회복"));
+            Assert.That(session.Combat.LastTacticalSummary, Does.Contain("4 회복"));
             Assert.That(session.Combat.LastTacticalSummary, Does.Contain("적 반격 2 피해"));
+            Assert.That(session.Combat.LastTacticalSummary, Does.Contain("장비보정 +1"));
         }
 
         [Test]
@@ -553,6 +555,42 @@ namespace Conn.Tests.EditMode
             Assert.That(session.Combat.LastMessage, Does.Contain("Test Gate Guard uses Halberd thrust"));
             Assert.That(session.Combat.LastMessage, Does.Contain("4 power"));
             Assert.That(session.Combat.LastMessage, Does.Contain("2 blocked"));
+        }
+
+        [Test]
+        public void EquipmentGripAddsSkillPowerSynergyInCombat()
+        {
+            var twoHandSession = new GameSessionState();
+            twoHandSession.StartNewGame();
+            twoHandSession.Inventory.AddItem(EquipmentCatalog.GreatAxeId);
+            Assert.That(EquipmentRuntimeService.TryEquip(twoHandSession, EquipmentCatalog.GreatAxeId), Is.True);
+            Assert.That(twoHandSession.Equipment.CombatLoadoutSummary(), Does.Contain("attack"));
+
+            StartReadyCombat(twoHandSession);
+            SetReadyFace(twoHandSession, 0, SkillCatalog.SlashId, 1);
+            CombatRuntimeService.ToggleDieSelection(twoHandSession, 0);
+            CombatRuntimeService.ResolveSelectedDice(twoHandSession);
+
+            Assert.That(twoHandSession.Combat.Enemy.Hp, Is.EqualTo(9));
+            Assert.That(twoHandSession.Combat.LastMessage, Does.Contain("loadout +1"));
+            Assert.That(twoHandSession.Combat.LastTacticalSummary, Does.Contain("플레이어 3 피해"));
+
+            var shieldSession = new GameSessionState();
+            shieldSession.StartNewGame();
+            shieldSession.Inventory.AddItem(EquipmentCatalog.IronShieldId);
+            Assert.That(EquipmentRuntimeService.TryEquip(shieldSession, EquipmentCatalog.IronShieldId), Is.True);
+            shieldSession.Skills.AddSkill(SkillCatalog.GuardId);
+            shieldSession.Skills.EquippedSkillIds[0] = SkillCatalog.GuardId;
+            Assert.That(shieldSession.Equipment.CombatLoadoutSummary(), Does.Contain("guard"));
+
+            StartReadyCombat(shieldSession);
+            SetReadyFace(shieldSession, 0, SkillCatalog.GuardId, 0);
+            CombatRuntimeService.ToggleDieSelection(shieldSession, 0);
+            CombatRuntimeService.ResolveSelectedDice(shieldSession);
+
+            Assert.That(shieldSession.Combat.LastMessage, Does.Contain("3 guard"));
+            Assert.That(shieldSession.Combat.LastMessage, Does.Contain("loadout +1"));
+            Assert.That(shieldSession.Combat.LastTacticalSummary, Does.Contain("3 방어"));
         }
 
         [Test]

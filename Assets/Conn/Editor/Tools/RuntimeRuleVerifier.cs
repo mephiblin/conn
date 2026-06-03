@@ -1148,13 +1148,14 @@ namespace Conn.Editor.Tools
             CombatRuntimeService.ResolveSelectedDice(session);
 
             Expect(session.Combat.Enemy.Hp == 10, "Slash must deal 2 damage to the test monster.");
-            Expect(session.Player.Hp == 17, "Guard and Mend result must leave player at 17 HP.");
-            Expect(session.Combat.Player.Hp == 17, "Combat player HP must sync with persistent player HP.");
+            Expect(session.Player.Hp == 18, "One-hand Mend loadout bonus must leave player at 18 HP.");
+            Expect(session.Combat.Player.Hp == 18, "Combat player HP must sync with persistent player HP.");
             Expect(session.Combat.Round == 2, "Resolving a non-lethal turn must advance the combat round.");
             Expect(session.Combat.DiceFaces[0].Cooldown == 1, "Resolved dice must enter cooldown then tick to 1.");
             Expect(session.Combat.LastMessage.Contains("2 damage"), "Combat message must report damage.");
             Expect(session.Combat.LastMessage.Contains("2 guard"), "Combat message must report guard.");
-            Expect(session.Combat.LastMessage.Contains("3 heal"), "Combat message must report healing.");
+            Expect(session.Combat.LastMessage.Contains("4 heal"), "Combat message must report one-hand healing bonus.");
+            Expect(session.Combat.LastMessage.Contains("loadout +1"), "Combat message must report loadout power bonus.");
             Expect(session.Combat.LastMessage.Contains("Test Gate Guard uses Halberd thrust for 2 damage"), "Combat message must report enemy action and reduced damage.");
             Expect(session.Combat.LastMessage.Contains("4 power"), "Combat message must report enemy action power.");
             Expect(session.Combat.LastMessage.Contains("2 blocked"), "Combat message must report blocked enemy damage.");

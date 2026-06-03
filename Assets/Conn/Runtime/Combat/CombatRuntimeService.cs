@@ -96,6 +96,7 @@ namespace Conn.Runtime.Combat
             var guard = 0;
             var healing = 0;
             var appliedBleed = false;
+            var totalLoadoutBonus = 0;
             var selectedFaces = new StringBuilder();
             for (var i = 0; i < session.Combat.DiceFaces.Count; i++)
             {
@@ -108,11 +109,18 @@ namespace Conn.Runtime.Combat
                     }
 
                     var adjustedPower = AdjustPowerForEnemySpecies(face, session.Combat.EnemySpecies);
-                    var resolvedAmount = face.RolledValue + adjustedPower;
+                    var loadoutBonus = session.Equipment.SkillPowerBonusFor(face.EffectKind);
+                    totalLoadoutBonus += loadoutBonus;
+                    var resolvedAmount = face.RolledValue + adjustedPower + loadoutBonus;
                     selectedFaces.Append($"Die {face.Index + 1} {face.RolledValue} {face.DisplayName} ({face.EffectKind} +{face.Power}");
                     if (adjustedPower != face.Power)
                     {
                         selectedFaces.Append($" -> +{adjustedPower} vs {session.Combat.EnemySpecies}");
+                    }
+
+                    if (loadoutBonus > 0)
+                    {
+                        selectedFaces.Append($" / loadout +{loadoutBonus}");
                     }
 
                     selectedFaces.Append(')');
@@ -161,7 +169,7 @@ namespace Conn.Runtime.Combat
 
             session.Combat.Enemy.Damage(attack);
             session.Combat.LastMessage = $"Resolved {selected} face(s): {selectedFaces}. Result: {attack} damage, {guard} guard, {healing} heal.";
-            var playerImpactSummary = CombatImpactSummary(attack, guard, healing, appliedBleed);
+            var playerImpactSummary = CombatImpactSummary(attack, guard, healing, appliedBleed, totalLoadoutBonus);
             if (appliedBleed)
             {
                 session.Combat.Enemy.AddOrRefreshStatus(CombatStatusEffectKind.Bleed, 2, 1);
@@ -717,7 +725,7 @@ namespace Conn.Runtime.Combat
             }
         }
 
-        private static string CombatImpactSummary(int attack, int guard, int healing, bool appliedBleed)
+        private static string CombatImpactSummary(int attack, int guard, int healing, bool appliedBleed, int totalLoadoutBonus)
         {
             var builder = new StringBuilder($"플레이어 {attack} 피해");
             if (guard > 0)
@@ -733,6 +741,11 @@ namespace Conn.Runtime.Combat
             if (appliedBleed)
             {
                 builder.Append(" / 출혈");
+            }
+
+            if (totalLoadoutBonus > 0)
+            {
+                builder.Append($" / 장비보정 +{totalLoadoutBonus}");
             }
 
             return builder.ToString();
