@@ -13,6 +13,7 @@ using Conn.Runtime.Session;
 using Conn.Runtime.Skills;
 using Conn.Runtime.World;
 using NUnit.Framework;
+using UnityEngine;
 
 namespace Conn.Tests.EditMode
 {
@@ -61,6 +62,38 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void DungeonRuntimeSpawnsHeightTransitionsWithWalkableCollision()
+        {
+            var compiled = new CompiledMap
+            {
+                MapId = "height_transition_test",
+                ProfileId = "twisted_temple",
+                Width = 5,
+                Height = 1,
+                CellSize = 0.28f,
+                HeightStep = 0.28f
+            };
+            compiled.Cells.Add(new CompiledMapCell { X = 0, Y = 0, Terrain = RoomChunkCellType.Floor, Height = 0, Direction = MapDirection.East });
+            compiled.Cells.Add(new CompiledMapCell { X = 1, Y = 0, Terrain = RoomChunkCellType.Slope, Height = 0, Direction = MapDirection.East });
+            compiled.Cells.Add(new CompiledMapCell { X = 2, Y = 0, Terrain = RoomChunkCellType.Floor, Height = 1, Direction = MapDirection.East });
+            compiled.Cells.Add(new CompiledMapCell { X = 3, Y = 0, Terrain = RoomChunkCellType.Stair, Height = 1, Direction = MapDirection.East });
+            compiled.Cells.Add(new CompiledMapCell { X = 4, Y = 0, Terrain = RoomChunkCellType.Floor, Height = 2, Direction = MapDirection.East });
+
+            var parent = new GameObject("Height Transition Runtime Test").transform;
+            try
+            {
+                Assert.That(DungeonMapActorSpawner.SpawnFromCompiledMap(compiled, parent), Is.EqualTo(5));
+
+                AssertHeightTransitionCollider(parent, "Map Cell - Slope 1,0", compiled);
+                AssertHeightTransitionCollider(parent, "Map Cell - Stair 3,0", compiled);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(parent.gameObject);
+            }
+        }
+
+        [Test]
         public void ArmorPiecesEquipIntoDocumentedSlots()
         {
             var equipment = new PlayerEquipmentState();
@@ -79,6 +112,18 @@ namespace Conn.Tests.EditMode
             Assert.That(equipment.IsEquipped(EquipmentCatalog.PaddedVestId), Is.True);
             Assert.That(equipment.ArmorValue, Is.EqualTo(6));
             Assert.That(equipment.DefenseBonus, Is.EqualTo(6));
+        }
+
+        private static void AssertHeightTransitionCollider(Transform parent, string childName, CompiledMap compiled)
+        {
+            var child = parent.Find(childName);
+            Assert.That(child, Is.Not.Null, $"{childName} must be spawned.");
+            Assert.That(child.GetComponent<MeshFilter>(), Is.Not.Null, $"{childName} must use a shaped mesh, not a flat primitive cube.");
+
+            var collider = child.GetComponent<Collider>();
+            Assert.That(collider, Is.Not.Null, $"{childName} must have a collider.");
+            Assert.That(collider.enabled, Is.True, $"{childName} must be walkable by the CharacterController.");
+            Assert.That(collider.bounds.size.y, Is.GreaterThanOrEqualTo(DungeonMapActorSpawner.WorldHeightStep(compiled) * 0.9f));
         }
 
         [Test]

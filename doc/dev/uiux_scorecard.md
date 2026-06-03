@@ -1,6 +1,6 @@
 # UI/UX Scorecard
 
-Last updated: 2026-06-01
+Last updated: 2026-06-03
 
 ## 기준
 
@@ -41,7 +41,7 @@ Last updated: 2026-06-01
 | 장착 장비가 인벤토리 칸에 남음 | 1.0 | 9.0 | 장착 중인 장비는 짐칸 목록에서 제외되고 장착칸에만 표시됨. |
 | NPC 상호작용 프롬프트가 UI를 뚫고 나옴 | 1.0 | 8.5 | 인벤토리/스킬창이 열렸을 때 프롬프트/알림이 덮지 않고 패널 레이어가 재정렬됨. |
 | NPC 상점 패널이 CG 영역을 침범함 | 1.0 | 8.0 | 상점 UI가 좌측으로 정렬되고 우측 NPC/배경 감상 영역을 남김. Close 위치는 헤더 우측으로 유지. |
-| 뒤틀린 사원 시작점 근처 공중 공간 | 1.0 | 7.0 | 프로토타입 기준 1층 고정 또는 정상 경사로 구현으로 떠 있는 천장/공중판이 보이지 않음. |
+| 뒤틀린 사원 시작점 근처 공중 공간 | 1.0 | 9.0 | 전용 compiled map의 전이 구간을 1층 평면 Floor로 고정해 현재 플레이어 컨트롤러 기준 콜라이더 없는 경사/계단 셀을 제거함. |
 | 인벤토리/스킬창 닫은 뒤 커서가 남음 | 1.0 | 9.5 | 모든 보조 패널을 닫으면 수동 커서 해제 상태가 정리되고 FPS 화면 고정으로 복귀. |
 
 ### 2026-05-31 스크린샷 루프 1
@@ -78,6 +78,21 @@ Last updated: 2026-06-01
 - 검증:
   - `RuntimeCoreRulesTests`: 43/43 통과
   - `GameFlowPlaytestTests`: 9/9 통과
+
+### 2026-06-03 뒤틀린 사원 연결성 루프
+
+- 적용:
+  - `twisted_temple_2001_CompiledMap`의 `main_2` 전이 구간에서 현재 런타임이 콜라이더를 만들지 않는 `Slope`/`Stair` 셀을 `Floor`로 전환함.
+  - 같은 전이 구간의 높이 1-2 walkable 셀과 spawn hint 오브젝트를 높이 0으로 평탄화해 시작점에서 퀘스트/보스/출구까지 1층 바닥으로 이어지게 함.
+  - `GameFlowPlaytestTests`에 뒤틀린 사원 전용 flat floor route 회귀 테스트를 추가함.
+  - 런타임 맵 스폰에서 `Slope`/`Stair` 셀이 다시 들어와도 비활성 콜라이더가 되지 않도록 경사 메쉬와 `MeshCollider`를 생성하게 보강함.
+  - `RuntimeCoreRulesTests`에 높이 전이 셀이 walkable collision으로 스폰되는 회귀 테스트를 추가함.
+- 점수 변경:
+  - 뒤틀린 사원 시작점 근처 공중 공간: 7.0 -> 9.0
+- 검증:
+  - 로컬 parser/BFS 확인: start -> quest target -> boss -> exit flat floor route 통과.
+  - `git diff --check` 통과.
+  - Unity `RuntimeCoreRulesTests`/`GameFlowPlaytestTests` batchmode 실행은 같은 프로젝트를 열고 있는 다른 Unity 인스턴스 때문에 차단됨.
 
 ### 2026-05-31 기준점
 

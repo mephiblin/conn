@@ -100,6 +100,12 @@ namespace Conn.Runtime.World
 
         private static void CreateCellActor(Transform root, CompiledMap compiledMap, CompiledMapCell cell)
         {
+            if (cell.Terrain == RoomChunkCellType.Slope || cell.Terrain == RoomChunkCellType.Stair)
+            {
+                CreateHeightTransitionActor(root, compiledMap, cell);
+                return;
+            }
+
             var actor = GameObject.CreatePrimitive(PrimitiveType.Cube);
             actor.name = $"Map Cell - {cell.Terrain} {cell.X},{cell.Y}";
             actor.transform.SetParent(root, false);
@@ -115,8 +121,25 @@ namespace Conn.Runtime.World
             var collider = actor.GetComponent<Collider>();
             if (collider != null)
             {
-                collider.enabled = cell.Terrain != RoomChunkCellType.Slope;
+                collider.enabled = true;
             }
+        }
+
+        private static void CreateHeightTransitionActor(Transform root, CompiledMap compiledMap, CompiledMapCell cell)
+        {
+            var actor = new GameObject($"Map Cell - {cell.Terrain} {cell.X},{cell.Y}");
+            actor.transform.SetParent(root, false);
+            actor.transform.position = WorldPosition(compiledMap, cell.X, cell.Y, 0f);
+
+            var mesh = BuildHeightTransitionMesh(compiledMap, cell);
+            var meshFilter = actor.AddComponent<MeshFilter>();
+            meshFilter.sharedMesh = mesh;
+
+            var renderer = actor.AddComponent<MeshRenderer>();
+            renderer.sharedMaterial = MaterialFor(compiledMap.ProfileId, cell);
+
+            var collider = actor.AddComponent<MeshCollider>();
+            collider.sharedMesh = mesh;
         }
 
         public static float WorldCellSize(CompiledMap compiledMap)
@@ -175,6 +198,86 @@ namespace Conn.Runtime.World
             }
 
             return new Vector3(cellSize, 0.1f, cellSize);
+        }
+
+        private static Mesh BuildHeightTransitionMesh(CompiledMap compiledMap, CompiledMapCell cell)
+        {
+            var cellSize = WorldCellSize(compiledMap);
+            var heightStep = WorldHeightStep(compiledMap);
+            var half = cellSize * 0.5f;
+            var low = cell.Height * heightStep;
+            var high = low + heightStep;
+            var thickness = Mathf.Max(0.05f, Mathf.Min(cellSize, heightStep) * 0.08f);
+
+            var west = low;
+            var east = low;
+            var north = low;
+            var south = low;
+            switch (NormalizeDirection(cell.Direction))
+            {
+                case MapDirection.East:
+                    east = high;
+                    break;
+                case MapDirection.West:
+                    west = high;
+                    break;
+                case MapDirection.North:
+                    north = high;
+                    break;
+                case MapDirection.South:
+                    south = high;
+                    break;
+            }
+
+            var topWestSouth = Mathf.Max(west, south);
+            var topEastSouth = Mathf.Max(east, south);
+            var topEastNorth = Mathf.Max(east, north);
+            var topWestNorth = Mathf.Max(west, north);
+
+            var vertices = new[]
+            {
+                new Vector3(-half, topWestSouth, -half),
+                new Vector3(half, topEastSouth, -half),
+                new Vector3(half, topEastNorth, half),
+                new Vector3(-half, topWestNorth, half),
+                new Vector3(-half, topWestSouth - thickness, -half),
+                new Vector3(half, topEastSouth - thickness, -half),
+                new Vector3(half, topEastNorth - thickness, half),
+                new Vector3(-half, topWestNorth - thickness, half)
+            };
+
+            var triangles = new[]
+            {
+                0, 2, 1, 0, 3, 2,
+                4, 5, 6, 4, 6, 7,
+                0, 1, 5, 0, 5, 4,
+                1, 2, 6, 1, 6, 5,
+                2, 3, 7, 2, 7, 6,
+                3, 0, 4, 3, 4, 7
+            };
+
+            var mesh = new Mesh
+            {
+                name = $"Runtime {cell.Terrain} {cell.X},{cell.Y}"
+            };
+            mesh.vertices = vertices;
+            mesh.triangles = triangles;
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            return mesh;
+        }
+
+        private static MapDirection NormalizeDirection(MapDirection direction)
+        {
+            if (direction == MapDirection.North
+                || direction == MapDirection.East
+                || direction == MapDirection.South
+                || direction == MapDirection.West)
+            {
+                return direction;
+            }
+
+            return MapDirection.East;
         }
 
         private static float NormalizeCellUnit(float authoredUnit)

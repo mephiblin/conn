@@ -11108,7 +11108,7 @@ MonoBehaviour:
     \"WallVariantId\": \"\",\n            \"Flags\": 0\n        },\n        {\n
     \"X\": 29,\n            \"Y\": 24,\n            \"RoomId\": \"main_2\",\n
     \"ZoneId\": \"twisted_temple_zone_f1_d0\",\n            \"Terrain\": 0,\n
-    \"Height\": 1,\n            \"Direction\": 1,\n            \"MaterialId\": \"transition_floor\",\n
+    \"Height\": 0,\n            \"Direction\": 1,\n            \"MaterialId\": \"transition_floor\",\n
     \"FloorVariantId\": \"\",\n            \"WallVariantId\": \"\",\n
     \"Flags\": 0\n        },\n        {\n            \"X\": 30,\n            \"Y\":
     24,\n            \"RoomId\": \"main_2\",\n            \"ZoneId\": \"twisted_temple_zone_f1_d0\",\n
@@ -11117,7 +11117,7 @@ MonoBehaviour:
     \"WallVariantId\": \"\",\n            \"Flags\": 0\n        },\n        {\n
     \"X\": 31,\n            \"Y\": 24,\n            \"RoomId\": \"main_2\",\n
     \"ZoneId\": \"twisted_temple_zone_f1_d0\",\n            \"Terrain\": 0,\n
-    \"Height\": 2,\n            \"Direction\": 1,\n            \"MaterialId\": \"transition_floor\",\n
+    \"Height\": 0,\n            \"Direction\": 1,\n            \"MaterialId\": \"transition_floor\",\n
     \"FloorVariantId\": \"\",\n            \"WallVariantId\": \"\",\n
     \"Flags\": 0\n        },\n        {\n            \"X\": 32,\n            \"Y\":
     24,\n            \"RoomId\": \"main_2\",\n            \"ZoneId\": \"twisted_temple_zone_f1_d0\",\n
@@ -11589,43 +11589,43 @@ MonoBehaviour:
     \"FloorVariantId\": \"\",\n            \"WallVariantId\": \"\",\n
     \"Flags\": 0\n        },\n        {\n            \"X\": 28,\n            \"Y\":
     25,\n            \"RoomId\": \"main_2\",\n            \"ZoneId\": \"twisted_temple_zone_f1_d0\",\n
-    \"Terrain\": 2,\n            \"Height\": 0,\n            \"Direction\": 2,\n
+    \"Terrain\": 0,\n            \"Height\": 0,\n            \"Direction\": 2,\n
     \"MaterialId\": \"transition_floor\",\n            \"FloorVariantId\": \"\",\n
     \"WallVariantId\": \"\",\n            \"Flags\": 0\n        },\n        {\n
     \"X\": 29,\n            \"Y\": 25,\n            \"RoomId\": \"main_2\",\n
     \"ZoneId\": \"twisted_temple_zone_f1_d0\",\n            \"Terrain\": 0,\n
-    \"Height\": 1,\n            \"Direction\": 1,\n            \"MaterialId\": \"transition_floor\",\n
+    \"Height\": 0,\n            \"Direction\": 1,\n            \"MaterialId\": \"transition_floor\",\n
     \"FloorVariantId\": \"\",\n            \"WallVariantId\": \"\",\n
     \"Flags\": 0\n        },\n        {\n            \"X\": 30,\n            \"Y\":
     25,\n            \"RoomId\": \"main_2\",\n            \"ZoneId\": \"twisted_temple_zone_f1_d0\",\n
-    \"Terrain\": 3,\n            \"Height\": 1,\n            \"Direction\": 2,\n
+    \"Terrain\": 0,\n            \"Height\": 0,\n            \"Direction\": 2,\n
     \"MaterialId\": \"transition_floor\",\n            \"FloorVariantId\": \"\",\n
     \"WallVariantId\": \"\",\n            \"Flags\": 0\n        },\n        {\n
     \"X\": 31,\n            \"Y\": 25,\n            \"RoomId\": \"main_2\",\n
     \"ZoneId\": \"twisted_temple_zone_f1_d0\",\n            \"Terrain\": 0,\n
-    \"Height\": 2,\n            \"Direction\": 1,\n            \"MaterialId\": \"transition_floor\",\n
+    \"Height\": 0,\n            \"Direction\": 1,\n            \"MaterialId\": \"transition_floor\",\n
     \"FloorVariantId\": \"\",\n            \"WallVariantId\": \"\",\n
     \"Flags\": 0\n        },\n        {\n            \"X\": 32,\n            \"Y\":
     25,\n            \"RoomId\": \"main_2\",\n            \"ZoneId\": \"twisted_temple_zone_f1_d0\",\n
-    \"Terrain\": 0,\n            \"Height\": 2,\n            \"Direction\": 2,\n
+    \"Terrain\": 0,\n            \"Height\": 0,\n            \"Direction\": 2,\n
     \"MaterialId\": \"transition_floor\",\n            \"FloorVariantId\": \"\",\n
     \"WallVariantId\": \"\",\n            \"Flags\": 0\n        },\n        {\n
     \"X\": 33,\n            \"Y\": 25,\n            \"RoomId\": \"main_2\",\n
     \"ZoneId\": \"twisted_temple_zone_f1_d0\",\n            \"Terrain\": 0,\n
-    \"Height\": 2,\n            \"Direction\": 2,\n            \"MaterialId\": \"transition_floor\",\n
+    \"Height\": 0,\n            \"Direction\": 2,\n            \"MaterialId\": \"transition_floor\",\n
     \"FloorVariantId\": \"\",\n            \"WallVariantId\": \"\",\n
     \"Flags\": 0\n        },\n        {\n            \"X\": 34,\n            \"Y\":
     25,\n            \"RoomId\": \"main_2\",\n            \"ZoneId\": \"twisted_temple_zone_f1_d0\",\n
-    \"Terrain\": 0,\n            \"Height\": 2,\n            \"Direction\": 2,\n
+    \"Terrain\": 0,\n            \"Height\": 0,\n            \"Direction\": 2,\n
     \"MaterialId\": \"transition_floor\",\n            \"FloorVariantId\": \"\",\n
     \"WallVariantId\": \"\",\n            \"Flags\": 0\n        },\n        {\n
     \"X\": 35,\n            \"Y\": 25,\n            \"RoomId\": \"main_2\",\n
     \"ZoneId\": \"twisted_temple_zone_f1_d0\",\n            \"Terrain\": 0,\n
-    \"Height\": 2,\n            \"Direction\": 2,\n            \"MaterialId\": \"transition_floor\",\n
+    \"Height\": 0,\n            \"Direction\": 2,\n            \"MaterialId\": \"transition_floor\",\n
     \"FloorVariantId\": \"\",\n            \"WallVariantId\": \"\",\n
     \"Flags\": 0\n        },\n        {\n            \"X\": 36,\n            \"Y\":
     25,\n            \"RoomId\": \"main_3\",\n            \"ZoneId\": \"twisted_temple_zone_f1_d0\",\n
-    \"Terrain\": 0,\n            \"Height\": 1,\n            \"Direction\": 8,\n
+    \"Terrain\": 0,\n            \"Height\": 0,\n            \"Direction\": 8,\n
     \"MaterialId\": \"hub_floor\",\n            \"FloorVariantId\": \"\",\n
     \"WallVariantId\": \"\",\n            \"Flags\": 0\n        },\n        {\n
     \"X\": 37,\n            \"Y\": 25,\n            \"RoomId\": \"main_3\",\n
@@ -12080,7 +12080,7 @@ MonoBehaviour:
     \"WallVariantId\": \"\",\n            \"Flags\": 0\n        },\n        {\n
     \"X\": 29,\n            \"Y\": 26,\n            \"RoomId\": \"main_2\",\n
     \"ZoneId\": \"twisted_temple_zone_f1_d0\",\n            \"Terrain\": 0,\n
-    \"Height\": 1,\n            \"Direction\": 1,\n            \"MaterialId\": \"transition_floor\",\n
+    \"Height\": 0,\n            \"Direction\": 1,\n            \"MaterialId\": \"transition_floor\",\n
     \"FloorVariantId\": \"\",\n            \"WallVariantId\": \"\",\n
     \"Flags\": 0\n        },\n        {\n            \"X\": 30,\n            \"Y\":
     26,\n            \"RoomId\": \"main_2\",\n            \"ZoneId\": \"twisted_temple_zone_f1_d0\",\n
@@ -12089,7 +12089,7 @@ MonoBehaviour:
     \"WallVariantId\": \"\",\n            \"Flags\": 0\n        },\n        {\n
     \"X\": 31,\n            \"Y\": 26,\n            \"RoomId\": \"main_2\",\n
     \"ZoneId\": \"twisted_temple_zone_f1_d0\",\n            \"Terrain\": 0,\n
-    \"Height\": 2,\n            \"Direction\": 1,\n            \"MaterialId\": \"transition_floor\",\n
+    \"Height\": 0,\n            \"Direction\": 1,\n            \"MaterialId\": \"transition_floor\",\n
     \"FloorVariantId\": \"\",\n            \"WallVariantId\": \"\",\n
     \"Flags\": 0\n        },\n        {\n            \"X\": 32,\n            \"Y\":
     26,\n            \"RoomId\": \"main_2\",\n            \"ZoneId\": \"twisted_temple_zone_f1_d0\",\n
@@ -22774,7 +22774,7 @@ MonoBehaviour:
     \"\",\n            \"Flags\": 0\n        }\n    ],\n    \"Objects\": [\n
     {\n            \"PlacementId\": \"main_2_spawn_hint_transition\",\n
     \"PaletteObjectId\": \"spawn_hint\",\n            \"Kind\": 4,\n            \"X\":
-    31,\n            \"Y\": 25,\n            \"Height\": 1,\n            \"Width\":
+    31,\n            \"Y\": 25,\n            \"Height\": 0,\n            \"Width\":
     1,\n            \"Depth\": 1,\n            \"Direction\": 1,\n            \"BlocksMovement\":
     false,\n            \"RuntimeReferenceId\": \"spawn_hint\",\n            \"MaterialId\":
     \"spawn_hint\"\n        },\n        {\n            \"PlacementId\": \"side_1_b_treasure_chest\",\n

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Conn.Core.Content;
 using Conn.Core.Combat;
 using Conn.Core.Equipment;
@@ -311,6 +312,43 @@ namespace Conn.Tests.EditMode
         }
 
         [Test]
+        public void TwistedTempleCompiledMapUsesFlatColliderSafeFloorRoute()
+        {
+            var compiledAsset = AssetDatabase.LoadAssetAtPath<CompiledMapAsset>(TwistedTempleCompiledMapPath);
+            Assert.That(compiledAsset, Is.Not.Null, "The twisted temple compiled map asset must exist.");
+
+            var compiledMap = CompiledMapRuntimeLoader.LoadFromJson(compiledAsset.Json);
+            Assert.That(compiledMap.ProfileId, Is.EqualTo(TwistedTempleProfileId));
+
+            for (var i = 0; i < compiledMap.Cells.Count; i++)
+            {
+                var cell = compiledMap.Cells[i];
+                if (cell.Terrain == RoomChunkCellType.Wall || cell.Terrain == RoomChunkCellType.Gap)
+                {
+                    continue;
+                }
+
+                Assert.That(
+                    cell.Terrain,
+                    Is.EqualTo(RoomChunkCellType.Floor),
+                    $"Twisted Temple walkable cell ({cell.X}, {cell.Y}) must keep a floor collider for the current player controller.");
+                Assert.That(
+                    cell.Height,
+                    Is.Zero,
+                    $"Twisted Temple walkable cell ({cell.X}, {cell.Y}) must stay on the flat floor plane.");
+            }
+
+            var start = CompiledMapRuntimeLoader.FindPlacement(compiledMap, MapPlacementKind.Start);
+            var questTarget = CompiledMapRuntimeLoader.FindPlacement(compiledMap, MapPlacementKind.QuestTarget);
+            var boss = CompiledMapRuntimeLoader.FindPlacement(compiledMap, MapPlacementKind.Boss);
+            var exit = CompiledMapRuntimeLoader.FindPlacement(compiledMap, MapPlacementKind.Exit);
+
+            AssertFlatFloorRoute(compiledMap, start, questTarget);
+            AssertFlatFloorRoute(compiledMap, questTarget, boss);
+            AssertFlatFloorRoute(compiledMap, boss, exit);
+        }
+
+        [Test]
         public void DungeonBuildRefreshesStaleAcceptedQuestFromRuntimeContent()
         {
             var database = AssetDatabase.LoadAssetAtPath<ContentDatabaseDefinition>(ContentDatabasePath);
@@ -383,6 +421,66 @@ namespace Conn.Tests.EditMode
                 RuntimeContentDatabase.SetActive(null);
                 EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             }
+        }
+
+        private static void AssertFlatFloorRoute(CompiledMap compiledMap, MapPlacement from, MapPlacement to)
+        {
+            var cells = new Dictionary<string, CompiledMapCell>();
+            for (var i = 0; i < compiledMap.Cells.Count; i++)
+            {
+                var cell = compiledMap.Cells[i];
+                if (cell.Terrain == RoomChunkCellType.Floor && cell.Height == 0)
+                {
+                    cells[CellKey(cell.X, cell.Y)] = cell;
+                }
+            }
+
+            var fromKey = CellKey(from.X, from.Y);
+            var toKey = CellKey(to.X, to.Y);
+            Assert.That(cells.ContainsKey(fromKey), Is.True, $"Route start {from.Id} must be on flat floor.");
+            Assert.That(cells.ContainsKey(toKey), Is.True, $"Route target {to.Id} must be on flat floor.");
+
+            var visited = new HashSet<string> { fromKey };
+            var queue = new Queue<CompiledMapCell>();
+            queue.Enqueue(cells[fromKey]);
+
+            while (queue.Count > 0)
+            {
+                var cell = queue.Dequeue();
+                var key = CellKey(cell.X, cell.Y);
+                if (key == toKey)
+                {
+                    return;
+                }
+
+                TryEnqueue(cells, visited, queue, cell.X + 1, cell.Y);
+                TryEnqueue(cells, visited, queue, cell.X - 1, cell.Y);
+                TryEnqueue(cells, visited, queue, cell.X, cell.Y + 1);
+                TryEnqueue(cells, visited, queue, cell.X, cell.Y - 1);
+            }
+
+            Assert.Fail($"Twisted Temple flat floor route is disconnected between {from.Id} and {to.Id}.");
+        }
+
+        private static void TryEnqueue(
+            Dictionary<string, CompiledMapCell> cells,
+            HashSet<string> visited,
+            Queue<CompiledMapCell> queue,
+            int x,
+            int y)
+        {
+            var key = CellKey(x, y);
+            if (!visited.Add(key) || !cells.TryGetValue(key, out var cell))
+            {
+                return;
+            }
+
+            queue.Enqueue(cell);
+        }
+
+        private static string CellKey(int x, int y)
+        {
+            return x + "," + y;
         }
 
         private static QuestDefinition FindMapGenV2BoardOffer()
